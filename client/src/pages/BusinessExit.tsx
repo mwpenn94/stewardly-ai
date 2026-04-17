@@ -24,7 +24,7 @@ const EXIT_PATHS = [
 
 type ExitPath = typeof EXIT_PATHS[number]["value"];
 
-export default function BusinessExit() {
+export default function BusinessExit({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   
   const [tab, setTab] = useState("analyze");

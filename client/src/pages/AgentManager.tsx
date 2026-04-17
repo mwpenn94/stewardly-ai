@@ -62,7 +62,9 @@ function parseStepProgress(actionType: string): { step: number; total: number; t
 }
 
 // ─── Main component ───────────────────────────────────────────────────────
-export default function AgentManager() {
+export default function AgentManager({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
   const agents = trpc.openClaw.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const createMutation = trpc.openClaw.create.useMutation({ onSuccess: () => { agents.refetch(); toast.success("Agent created"); } });
@@ -90,14 +92,14 @@ export default function AgentManager() {
   // If viewing a specific run, show the detail view
   if (selectedRunId !== null && selectedAgent !== null) {
     return (
-      <AppShell title="Agent Run Detail">
+      <Shell title="Agent Run Detail">
         <SEOHead title="Agent Run Detail" description="View step-by-step agent execution trace" />
         <RunDetailView
           agentId={selectedAgent}
           runActionId={selectedRunId}
           onBack={() => setSelectedRunId(null)}
         />
-      </AppShell>
+      </Shell>
     );
   }
 
@@ -106,7 +108,7 @@ export default function AgentManager() {
     const agent = (agents.data || []).find((a: any) => a.id === selectedAgent);
     if (agent) {
       return (
-        <AppShell title={agent.config?.name || "Agent"}>
+        <Shell title={agent.config?.name || "Agent"}>
           <SEOHead title={agent.config?.name || "Agent"} description="Agent configuration and run history" />
           <AgentDetailView
             agent={agent}
@@ -117,13 +119,13 @@ export default function AgentManager() {
             onSelectRun={(runId: number) => setSelectedRunId(runId)}
             isLaunching={launchMutation.isPending}
           />
-        </AppShell>
+        </Shell>
       );
     }
   }
 
   return (
-    <AppShell title="Agents">
+    <Shell title="Agents">
       <SEOHead title="AI Agents" description="Create, launch, and manage autonomous AI agents" />
       <div className="min-h-screen">
         {/* Header */}
@@ -213,7 +215,7 @@ export default function AgentManager() {
           </Tabs>
         </div>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

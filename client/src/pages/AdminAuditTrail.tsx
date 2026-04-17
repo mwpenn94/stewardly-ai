@@ -29,7 +29,9 @@ const ACTION_CONFIG: Record<string, { label: string; color: string; icon: typeof
   role_change: { label: "Role Changed", color: "text-purple-400", icon: Shield, bg: "bg-purple-500/10" },
 };
 
-export default function AdminAuditTrail() {
+export default function AdminAuditTrail({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
 
   const [search, setSearch] = useState("");
   const [filterAction, setFilterAction] = useState("all");
@@ -101,7 +103,7 @@ export default function AdminAuditTrail() {
   };
 
   return (
-    <AppShell title="Audit Trail">
+    <Shell title="Audit Trail">
       <SEOHead title="Audit Trail" description="Full audit trail of permission and sharing changes" />
       <div className="min-h-screen">
         <header className="border-b border-border px-4 py-3 flex items-center gap-3 relative overflow-hidden">
@@ -286,6 +288,6 @@ export default function AdminAuditTrail() {
           </p>
         </div>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

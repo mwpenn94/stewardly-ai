@@ -105,7 +105,9 @@ function getRiskLabel(score: number): { label: string; color: string } {
   return { label: "Very Aggressive", color: "text-red-400" };
 }
 
-export default function ClientOnboarding() {
+export default function ClientOnboarding({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const [step, setStep] = useState(1);
@@ -188,7 +190,7 @@ export default function ClientOnboarding() {
     setFinancial(prev => ({ ...prev, [field]: value }));
 
   return (
-    <AppShell title="Client Onboarding">
+    <Shell title="Client Onboarding">
     <div className="container max-w-3xl py-8 space-y-6">
       <SEOHead title="Client Onboarding" description="New client onboarding wizard" />
 
@@ -564,6 +566,6 @@ export default function ClientOnboarding() {
         )}
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

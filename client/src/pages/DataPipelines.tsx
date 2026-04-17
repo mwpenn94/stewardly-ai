@@ -201,7 +201,9 @@ const statusActions: Record<DataPipeline["status"], { icon: any; label: string }
   configuring: { icon: Settings, label: "Configure" },
 };
 
-export default function DataPipelines() {
+export default function DataPipelines({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const [pipelines, setPipelines] = useState<DataPipeline[]>(INITIAL_PIPELINES);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -272,7 +274,7 @@ export default function DataPipelines() {
   };
 
   return (
-    <AppShell>
+    <Shell>
       <SEOHead title="Data Pipelines" description="Integration status and data pipeline management" />
       <div className="container max-w-6xl py-6 space-y-6">
         {/* Header */}
@@ -448,6 +450,6 @@ export default function DataPipelines() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

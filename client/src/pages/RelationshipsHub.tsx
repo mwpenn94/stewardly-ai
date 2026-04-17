@@ -23,7 +23,9 @@ import {
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { DisclosureSection } from "@/components/DisclosureSection";
 
-export default function RelationshipsHub() {
+export default function RelationshipsHub({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState("network");
@@ -42,7 +44,7 @@ export default function RelationshipsHub() {
   }
 
   return (
-    <AppShell title="Relationships">
+    <Shell title="Relationships">
       <SEOHead title="Relationships" description="Professional network, meetings, and outreach campaigns" />
       <div className="flex justify-end px-4 pt-2"><ShareButton contentType="relationships" contentId="relationships-report" contentTitle="Relationships Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
@@ -101,7 +103,7 @@ export default function RelationshipsHub() {
         </Tabs>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }
 

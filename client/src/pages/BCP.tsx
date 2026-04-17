@@ -119,7 +119,9 @@ const TIER_COLORS: Record<string, string> = {
   low: "bg-green-500/10 text-green-400 border-green-500/20",
 };
 
-export default function BCP() {
+export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [refreshing, setRefreshing] = useState(false);
@@ -148,7 +150,7 @@ export default function BCP() {
   };
 
   return (
-    <AppShell title="Business Continuity">
+    <Shell title="Business Continuity">
       <SEOHead title="Business Continuity" description="Business continuity planning and documentation" />
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -420,6 +422,6 @@ export default function BCP() {
         </Card>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

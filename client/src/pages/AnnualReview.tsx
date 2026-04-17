@@ -15,7 +15,7 @@ import { SEOHead } from "@/components/SEOHead";
 interface GoalEntry { goalName: string; targetAmount: number; currentAmount: number; targetDate: string; onTrack: boolean; }
 interface InsuranceEntry { type: string; provider: string; coverage: number; premium: number; expirationDate: string; adequate: boolean; }
 
-export default function AnnualReview() {
+export default function AnnualReview({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   
   const [tab, setTab] = useState("generate");

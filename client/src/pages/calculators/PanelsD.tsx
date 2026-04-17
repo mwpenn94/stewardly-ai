@@ -21,7 +21,6 @@ import {
   getBracket, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
-  fmt, fmtSm, pct,
   calcUnifiedIncomePlan, calcChannelEconomics, calcSensitivity, calcTimePhasedProjections, AFF_RATES, CHANNEL_BENCHMARKS,
   AUM_OVERRIDE_DEFAULTS, calcProducerAffiliateIncome, PRODUCER_DEFAULTS, isSectionVisible,
   calcClientPracticeOpportunity, buildCascadeChain, calcPlanningHorizon,
@@ -34,6 +33,7 @@ import {
   type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics, type SensitivityResult, type TimePhasedResult, type BackSolveResult, type ChannelBalance,
   type CascadeAuditEntry, type CascadeInputSnapshot, type CascadeDirection, type ScenarioDiffResult,
 } from './practiceEngine';
+import { fmt, fmtSm, pct } from './format';
 import { KPI, RefTip } from './shared';
 import { exportToExcel, exportToPDF, type ExportPlanData } from './exportPlan';
 import {

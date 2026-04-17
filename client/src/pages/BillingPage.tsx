@@ -26,7 +26,9 @@ const PLAN_ICONS: Record<string, React.ReactNode> = {
   enterprise: <Building2 className="h-5 w-5 text-purple-400" />,
 };
 
-export default function BillingPage() {
+export default function BillingPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const [, navigate] = useLocation();
   const [billingInterval, setBillingInterval] = useState<"month" | "year">("month");
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export default function BillingPage() {
   };
 
   return (
-    <AppShell title="Billing">
+    <Shell title="Billing">
       <div className="container max-w-5xl py-6 sm:py-8 space-y-6">
         <SEOHead title="Billing" description="Subscription management and billing" />
 
@@ -330,6 +332,6 @@ export default function BillingPage() {
           </p>
         </div>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

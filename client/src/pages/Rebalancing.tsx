@@ -83,7 +83,9 @@ function fmtPct(n: number): string {
   return `${sign}${n.toFixed(1)}pp`;
 }
 
-export default function RebalancingPage() {
+export default function RebalancingPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [holdings, setHoldings] = useState<HoldingRow[]>(DEFAULT_HOLDINGS);
@@ -195,7 +197,7 @@ export default function RebalancingPage() {
   }, [isLoading, result]);
 
   return (
-    <AppShell title="Rebalancing">
+    <Shell title="Rebalancing">
       <SEOHead
         title="Rebalancing · Stewardly"
         description="Portfolio drift preview with cash-neutral trade proposals and optional tax-aware sell ordering."
@@ -617,6 +619,6 @@ export default function RebalancingPage() {
           </div>
         )}
       </main>
-    </AppShell>
+    </Shell>
   );
 }

@@ -3,7 +3,7 @@
    Ported from WealthBridge-Business-Calculator-v7
    ═══════════════════════════════════════════════════════════════ */
 
-import { fmt, fmtSm, pct } from './engine';
+import { fmt, fmtSm, pct } from './format';
 
 /* ═══ PRODUCTS ═══ */
 export interface Product {
@@ -2124,4 +2124,4 @@ export function mergeEngineConfig(overrides: Partial<EngineConfig>): EngineConfi
   return { ...DEFAULT_ENGINE_CONFIG, ...overrides };
 }
 
-export { fmt, fmtSm, pct };
+// Re-export removed — consumers import directly from './format' to avoid TDZ

@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 
-export default function EnrichmentAdmin() {
+export default function EnrichmentAdmin({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const [tab, setTab] = useState("datasets");
   const [search, setSearch] = useState("");

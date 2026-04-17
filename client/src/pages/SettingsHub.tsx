@@ -100,7 +100,7 @@ export default function SettingsHub() {
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-4 h-12 flex items-center gap-3">
           <Settings2 className="w-4 h-4 text-accent shrink-0" />
           <h1 className="text-sm font-semibold truncate">Settings</h1>
           {/* Mobile tab selector */}
@@ -115,15 +115,15 @@ export default function SettingsHub() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto flex min-h-[calc(100vh-3.5rem)]">
+      <div className="max-w-6xl mx-auto flex min-h-[calc(100vh-3rem)]">
         {/* ─── SIDEBAR NAV (desktop always visible, mobile toggle) ─── */}
         <aside className={`
           ${mobileNavOpen ? "block" : "hidden"} md:block
           w-full md:w-56 lg:w-64 shrink-0 border-r border-border/30
           bg-card/20 md:bg-transparent
-          fixed md:relative inset-0 top-14 z-20 md:z-0
+          fixed md:relative inset-0 top-12 z-20 md:z-0
         `}>
-          <div className="p-3 space-y-1" role="tablist" aria-label="Settings sections" aria-orientation="vertical">
+          <div className="p-2 space-y-0.5" role="tablist" aria-label="Settings sections" aria-orientation="vertical">
             {TABS.map((tab) => {
               const tabRequiresAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(tab.id);
               return (
@@ -132,22 +132,17 @@ export default function SettingsHub() {
                   role="tab"
                   aria-selected={activeTab === tab.id}
                   onClick={() => { setActiveTab(tab.id); setMobileNavOpen(false); }}
-                  className={`w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-all ${
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-all text-[13px] ${
                     activeTab === tab.id
-                      ? "bg-accent/10 text-accent border border-accent/20"
+                      ? "bg-accent/10 text-accent font-medium"
                       : tabRequiresAuth
                         ? "text-muted-foreground/50 hover:text-muted-foreground/70 hover:bg-card/30"
                         : "text-muted-foreground hover:text-foreground hover:bg-card/50"
                   }`}
                 >
-                  <span className={`mt-0.5 shrink-0 ${activeTab === tab.id ? "text-accent" : ""}`}>{tab.icon}</span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate flex items-center gap-1.5">
-                      {tab.label}
-                      {tabRequiresAuth && <span className="text-[9px] bg-muted/50 text-muted-foreground px-1.5 py-0.5 rounded">Sign in</span>}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5">{tab.desc}</p>
-                  </div>
+                  <span className={`shrink-0 ${activeTab === tab.id ? "text-accent" : ""}`}>{tab.icon}</span>
+                  <span className="truncate">{tab.label}</span>
+                  {tabRequiresAuth && <span className="text-[9px] bg-muted/50 text-muted-foreground px-1.5 py-0.5 rounded ml-auto">Sign in</span>}
                 </button>
               );
             })}
@@ -156,7 +151,7 @@ export default function SettingsHub() {
 
         {/* Mobile overlay */}
         {mobileNavOpen && (
-          <div className="fixed inset-0 top-14 z-10 bg-black/40 md:hidden" onClick={() => setMobileNavOpen(false)} />
+          <div className="fixed inset-0 top-12 z-10 bg-black/40 md:hidden" onClick={() => setMobileNavOpen(false)} />
         )}
 
         {/* ─── MAIN CONTENT ─── */}

@@ -15,7 +15,9 @@ import {
   TrendingUp, BarChart3, Globe, DollarSign,
 } from "lucide-react";
 
-export default function AdminPlatformReports() {
+export default function AdminPlatformReports({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user, loading: authLoading } = useAuth();
   const [generating, setGenerating] = useState(false);
 
@@ -25,11 +27,11 @@ export default function AdminPlatformReports() {
   });
 
   if (authLoading) {
-    return <AppShell title="Platform Reports"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
+    return <Shell title="Platform Reports"><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></Shell>;
       <SEOHead title="Platform Reports" description="View platform analytics and usage reports" />
   }
   if (!user || user.role !== "admin") {
-    return <AppShell title="Platform Reports"><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></AppShell>;
+    return <Shell title="Platform Reports"><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></Shell>;
   }
 
   const reportTypes = [
@@ -54,7 +56,7 @@ export default function AdminPlatformReports() {
   };
 
   return (
-    <AppShell title="Platform Reports">
+    <Shell title="Platform Reports">
       <div className="container max-w-6xl py-8 space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><FileText className="w-6 h-6" /> Platform Reports</h1>
@@ -106,6 +108,6 @@ export default function AdminPlatformReports() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

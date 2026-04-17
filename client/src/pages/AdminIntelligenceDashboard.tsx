@@ -18,7 +18,9 @@ import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
-export default function AdminIntelligenceDashboard() {
+export default function AdminIntelligenceDashboard({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("rate-management");
 
@@ -33,7 +35,7 @@ export default function AdminIntelligenceDashboard() {
   }
 
   return (
-    <AppShell title="Intelligence Dashboard">
+    <Shell title="Intelligence Dashboard">
       <SEOHead title="Intelligence Dashboard" description="AI model performance and intelligence metrics" />
     <div className="container py-6 space-y-6 max-w-7xl">
       {/* Header */}
@@ -79,7 +81,7 @@ export default function AdminIntelligenceDashboard() {
         <TabsContent value="sofr"><SOFRTab /></TabsContent>
       </Tabs>
     </div>
-    </AppShell>
+    </Shell>
   );
 }
 

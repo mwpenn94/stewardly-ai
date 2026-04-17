@@ -55,7 +55,9 @@ function ScoreGauge({ score, size = "lg" }: { score: number | null; size?: "sm" 
   );
 }
 
-export default function ImprovementEngine() {
+export default function ImprovementEngine({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [selectedLayer, setSelectedLayer] = useState<string>("platform");
@@ -105,7 +107,7 @@ export default function ImprovementEngine() {
   const currentLayerData = (overviewQuery.data || []).find((l: any) => l.layer === selectedLayer);
 
   return (
-    <AppShell title="Improvement Engine">
+    <Shell title="Improvement Engine">
       <SEOHead title="Improvement Engine" description="AI improvement loops and signal detection" />
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -323,7 +325,7 @@ export default function ImprovementEngine() {
         </div>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }
 

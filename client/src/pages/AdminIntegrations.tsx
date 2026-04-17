@@ -16,7 +16,9 @@ import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
-export default function AdminIntegrations() {
+export default function AdminIntegrations({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [search, setSearch] = useState("");
@@ -49,7 +51,7 @@ export default function AdminIntegrations() {
   }
 
   return (
-    <AppShell title="Admin Integrations">
+    <Shell title="Admin Integrations">
       <SEOHead title="Admin Integrations" description="Manage platform integrations and API connections" />
     <div className="space-y-6">
       <div className="mb-2"><Link href="/chat"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1"><ArrowLeft className="h-4 w-4" /> Back to Chat</Button></Link></div>
@@ -159,6 +161,6 @@ export default function AdminIntegrations() {
         </TabsContent>
       </Tabs>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

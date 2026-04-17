@@ -19,7 +19,9 @@ import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
-export default function KnowledgeAdmin() {
+export default function KnowledgeAdmin({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user } = useAuth();
   const [tab, setTab] = useState("articles");
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,7 +53,7 @@ export default function KnowledgeAdmin() {
   const isAdmin = user?.role === "admin" || user?.role === "manager";
 
   return (
-    <AppShell title="Knowledge Admin">
+    <Shell title="Knowledge Admin">
       <SEOHead title="Knowledge Admin" description="Knowledge base management and document library" />
     <div className="min-h-screen bg-background">
       <div className="container max-w-7xl py-8">
@@ -541,6 +543,6 @@ export default function KnowledgeAdmin() {
         </Dialog>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

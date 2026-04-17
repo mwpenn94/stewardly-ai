@@ -24,7 +24,7 @@ const SEVERITY_ICON: Record<string, React.ReactNode> = {
   info: <CheckCircle className="h-4 w-4 text-muted-foreground" />,
 };
 
-export default function ComplianceCopilot() {
+export default function ComplianceCopilot({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const [tab, setTab] = useState("audit");
   const [search, setSearch] = useState("");

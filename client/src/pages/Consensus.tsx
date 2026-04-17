@@ -40,7 +40,9 @@ const DEFAULT_MODELS = [
   { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
 ];
 
-export default function ConsensusPage() {
+export default function ConsensusPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   // Round D3 — Honor `?q=...` query string from the Chat deep link so the
@@ -139,7 +141,7 @@ export default function ConsensusPage() {
   }
 
   return (
-    <AppShell title="Consensus">
+    <Shell title="Consensus">
       <SEOHead title="Consensus" description="Multi-model consensus analysis" />
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         <header>
@@ -386,6 +388,6 @@ export default function ConsensusPage() {
           </>
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }

@@ -24,13 +24,15 @@ import {
   Eye, FileText, Download, Plus, Gauge,
 } from "lucide-react";
 
-export default function ProductIntelligence() {
+export default function ProductIntelligence({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState("market");
 
   return (
-    <AppShell title="Product Intelligence">
+    <Shell title="Product Intelligence">
       <SEOHead title="Product Intelligence" description="Product analysis and competitive intelligence" />
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -83,7 +85,7 @@ export default function ProductIntelligence() {
         </Tabs>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }
 

@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TrendingUp, History, RefreshCw, Loader2, ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 
-export default function PremiumFinanceRates() {
+export default function PremiumFinanceRates({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const [tab, setTab] = useState("current");
   const [historyLimit, setHistoryLimit] = useState(30);

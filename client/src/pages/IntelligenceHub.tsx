@@ -22,13 +22,15 @@ import {
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 
-export default function IntelligenceHub() {
+export default function IntelligenceHub({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
-    <AppShell title="Intelligence">
+    <Shell title="Intelligence">
       <SEOHead title="Intelligence" description="AI-powered insights and intelligence dashboard" />
       <div className="flex justify-end px-4 pt-2"><ShareButton contentType="intelligence" contentId="intelligence-report" contentTitle="Intelligence Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
@@ -98,7 +100,7 @@ export default function IntelligenceHub() {
         </Tabs>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }
 

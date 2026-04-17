@@ -14,7 +14,9 @@ import { useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 
-export default function FairnessTestDashboard() {
+export default function FairnessTestDashboard({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -75,7 +77,7 @@ export default function FairnessTestDashboard() {
   };
 
   return (
-    <AppShell title="Fairness Testing">
+    <Shell title="Fairness Testing">
       <SEOHead title="Fairness Testing" description="AI fairness testing and bias auditing" />
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -372,6 +374,6 @@ export default function FairnessTestDashboard() {
         </div>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

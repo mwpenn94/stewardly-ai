@@ -103,7 +103,7 @@ function RouteRow({ path, page, role, desc }: { path: string; page: string; role
 // ═══════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════
-export default function PlatformGuide() {
+export default function PlatformGuide({ embedded = false }: { embedded?: boolean } = {}) {
   const { user, loading } = useAuth();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("overview");

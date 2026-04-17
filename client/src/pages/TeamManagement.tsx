@@ -30,7 +30,9 @@ const roleColors: Record<string, string> = {
   user: "text-emerald-400 border-emerald-500/30",
 };
 
-export default function TeamManagement() {
+export default function TeamManagement({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const [, navigate] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
@@ -84,7 +86,7 @@ export default function TeamManagement() {
   const isOrgAdmin = primaryOrg?.userRole === "org_admin" || user?.role === "admin";
 
   return (
-    <AppShell title="Team Management">
+    <Shell title="Team Management">
     <div className="container max-w-4xl py-6 sm:py-8 space-y-4 sm:space-y-6">
       <SEOHead title="Team Management" description="Manage your organization team members and roles" />
       <div className="flex items-center justify-between">
@@ -298,6 +300,6 @@ export default function TeamManagement() {
         </>
       )}
     </div>
-    </AppShell>
+    </Shell>
   );
 }

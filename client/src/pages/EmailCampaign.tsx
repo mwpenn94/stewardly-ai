@@ -908,7 +908,7 @@ function CampaignDetail({
 }
 
 // ─── Main Component ────────────────────────────────────────────────
-export default function EmailCampaign() {
+export default function EmailCampaign({ embedded = false }: { embedded?: boolean } = {}) {
   const [view, setView] = useState<ViewMode>("list");
   const [selectedId, setSelectedId] = useState<number | null>(null);
 

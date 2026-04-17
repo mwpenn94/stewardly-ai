@@ -22,7 +22,9 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-export default function GlobalAdmin() {
+export default function GlobalAdmin({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
@@ -109,7 +111,7 @@ export default function GlobalAdmin() {
   }
 
   return (
-    <AppShell title="Global Admin">
+    <Shell title="Global Admin">
       <SEOHead title="Global Admin" description="Platform administration and configuration" />
     <div className="min-h-screen animate-curtain-lift">
       {/* Header */}
@@ -484,6 +486,6 @@ export default function GlobalAdmin() {
         </Tabs>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

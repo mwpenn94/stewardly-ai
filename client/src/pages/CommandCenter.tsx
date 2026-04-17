@@ -679,18 +679,20 @@ function AssetsTab() {
 // ════════════════════════════════════════════════════════════════════
 //  MAIN COMPONENT
 // ════════════════════════════════════════════════════════════════════
-export default function CommandCenter() {
+export default function CommandCenter({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<CommandTab>("overview");
 
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <Shell>
         <div className="flex items-center justify-center h-[60vh]">
           <Card className="max-w-md"><CardContent className="p-6 text-center"><Shield className="w-8 h-8 mx-auto mb-3 text-muted-foreground" /><p className="text-sm">Sign in to access the Command Center</p></CardContent></Card>
         </div>
-      </AppShell>
+      </Shell>
     );
   }
 
@@ -705,7 +707,7 @@ export default function CommandCenter() {
   };
 
   return (
-    <AppShell>
+    <Shell>
       <SEOHead title="Command Center" description="Unified CRM, campaigns, ATS, LinkedIn, segmentation, and marketing asset library" />
       <div className="container max-w-7xl py-4">
         <div className="flex items-center justify-between mb-4">
@@ -736,6 +738,6 @@ export default function CommandCenter() {
           <TabsContent value="assets"><AssetsTab /></TabsContent>
         </Tabs>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

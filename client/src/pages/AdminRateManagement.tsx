@@ -54,7 +54,9 @@ function formatDate(d: Date | string | null | undefined): string {
   return date.toLocaleString();
 }
 
-export default function AdminRateManagement() {
+export default function AdminRateManagement({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user, loading: authLoading } = useAuth();
   const utils = trpc.useUtils();
   const [genProvider, setGenProvider] = useState("");
@@ -94,22 +96,22 @@ export default function AdminRateManagement() {
 
   if (authLoading) {
     return (
-      <AppShell title="Rate Management">
+      <Shell title="Rate Management">
       <SEOHead title="Rate Management" description="Manage rate profiles and recommendations" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      </AppShell>
+      </Shell>
     );
   }
   if (!user || user.role !== "admin") {
     return (
-      <AppShell title="Rate Management">
+      <Shell title="Rate Management">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <XCircle className="w-12 h-12 text-red-500" />
           <p className="text-muted-foreground">Admin access required</p>
         </div>
-      </AppShell>
+      </Shell>
     );
   }
 
@@ -117,7 +119,7 @@ export default function AdminRateManagement() {
   const recs = recsQ.data ?? [];
 
   return (
-    <AppShell title="Rate Management">
+    <Shell title="Rate Management">
       <div className="container max-w-6xl py-8 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -322,6 +324,6 @@ export default function AdminRateManagement() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

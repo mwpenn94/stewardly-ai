@@ -20,7 +20,9 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 
-export default function APIKeys() {
+export default function APIKeys({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const [, navigate] = useLocation();
   const webhooksQ = trpc.webhooks.list.useQuery();
   const webhookStatsQ = trpc.webhooks.stats.useQuery();
@@ -32,7 +34,7 @@ export default function APIKeys() {
   const isLoading = webhooksQ.isLoading || integrationsQ.isLoading;
 
   return (
-    <AppShell title="API Access">
+    <Shell title="API Access">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="API Access" description="Manage API endpoints, webhooks, and integrations" />
 
@@ -209,6 +211,6 @@ export default function APIKeys() {
         </CardContent>
       </Card>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

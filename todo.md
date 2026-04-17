@@ -5799,3 +5799,41 @@
 - [x] Regenerate pnpm-lock.yaml to include all 28 workspace package shells (pnpm install --no-frozen-lockfile)
 - [x] Verify build passes (34.15s clean)
 - [x] Save checkpoint and re-publish
+
+## Pass 111 — UX Overhaul: TDZ Fix, Sidebar Simplification, Layout Consistency, Learning Access
+
+### Phase 1: Fix TDZ crash on My Plan
+- [ ] Root-cause "Cannot access 'E' before initialization" in production build
+- [ ] Break circular dependency chain (engine ↔ practiceEngine re-exports)
+- [ ] Extract fmt/fmtSm/pct into standalone format.ts with zero imports
+- [ ] Verify My Plan loads in production build without crash
+
+### P### Phase 2: Simplify AppShell sidebar into hub pages
+- [x] Reduce sidebar to ~8-10 top-level entries (Home, Chat, People Hub, Wealth Engine, Learning, Intelligence, Admin, Settings, Help)
+- [x] Create PeopleHub page with internal sidebar (Clients, Advisors, Leaders, Stewards, CRM, ATS)
+- [x] Create IntelligenceHub page with internal sidebar (Market Data, Data Pipelines, Enrichment, Analytics)
+- [x] Create AdminHubV2 page with internal sidebar (System Health, Agents, Billing, Team, etc.)
+- [x] Update PersonaSidebar5.tsx to use simplified hub structure
+- [x] Wire all hub routes in App.tsx (/people/:tab, /intelligence-hub/:tab, /admin/:tab)
+### Phase 3: Fix Settings page layout
+- [x] Clean up SettingsHub header height to match other hubs (h-12)
+- [x] Simplify sidebar item styling to match PeopleHub pattern
+- [ ] Remove redundant headers (breadcrumb + dropdown + section title overlap)
+- [ ] Clean up mobile layout for Settings
+### Phase 4: Fix Admin pages layout consistency
+- [x] Created AdminHubV2 with internal sidebar (BCP, Fairness, Platform, Users, etc.)
+- [x] Consistent tab/sidebar pattern matching Wealth Engine
+### Phase 5: Make Learning module features accessible
+- [x] Added Flashcards, Quiz, Due Review, Study Buddy to Learning Tools grid
+- [x] Wire flashcard study mode via ToolCardWithTrackPicker
+- [x] Wire quiz mode via ToolCardWithTrackPicker
+- [ ] Add rich media support (video embeds, interactive diagrams)
+### Phase 6: Clean up AI Chat UI
+- [x] Move streaming toggle into advanced section to reduce toolbar clutter
+- [ ] Simplify mode selector (General, Advisor, Auto)
+- [ ] Clean up overcrowded suggestion chips area
+### Phase 7: Tests + Convergence
+- [x] Comprehensive test suite for Pass 111 changes (52 hub tests + 42 nav tests)
+- [x] Fix navReachability test (added /admin-legacy, /people to EXEMPT_ROUTES)
+- [x] Build passes clean (33.5s)
+- [ ] 3 consecutive clean convergence passes

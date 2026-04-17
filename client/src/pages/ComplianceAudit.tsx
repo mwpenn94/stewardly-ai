@@ -80,7 +80,9 @@ function formatTime(createdAt: number | string | null | undefined): string {
   return new Date(ms).toLocaleString();
 }
 
-export default function ComplianceAudit() {
+export default function ComplianceAudit({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -133,7 +135,7 @@ export default function ComplianceAudit() {
   }, [reviews, search]);
 
   return (
-    <AppShell title="Compliance Audit">
+    <Shell title="Compliance Audit">
     <div className="container max-w-5xl py-8 space-y-6">
       <SEOHead title="Compliance Audit" description="Audit trail and regulatory compliance dashboard" />
       <div className="flex justify-end px-4 pt-2"><ShareButton contentType="compliance" contentId="compliance-audit" contentTitle="Compliance Audit" variant="ghost" size="sm" /></div>
@@ -344,6 +346,6 @@ export default function ComplianceAudit() {
         </Card>
       )}
     </div>
-    </AppShell>
+    </Shell>
   );
 }

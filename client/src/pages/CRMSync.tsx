@@ -23,7 +23,9 @@ import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
-export default function CRMSync() {
+export default function CRMSync({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated, user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [, navigate] = useLocation();
@@ -75,7 +77,7 @@ export default function CRMSync() {
   }
 
   return (
-    <AppShell title="CRM Sync">
+    <Shell title="CRM Sync">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="CRM Sync" description="Manage CRM integration and data synchronization" />
 
@@ -254,6 +256,6 @@ export default function CRMSync() {
         </TabsContent>
       </Tabs>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

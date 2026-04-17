@@ -4,10 +4,10 @@
 import * as XLSX from 'xlsx';
 import {
   calcUnifiedIncomePlan, calcChannelEconomics, calcSensitivity,
-  fmt, fmtSm, pct,
   type IncomeSplits, type EnabledChannels, type RoleId,
   type ChannelEconomics, type SensitivityResult,
 } from './practiceEngine';
+import { fmt, fmtSm, pct } from './format';
 
 export interface ExportPlanData {
   /* Identity */

@@ -125,7 +125,9 @@ function formatRelative(d: Date | string | null): string {
   return `${days}d ago`;
 }
 
-export default function AdminSystemHealth() {
+export default function AdminSystemHealth({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user, loading: authLoading } = useAuth();
   const [filter, setFilter] = useState<string>("all");
 
@@ -181,30 +183,30 @@ export default function AdminSystemHealth() {
 
   if (authLoading) {
     return (
-      <AppShell title="System Health">
+      <Shell title="System Health">
       <SEOHead title="System Health" description="Monitor system health, cron jobs, and scheduler status" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      </AppShell>
+      </Shell>
     );
   }
 
   if (!user || user.role !== "admin") {
     return (
-      <AppShell title="System Health">
+      <Shell title="System Health">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <XCircle className="w-12 h-12 text-red-500" />
           <p className="text-muted-foreground">Admin access required</p>
         </div>
-      </AppShell>
+      </Shell>
     );
   }
 
   const initialized = status.data?.initialized ?? false;
 
   return (
-    <AppShell title="System Health">
+    <Shell title="System Health">
       <div className="container max-w-6xl py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -356,7 +358,7 @@ export default function AdminSystemHealth() {
           </div>
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

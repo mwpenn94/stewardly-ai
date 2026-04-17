@@ -3171,29 +3171,28 @@ export default function Chat() {
                   )}
                 </div>
               )}
-              </>
-              )}
-
-              <div className="flex-1" />
-
-              {/* Streaming toggle — hidden on mobile to reduce clutter */}
+              {/* Streaming toggle — moved into advanced section */}
               {!isAnonymous && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button type="button"
-                      className={`hidden md:block p-2.5 rounded-full transition-all ${
+                      className={`h-7 px-2 text-[10px] rounded-full border transition-all flex items-center gap-1 ${
                         useStreaming
-                          ? "bg-accent/15 text-accent"
-                          : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                          ? "bg-accent/15 text-accent border-accent/30"
+                          : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                       }`}
                       onClick={() => setUseStreaming(!useStreaming)}
                     >
-                      <Zap className="w-5 h-5" />
+                      <Zap className="w-3 h-3" />
+                      {useStreaming ? "Stream" : "Batch"}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>{useStreaming ? "Streaming on" : "Streaming off"}</TooltipContent>
+                  <TooltipContent>{useStreaming ? "Streaming on — responses appear word by word" : "Batch mode — full response at once"}</TooltipContent>
                 </Tooltip>
               )}
+              </>
+              )}
+              <div className="flex-1" />
 
               {/* Pass 5 (G24): Always-visible mic button for voice input */}
               <Tooltip>

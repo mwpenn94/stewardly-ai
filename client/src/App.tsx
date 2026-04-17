@@ -174,6 +174,10 @@ const WorkflowAutomation = lazy(() => import("./pages/WorkflowAutomation"));
 const EnrichmentAdmin = lazy(() => import("./pages/EnrichmentAdmin"));
 const PortalAnalytics = lazy(() => import("./pages/PortalAnalytics"));
 const SovereignStudy = lazy(() => import("./pages/SovereignStudy"));
+// Hub pages with internal sidebars (Phase 3 — sidebar simplification)
+const PeopleHub = lazy(() => import("./pages/PeopleHub"));
+const IntelligenceHubV2 = lazy(() => import("./pages/IntelligenceHubV2"));
+const AdminHubV2 = lazy(() => import("./pages/AdminHubV2"));
 
 function Router() {
   return (
@@ -221,7 +225,9 @@ function Router() {
         <Route path={"/products"} component={Products} />
         <Route path={"/manager"} component={ManagerDashboard} />
         <Route path={"/org-branding"} component={OrgBrandingEditor} />
-        <Route path={"/admin"} component={GlobalAdmin} />
+        <Route path="/admin" component={AdminHubV2} />
+        <Route path="/admin/:tab" component={AdminHubV2} />
+        <Route path="/admin-legacy" component={GlobalAdmin} />
         {/* meetings, insights, planning, coach, compliance, marketplace → redirected to hubs */}
         <Route path={"/portal"} component={Portal} />
         <Route path={"/organizations"} component={Organizations} />
@@ -315,9 +321,12 @@ function Router() {
 
         <Route path={"/operations"} component={OperationsHub} />
         <Route path={"/agents"} component={AgentManager} />
-        <Route path={"/intelligence-hub"} component={IntelligenceHub} />
+        <Route path={"/intelligence-hub"} component={IntelligenceHubV2} />
+        <Route path="/intelligence-hub/:tab" component={IntelligenceHubV2} />
         <Route path={"/advisory"} component={AdvisoryHub} />
         <Route path={"/relationships"} component={RelationshipsHub} />
+        <Route path="/people" component={PeopleHub} />
+        <Route path="/people/:tab" component={PeopleHub} />
 
         {/* Unified Settings hub */}
         <Route path={"/settings"}>

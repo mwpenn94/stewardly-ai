@@ -83,7 +83,9 @@ function formatLastRun(lastRunAt: number | null): string {
   return `${days}d ago`;
 }
 
-export default function AdminDataFreshness() {
+export default function AdminDataFreshness({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user, loading: authLoading } = useAuth();
   const utils = trpc.useUtils();
 
@@ -122,28 +124,28 @@ export default function AdminDataFreshness() {
 
   if (authLoading) {
     return (
-      <AppShell title="Data Freshness">
+      <Shell title="Data Freshness">
       <SEOHead title="Data Freshness" description="Monitor data source freshness and ingestion health" />
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      </AppShell>
+      </Shell>
     );
   }
 
   if (!user || user.role !== "admin") {
     return (
-      <AppShell title="Data Freshness">
+      <Shell title="Data Freshness">
         <div className="flex flex-col items-center justify-center h-64 gap-4">
           <XCircle className="w-12 h-12 text-red-500" />
           <p className="text-muted-foreground">Admin access required</p>
         </div>
-      </AppShell>
+      </Shell>
     );
   }
 
   return (
-    <AppShell title="Data Freshness">
+    <Shell title="Data Freshness">
       <div className="container max-w-6xl py-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -285,6 +287,6 @@ export default function AdminDataFreshness() {
           </div>
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }

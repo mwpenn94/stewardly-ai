@@ -113,7 +113,9 @@ function BandBadge({
   );
 }
 
-export default function ComparablesPage() {
+export default function ComparablesPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const axesQ = trpc.comparables.listAxes.useQuery(undefined, { enabled: isAuthenticated, staleTime: 300_000 });
@@ -165,7 +167,7 @@ export default function ComparablesPage() {
     : null;
 
   return (
-    <AppShell title="Comparables">
+    <Shell title="Comparables">
       <SEOHead
         title="Comparables · Stewardly"
         description="Competitive gap dashboard — how Stewardly compares to other advisor AI and wealth platforms."
@@ -675,6 +677,6 @@ import { DisclosureSection } from "@/components/DisclosureSection";
           )}
         </DialogContent>
       </Dialog>
-    </AppShell>
+    </Shell>
   );
 }

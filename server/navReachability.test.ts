@@ -170,6 +170,9 @@ const EXEMPT_ROUTES = new Set<string>([
   "/improvement",
   "/financial-protection-score",
   "/documents",
+  // Pass 111: Hub pages with internal sidebars
+  "/admin-legacy",
+  "/people",
 ]);
 
 describe("Navigation reachability", () => {

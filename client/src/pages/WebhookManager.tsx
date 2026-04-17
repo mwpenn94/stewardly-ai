@@ -13,7 +13,9 @@ import AppShell from "@/components/AppShell";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { trpc } from "@/lib/trpc";
 
-export default function WebhookManager() {
+export default function WebhookManager({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
@@ -35,7 +37,7 @@ export default function WebhookManager() {
   });
 
   return (
-    <AppShell title="Webhooks">
+    <Shell title="Webhooks">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="Webhooks" description="Manage webhook endpoints and delivery logs" />
 
@@ -180,6 +182,6 @@ export default function WebhookManager() {
         </CardContent>
       </Card>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

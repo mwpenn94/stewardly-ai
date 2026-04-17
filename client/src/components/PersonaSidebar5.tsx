@@ -1,11 +1,9 @@
 /**
- * PersonaSidebar5.tsx — 5-Layer Persona Navigation
+ * PersonaSidebar5.tsx — Simplified Hub Navigation
  *
- * Pass 110: Progressive disclosure with nested sub-groups.
- * Layers: Person → Client → Advisor → Manager → Steward
- * Sub-groups collapse related items (e.g., "Marketing" groups Email Campaigns,
- * Marketing Assets, Outreach Automation). This reduces visual overwhelm while
- * maintaining full capability access.
+ * Pass 111: Reduced from 60+ items across 5 persona layers to ~10 hub entries.
+ * Each hub (People, Intelligence, Admin) has its own internal sidebar page.
+ * The AppShell sidebar is now simple and delightful to navigate.
  *
  * Desktop: collapsible sidebar, Mobile: left-edge drawer (Sheet)
  */
@@ -14,19 +12,11 @@ import { useState, useMemo, useCallback } from "react";
 import { useDisclosure } from "@/contexts/DisclosureContext";
 import { useLocation } from "wouter";
 import {
-  MessageSquare, FileText, BarChart3, Volume2,
-  Fingerprint, ClipboardList, Star, Terminal,
-  Users, Briefcase, ShieldCheck, TrendingUp, Calculator,
-  UserCog, LineChart, FileCheck, Upload, CreditCard,
-  Cog, Brain, Activity, Lightbulb,
-  GraduationCap, Settings, HelpCircle,
-  Search, Plus, PanelLeftClose, PanelLeft,
-  ChevronDown, ChevronRight, Pin, Compass, Scale,
-  Zap, Package, GitBranch, RefreshCw, Link2, Plug,
-  Heart, DollarSign, Target, Shield, BookOpen,
-  Key, Webhook, Bot, Globe, Building2, GitMerge,
-  LayoutDashboard, UserPlus, HeartPulse, Sparkles,
-  Mail, Database, FolderOpen, Megaphone,
+  MessageSquare, FileText, Calculator, Users, TrendingUp,
+  GraduationCap, Settings, HelpCircle, Search, Plus,
+  PanelLeftClose, PanelLeft, ChevronDown, Pin,
+  Fingerprint, Cog, Briefcase, UserCog, Building2,
+  Sparkles, Package, Star,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -46,9 +36,7 @@ export interface NavItem {
 export interface NavSubGroup {
   label: string;
   icon: any;
-  /** Items in this sub-group */
   items: NavItem[];
-  /** Minimum disclosure level to show this sub-group */
   disclosureLevel?: 1 | 2 | 3 | 4;
 }
 
@@ -56,9 +44,7 @@ export interface PersonaLayer {
   key: string;
   label: string;
   minRole: Role;
-  /** Top-level items (always shown directly) */
   items: NavItem[];
-  /** Collapsible sub-groups that nest related items */
   subGroups?: NavSubGroup[];
 }
 
@@ -66,204 +52,55 @@ export const ROLE_LEVEL: Record<Role, number> = {
   guest: 0, user: 1, advisor: 2, manager: 3, admin: 4,
 };
 
+/**
+ * Simplified hub-based navigation.
+ * Each entry is a top-level page or hub with its own internal sidebar.
+ */
 export const PERSONA_LAYERS: PersonaLayer[] = [
   {
-    key: "person",
-    label: "People",
+    key: "core",
+    label: "Core",
     minRole: "guest",
     items: [
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
-      { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"] },
-    ],
-    subGroups: [
-      {
-        label: "Studio",
-        icon: Sparkles,
-        disclosureLevel: 2,
-        items: [
-          { label: "AI Studio", icon: Sparkles, path: "/ai", match: ["/ai"], disclosureLevel: 2 },
-          { label: "Code Chat", icon: Terminal, path: "/code-chat", match: ["/code-chat"], disclosureLevel: 4 },
-          { label: "Audio", icon: Volume2, path: "/settings/audio", match: ["/settings/audio"], disclosureLevel: 2 },
-        ],
-      },
-      {
-        label: "Progress",
-        icon: BarChart3,
-        disclosureLevel: 2,
-        items: [
-          { label: "My Progress", icon: BarChart3, path: "/proficiency", match: ["/proficiency"], disclosureLevel: 2 },
-        ],
-      },
+      { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"], disclosureLevel: 2 },
     ],
   },
   {
-    key: "client",
-    label: "Clients",
+    key: "wealth",
+    label: "Wealth",
     minRole: "user",
     items: [
-      { label: "My Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Wealth Engine", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan"], disclosureLevel: 2 },
+      { label: "Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
+      { label: "Wealth Engine", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan"] },
       { label: "Products", icon: Package, path: "/products", match: ["/products"], disclosureLevel: 2 },
-    ],
-    subGroups: [
-      {
-        label: "Intelligence",
-        icon: Star,
-        disclosureLevel: 2,
-        items: [
-          { label: "Insights", icon: Star, path: "/intelligence-hub", match: ["/intelligence-hub", "/insights"], disclosureLevel: 2 },
-          { label: "Suitability", icon: ClipboardList, path: "/settings/suitability", match: ["/settings/suitability", "/suitability"] },
-          { label: "Operations", icon: Zap, path: "/operations", match: ["/operations"], disclosureLevel: 2 },
-        ],
-      },
-      {
-        label: "Automation",
-        icon: GitBranch,
-        disclosureLevel: 3,
-        items: [
-          { label: "Workflows", icon: GitBranch, path: "/workflows", match: ["/workflows"], disclosureLevel: 3 },
-          { label: "Passive Actions", icon: RefreshCw, path: "/passive-actions", match: ["/passive-actions"], disclosureLevel: 3 },
-          { label: "Client Onboarding", icon: UserPlus, path: "/client-onboarding", match: ["/client-onboarding"], disclosureLevel: 2 },
-        ],
-      },
-      {
-        label: "Connect",
-        icon: Link2,
-        disclosureLevel: 2,
-        items: [
-          { label: "Integrations", icon: Link2, path: "/integrations", match: ["/integrations"], disclosureLevel: 2 },
-          { label: "Community", icon: Users, path: "/community", match: ["/community"], disclosureLevel: 3 },
-        ],
-      },
     ],
   },
   {
-    key: "advisor",
-    label: "Professionals",
+    key: "professional",
+    label: "Professional",
     minRole: "advisor",
     items: [
       { label: "My Work", icon: Briefcase, path: "/my-work", match: ["/my-work"] },
-      { label: "Advisory", icon: Package, path: "/advisory", match: ["/advisory", "/advisory-execution"] },
-      { label: "Clients", icon: Users, path: "/relationships", match: ["/relationships", "/portal", "/client-dashboard"] },
-    ],
-    subGroups: [
-      {
-        label: "Insurance",
-        icon: FileCheck,
-        disclosureLevel: 3,
-        items: [
-          { label: "Insurance & Apps", icon: FileCheck, path: "/insurance-applications", match: ["/insurance-applications", "/carrier-connector", "/suitability-panel"], disclosureLevel: 3 },
-          { label: "Lead Pipeline", icon: Target, path: "/leads", match: ["/leads"], disclosureLevel: 3 },
-          { label: "Compliance", icon: ShieldCheck, path: "/compliance-audit", match: ["/compliance-audit"], disclosureLevel: 3 },
-        ],
-      },
-      {
-        label: "Marketing",
-        icon: Megaphone,
-        disclosureLevel: 3,
-        items: [
-          { label: "Email Campaigns", icon: Mail, path: "/email-campaigns", match: ["/email-campaigns"], disclosureLevel: 3 },
-          { label: "Marketing Assets", icon: FolderOpen, path: "/marketing-assets", match: ["/marketing-assets"], disclosureLevel: 3 },
-          { label: "Outreach Automation", icon: Zap, path: "/outreach-automation", match: ["/outreach-automation"], disclosureLevel: 3 },
-        ],
-      },
-      {
-        label: "Data & CRM",
-        icon: Database,
-        disclosureLevel: 3,
-        items: [
-          { label: "CRM Sync", icon: RefreshCw, path: "/crm-sync", match: ["/crm-sync"], disclosureLevel: 3 },
-          { label: "Import Data", icon: Upload, path: "/import", match: ["/import"], disclosureLevel: 3 },
-          { label: "Data Pipelines", icon: Database, path: "/data-pipelines", match: ["/data-pipelines"], disclosureLevel: 3 },
-        ],
-      },
-      {
-        label: "Analytics",
-        icon: TrendingUp,
-        disclosureLevel: 2,
-        items: [
-          { label: "Market Data", icon: TrendingUp, path: "/market-data", match: ["/market-data"], disclosureLevel: 2 },
-          { label: "Product Intelligence", icon: Lightbulb, path: "/product-intelligence", match: ["/product-intelligence"], disclosureLevel: 3 },
-          { label: "Rebalancing", icon: Scale, path: "/rebalancing", match: ["/rebalancing"], disclosureLevel: 3 },
-        ],
-      },
-      {
-        label: "Integrations",
-        icon: Plug,
-        disclosureLevel: 3,
-        items: [
-          { label: "Dynamic Integrations", icon: Plug, path: "/dynamic-integrations", match: ["/dynamic-integrations"], disclosureLevel: 4 },
-          { label: "Integration Health", icon: HeartPulse, path: "/integration-health", match: ["/integration-health"], disclosureLevel: 3 },
-        ],
-      },
+      { label: "People", icon: Users, path: "/people/clients", match: ["/people", "/relationships", "/leads", "/crm-sync", "/compliance-audit", "/compliance-copilot", "/email-campaigns", "/marketing-assets", "/outreach-automation", "/command-center", "/client-onboarding", "/annual-review", "/business-exit", "/premium-finance-rates", "/portal", "/client-dashboard"] },
+      { label: "Intelligence", icon: TrendingUp, path: "/intelligence-hub", match: ["/intelligence-hub", "/intelligence", "/market-data", "/product-intelligence", "/data-pipelines", "/enrichment-admin", "/portal-analytics", "/rebalancing", "/insights", "/operations", "/comparables"] },
     ],
   },
   {
-    key: "manager",
-    label: "Leaders",
+    key: "leadership",
+    label: "Leadership",
     minRole: "manager",
     items: [
-      { label: "Team Dashboard", icon: UserCog, path: "/manager", match: ["/manager"] },
-      { label: "Organizations", icon: Building2, path: "/organizations", match: ["/organizations"] },
+      { label: "Team", icon: UserCog, path: "/manager", match: ["/manager"] },
+      { label: "Organizations", icon: Building2, path: "/organizations", match: ["/organizations", "/org-branding"] },
     ],
   },
   {
-    key: "steward",
-    label: "Stewards",
+    key: "platform",
+    label: "Platform",
     minRole: "admin",
     items: [
-      { label: "Platform Admin", icon: Cog, path: "/admin", match: ["/admin"], disclosureLevel: 4 },
-    ],
-    subGroups: [
-      {
-        label: "AI & Agents",
-        icon: Bot,
-        disclosureLevel: 4,
-        items: [
-          { label: "AI Agents", icon: Bot, path: "/agents", match: ["/agents"], disclosureLevel: 4 },
-          { label: "Consensus", icon: GitMerge, path: "/consensus", match: ["/consensus"], disclosureLevel: 4 },
-          { label: "AI Intelligence", icon: Brain, path: "/admin/intelligence", match: ["/admin/intelligence"], disclosureLevel: 4 },
-        ],
-      },
-      {
-        label: "Platform Ops",
-        icon: Activity,
-        disclosureLevel: 4,
-        items: [
-          { label: "Improvement", icon: Zap, path: "/admin/improvement", match: ["/admin/improvement"], disclosureLevel: 4 },
-          { label: "Improvement Engine", icon: Activity, path: "/admin/improvement-engine", match: ["/admin/improvement-engine", "/improvement"], disclosureLevel: 4 },
-          { label: "System Health", icon: Activity, path: "/admin/system-health", match: ["/admin/system-health"], disclosureLevel: 4 },
-          { label: "Data Freshness", icon: Activity, path: "/admin/data-freshness", match: ["/admin/data-freshness"], disclosureLevel: 4 },
-          { label: "BCP Dashboard", icon: ShieldCheck, path: "/admin/bcp", match: ["/admin/bcp"], disclosureLevel: 4 },
-          { label: "Fairness Audit", icon: Scale, path: "/admin/fairness", match: ["/admin/fairness"], disclosureLevel: 4 },
-        ],
-      },
-      {
-        label: "Config",
-        icon: Key,
-        disclosureLevel: 4,
-        items: [
-          { label: "Rate Management", icon: TrendingUp, path: "/admin/rate-management", match: ["/admin/rate-management"], disclosureLevel: 4 },
-          { label: "Billing", icon: CreditCard, path: "/admin/billing", match: ["/admin/billing"], disclosureLevel: 4 },
-          { label: "API Keys", icon: Key, path: "/admin/api-keys", match: ["/admin/api-keys"], disclosureLevel: 4 },
-          { label: "Webhooks", icon: Webhook, path: "/admin/webhooks", match: ["/admin/webhooks"], disclosureLevel: 4 },
-          { label: "Team", icon: Users, path: "/admin/team", match: ["/admin/team"], disclosureLevel: 4 },
-          { label: "Lead Sources", icon: Target, path: "/admin/lead-sources", match: ["/admin/lead-sources"], disclosureLevel: 4 },
-        ],
-      },
-      {
-        label: "Knowledge",
-        icon: BookOpen,
-        disclosureLevel: 3,
-        items: [
-          { label: "Comparables", icon: Compass, path: "/comparables", match: ["/comparables"], disclosureLevel: 3 },
-          { label: "Platform Reports", icon: FileText, path: "/admin/platform-reports", match: ["/admin/platform-reports"], disclosureLevel: 4 },
-          { label: "Knowledge Base", icon: BookOpen, path: "/admin/knowledge", match: ["/admin/knowledge"], disclosureLevel: 4 },
-          { label: "Platform Guide", icon: BookOpen, path: "/admin/guide", match: ["/admin/guide"], disclosureLevel: 4 },
-          { label: "API Docs", icon: BookOpen, path: "/api-docs", match: ["/api-docs"], disclosureLevel: 3 },
-          { label: "Audit Trail", icon: Shield, path: "/admin/audit-trail", match: ["/admin/audit-trail"], disclosureLevel: 4 },
-        ],
-      },
+      { label: "Admin", icon: Cog, path: "/admin", match: ["/admin", "/agents", "/consensus", "/admin/intelligence", "/admin/improvement", "/admin/improvement-engine", "/admin/system-health", "/admin/data-freshness", "/admin/bcp", "/admin/fairness", "/admin/rate-management", "/admin/billing", "/admin/api-keys", "/admin/webhooks", "/admin/team", "/admin/lead-sources", "/admin/platform-reports", "/admin/knowledge", "/admin/guide", "/admin/audit-trail", "/admin/integrations"] },
     ],
   },
 ];
@@ -313,32 +150,15 @@ interface SidebarInnerProps {
   onSearch: () => void;
   conversations: Conversation[];
   onNavigate?: () => void;
-  /** True when rendered inside the mobile Sheet drawer */
   isMobile?: boolean;
 }
 
 function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conversations, onNavigate, isMobile = false }: SidebarInnerProps) {
   const [location, navigate] = useLocation();
   const [showConvos, setShowConvos] = useState(true);
-  const [collapsedLayers, setCollapsedLayers] = useState<Record<string, boolean>>({});
-  // Pass 110: Track which sub-groups are expanded
-  const [expandedSubGroups, setExpandedSubGroups] = useState<Record<string, boolean>>({});
   const roleLevel = ROLE_LEVEL[role];
   const convoGroups = useMemo(() => groupConvos(conversations), [conversations]);
   const { level: disclosureLevel } = useDisclosure();
-
-  // Collect all items (including sub-group items) for active route detection
-  const allItemsFlat = useMemo(() => {
-    const items: NavItem[] = [];
-    for (const layer of PERSONA_LAYERS) {
-      items.push(...layer.items);
-      for (const sg of layer.subGroups ?? []) {
-        items.push(...sg.items);
-      }
-    }
-    items.push(LEARN_ITEM);
-    return items;
-  }, []);
 
   // Filter layers by role AND disclosure level
   const visibleLayers = useMemo(() => {
@@ -347,81 +167,14 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
       .map(l => ({
         ...l,
         items: l.items.filter(item => (item.disclosureLevel ?? 1) <= disclosureLevel),
-        subGroups: (l.subGroups ?? [])
-          .filter(sg => (sg.disclosureLevel ?? 1) <= disclosureLevel)
-          .map(sg => ({
-            ...sg,
-            items: sg.items.filter(item => (item.disclosureLevel ?? 1) <= disclosureLevel),
-          }))
-          .filter(sg => sg.items.length > 0),
       }))
-      .filter(l => l.items.length > 0 || (l.subGroups?.length ?? 0) > 0);
+      .filter(l => l.items.length > 0);
   }, [roleLevel, disclosureLevel]);
-
-  const toggleLayer = useCallback((key: string) => {
-    setCollapsedLayers(prev => ({ ...prev, [key]: !prev[key] }));
-  }, []);
-
-  const toggleSubGroup = useCallback((key: string) => {
-    setExpandedSubGroups(prev => ({ ...prev, [key]: !prev[key] }));
-  }, []);
-
-  // Auto-expand the layer containing the active route
-  const activeLayerKey = useMemo(() => {
-    for (const layer of visibleLayers) {
-      for (const item of layer.items) {
-        if (item.match.some(p => location === p || location.startsWith(p + "/"))) {
-          return layer.key;
-        }
-      }
-      for (const sg of layer.subGroups ?? []) {
-        for (const item of sg.items) {
-          if (item.match.some(p => location === p || location.startsWith(p + "/"))) {
-            return layer.key;
-          }
-        }
-      }
-    }
-    return null;
-  }, [visibleLayers, location]);
-
-  // Auto-detect which sub-group contains the active route
-  const activeSubGroupKey = useMemo(() => {
-    for (const layer of visibleLayers) {
-      for (const sg of layer.subGroups ?? []) {
-        for (const item of sg.items) {
-          if (item.match.some(p => location === p || location.startsWith(p + "/"))) {
-            return `${layer.key}:${sg.label}`;
-          }
-        }
-      }
-    }
-    return null;
-  }, [visibleLayers, location]);
-
-  const isLayerCollapsed = useCallback((layer: PersonaLayer & { subGroups?: NavSubGroup[] }) => {
-    if (collapsed) return false;
-    if (layer.key === "person") return false;
-    if (layer.key === activeLayerKey) return false;
-    if (collapsedLayers[layer.key] !== undefined) return collapsedLayers[layer.key];
-    const totalItems = layer.items.length + (layer.subGroups ?? []).reduce((s, sg) => s + sg.items.length, 0);
-    return totalItems >= 8 && visibleLayers.length >= 3;
-  }, [collapsed, activeLayerKey, collapsedLayers, visibleLayers]);
-
-  const isSubGroupExpanded = useCallback((layerKey: string, sgLabel: string) => {
-    const key = `${layerKey}:${sgLabel}`;
-    // Auto-expand if it contains the active route
-    if (key === activeSubGroupKey) return true;
-    // Explicit toggle
-    if (expandedSubGroups[key] !== undefined) return expandedSubGroups[key];
-    // Default: collapsed
-    return false;
-  }, [activeSubGroupKey, expandedSubGroups]);
 
   const isActive = (item: NavItem) =>
     item.match.some(p => location === p || location.startsWith(p + "/"));
 
-  const NavBtn = ({ item, indent = false }: { item: NavItem; indent?: boolean }) => {
+  const NavBtn = ({ item }: { item: NavItem }) => {
     const active = isActive(item);
     return (
       <button type="button"
@@ -429,7 +182,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         aria-current={active ? "page" : undefined}
         aria-label={item.label}
         className={`w-full flex items-center gap-2.5 rounded-lg cursor-pointer transition-colors leading-tight focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
-          ${indent && !collapsed ? "pl-7 pr-2.5" : "px-2.5"}
+          px-2.5
           ${isMobile ? "py-[10px] text-[14px] min-h-[44px]" : "py-[7px] text-[13px]"}
           ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}
           ${collapsed ? "justify-center px-1.5" : ""}`}
@@ -438,52 +191,6 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         <item.icon className={`w-[17px] h-[17px] flex-none ${active ? "text-primary" : ""}`} />
         {!collapsed && <span className="truncate">{item.label}</span>}
       </button>
-    );
-  };
-
-  const SubGroupBtn = ({ layerKey, sg }: { layerKey: string; sg: NavSubGroup }) => {
-    const expanded = isSubGroupExpanded(layerKey, sg.label);
-    const hasActiveChild = sg.items.some(isActive);
-
-    if (collapsed) {
-      // In collapsed mode, show the sub-group icon as a single item
-      // clicking navigates to the first item in the group
-      return (
-        <button type="button"
-          onClick={() => { navigate(sg.items[0].path); onNavigate?.(); }}
-          aria-label={sg.label}
-          title={sg.label}
-          className={`w-full flex items-center justify-center px-1.5 py-[7px] rounded-lg cursor-pointer transition-colors
-            ${hasActiveChild ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}`}
-        >
-          <sg.icon className={`w-[17px] h-[17px] ${hasActiveChild ? "text-primary" : ""}`} />
-        </button>
-      );
-    }
-
-    return (
-      <div>
-        <button type="button"
-          onClick={() => toggleSubGroup(`${layerKey}:${sg.label}`)}
-          aria-expanded={expanded}
-          aria-label={`${sg.label} group`}
-          className={`w-full flex items-center gap-2.5 px-2.5 rounded-lg cursor-pointer transition-colors
-            ${isMobile ? "py-[9px] text-[13px] min-h-[40px]" : "py-[6px] text-[12px]"}
-            ${hasActiveChild ? "text-primary/80" : "text-muted-foreground/70 hover:text-foreground hover:bg-card/30"}`}
-        >
-          <sg.icon className={`w-[15px] h-[15px] flex-none ${hasActiveChild ? "text-primary/70" : "text-muted-foreground/50"}`} />
-          <span className="truncate font-medium">{sg.label}</span>
-          <ChevronRight className={`w-3 h-3 ml-auto flex-none transition-transform duration-200 ${expanded ? "rotate-90" : ""}`} />
-          {!expanded && hasActiveChild && (
-            <span className="w-1.5 h-1.5 rounded-full bg-primary flex-none" />
-          )}
-        </button>
-        {expanded && (
-          <div className="space-y-[1px] mt-[1px]">
-            {sg.items.map(item => <NavBtn key={item.path} item={item} indent />)}
-          </div>
-        )}
-      </div>
     );
   };
 
@@ -523,45 +230,14 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
       )}
 
       <nav aria-label="Main navigation" role="navigation" className="flex-1 overflow-y-auto px-1.5 pb-2">
-        {visibleLayers.map(layer => {
-          const layerCollapsed = isLayerCollapsed(layer);
-          const totalItems = layer.items.length + (layer.subGroups ?? []).length;
-          const canCollapse = !collapsed && layer.key !== "person" && totalItems >= 2;
-          return (
-            <div key={layer.key}>
-              {collapsed ? (
-                <Label>{layer.label}</Label>
-              ) : canCollapse ? (
-                <button type="button"
-                  onClick={() => toggleLayer(layer.key)}
-                  className="w-full flex items-center justify-between px-2.5 pt-3.5 pb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] select-none cursor-pointer hover:text-muted-foreground transition-colors"
-                  aria-expanded={!layerCollapsed}
-                  aria-label={`${layer.label} section`}
-                >
-                  <span>{layer.label}</span>
-                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${layerCollapsed ? "-rotate-90" : ""}`} />
-                </button>
-              ) : (
-                <Label>{layer.label}</Label>
-              )}
-              {!layerCollapsed && (
-                <div className="space-y-[1px]">
-                  {/* Top-level items first */}
-                  {layer.items.map(item => <NavBtn key={item.path} item={item} />)}
-                  {/* Then sub-groups */}
-                  {(layer.subGroups ?? []).map(sg => (
-                    <SubGroupBtn key={sg.label} layerKey={layer.key} sg={sg} />
-                  ))}
-                </div>
-              )}
-              {layerCollapsed && (
-                <div className="px-2.5 py-1 text-[11px] text-muted-foreground/30 select-none">
-                  {layer.items.length + (layer.subGroups ?? []).reduce((s, sg) => s + sg.items.length, 0)} items
-                </div>
-              )}
+        {visibleLayers.map(layer => (
+          <div key={layer.key}>
+            <Label>{layer.label}</Label>
+            <div className="space-y-[1px]">
+              {layer.items.map(item => <NavBtn key={item.path} item={item} />)}
             </div>
-          );
-        })}
+          </div>
+        ))}
 
         {roleLevel >= ROLE_LEVEL.user && (
           <div className="mt-2 pt-2 border-t border-border/40">
@@ -602,7 +278,6 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         )}
       </nav>
 
-      {/* Footer items with mobile-friendly touch targets */}
       <div className="px-1.5 py-1.5 border-t border-border/40 flex-none space-y-[1px]">
         {FOOTER_ITEMS.map(item => <NavBtn key={item.path} item={item} />)}
       </div>

@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Scale, Flame, Search, ChevronDown, AlertTriangle } from "lucide-react";
+import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Scale, Flame, Search, ChevronDown, AlertTriangle, Layers, HelpCircle, Users, RotateCcw } from "lucide-react";
 import { Link } from "wouter";
 import {
   loadStreakFromStorage,
@@ -357,6 +357,51 @@ export default function LearningHome() {
                   buildHref={(slug) => `/learning/case/${slug}`}
                 />
               )}
+              <Link href="/learning/connections">
+                <Card className="card-lift cursor-pointer h-full">
+                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                    <Brain className="h-6 w-6 text-primary" />
+                    <div className="text-sm font-medium">Concept Map</div>
+                    <div className="text-[10px] text-muted-foreground">Visual concept graph</div>
+                  </CardContent>
+                </Card>
+              </Link>
+              {tracks.length > 0 && (
+                <ToolCardWithTrackPicker
+                  icon={<Layers className="h-6 w-6 text-primary" />}
+                  title="Flashcards"
+                  description="Spaced repetition study cards"
+                  tracks={tracks}
+                  buildHref={(slug) => `/learning/tracks/${slug}/study`}
+                />
+              )}
+              {tracks.length > 0 && (
+                <ToolCardWithTrackPicker
+                  icon={<HelpCircle className="h-6 w-6 text-primary" />}
+                  title="Quiz"
+                  description="Test your knowledge per track"
+                  tracks={tracks}
+                  buildHref={(slug) => `/learning/tracks/${slug}/quiz`}
+                />
+              )}
+              <Link href="/learning/review">
+                <Card className="card-lift cursor-pointer h-full">
+                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                    <RotateCcw className="h-6 w-6 text-primary" />
+                    <div className="text-sm font-medium">Due Review</div>
+                    <div className="text-[10px] text-muted-foreground">Spaced repetition items due</div>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link href="/learning/study-buddy">
+                <Card className="card-lift cursor-pointer h-full">
+                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                    <Users className="h-6 w-6 text-primary" />
+                    <div className="text-sm font-medium">Study Buddy</div>
+                    <div className="text-[10px] text-muted-foreground">AI-powered study partner</div>
+                  </CardContent>
+                </Card>
+              </Link>
               <Link href="/learning/connections">
                 <Card className="card-lift cursor-pointer h-full">
                   <CardContent className="p-4 flex flex-col items-center text-center gap-2">

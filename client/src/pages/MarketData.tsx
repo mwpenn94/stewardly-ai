@@ -28,7 +28,9 @@ const WATCHLIST = [
 
 const watchlistSymbols = WATCHLIST.map(w => w.symbol);
 
-export default function MarketData() {
+export default function MarketData({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [searchSymbol, setSearchSymbol] = useState("");
@@ -47,7 +49,7 @@ export default function MarketData() {
   );
 
   if (authLoading) {
-    return <AppShell title="Market Data"><div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div></AppShell>;
+    return <Shell title="Market Data"><div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div></Shell>;
       <SEOHead title="Market Data" description="Real-time market data and financial quotes" />
   }
 
@@ -68,7 +70,7 @@ export default function MarketData() {
   };
 
   return (
-    <AppShell title="Market Data">
+    <Shell title="Market Data">
     <div className="min-h-screen">
       <header className="border-b border-border px-4 py-3 flex items-center gap-3 relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
@@ -223,6 +225,6 @@ export default function MarketData() {
       </div>
       </SectionErrorBoundary>
     </div>
-    </AppShell>
+    </Shell>
   );
 }

@@ -47,7 +47,7 @@ const EVENT_ICONS: Record<string, React.ReactNode> = {
   login: <LogIn className="h-4 w-4 text-muted-foreground" />,
 };
 
-export default function PortalAnalytics() {
+export default function PortalAnalytics({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const [tab, setTab] = useState("overview");
   const utils = trpc.useUtils();

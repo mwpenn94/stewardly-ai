@@ -1,13 +1,21 @@
 /**
- * Hub Pages + Navigation Consolidation Tests (C22-C27)
+ * Hub Pages + Navigation Consolidation Tests (C22-C27 + Pass 111)
  * - Operations Hub
  * - Intelligence Hub
  * - Advisory Hub
  * - Relationships Hub
  * - Sidebar Navigation
  * - Route Redirects
+ * - Pass 111: PeopleHub, IntelligenceHubV2, AdminHubV2 structure tests
  */
 import { describe, expect, it } from "vitest";
+import * as fs from "fs";
+import * as path from "path";
+
+const ROOT = path.resolve(__dirname, "..");
+function readFile(rel: string): string {
+  return fs.readFileSync(path.join(ROOT, rel), "utf-8");
+}
 
 // ─── C22: Operations Hub ──────────────────────────────────────────
 describe("Operations Hub", () => {
@@ -226,5 +234,136 @@ describe("Route Redirects", () => {
       const redirect = { from: "/professionals", to: "/relationships" };
       expect(redirect.to).toBe("/relationships");
     });
+  });
+});
+
+// ─── Pass 111: Hub Pages with Internal Sidebars ───────────────────
+describe("Pass 111: Hub pages structure", () => {
+  const peopleHub = readFile("client/src/pages/PeopleHub.tsx");
+  const intelligenceHub = readFile("client/src/pages/IntelligenceHubV2.tsx");
+  const adminHub = readFile("client/src/pages/AdminHubV2.tsx");
+
+  describe("PeopleHub", () => {
+    it("exports a default component", () => {
+      expect(peopleHub).toContain("export default function PeopleHub");
+    });
+
+    it("uses wouter useRoute for tab routing", () => {
+      expect(peopleHub).toMatch(/useRoute\(["']\/people\/:tab["']\)/);
+    });
+
+    it("includes key sub-pages: Clients, Leads, Compliance", () => {
+      expect(peopleHub).toContain("RelationshipsHub");
+      expect(peopleHub).toContain("LeadPipeline");
+      expect(peopleHub).toContain("ComplianceAudit");
+    });
+
+    it("passes embedded prop to sub-pages", () => {
+      expect(peopleHub).toContain("embedded");
+    });
+
+    it("has a mobile nav toggle", () => {
+      expect(peopleHub).toContain("mobileNavOpen");
+    });
+  });
+
+  describe("IntelligenceHubV2", () => {
+    it("exports a default component", () => {
+      expect(intelligenceHub).toContain("export default function IntelligenceHubV2");
+    });
+
+    it("uses wouter useRoute for tab routing at /intelligence-hub/:tab", () => {
+      expect(intelligenceHub).toMatch(/useRoute\(["']\/intelligence-hub\/:tab["']\)/);
+    });
+
+    it("includes key sub-pages: MarketData, Operations, Rebalancing", () => {
+      expect(intelligenceHub).toContain("MarketData");
+      expect(intelligenceHub).toContain("OperationsHub");
+      expect(intelligenceHub).toContain("Rebalancing");
+    });
+
+    it("navigates to /intelligence-hub/ prefix", () => {
+      expect(intelligenceHub).toContain("/intelligence-hub/");
+    });
+  });
+
+  describe("AdminHubV2", () => {
+    it("exports a default component", () => {
+      expect(adminHub).toContain("export default function AdminHubV2");
+    });
+
+    it("uses wouter useRoute for tab routing at /admin/:tab", () => {
+      expect(adminHub).toMatch(/useRoute\(["']\/admin\/:tab["']\)/);
+    });
+
+    it("includes key admin sub-pages: SystemHealth, Billing, Team", () => {
+      expect(adminHub).toContain("AdminSystemHealth");
+      expect(adminHub).toContain("BillingPage");
+      expect(adminHub).toContain("TeamManagement");
+    });
+
+    it("groups tabs into categories", () => {
+      expect(adminHub).toContain("group:");
+    });
+
+    it("has role-based access control", () => {
+      expect(adminHub).toContain("useAuth");
+    });
+  });
+});
+
+describe("Pass 111: Sidebar simplification", () => {
+  const sidebar = readFile("client/src/components/PersonaSidebar5.tsx");
+
+  it("has simplified PERSONA_LAYERS", () => {
+    expect(sidebar).toContain("PERSONA_LAYERS");
+  });
+
+  it("has 5 persona layers (core, wealth, professional, leadership, platform)", () => {
+    const layerKeys = sidebar.match(/key:\s*["'](\w+)["']/g) || [];
+    expect(layerKeys.length).toBe(5);
+  });
+
+  it("People hub links to /people/clients", () => {
+    expect(sidebar).toContain('path: "/people/clients"');
+  });
+
+  it("Intelligence hub links to /intelligence-hub", () => {
+    expect(sidebar).toContain('path: "/intelligence-hub"');
+  });
+
+  it("Admin hub links to /admin", () => {
+    expect(sidebar).toContain('path: "/admin"');
+  });
+
+  it("has Learn item separate from layers", () => {
+    expect(sidebar).toContain("LEARN_ITEM");
+  });
+
+  it("has footer items (Settings, Help)", () => {
+    expect(sidebar).toContain("FOOTER_ITEMS");
+  });
+});
+
+describe("Pass 111: App.tsx route wiring", () => {
+  const appTsx = readFile("client/src/App.tsx");
+
+  it("has PeopleHub routes", () => {
+    expect(appTsx).toContain('path="/people"');
+    expect(appTsx).toContain('path="/people/:tab"');
+  });
+
+  it("has IntelligenceHubV2 routes", () => {
+    expect(appTsx).toContain("IntelligenceHubV2");
+    expect(appTsx).toContain('path="/intelligence-hub/:tab"');
+  });
+
+  it("has AdminHubV2 routes", () => {
+    expect(appTsx).toContain("AdminHubV2");
+    expect(appTsx).toContain('path="/admin/:tab"');
+  });
+
+  it("keeps legacy admin route", () => {
+    expect(appTsx).toContain('path="/admin-legacy"');
   });
 });

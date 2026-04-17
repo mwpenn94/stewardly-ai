@@ -74,7 +74,9 @@ function scoreFor(l: any): number {
   return Math.round(n * 100);
 }
 
-export default function LeadPipeline() {
+export default function LeadPipeline({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -149,7 +151,7 @@ export default function LeadPipeline() {
   }, [filtered]);
 
   return (
-    <AppShell title="Lead Pipeline">
+    <Shell title="Lead Pipeline">
     <div className="relative container py-8 space-y-6">
       {/* Warm gold radial glow */}
       <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
@@ -362,6 +364,6 @@ export default function LeadPipeline() {
         </div>
       )}
     </div>
-    </AppShell>
+    </Shell>
   );
 }

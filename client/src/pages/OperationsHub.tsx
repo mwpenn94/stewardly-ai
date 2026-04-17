@@ -27,7 +27,9 @@ import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { DisclosureSection } from "@/components/DisclosureSection";
 
-export default function OperationsHub() {
+export default function OperationsHub({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { isAuthenticated } = useAuth();
 
   const utils = trpc.useUtils();
@@ -43,7 +45,7 @@ export default function OperationsHub() {
   const complianceFlags = (complianceStats.data as any)?.flaggedCount ?? 0;
 
   return (
-    <AppShell title="Operations">
+    <Shell title="Operations">
       <SEOHead title="Operations" description="Active tasks, agents, compliance, and audit history" />
       <div className="flex justify-end px-4 pt-2"><ShareButton contentType="operations" contentId="operations-report" contentTitle="Operations Report" variant="ghost" size="sm" /></div>
     <div className="min-h-screen">
@@ -128,7 +130,7 @@ export default function OperationsHub() {
         </Tabs>
       </div>
     </div>
-    </AppShell>
+    </Shell>
   );
 }
 

@@ -26,7 +26,7 @@ const DISCLOSURE_LABELS: Record<number, string> = {
   4: "Expert",
 };
 
-export default function AdminFeaturePermissions() {
+export default function AdminFeaturePermissions({ embedded = false }: { embedded?: boolean } = {}) {
 
   const [search, setSearch] = useState("");
   const [filterLayer, setFilterLayer] = useState("all");

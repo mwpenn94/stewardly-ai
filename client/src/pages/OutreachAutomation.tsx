@@ -87,7 +87,9 @@ const statusConfig: Record<OutreachWorkflow["status"], { label: string; color: s
   draft: { label: "Draft", color: "bg-muted text-muted-foreground", icon: AlertTriangle },
 };
 
-export default function OutreachAutomation() {
+export default function OutreachAutomation({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const [workflows, setWorkflows] = useState<OutreachWorkflow[]>(INITIAL_WORKFLOWS);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -181,7 +183,7 @@ export default function OutreachAutomation() {
   };
 
   return (
-    <AppShell>
+    <Shell>
       <SEOHead title="Outreach Automation" description="Visual workflow automation for marketing sequences" />
       <div className="container max-w-6xl py-6 space-y-6">
         {/* Header */}
@@ -364,6 +366,6 @@ export default function OutreachAutomation() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

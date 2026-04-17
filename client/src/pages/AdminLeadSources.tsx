@@ -17,7 +17,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
-export default function AdminLeadSources() {
+export default function AdminLeadSources({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
+
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const sourcePerf = trpc.leadPipeline.sourcePerformance.useQuery(undefined, {
@@ -25,10 +27,10 @@ export default function AdminLeadSources() {
   });
 
   if (authLoading || sourcePerf.isLoading) {
-    return <AppShell title="Lead Sources"><SEOHead title="Lead Sources" description="Lead source ROI analytics" /><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></AppShell>;
+    return <Shell title="Lead Sources"><SEOHead title="Lead Sources" description="Lead source ROI analytics" /><div className="flex items-center justify-center h-64"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div></Shell>;
   }
   if (!user || user.role !== "admin") {
-    return <AppShell title="Lead Sources"><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></AppShell>;
+    return <Shell title="Lead Sources"><div className="flex flex-col items-center justify-center h-64 gap-4"><XCircle className="w-12 h-12 text-red-500" /><p className="text-muted-foreground">Admin access required</p></div></Shell>;
   }
 
   const sources = useMemo(() => {
@@ -50,7 +52,7 @@ export default function AdminLeadSources() {
   const totalRevenue = sources.reduce((s, src) => s + src.revenue, 0);
 
   return (
-    <AppShell title="Lead Sources">
+    <Shell title="Lead Sources">
       <div className="container max-w-6xl py-8 space-y-6">
         <SEOHead title="Lead Sources" description="Lead source ROI analytics" />
         <div>
@@ -153,6 +155,6 @@ export default function AdminLeadSources() {
           </>
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }
