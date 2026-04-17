@@ -310,6 +310,9 @@ export default function Calculators() {
   const [ppAffAvgProd, setPpAffAvgProd] = useState(() => ({ ...ROLE_DEFAULTS.new.defaultAffProd }));
   const [ppTeamAvgGDC, setPpTeamAvgGDC] = useState(100000);
   const [ppEnabledChannels, setPpEnabledChannels] = useState<{ gdc: boolean; aum: boolean; affiliate: boolean; override: boolean; channel: boolean }>({ gdc: true, aum: true, affiliate: true, override: true, channel: true });
+  /* CAC & COGS Overrides */
+  const [ppCacOverrides, setPpCacOverrides] = useState<Partial<Record<string, number>>>({});
+  const [ppCogsOverrides, setPpCogsOverrides] = useState<Partial<Record<string, number>>>({});
   /* Goal Tracker */
   const [ppGoalIncome, setPpGoalIncome] = useState(150000);
   const [ppGoalAUM, setPpGoalAUM] = useState(5000000);
@@ -352,6 +355,7 @@ export default function Calculators() {
     ppGoalIncome, ppGoalAUM, ppGoalRecruits, ppGoalGDC, ppGoalCases,
     ppSeasonProfile, ppCustomSeason, ppSeasonGrowthRate, ppSeasonHorizon, ppSeasonRampMonths,
     ppTargetIncome, ppIncomeSplits, ppAffCounts, ppAffAvgProd, ppTeamAvgGDC, ppEnabledChannels,
+    ppCacOverrides, ppCogsOverrides,
   }), [
     clientName, age, spouseAge, dep, income, spouseIncome, nw, savings, retirement401k,
     mortgage, debt, existIns, filing, stateRate, riskTolerance, isBiz,
@@ -377,6 +381,7 @@ export default function Calculators() {
     ppGoalIncome, ppGoalAUM, ppGoalRecruits, ppGoalGDC, ppGoalCases,
     ppSeasonProfile, ppCustomSeason, ppSeasonGrowthRate, ppSeasonHorizon, ppSeasonRampMonths,
     ppTargetIncome, ppIncomeSplits, ppAffCounts, ppAffAvgProd, ppTeamAvgGDC, ppEnabledChannels,
+    ppCacOverrides, ppCogsOverrides,
   ]);
 
   /* Auto-save to localStorage with 2s debounce */
@@ -573,6 +578,8 @@ export default function Calculators() {
     if (d.ppAffAvgProd !== undefined) setPpAffAvgProd(d.ppAffAvgProd);
     if (d.ppTeamAvgGDC !== undefined) setPpTeamAvgGDC(d.ppTeamAvgGDC);
     if (d.ppEnabledChannels !== undefined) setPpEnabledChannels(d.ppEnabledChannels);
+    if (d.ppCacOverrides !== undefined) setPpCacOverrides(d.ppCacOverrides);
+    if (d.ppCogsOverrides !== undefined) setPpCogsOverrides(d.ppCogsOverrides);
   };
 
   /* Auto-restore from localStorage on mount */
@@ -1004,6 +1011,8 @@ export default function Calculators() {
     affAvgProd: ppAffAvgProd, setAffAvgProd: setPpAffAvgProd,
     teamAvgGDC: ppTeamAvgGDC, setTeamAvgGDC: setPpTeamAvgGDC,
     enabledChannels: ppEnabledChannels, setEnabledChannels: setPpEnabledChannels,
+    cacOverrides: ppCacOverrides, setCacOverrides: setPpCacOverrides,
+    cogsOverrides: ppCogsOverrides, setCogsOverrides: setPpCogsOverrides,
     /* Goal Tracker */
     goalIncome: ppGoalIncome, setGoalIncome: setPpGoalIncome,
     goalAUM: ppGoalAUM, setGoalAUM: setPpGoalAUM,

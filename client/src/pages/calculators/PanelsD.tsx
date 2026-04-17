@@ -21,7 +21,7 @@ import {
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
-  calcUnifiedIncomePlan, calcChannelEconomics,
+  calcUnifiedIncomePlan, calcChannelEconomics, AFF_RATES, CHANNEL_BENCHMARKS,
   type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics,
 } from './practiceEngine';
 import { KPI, RefTip } from './shared';
@@ -73,6 +73,9 @@ export interface PracticeProps {
   affAvgProd: { a: number; b: number; c: number; d: number };
   setAffAvgProd: (v: { a: number; b: number; c: number; d: number }) => void;
   teamAvgGDC: number; setTeamAvgGDC: (v: number) => void;
+  /* User-editable CAC & COGS overrides per channel */
+  cacOverrides: Partial<Record<string, number>>; setCacOverrides: (v: Partial<Record<string, number>>) => void;
+  cogsOverrides: Partial<Record<string, number>>; setCogsOverrides: (v: Partial<Record<string, number>>) => void;
   /* Goal Tracker inputs */
   goalIncome: number; setGoalIncome: (v: number) => void;
   goalAUM: number; setGoalAUM: (v: number) => void;
@@ -197,16 +200,120 @@ export function MyPlanPanel(p: PracticeProps) {
     avgGDC, p.funnelRates, p.months, p.aumExisting, p.aumNew, p.aumTrailPct,
     p.affCounts, p.affAvgProd, p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
 
-  /** Forward cascade helper: when target income changes, push proportional targets to all channels */
+  /** Forward cascade helper: when target income changes, push proportional targets to ALL channels */
   const forwardCascade = (newTarget: number) => {
     p.setTargetIncome(newTarget);
-    // GDC target from split
-    if (p.enabledChannels.gdc) {
-      p.setTargetGDC(Math.round(newTarget * p.incomeSplits.gdc / 100));
+    const s = p.incomeSplits;
+    const ec = p.enabledChannels;
+
+    // 1. GDC: target GDC from split
+    if (ec.gdc && s.gdc > 0) {
+      p.setTargetGDC(Math.round(newTarget * s.gdc / 100));
     }
-    // AUM: if trail% > 0, set existing AUM to what's needed to hit the AUM target
-    // (don't override if user has manually set a value — only set if currently at role default)
-    // We update the target display but don't force AUM book changes
+
+    // 2. AUM: back-solve for required existing AUM book to hit AUM target
+    if (ec.aum && s.aum > 0 && p.aumTrailPct > 0) {
+      const aumTarget = Math.round(newTarget * s.aum / 100);
+      // Required book = target / trail% (existing book generates trail% income)
+      const requiredBook = Math.round(aumTarget / (p.aumTrailPct / 100));
+      p.setAumExisting(requiredBook);
+    }
+
+    // 3. Affiliates: scale counts proportionally to hit affiliate target
+    if (ec.affiliate && s.affiliate > 0) {
+      const affTarget = Math.round(newTarget * s.affiliate / 100);
+      // Current projected from existing counts
+      const currentProjected = (['a','b','c','d'] as const).reduce((sum, t) => {
+        return sum + Math.round(p.affCounts[t] * p.affAvgProd[t] * (AFF_RATES[t] || 0.1));
+      }, 0);
+      if (currentProjected > 0) {
+        // Scale all counts proportionally
+        const scaleFactor = affTarget / currentProjected;
+        p.setAffCounts({
+          a: Math.max(0, Math.round(p.affCounts.a * scaleFactor)),
+          b: Math.max(0, Math.round(p.affCounts.b * scaleFactor)),
+          c: Math.max(0, Math.round(p.affCounts.c * scaleFactor)),
+          d: Math.max(0, Math.round(p.affCounts.d * scaleFactor)),
+        });
+      }
+    }
+
+    // 4. Override: adjust team avg GDC to hit override target (preserve team size)
+    if (ec.override && s.override > 0) {
+      const ovrTarget = Math.round(newTarget * s.override / 100);
+      const teamSz = Math.max(1, p.teamMembers.length || 1);
+      const ovrRate = p.overrideRate > 0 ? p.overrideRate / 100 : 0.08;
+      // requiredAvgGDC = ovrTarget / (teamSize × overrideRate)
+      const requiredAvgGDC = Math.round(ovrTarget / (teamSz * ovrRate));
+      p.setTeamAvgGDC(requiredAvgGDC);
+    }
+
+    // 5. Marketing: scale channel spend proportionally to hit marketing target
+    if (ec.channel && s.channel > 0) {
+      const chTarget = Math.round(newTarget * s.channel / 100);
+      const currentMetrics = calcChannelMetrics(p.channelSpend);
+      if (currentMetrics.annualRev > 0) {
+        const scaleFactor = chTarget / currentMetrics.annualRev;
+        const newSpend: Record<string, number> = {};
+        for (const [k, v] of Object.entries(p.channelSpend)) {
+          newSpend[k] = Math.round(v * scaleFactor);
+        }
+        p.setChannelSpend(newSpend);
+      }
+    }
+  };
+
+  /** Cascade a single channel's parameters when its split changes */
+  const cascadeChannel = (ch: keyof EnabledChannels, newSplitPct: number) => {
+    const channelTarget = Math.round(p.targetIncome * newSplitPct / 100);
+    switch (ch) {
+      case 'gdc':
+        p.setTargetGDC(channelTarget);
+        break;
+      case 'aum':
+        if (p.aumTrailPct > 0) {
+          p.setAumExisting(Math.round(channelTarget / (p.aumTrailPct / 100)));
+        }
+        break;
+      case 'affiliate': {
+        const currentProjected = (['a','b','c','d'] as const).reduce((sum, t) => {
+          return sum + Math.round(p.affCounts[t] * p.affAvgProd[t] * (AFF_RATES[t] || 0.1));
+        }, 0);
+        if (currentProjected > 0) {
+          const sf = channelTarget / currentProjected;
+          p.setAffCounts({
+            a: Math.max(0, Math.round(p.affCounts.a * sf)),
+            b: Math.max(0, Math.round(p.affCounts.b * sf)),
+            c: Math.max(0, Math.round(p.affCounts.c * sf)),
+            d: Math.max(0, Math.round(p.affCounts.d * sf)),
+          });
+        }
+        break;
+      }
+      case 'override': {
+        const teamSz = Math.max(1, p.teamMembers.length || 1);
+        const ovrRate = p.overrideRate > 0 ? p.overrideRate / 100 : 0.08;
+        p.setTeamAvgGDC(Math.round(channelTarget / (teamSz * ovrRate)));
+        break;
+      }
+      case 'channel': {
+        const currentMetrics = calcChannelMetrics(p.channelSpend);
+        if (currentMetrics.annualRev > 0) {
+          const sf = channelTarget / currentMetrics.annualRev;
+          const newSpend: Record<string, number> = {};
+          for (const [k, v] of Object.entries(p.channelSpend)) {
+            newSpend[k] = Math.round(v * sf);
+          }
+          p.setChannelSpend(newSpend);
+        }
+        break;
+      }
+    }
+  };
+
+  /** Roll-up: adopt projected total as new target income and cascade */
+  const syncTargetToProjected = () => {
+    forwardCascade(plan.totalProjected);
   };
 
   /** Toggle a channel on/off with smart split redistribution */
@@ -267,8 +374,47 @@ export function MyPlanPanel(p: PracticeProps) {
 
     p.setEnabledChannels(nextEnabled);
     p.setIncomeSplits(nextSplits);
-    // Forward cascade: update GDC target from new split
-    p.setTargetGDC(Math.round(p.targetIncome * nextSplits.gdc / 100));
+
+    // Forward cascade ALL enabled channels after redistribution
+    const ti = p.targetIncome;
+    if (nextEnabled.gdc && nextSplits.gdc > 0) {
+      p.setTargetGDC(Math.round(ti * nextSplits.gdc / 100));
+    }
+    if (nextEnabled.aum && nextSplits.aum > 0 && p.aumTrailPct > 0) {
+      p.setAumExisting(Math.round((ti * nextSplits.aum / 100) / (p.aumTrailPct / 100)));
+    }
+    if (nextEnabled.affiliate && nextSplits.affiliate > 0) {
+      const affTarget = Math.round(ti * nextSplits.affiliate / 100);
+      const curAffProj = (['a','b','c','d'] as const).reduce((s, t) =>
+        s + Math.round(p.affCounts[t] * p.affAvgProd[t] * (AFF_RATES[t] || 0.1)), 0);
+      if (curAffProj > 0) {
+        const sf = affTarget / curAffProj;
+        p.setAffCounts({
+          a: Math.max(0, Math.round(p.affCounts.a * sf)),
+          b: Math.max(0, Math.round(p.affCounts.b * sf)),
+          c: Math.max(0, Math.round(p.affCounts.c * sf)),
+          d: Math.max(0, Math.round(p.affCounts.d * sf)),
+        });
+      }
+    }
+    if (nextEnabled.override && nextSplits.override > 0) {
+      const ovrTarget = Math.round(ti * nextSplits.override / 100);
+      const teamSz = Math.max(1, p.teamMembers.length || 1);
+      const ovrRate = p.overrideRate > 0 ? p.overrideRate / 100 : 0.08;
+      p.setTeamAvgGDC(Math.round(ovrTarget / (teamSz * ovrRate)));
+    }
+    if (nextEnabled.channel && nextSplits.channel > 0) {
+      const chTarget = Math.round(ti * nextSplits.channel / 100);
+      const currentMetrics = calcChannelMetrics(p.channelSpend);
+      if (currentMetrics.annualRev > 0) {
+        const sf = chTarget / currentMetrics.annualRev;
+        const newSpend: Record<string, number> = {};
+        for (const [k, v] of Object.entries(p.channelSpend)) {
+          newSpend[k] = Math.round(v * sf);
+        }
+        p.setChannelSpend(newSpend);
+      }
+    }
   };
 
   const overrideInc = p.teamMembers.length > 0 ? teamOvr.total : recSummary.tOvr;
@@ -325,10 +471,19 @@ export function MyPlanPanel(p: PracticeProps) {
               p.setIncomeSplits({ ...nd.incomeSplits });
               p.setAffCounts({ ...nd.defaultAffiliates });
               p.setAffAvgProd({ ...nd.defaultAffProd });
-              // Set GDC target from income split
-              p.setTargetGDC(Math.round(nd.defaultTargetIncome * nd.incomeSplits.gdc / 100));
-              // Set AUM from role default
+              // Forward cascade ALL channels from new role defaults
+              const ti = nd.defaultTargetIncome;
+              const ns = nd.incomeSplits;
+              p.setTargetGDC(Math.round(ti * ns.gdc / 100));
               p.setAumExisting(nd.defaultAUM);
+              // Override: back-solve team avg GDC from override target
+              const teamSz = Math.max(1, p.teamMembers.length || 1);
+              const ovrRate = p.overrideRate > 0 ? p.overrideRate / 100 : 0.08;
+              if (ns.override > 0) {
+                p.setTeamAvgGDC(Math.round((ti * ns.override / 100) / (teamSz * ovrRate)));
+              }
+              // Re-enable all channels for new role
+              p.setEnabledChannels({ gdc: true, aum: true, affiliate: true, override: true, channel: true });
             }}>
               <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -408,15 +563,24 @@ export function MyPlanPanel(p: PracticeProps) {
                     onChange={v => {
                       const next = { ...p.incomeSplits, [k]: v };
                       p.setIncomeSplits(next);
-                      if (k === 'gdc') p.setTargetGDC(Math.round(p.targetIncome * v / 100));
+                      cascadeChannel(k, v);
                     }} />
                 )}
               </div>
             ))}
             <Button variant="outline" size="sm" className="text-[10px] h-6" onClick={() => {
-              p.setIncomeSplits({ ...rd.incomeSplits });
-              p.setTargetGDC(Math.round(p.targetIncome * rd.incomeSplits.gdc / 100));
+              const newSplits = { ...rd.incomeSplits };
+              p.setIncomeSplits(newSplits);
               p.setEnabledChannels({ gdc: true, aum: true, affiliate: true, override: true, channel: true });
+              // Forward cascade ALL channels from defaults
+              const ti = p.targetIncome;
+              p.setTargetGDC(Math.round(ti * newSplits.gdc / 100));
+              if (p.aumTrailPct > 0) p.setAumExisting(Math.round((ti * newSplits.aum / 100) / (p.aumTrailPct / 100)));
+              p.setAffCounts({ ...rd.defaultAffiliates });
+              p.setAffAvgProd({ ...rd.defaultAffProd });
+              const teamSz = Math.max(1, p.teamMembers.length || 1);
+              const ovrRate = p.overrideRate > 0 ? p.overrideRate / 100 : 0.08;
+              p.setTeamAvgGDC(Math.round((ti * newSplits.override / 100) / (teamSz * ovrRate)));
             }}>Reset to {HIER_NAMES[p.role]} Defaults</Button>
           </div>
           <div className="flex items-center justify-center">
@@ -604,15 +768,30 @@ export function MyPlanPanel(p: PracticeProps) {
           <KPI label="Daily Appr" value={String(funnel.dailyApproaches)} variant="" />
         </div>
 
-        {/* Backward Cascade Summary: shows actual projected vs target */}
+        {/* Backward Cascade Summary: shows actual projected vs target with sync actions */}
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mt-2">
-          <div className="text-[11px] font-bold text-primary mb-1">Backward Cascade Summary</div>
-          <p className="text-[10px] text-muted-foreground mb-2">Adjusting any channel input above automatically recalculates the unified total. The projected income below reflects your actual inputs across all enabled channels.</p>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-[11px] font-bold text-primary">Backward Cascade Summary</div>
+            <div className="flex gap-1">
+              {plan.totalProjected !== p.targetIncome && plan.totalProjected > 0 && (
+                <Button size="sm" variant="outline" className="h-5 text-[9px] px-2 border-primary/30 text-primary hover:bg-primary/10" onClick={syncTargetToProjected}>
+                  Sync Target ← Projected ({fmtSm(plan.totalProjected)})
+                </Button>
+              )}
+              {plan.totalGap > 0 && (
+                <Button size="sm" variant="outline" className="h-5 text-[9px] px-2 border-amber-400/30 text-amber-400 hover:bg-amber-400/10" onClick={() => forwardCascade(p.targetIncome)}>
+                  Re-cascade All Channels
+                </Button>
+              )}
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground mb-2">Adjusting any channel input above automatically recalculates the unified total. Use <b>Sync Target</b> to adopt projected as your new target (roll-up), or <b>Re-cascade</b> to push the current target down to all channels (roll-down).</p>
           <div className="flex flex-wrap gap-2">
             <KPI label="Target" value={fmtSm(p.targetIncome)} variant="gld" />
             <KPI label="Projected" value={fmtSm(plan.totalProjected)} variant={plan.onTrack ? 'grn' : 'red'} />
             <KPI label="Surplus/Gap" value={plan.totalProjected >= p.targetIncome ? '+' + fmtSm(plan.totalProjected - p.targetIncome) : '-' + fmtSm(plan.totalGap)} variant={plan.onTrack ? 'grn' : 'red'} />
             <KPI label="Monthly Projected" value={fmtSm(Math.round(plan.totalProjected / 12))} variant="blu" />
+            <KPI label="Implied Annual" value={fmtSm(plan.totalProjected)} variant="blu" />
           </div>
         </div>
 
@@ -622,7 +801,35 @@ export function MyPlanPanel(p: PracticeProps) {
         <SectionHeader>5. Channel Economics — CAC / ROI / LTV
           <RefTip text="Industry benchmarks from LIMRA, Cerulli, McKinsey Insurance Practice, Kitces Research (2024). CAC = Customer Acquisition Cost, ROI = Return on Investment, LTV = Lifetime Value. Extended Network LTV includes a 1.3× referral multiplier." refId="economics" />
         </SectionHeader>
-        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Profitability analysis per channel using industry benchmarks. Hover over reference icons for source citations.</p>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Profitability analysis per channel. Override CAC and COGS% below to reflect your actual costs — industry benchmarks shown as defaults.</p>
+
+        {/* User-editable CAC & COGS% overrides */}
+        <div className="bg-muted/30 rounded-lg p-3 mb-3 space-y-2">
+          <div className="text-[10px] font-bold text-muted-foreground mb-1">Your Cost Overrides <span className="font-normal">(leave blank to use industry benchmark)</span></div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {(['gdc', 'aum', 'affiliate', 'override', 'channel'] as const).filter(k => p.enabledChannels[k]).map(k => (
+              <div key={k} className="space-y-1">
+                <Label className="text-[9px] font-semibold" style={{ color: SPLIT_COLORS[k] }}>{SPLIT_LABELS[k]}</Label>
+                <PInput label={`CAC ($${CHANNEL_BENCHMARKS[k].cac})`} value={p.cacOverrides[k] ?? ''}
+                  onChange={v => {
+                    const next = { ...p.cacOverrides };
+                    if (v === '' || v === '0') { delete next[k]; } else { next[k] = +v; }
+                    p.setCacOverrides(next);
+                  }} prefix="$" />
+                <PInput label={`COGS% (${CHANNEL_BENCHMARKS[k].cogsPct}%)`} value={p.cogsOverrides[k] ?? ''}
+                  onChange={v => {
+                    const next = { ...p.cogsOverrides };
+                    if (v === '' || v === '0') { delete next[k]; } else { next[k] = Math.min(100, +v); }
+                    p.setCogsOverrides(next);
+                  }} suffix="%" />
+              </div>
+            ))}
+          </div>
+          {(Object.keys(p.cacOverrides).length > 0 || Object.keys(p.cogsOverrides).length > 0) && (
+            <Button variant="ghost" size="sm" className="text-[10px] h-6 text-muted-foreground" onClick={() => { p.setCacOverrides({}); p.setCogsOverrides({}); }}>Reset to Industry Benchmarks</Button>
+          )}
+        </div>
+
         {(() => {
           const economics = calcChannelEconomics({
             enabledChannels: p.enabledChannels,
@@ -633,6 +840,8 @@ export function MyPlanPanel(p: PracticeProps) {
               override: plan.channels.override.detail.projectedIncome,
               channel: plan.channels.channel.detail.projectedAnnualRevenue,
             },
+            cacOverrides: p.cacOverrides,
+            cogsOverrides: p.cogsOverrides,
           });
           if (economics.length === 0) return <p className="text-[10px] text-muted-foreground italic">Enable at least one channel to see economics.</p>;
           return (
@@ -642,8 +851,8 @@ export function MyPlanPanel(p: PracticeProps) {
                 rows={economics.map(e => [
                   <span key={e.channel} style={{ color: SPLIT_COLORS[e.channel] }} className="font-semibold">{e.label}</span>,
                   fmtSm(e.annualRevenue),
-                  fmtSm(e.cac),
-                  <span key={`cg-${e.channel}`} className="text-muted-foreground">{fmtSm(e.cogsDollar)} ({e.cogsPct}%)</span>,
+                  <span key={`cac-${e.channel}`} className={p.cacOverrides[e.channel] !== undefined ? 'text-primary font-semibold' : ''}>{fmtSm(e.cac)}{p.cacOverrides[e.channel] !== undefined && ' ✎'}</span>,
+                  <span key={`cg-${e.channel}`} className={p.cogsOverrides[e.channel] !== undefined ? 'text-primary' : 'text-muted-foreground'}>{fmtSm(e.cogsDollar)} ({e.cogsPct}%){p.cogsOverrides[e.channel] !== undefined && ' ✎'}</span>,
                   <span key={`mg-${e.channel}`} className={e.grossMarginPct >= 50 ? 'text-green-400' : 'text-amber-400'}>{fmtSm(e.grossMarginDollar)} ({e.grossMarginPct}%)</span>,
                   <span key={`roi-${e.channel}`} className={e.roiPct >= 100 ? 'text-green-400 font-semibold' : e.roiPct >= 0 ? 'text-amber-400' : 'text-red-400'}>{e.roiPct}%</span>,
                   fmtSm(e.clientLTV),
@@ -683,9 +892,208 @@ export function MyPlanPanel(p: PracticeProps) {
           );
         })()}
 
+        <Separator />
+
+        {/* ─── SECTION 6: Scenario Comparison ─── */}
+        <SectionHeader>6. Scenario Comparison</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Save your current plan as a named scenario, then compare multiple configurations side-by-side to evaluate different strategies.</p>
+        <ScenarioManager p={p} plan={plan} funnel={funnel} />
+
       </CardContent>
     </Card>
     </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SCENARIO MANAGER — Save / Load / Compare income plan scenarios
+   ═══════════════════════════════════════════════════════════════ */
+interface SavedScenario {
+  name: string;
+  savedAt: number;
+  targetIncome: number;
+  incomeSplits: IncomeSplits;
+  enabledChannels: EnabledChannels;
+  role: RoleId;
+  targetGDC: number;
+  aumExisting: number;
+  aumNew: number;
+  aumTrailPct: number;
+  affCounts: { a: number; b: number; c: number; d: number };
+  affAvgProd: { a: number; b: number; c: number; d: number };
+  teamAvgGDC: number;
+  overrideRate: number;
+  cacOverrides: Partial<Record<string, number>>;
+  cogsOverrides: Partial<Record<string, number>>;
+  /* Snapshot of computed results for comparison */
+  totalProjected: number;
+  totalGap: number;
+  channelProjections: { gdc: number; aum: number; affiliate: number; override: number; channel: number };
+}
+
+const SCENARIO_KEY = 'wb-scenarios';
+
+function loadScenarios(): SavedScenario[] {
+  try {
+    const raw = localStorage.getItem(SCENARIO_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveScenarios(scenarios: SavedScenario[]) {
+  try { localStorage.setItem(SCENARIO_KEY, JSON.stringify(scenarios)); } catch { /* quota */ }
+}
+
+function ScenarioManager({ p, plan, funnel }: { p: PracticeProps; plan: ReturnType<typeof calcUnifiedIncomePlan>; funnel: ReturnType<typeof calcProductionFunnel> }) {
+  const [scenarios, setScenarios] = useState<SavedScenario[]>(() => loadScenarios());
+  const [newName, setNewName] = useState('');
+  const [showCompare, setShowCompare] = useState(false);
+
+  const handleSave = () => {
+    const name = newName.trim() || `Scenario ${scenarios.length + 1}`;
+    const scenario: SavedScenario = {
+      name,
+      savedAt: Date.now(),
+      targetIncome: p.targetIncome,
+      incomeSplits: { ...p.incomeSplits },
+      enabledChannels: { ...p.enabledChannels },
+      role: p.role,
+      targetGDC: p.targetGDC,
+      aumExisting: p.aumExisting,
+      aumNew: p.aumNew,
+      aumTrailPct: p.aumTrailPct,
+      affCounts: { ...p.affCounts },
+      affAvgProd: { ...p.affAvgProd },
+      teamAvgGDC: p.teamAvgGDC,
+      overrideRate: p.overrideRate,
+      cacOverrides: { ...p.cacOverrides },
+      cogsOverrides: { ...p.cogsOverrides },
+      totalProjected: plan.totalProjected,
+      totalGap: plan.totalGap,
+      channelProjections: {
+        gdc: plan.channels.gdc.projected,
+        aum: plan.channels.aum.detail.projectedIncome,
+        affiliate: plan.channels.affiliate.totalProjected,
+        override: plan.channels.override.detail.projectedIncome,
+        channel: plan.channels.channel.detail.projectedAnnualRevenue,
+      },
+    };
+    const next = [...scenarios, scenario];
+    setScenarios(next);
+    saveScenarios(next);
+    setNewName('');
+  };
+
+  const handleLoad = (s: SavedScenario) => {
+    p.setTargetIncome(s.targetIncome);
+    p.setIncomeSplits(s.incomeSplits);
+    p.setEnabledChannels(s.enabledChannels);
+    p.setRole(s.role);
+    p.setTargetGDC(s.targetGDC);
+    p.setAumExisting(s.aumExisting);
+    p.setAumNew(s.aumNew);
+    p.setAumTrailPct(s.aumTrailPct);
+    p.setAffCounts(s.affCounts);
+    p.setAffAvgProd(s.affAvgProd);
+    p.setTeamAvgGDC(s.teamAvgGDC);
+    p.setOverrideRate(s.overrideRate);
+    p.setCacOverrides(s.cacOverrides);
+    p.setCogsOverrides(s.cogsOverrides);
+  };
+
+  const handleDelete = (idx: number) => {
+    const next = scenarios.filter((_, i) => i !== idx);
+    setScenarios(next);
+    saveScenarios(next);
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Save current plan */}
+      <div className="flex gap-2 items-end">
+        <div className="flex-1">
+          <PInput label="Scenario Name" value={newName} onChange={setNewName} />
+        </div>
+        <Button size="sm" className="h-8 text-[11px]" onClick={handleSave}>Save Current Plan</Button>
+      </div>
+
+      {/* Saved scenarios list */}
+      {scenarios.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-[10px] font-bold text-muted-foreground">Saved Scenarios ({scenarios.length})</div>
+          {scenarios.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 bg-muted/30 rounded-lg p-2">
+              <div className="flex-1">
+                <div className="text-[11px] font-semibold">{s.name}</div>
+                <div className="text-[9px] text-muted-foreground">
+                  Target: {fmtSm(s.targetIncome)} | Projected: {fmtSm(s.totalProjected)} | {new Date(s.savedAt).toLocaleDateString()}
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="h-6 text-[9px] px-2" onClick={() => handleLoad(s)}>Load</Button>
+              <Button variant="ghost" size="sm" className="h-6 text-[9px] px-1 text-red-400" onClick={() => handleDelete(i)}>✕</Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Compare toggle */}
+      {scenarios.length >= 2 && (
+        <Button variant="outline" size="sm" className="text-[11px]" onClick={() => setShowCompare(!showCompare)}>
+          {showCompare ? 'Hide' : 'Show'} Side-by-Side Comparison
+        </Button>
+      )}
+
+      {/* Comparison table */}
+      {showCompare && scenarios.length >= 2 && (
+        <div className="overflow-x-auto">
+          <DataTable
+            headers={['Metric', ...scenarios.map(s => s.name)]}
+            rows={[
+              ['Target Income', ...scenarios.map(s => fmtSm(s.targetIncome))],
+              ['Projected Income', ...scenarios.map(s => (
+                <span key={s.name} className={s.totalProjected >= s.targetIncome ? 'text-green-400 font-semibold' : 'text-amber-400'}>{fmtSm(s.totalProjected)}</span>
+              ))],
+              ['Gap', ...scenarios.map(s => (
+                <span key={s.name} className={s.totalGap <= 0 ? 'text-green-400' : 'text-red-400'}>{s.totalGap > 0 ? fmtSm(s.totalGap) : '\u2713 Met'}</span>
+              ))],
+              ['Role', ...scenarios.map(s => HIER_SHORT[s.role] || s.role)],
+              ['GDC Target', ...scenarios.map(s => fmtSm(s.targetGDC))],
+              ['GDC Projected', ...scenarios.map(s => fmtSm(s.channelProjections.gdc))],
+              ['AUM Projected', ...scenarios.map(s => fmtSm(s.channelProjections.aum))],
+              ['Affiliate Projected', ...scenarios.map(s => fmtSm(s.channelProjections.affiliate))],
+              ['Override Projected', ...scenarios.map(s => fmtSm(s.channelProjections.override))],
+              ['Marketing Projected', ...scenarios.map(s => fmtSm(s.channelProjections.channel))],
+              ['GDC Split', ...scenarios.map(s => s.enabledChannels.gdc ? s.incomeSplits.gdc + '%' : 'Off')],
+              ['AUM Split', ...scenarios.map(s => s.enabledChannels.aum ? s.incomeSplits.aum + '%' : 'Off')],
+              ['Affiliate Split', ...scenarios.map(s => s.enabledChannels.affiliate ? s.incomeSplits.affiliate + '%' : 'Off')],
+              ['Override Split', ...scenarios.map(s => s.enabledChannels.override ? s.incomeSplits.override + '%' : 'Off')],
+              ['Marketing Split', ...scenarios.map(s => s.enabledChannels.channel ? s.incomeSplits.channel + '%' : 'Off')],
+              ['AUM Book', ...scenarios.map(s => fmtSm(s.aumExisting))],
+              ['Override Rate', ...scenarios.map(s => s.overrideRate + '%')],
+            ]}
+          />
+
+          {/* Visual comparison bar chart */}
+          <div className="mt-3">
+            <div className="text-[10px] font-bold text-muted-foreground mb-2">Projected Income Comparison</div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={scenarios.map(s => ({
+                name: s.name.length > 15 ? s.name.slice(0, 15) + '\u2026' : s.name,
+                target: s.targetIncome,
+                projected: s.totalProjected,
+              }))}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#888' }} />
+                <YAxis tick={{ fontSize: 10, fill: '#888' }} tickFormatter={v => fmtSm(v)} />
+                <Tooltip formatter={(v: number) => fmt(v)} />
+                <Bar dataKey="target" fill="#f59e0b" name="Target" />
+                <Bar dataKey="projected" fill="#22c55e" name="Projected" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

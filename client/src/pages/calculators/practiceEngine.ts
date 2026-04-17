@@ -628,7 +628,7 @@ const AFF_LABELS: Record<string, string> = {
   a: 'Affiliate A (Fee-Based)', b: 'Affiliate B (Referral)',
   c: 'Affiliate C (Co-Broker)', d: 'Affiliate D (Wholesale)',
 };
-const AFF_RATES: Record<string, number> = { a: 0.15, b: 0.10, c: 0.20, d: 0.08 };
+export const AFF_RATES: Record<string, number> = { a: 0.15, b: 0.10, c: 0.20, d: 0.08 };
 
 /** Enabled channels configuration */
 export interface EnabledChannels {
@@ -840,17 +840,20 @@ export function calcChannelEconomics(params: {
   };
   /** Optional user overrides for CAC per channel */
   cacOverrides?: Partial<Record<string, number>>;
+  /** Optional user overrides for COGS% per channel */
+  cogsOverrides?: Partial<Record<string, number>>;
   /** Referral multiplier for extended network LTV (default 1.3) */
   referralMultiplier?: number;
 }): ChannelEconomics[] {
-  const { enabledChannels, projections, cacOverrides = {}, referralMultiplier = 1.3 } = params;
+  const { enabledChannels, projections, cacOverrides = {}, cogsOverrides = {}, referralMultiplier = 1.3 } = params;
   const keys: (keyof EnabledChannels)[] = ['gdc', 'aum', 'affiliate', 'override', 'channel'];
 
   return keys.filter(k => enabledChannels[k]).map(k => {
     const bm = CHANNEL_BENCHMARKS[k];
     const revenue = projections[k];
     const cac = cacOverrides[k] ?? bm.cac;
-    const cogsDollar = Math.round(revenue * bm.cogsPct / 100);
+    const effectiveCogsPct = cogsOverrides[k] ?? bm.cogsPct;
+    const cogsDollar = Math.round(revenue * effectiveCogsPct / 100);
     const grossMargin = revenue - cogsDollar;
     const grossMarginPct = revenue > 0 ? Math.round(grossMargin / revenue * 100) : 0;
 
@@ -868,7 +871,7 @@ export function calcChannelEconomics(params: {
     const ret = bm.retentionRate;
     const years = bm.avgLifetimeYears;
     const retentionFactor = ret < 1 ? (1 - Math.pow(ret, years)) / (1 - ret) : years;
-    const clientLTV = Math.round(bm.avgRevenuePerClient * retentionFactor * (1 - bm.cogsPct / 100));
+    const clientLTV = Math.round(bm.avgRevenuePerClient * retentionFactor * (1 - effectiveCogsPct / 100));
     const extendedNetworkLTV = Math.round(clientLTV * referralMultiplier);
     const ltvCacRatio = cac > 0 ? Math.round(clientLTV / cac * 10) / 10 : 0;
 
@@ -881,7 +884,7 @@ export function calcChannelEconomics(params: {
 
     return {
       channel: k, label: bm.label,
-      annualRevenue: revenue, cac, cogsDollar, cogsPct: bm.cogsPct,
+      annualRevenue: revenue, cac, cogsDollar, cogsPct: effectiveCogsPct,
       grossMarginDollar: grossMargin, grossMarginPct,
       roi, roiPct, clientLTV, extendedNetworkLTV, ltvCacRatio,
       paybackMonths: Math.min(paybackMonths, 999),

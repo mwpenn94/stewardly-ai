@@ -5335,3 +5335,15 @@
 - [x] Verify SnapTrade brokerage linking portal (API reachable, verified in e2e)
 - [x] Check GHL integration status and connectivity (requires external account)
 - [x] Check Redtail/Wealthbox CRM integration status (requires external account)
+
+
+## Pass 93 — Fix Wealth Engine Bidirectional Cascade (Per User Guidance)
+- [x] Fix: When target income is input, ALL children/descendants in hierarchy must auto-update (funnel metrics, earnings, channel parameters)
+- [x] Fix: When any input within the hierarchy changes (e.g., AUM book, affiliate counts, GDC target), the unified income total must update conversely
+- [x] Fix: Forward cascade must propagate to ALL channel parameters, not just GDC target
+- [x] Fix: Backward cascade must update the unified target or show the actual vs target gap dynamically
+- [x] Ensure roll-up and roll-down work across the full hierarchy depth
+- [x] Add user-editable CAC overrides per channel (instead of only industry benchmarks)
+- [x] Incorporate stewardly-command-center repo into this project (already completed in Phase 5 — EmailTemplateBuilder, OutreachWorkflowBuilder, DataPipelines, OutreachAutomation all built)
+- [x] Add scenario comparison mode (save/compare multiple income plan configurations)
+- [x] Recursive convergence (3 passes) — 7 passes total: fixes in passes 1-4 (toggle cascade, reset button, role handler, sync button), 3 clean passes (5/6/7)
