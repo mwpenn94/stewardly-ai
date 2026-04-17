@@ -5387,3 +5387,33 @@
 - [x] Scenario diff with cross-cascade: highlight which channels diverged due to different cascade paths
 - [x] Pass 96 vitest tests: 25 tests covering dragRebalanceSplit, createAuditEntry, calcScenarioDiff
 - [x] Recursive convergence: 3/3 clean passes, 149 tests across 7 files, build verified (40s)
+
+## Pass 97 — AUM Override Fix, Flexible Affiliate Income, Progressive Disclosure
+- [x] Fix missing AUM override rates in the engine and UI (AUM_OVERRIDE_DEFAULTS per role, 0-100% slider)
+- [x] Flexible affiliate income: dual-mode (Recruiter mode vs Producer mode)
+  - [x] Recruiter mode: recruiting affiliates who bring in revenue (current behavior)
+  - [x] Producer mode: affiliate achieving fixed $ bonuses / co-brokered deals with % split on commission
+  - [x] User toggle to select calculation mode
+- [x] Progressive disclosure framework: simple → intermediate → comprehensive detail levels
+  - [x] Collapsible sections with smart defaults (isSectionVisible per complexity)
+  - [x] "Show more" progressive reveal for advanced inputs
+  - [x] Complexity selector (Simple / Detailed / Expert) with Alt+1/2/3 shortcuts
+
+## Pass 98 — Client-Practice Cross-Cascade, Visualization, Interactive Aids
+- [x] "Also My Client" toggle: cross-cascade client profile with practice planning
+  - [x] When enabled, practice income strategies recognize benefits for advisor-as-client (DIME insurance, AUM opportunity, advisory fees)
+  - [x] Advanced strategies (tax optimization, AUM reinvestment) cascade between practice and personal
+- [x] Cascade chain visualization: flow diagram showing real-time propagation paths (Section 9)
+- [x] Interactive graphical planning aids
+  - [x] Cascade flow diagram for income target → splits → channels → total projected
+  - [x] 36-month interactive planning horizon with cumulative/monthly/channel views (Section 10)
+  - [x] Quarterly stacked channel bars showing contribution breakdown
+  - [x] Milestone timeline with on-track indicators and hover tooltips
+
+## Pass 99 — Keyboard Shortcuts, Audit Export, Holistic Views, Final Polish
+- [x] Keyboard shortcuts (Ctrl+Z undo, Ctrl+B auto-balance, Alt+1/2/3 complexity)
+- [x] Export audit trail to CSV for compliance documentation
+- [x] Holistic planning horizon views (3yr with year/quarter/month drill-down, cumulative/monthly/channel modes)
+- [x] Cross-hierarchy alignment verification across all cascade paths
+- [x] Pass 97-99 vitest tests: 37 tests covering AUM override, producer affiliate, progressive disclosure, client-practice cross-cascade, cascade chain, planning horizon
+- [x] Final convergence: 3/3 clean passes, 186 tests across 8 files, build verified (31s)

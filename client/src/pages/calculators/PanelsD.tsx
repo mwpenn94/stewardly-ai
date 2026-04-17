@@ -22,6 +22,10 @@ import {
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
   calcUnifiedIncomePlan, calcChannelEconomics, calcSensitivity, calcTimePhasedProjections, AFF_RATES, CHANNEL_BENCHMARKS,
+  AUM_OVERRIDE_DEFAULTS, calcProducerAffiliateIncome, PRODUCER_DEFAULTS, isSectionVisible,
+  calcClientPracticeOpportunity, buildCascadeChain, calcPlanningHorizon,
+  type AffiliateMode, type ComplexityLevel, type ProducerModeInputs,
+  type ClientPracticeInputs, type ClientPracticeOpportunity, type CascadeChainData, type PlanningHorizonPoint,
   backSolveChannelTarget, backSolveChannelProjected, autoBalanceSplits, calcChannelBalances, CHANNEL_KEYS,
   dragRebalanceSplit, createAuditEntry, calcScenarioDiff,
   type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics, type SensitivityResult, type TimePhasedResult, type BackSolveResult, type ChannelBalance,
@@ -53,6 +57,18 @@ export interface PracticeProps {
   aumExisting: number; setAumExisting: (v: number) => void;
   aumNew: number; setAumNew: (v: number) => void;
   aumTrailPct: number; setAumTrailPct: (v: number) => void;
+  aumOverrideRate: number; setAumOverrideRate: (v: number) => void;
+  affiliateMode: 'recruiter' | 'producer'; setAffiliateMode: (v: 'recruiter' | 'producer') => void;
+  producerInputs: { dealsPerMonth: number; avgCommissionPerDeal: number; splitPct: number; fixedBonusPerDeal: number; monthlyRetainer: number };
+  setProducerInputs: (v: { dealsPerMonth: number; avgCommissionPerDeal: number; splitPct: number; fixedBonusPerDeal: number; monthlyRetainer: number }) => void;
+  complexity: 'simple' | 'detailed' | 'expert'; setComplexity: (v: 'simple' | 'detailed' | 'expert') => void;
+  alsoMyClient: boolean; setAlsoMyClient: (v: boolean) => void;
+  /* Client data for cross-cascade (from client profile) */
+  clientIncome: number; clientNetWorth: number; clientSavings: number;
+  clientRetirement401k: number; clientAge: number; clientDep: number;
+  clientMortgage: number; clientDebt: number; clientExistingInsurance: number;
+  clientIsBiz: boolean; clientBizRevenue: number; clientBizEmployees: number;
+  clientRiskTolerance: string;
   pnlLevel: 'ind' | 'team'; setPnlLevel: (v: 'ind' | 'team') => void;
   pnlProducers: number; setPnlProducers: (v: number) => void;
   pnlAvgGDC: number; setPnlAvgGDC: (v: number) => void;
@@ -232,13 +248,17 @@ export function MyPlanPanel(p: PracticeProps) {
     targetGDC: p.targetGDC, wbPct: p.wbPct, bracketOverride: p.bracketOverride,
     avgGDC, funnelRates: p.funnelRates, months: p.months,
     aumExisting: p.aumExisting, aumNew: p.aumNew, aumTrailPct: p.aumTrailPct,
+    aumOverrideRate: p.aumOverrideRate,
+    affiliateMode: p.affiliateMode,
     affCounts: p.affCounts, affAvgProd: p.affAvgProd,
+    producerInputs: p.producerInputs,
     teamSize: p.teamMembers.length, teamAvgGDC: p.teamAvgGDC, overrideRate: p.overrideRate,
     channelSpend: p.channelSpend,
   }), [p.targetIncome, p.incomeSplits, p.role, p.enabledChannels,
     p.targetGDC, p.wbPct, p.bracketOverride,
-    avgGDC, p.funnelRates, p.months, p.aumExisting, p.aumNew, p.aumTrailPct,
-    p.affCounts, p.affAvgProd, p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
+    avgGDC, p.funnelRates, p.months, p.aumExisting, p.aumNew, p.aumTrailPct, p.aumOverrideRate,
+    p.affiliateMode, p.affCounts, p.affAvgProd, p.producerInputs,
+    p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
 
   // Economics (lifted to component level for export access)
   const economics = useMemo(() => calcChannelEconomics({
@@ -261,12 +281,16 @@ export function MyPlanPanel(p: PracticeProps) {
     targetGDC: p.targetGDC, wbPct: p.wbPct, bracketOverride: p.bracketOverride,
     avgGDC, funnelRates: p.funnelRates, months: p.months,
     aumExisting: p.aumExisting, aumNew: p.aumNew, aumTrailPct: p.aumTrailPct,
+    aumOverrideRate: p.aumOverrideRate,
+    affiliateMode: p.affiliateMode,
     affCounts: p.affCounts, affAvgProd: p.affAvgProd,
+    producerInputs: p.producerInputs,
     teamSize: p.teamMembers.length, teamAvgGDC: p.teamAvgGDC, overrideRate: p.overrideRate,
     channelSpend: p.channelSpend,
   }), [p.targetIncome, p.incomeSplits, p.role, p.enabledChannels,
     p.targetGDC, p.wbPct, p.bracketOverride, avgGDC, p.funnelRates, p.months,
-    p.aumExisting, p.aumNew, p.aumTrailPct, p.affCounts, p.affAvgProd,
+    p.aumExisting, p.aumNew, p.aumTrailPct, p.aumOverrideRate,
+    p.affiliateMode, p.affCounts, p.affAvgProd, p.producerInputs,
     p.teamMembers.length, p.teamAvgGDC, p.overrideRate, p.channelSpend]);
 
   // Time-phased projections (lifted to component level for export access)
@@ -276,6 +300,54 @@ export function MyPlanPanel(p: PracticeProps) {
     role: p.role,
     enabledChannels: p.enabledChannels,
   }), [p.targetIncome, plan, p.role, p.enabledChannels]);
+
+  // Keyboard shortcuts
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      // Ctrl+Z: Undo last audit entry
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        if (auditTrail.length > 0) {
+          e.preventDefault();
+          undoAuditEntry(auditTrail[auditTrail.length - 1]);
+        }
+      }
+      // Ctrl+B: Auto-balance splits
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        handleAutoBalance();
+      }
+      // Ctrl+Shift+S: Save scenario (handled by ScenarioManager)
+      // Complexity shortcuts: 1=simple, 2=detailed, 3=expert
+      if (e.altKey && e.key === '1') { e.preventDefault(); p.setComplexity('simple'); }
+      if (e.altKey && e.key === '2') { e.preventDefault(); p.setComplexity('detailed'); }
+      if (e.altKey && e.key === '3') { e.preventDefault(); p.setComplexity('expert'); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [auditTrail, p.enabledChannels, p.incomeSplits, plan]);
+
+  // Client-Practice cross-cascade opportunity ("Also My Client")
+  const clientOpportunity = useMemo(() => {
+    if (!p.alsoMyClient) return null;
+    return calcClientPracticeOpportunity({
+      clientIncome: p.clientIncome, clientNetWorth: p.clientNetWorth, clientSavings: p.clientSavings,
+      clientRetirement401k: p.clientRetirement401k, clientAge: p.clientAge, clientDep: p.clientDep,
+      clientMortgage: p.clientMortgage, clientDebt: p.clientDebt, clientExistingInsurance: p.clientExistingInsurance,
+      clientIsBiz: p.clientIsBiz, clientBizRevenue: p.clientBizRevenue, clientBizEmployees: p.clientBizEmployees,
+      clientRiskTolerance: p.clientRiskTolerance,
+    });
+  }, [p.alsoMyClient, p.clientIncome, p.clientNetWorth, p.clientSavings, p.clientRetirement401k,
+    p.clientAge, p.clientDep, p.clientMortgage, p.clientDebt, p.clientExistingInsurance,
+    p.clientIsBiz, p.clientBizRevenue, p.clientBizEmployees, p.clientRiskTolerance]);
+
+  // Cascade chain visualization data
+  const cascadeChain = useMemo(() => buildCascadeChain(plan, p.enabledChannels, p.incomeSplits, p.targetIncome),
+    [plan, p.enabledChannels, p.incomeSplits, p.targetIncome]);
+
+  // Planning horizon (multi-year projection)
+  const planningHorizon = useMemo(() => calcPlanningHorizon(plan, p.targetIncome, p.enabledChannels, 36, p.role),
+    [plan, p.targetIncome, p.enabledChannels, p.role]);
 
   /** Forward cascade helper: when target income changes, push proportional targets to ALL channels */
   const forwardCascade = (newTarget: number) => {
@@ -724,7 +796,32 @@ export function MyPlanPanel(p: PracticeProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {/* ─── Complexity Level Selector ─── */}
+        <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1">
+          {(['simple', 'detailed', 'expert'] as const).map(lvl => (
+            <button key={lvl} onClick={() => p.setComplexity(lvl)}
+              className={`flex-1 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
+                p.complexity === lvl
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:bg-muted/50'
+              }`}>
+              {lvl === 'simple' ? '\u2728 Simple' : lvl === 'detailed' ? '\ud83d\udcca Detailed' : '\ud83d\udd2c Expert'}
+            </button>
+          ))}
+        </div>
+        <p className="text-[9px] text-muted-foreground/60 text-center -mt-1">
+          {p.complexity === 'simple' ? 'Core targets and summary KPIs only' : p.complexity === 'detailed' ? 'All channels, splits, and economics' : 'Full cascade, sensitivity, scenarios, and export'}
+        </p>
+        <details className="text-center">
+          <summary className="text-[8px] text-muted-foreground/40 cursor-pointer">Keyboard shortcuts</summary>
+          <div className="text-[8px] text-muted-foreground/50 flex flex-wrap gap-2 justify-center mt-0.5">
+            <span><kbd className="px-1 py-0.5 bg-muted rounded text-[7px]">Ctrl+Z</kbd> Undo</span>
+            <span><kbd className="px-1 py-0.5 bg-muted rounded text-[7px]">Ctrl+B</kbd> Auto-Balance</span>
+            <span><kbd className="px-1 py-0.5 bg-muted rounded text-[7px]">Alt+1/2/3</kbd> Complexity</span>
+          </div>
+        </details>
+
+        {isSectionVisible('target', p.complexity) && <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <PInput label="Active Months" value={p.months} onChange={v => p.setMonths(+v || 10)} />
           <PInput label="WB Platform %" value={p.wbPct} onChange={v => p.setWbPct(+v || 0)} suffix="%" />
           <div className="space-y-0.5">
@@ -741,7 +838,7 @@ export function MyPlanPanel(p: PracticeProps) {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </div>}
 
         {/* Hierarchy Chain */}
         <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
@@ -763,9 +860,70 @@ export function MyPlanPanel(p: PracticeProps) {
           </>}
         </div>
 
+        {/* Also My Client Toggle */}
+        <div className="flex items-center gap-3 bg-gradient-to-r from-primary/5 to-transparent rounded-lg px-3 py-2">
+          <button
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              p.alsoMyClient ? 'bg-primary' : 'bg-muted-foreground/30'
+            }`}
+            onClick={() => p.setAlsoMyClient(!p.alsoMyClient)}
+          >
+            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+              p.alsoMyClient ? 'translate-x-4' : 'translate-x-0.5'
+            }`} />
+          </button>
+          <div>
+            <span className="text-xs font-semibold">Also My Client</span>
+            <p className="text-[9px] text-muted-foreground">Cascade client profile data into practice planning to recognize holistic benefits</p>
+          </div>
+        </div>
+
+        {/* Client-Practice Opportunity Panel */}
+        {clientOpportunity && (
+          <div className="bg-gradient-to-br from-primary/10 via-background to-primary/5 rounded-lg p-3 border border-primary/20">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-bold text-primary flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Client Opportunity Analysis
+              </h4>
+              <Badge variant="outline" className={`text-[9px] ${
+                clientOpportunity.opportunityScore >= 70 ? 'text-green-400 border-green-400/30' :
+                clientOpportunity.opportunityScore >= 40 ? 'text-amber-400 border-amber-400/30' :
+                'text-red-400 border-red-400/30'
+              }`}>
+                Score: {clientOpportunity.opportunityScore}/100
+              </Badge>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+              <KPI label="AUM Opportunity" value={fmtSm(clientOpportunity.aumOpportunity)} sub="Investable assets" variant="blu" />
+              <KPI label="Advisory Fee" value={fmtSm(clientOpportunity.advisoryFeeAnnual)} sub="Annual @ 1%" variant="grn" />
+              <KPI label="Insurance GDC" value={fmtSm(clientOpportunity.insuranceGDC)} sub="First-year" variant="gld" />
+              <KPI label="Client LTV" value={fmtSm(clientOpportunity.clientLTV)} sub="10-year horizon" variant="grn" />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+              <KPI label="Insurance Gap" value={fmtSm(clientOpportunity.insuranceGap)} sub="DIME method" variant="red" />
+              <KPI label="Recurring Annual" value={fmtSm(clientOpportunity.recurringAnnual)} sub="AUM + renewals" variant="grn" />
+              {clientOpportunity.bizInsuranceGDC > 0 && (
+                <KPI label="Biz Insurance" value={fmtSm(clientOpportunity.bizInsuranceGDC)} sub="Key person + group" variant="gld" />
+              )}
+            </div>
+            {clientOpportunity.recommendedChannels.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[9px] text-muted-foreground">Recommended:</span>
+                {clientOpportunity.recommendedChannels.map(ch => (
+                  <Badge key={ch} variant="outline" className="text-[9px]" style={{ color: SPLIT_COLORS[ch as keyof typeof SPLIT_COLORS] || '#888', borderColor: (SPLIT_COLORS[ch as keyof typeof SPLIT_COLORS] || '#888') + '40' }}>
+                    {SPLIT_LABELS[ch as keyof typeof SPLIT_LABELS] || ch}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <Separator />
 
-        {/* ─── SECTION 2: Channel Income Splits with Enable/Disable ─── */}
+        {/* ─── SECTION 2: Income Splits with Enable/Disable ─── */}
+        {isSectionVisible('splits-sliders', p.complexity) && <>
         <SectionHeader>2. Income Channels {splitTotal !== 100 && <span className="text-red-400 ml-2">⚠ Splits sum to {splitTotal}% (should be 100%)</span>}</SectionHeader>
         <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Toggle channels on/off to include them in your plan. Adjust the % split to set how much of your target income each channel should contribute.</p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -816,10 +974,12 @@ export function MyPlanPanel(p: PracticeProps) {
             </ResponsiveContainer>
           </div>
         </div>
+        </>}
 
         <Separator />
 
         {/* ─── SECTION 3: Channel Details (only show enabled channels) ─── */}
+        {isSectionVisible('channel-details', p.complexity) && <>
         {p.enabledChannels.gdc && <>
         <SectionHeader>3a. GDC Production — Target: {fmtSm(plan.channels.gdc.target)}</SectionHeader>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -849,7 +1009,9 @@ export function MyPlanPanel(p: PracticeProps) {
           <PInput label="Existing AUM ($)" value={p.aumExisting} onChange={v => p.setAumExisting(+v || 0)} prefix="$" />
           <PInput label="New AUM/Year ($)" value={p.aumNew} onChange={v => p.setAumNew(+v || 0)} prefix="$" />
           <PInput label="Trail %" value={p.aumTrailPct} onChange={v => p.setAumTrailPct(+v || 0)} suffix="%" />
+          <PInput label="Override/Payout %" value={p.aumOverrideRate} onChange={v => p.setAumOverrideRate(Math.max(0, Math.min(100, +v || 0)))} suffix="%" />
         </div>
+        <p className="text-[9px] text-muted-foreground/60 -mt-1">Override Rate: % of advisory fee you keep (ESI ~90%, Independent RIA ~100%). Default: {AUM_OVERRIDE_DEFAULTS[p.role]}% for {HIER_NAMES[p.role]}.</p>
         <div className="flex flex-wrap gap-2">
           <KPI label="Projected Income" value={fmtSm(plan.channels.aum.detail.projectedIncome)} variant={plan.channels.aum.detail.gap === 0 ? 'grn' : 'gld'} />
           <KPI label="Required AUM Book" value={fmtSm(plan.channels.aum.detail.requiredBookForTarget)} variant="blu" />
@@ -860,26 +1022,77 @@ export function MyPlanPanel(p: PracticeProps) {
 
         {p.enabledChannels.affiliate && <>
         <SectionHeader>3c. Affiliate Income — Target: {fmtSm(plan.channels.affiliate.target)}</SectionHeader>
-        <div className="space-y-2">
-          {(['a', 'b', 'c', 'd'] as const).map(t => {
-            const d = plan.channels.affiliate.details.find(x => x.type === t);
-            if (!d) return null;
-            return (
-              <div key={t} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
-                <div className="col-span-2 sm:col-span-1">
-                  <Label className="text-[10px] text-muted-foreground font-semibold">{d.label}</Label>
+
+        {/* Mode Toggle: Recruiter vs Producer */}
+        <div className="flex items-center gap-1 bg-muted/20 rounded-md p-0.5 mb-2">
+          <button onClick={() => p.setAffiliateMode('recruiter')}
+            className={`flex-1 px-2 py-1 rounded text-[10px] font-semibold transition-all ${
+              p.affiliateMode === 'recruiter' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-muted-foreground hover:bg-muted/30'
+            }`}>
+            \ud83d\udc65 Recruiter Mode
+          </button>
+          <button onClick={() => p.setAffiliateMode('producer')}
+            className={`flex-1 px-2 py-1 rounded text-[10px] font-semibold transition-all ${
+              p.affiliateMode === 'producer' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-muted-foreground hover:bg-muted/30'
+            }`}>
+            \ud83d\udcbc Producer Mode
+          </button>
+        </div>
+        <p className="text-[9px] text-muted-foreground/60 -mt-1 mb-2">
+          {p.affiliateMode === 'recruiter'
+            ? 'You recruit affiliates who bring in revenue. Income = count \u00d7 avg production \u00d7 rate.'
+            : 'You ARE the affiliate earning from your own deals. Income = deals \u00d7 commission \u00d7 split + bonuses.'}
+        </p>
+
+        {p.affiliateMode === 'recruiter' ? (
+          <div className="space-y-2">
+            {(['a', 'b', 'c', 'd'] as const).map(t => {
+              const d = plan.channels.affiliate.details.find(x => x.type === t);
+              if (!d) return null;
+              return (
+                <div key={t} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+                  <div className="col-span-2 sm:col-span-1">
+                    <Label className="text-[10px] text-muted-foreground font-semibold">{d.label}</Label>
+                  </div>
+                  <PInput label="# Affiliates" value={p.affCounts[t]} onChange={v => p.setAffCounts({ ...p.affCounts, [t]: +v || 0 })} />
+                  <PInput label="Avg Production" value={p.affAvgProd[t]} onChange={v => p.setAffAvgProd({ ...p.affAvgProd, [t]: +v || 0 })} prefix="$" />
+                  <div className="text-[10px] text-muted-foreground">Rate: {pct(d.incomeRate)}</div>
+                  <KPI label="Projected" value={fmtSm(d.projectedIncome)} variant={d.projectedIncome > 0 ? 'grn' : ''} />
                 </div>
-                <PInput label="# Affiliates" value={p.affCounts[t]} onChange={v => p.setAffCounts({ ...p.affCounts, [t]: +v || 0 })} />
-                <PInput label="Avg Production" value={p.affAvgProd[t]} onChange={v => p.setAffAvgProd({ ...p.affAvgProd, [t]: +v || 0 })} prefix="$" />
-                <div className="text-[10px] text-muted-foreground">Rate: {pct(d.incomeRate)}</div>
-                <KPI label="Projected" value={fmtSm(d.projectedIncome)} variant={d.projectedIncome > 0 ? 'grn' : ''} />
-              </div>
-            );
-          })}
-          <div className="flex flex-wrap gap-2 mt-2">
-            <KPI label="Total Affiliate" value={fmtSm(plan.channels.affiliate.totalProjected)} variant={plan.channels.affiliate.gap === 0 ? 'grn' : 'gld'} />
-            <KPI label="Gap" value={plan.channels.affiliate.gap > 0 ? fmtSm(plan.channels.affiliate.gap) : '✓ Met'} variant={plan.channels.affiliate.gap > 0 ? 'red' : 'grn'} />
+              );
+            })}
           </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <PInput label="Deals/Month" value={p.producerInputs.dealsPerMonth}
+                onChange={v => p.setProducerInputs({ ...p.producerInputs, dealsPerMonth: +v || 0 })} />
+              <PInput label="Avg Commission/Deal" value={p.producerInputs.avgCommissionPerDeal}
+                onChange={v => p.setProducerInputs({ ...p.producerInputs, avgCommissionPerDeal: +v || 0 })} prefix="$" />
+              <PInput label="Your Split %" value={p.producerInputs.splitPct}
+                onChange={v => p.setProducerInputs({ ...p.producerInputs, splitPct: Math.max(0, Math.min(100, +v || 0)) })} suffix="%" />
+              <PInput label="Bonus/Deal" value={p.producerInputs.fixedBonusPerDeal}
+                onChange={v => p.setProducerInputs({ ...p.producerInputs, fixedBonusPerDeal: +v || 0 })} prefix="$" />
+              <PInput label="Monthly Retainer" value={p.producerInputs.monthlyRetainer}
+                onChange={v => p.setProducerInputs({ ...p.producerInputs, monthlyRetainer: +v || 0 })} prefix="$" />
+            </div>
+            {(() => {
+              const pr = calcProducerAffiliateIncome(p.producerInputs);
+              return (
+                <div className="flex flex-wrap gap-2">
+                  <KPI label="Commission Income" value={fmtSm(pr.commissionIncome)} variant="grn" />
+                  <KPI label="Bonus Income" value={fmtSm(pr.bonusIncome)} variant="gld" />
+                  {pr.retainerIncome > 0 && <KPI label="Retainer Income" value={fmtSm(pr.retainerIncome)} variant="blu" />}
+                  <KPI label="Monthly Total" value={fmtSm(pr.monthlyIncome)} variant="" />
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 mt-2">
+          <KPI label="Total Affiliate" value={fmtSm(plan.channels.affiliate.totalProjected)} variant={plan.channels.affiliate.gap === 0 ? 'grn' : 'gld'} />
+          <KPI label="Gap" value={plan.channels.affiliate.gap > 0 ? fmtSm(plan.channels.affiliate.gap) : '✓ Met'} variant={plan.channels.affiliate.gap > 0 ? 'red' : 'grn'} />
         </div>
 
         </>}
@@ -943,10 +1156,12 @@ export function MyPlanPanel(p: PracticeProps) {
         </div>
         <p className="text-[10px] text-muted-foreground">Configure individual channel budgets in the Channels panel for detailed ROI analysis.</p>
         </>}
+        </>}
 
         <Separator />
 
         {/* ─── SECTION 4: Unified Income Roll-Up — Cross-Cascade ─── */}
+        {isSectionVisible('roll-up-table', p.complexity) && <>
         <SectionHeader>4. Unified Income Roll-Up
           <RefTip text="Click any Target or Projected value to edit directly. Changes cascade: editing a Target adjusts splits and sub-inputs (roll-down). Editing a Projected back-solves the inputs needed (roll-up). Use per-channel sync buttons for quick alignment." refId="cross-cascade" />
         </SectionHeader>
@@ -1048,14 +1263,32 @@ export function MyPlanPanel(p: PracticeProps) {
               })}
             </div>
             {auditTrail.length > 0 && (
-              <Button variant="ghost" size="sm" className="text-[9px] h-5 mt-1 text-muted-foreground" onClick={() => setAuditTrail([])}>Clear Audit Trail</Button>
+              <div className="flex gap-1 mt-1">
+                <Button variant="ghost" size="sm" className="text-[9px] h-5 text-muted-foreground" onClick={() => setAuditTrail([])}>Clear Trail</Button>
+                <Button variant="ghost" size="sm" className="text-[9px] h-5 text-muted-foreground" onClick={() => {
+                  const csv = ['Timestamp,Direction,Trigger,Changes'].concat(
+                    auditTrail.map(e => {
+                      const changes = e.changes.map(c => `${c.field}: ${c.from} -> ${c.to}`).join('; ');
+                      return `"${new Date(e.timestamp).toISOString()}","${e.direction}","${e.trigger}","${changes}"`;
+                    })
+                  ).join('\n');
+                  const blob = new Blob([csv], { type: 'text/csv' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = `cascade-audit-${new Date().toISOString().slice(0,10)}.csv`;
+                  a.click(); URL.revokeObjectURL(url);
+                }}>Export CSV</Button>
+              </div>
             )}
           </details>
         )}
 
+        </>}
+
         <Separator />
 
         {/* ─── SECTION 5: Channel Economics — CAC / ROI / LTV ─── */}
+        {isSectionVisible('economics', p.complexity) && <>
         <SectionHeader>5. Channel Economics — CAC / ROI / LTV
           <RefTip text="Industry benchmarks from LIMRA, Cerulli, McKinsey Insurance Practice, Kitces Research (2024). CAC = Customer Acquisition Cost, ROI = Return on Investment, LTV = Lifetime Value. Extended Network LTV includes a 1.3× referral multiplier." refId="economics" />
         </SectionHeader>
@@ -1135,26 +1368,54 @@ export function MyPlanPanel(p: PracticeProps) {
             </>
           )}
 
+        </>}
+
         <Separator />
 
         {/* ─── SECTION 6: Scenario Comparison ─── */}
+        {isSectionVisible('scenarios', p.complexity) && <>
         <SectionHeader>6. Scenario Comparison</SectionHeader>
         <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Save your current plan as a named scenario, then compare multiple configurations side-by-side to evaluate different strategies.</p>
         <ScenarioManager p={p} plan={plan} funnel={funnel} />
 
+        </>}
+
         <Separator />
 
         {/* ─── SECTION 7: What-If Sensitivity Analysis ─── */}
+        {isSectionVisible('sensitivity', p.complexity) && <>
         <SectionHeader>7. What-If Sensitivity Analysis</SectionHeader>
         <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Stress-test your plan by seeing how changes in key assumptions impact projected income. Variables sorted by impact magnitude.</p>
         <SensitivityPanel sensitivity={sensitivity} plan={plan} targetIncome={p.targetIncome} />
 
+        </>}
+
         <Separator />
 
         {/* ─── SECTION 8: Time-Phased Projections ─── */}
+        {isSectionVisible('time-phased', p.complexity) && <>
         <SectionHeader>8. Time-Phased Projections</SectionHeader>
         <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Monthly and quarterly income ramp with seasonal adjustments and milestone tracking. Ramp curve based on your role ({HIER_NAMES[p.role]}).</p>
         <TimePhasedPanel timePhased={timePhased} targetIncome={p.targetIncome} enabledChannels={p.enabledChannels} />
+        </>}
+
+        <Separator />
+
+        {/* ─── SECTION 9: Cascade Chain Visualization ─── */}
+        {isSectionVisible('sensitivity', p.complexity) && <>
+        <SectionHeader>9. Cascade Flow</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Visual flow showing how target income cascades through splits to channel targets and sub-inputs, with roll-up from projected values.</p>
+        <CascadeChainViz chain={cascadeChain} />
+        </>}
+
+        <Separator />
+
+        {/* ─── SECTION 10: Interactive Planning Horizon ─── */}
+        {isSectionVisible('time-phased', p.complexity) && <>
+        <SectionHeader>10. Multi-Year Planning Horizon</SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">36-month cumulative income vs target with channel breakdown, milestones, and on-track indicators.</p>
+        <PlanningHorizonViz points={planningHorizon} targetIncome={p.targetIncome} />
+        </>}
 
       </CardContent>
     </Card>
@@ -3093,5 +3354,302 @@ export function MonthlyProductionPanel(p: PracticeProps) {
       </CardContent>
     </Card>
     </section>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   CASCADE CHAIN VISUALIZATION — Flow diagram of cascade propagation
+   ═══════════════════════════════════════════════════════════════ */
+
+function CascadeChainViz({ chain }: { chain: CascadeChainData }) {
+  if (chain.nodes.length === 0) return null;
+
+  const rootNodes = chain.nodes.filter(n => n.level === 0 && n.type === 'target');
+  const channelNodes = chain.nodes.filter(n => n.level === 1);
+  const outputNodes = chain.nodes.filter(n => n.level === 0 && n.type === 'output');
+
+  return (
+    <div className="space-y-3">
+      {/* Root: Target Income */}
+      <div className="flex justify-center">
+        {rootNodes.map(n => (
+          <div key={n.id} className="bg-amber-500/15 border border-amber-500/30 rounded-lg px-4 py-2 text-center">
+            <div className="text-[10px] font-bold text-amber-400">{n.label}</div>
+            <div className="text-sm font-extrabold text-amber-300">{fmtSm(n.value)}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Down arrows */}
+      <div className="flex justify-center">
+        <div className="flex flex-col items-center">
+          <svg width="20" height="24" viewBox="0 0 20 24" className="text-muted-foreground/50">
+            <path d="M10 0 L10 18 M4 14 L10 20 L16 14" stroke="currentColor" strokeWidth="2" fill="none" />
+          </svg>
+          <span className="text-[8px] text-muted-foreground">splits</span>
+        </div>
+      </div>
+
+      {/* Channel nodes */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+        {channelNodes.map(n => {
+          const edge = chain.edges.find(e => e.to === n.id && e.from === 'target');
+          const projectedNode = chain.nodes.find(pn => pn.id === `${n.id.replace('ch_', '')}_projected`);
+          return (
+            <div key={n.id} className="rounded-lg p-2 text-center border" style={{ borderColor: n.color + '40', backgroundColor: n.color + '10' }}>
+              <div className="text-[9px] font-bold" style={{ color: n.color }}>{n.label}</div>
+              <div className="text-xs font-extrabold" style={{ color: n.color }}>{fmtSm(n.value)}</div>
+              {edge && <div className="text-[8px] text-muted-foreground">{edge.label} split</div>}
+              {projectedNode && (
+                <div className="mt-1 pt-1 border-t" style={{ borderColor: n.color + '30' }}>
+                  <div className="text-[8px] text-muted-foreground">Projected</div>
+                  <div className="text-[10px] font-bold" style={{ color: projectedNode.value >= n.value ? '#22c55e' : '#ef4444' }}>
+                    {fmtSm(projectedNode.value)}
+                    <span className="text-[8px] ml-0.5">
+                      {n.value > 0 ? `(${Math.round(projectedNode.value / n.value * 100)}%)` : ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Up arrows */}
+      <div className="flex justify-center">
+        <div className="flex flex-col items-center">
+          <span className="text-[8px] text-muted-foreground">roll-up</span>
+          <svg width="20" height="24" viewBox="0 0 20 24" className="text-green-500/50">
+            <path d="M10 24 L10 6 M4 10 L10 4 L16 10" stroke="currentColor" strokeWidth="2" fill="none" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Total Projected */}
+      <div className="flex justify-center">
+        {outputNodes.map(n => (
+          <div key={n.id} className="bg-green-500/15 border border-green-500/30 rounded-lg px-4 py-2 text-center">
+            <div className="text-[10px] font-bold text-green-400">{n.label}</div>
+            <div className="text-sm font-extrabold text-green-300">{fmtSm(n.value)}</div>
+            {rootNodes[0] && (
+              <div className={`text-[9px] font-semibold ${n.value >= rootNodes[0].value ? 'text-green-400' : 'text-red-400'}`}>
+                {n.value >= rootNodes[0].value ? '✓ On Target' : `Gap: ${fmtSm(rootNodes[0].value - n.value)}`}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Cascade direction legend */}
+      <div className="flex justify-center gap-4 text-[9px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0.5 bg-amber-400 inline-block" /> Roll-down (target → inputs)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0.5 bg-green-400 inline-block" /> Roll-up (projected → total)
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PLANNING HORIZON VISUALIZATION — Multi-year interactive chart
+   ═══════════════════════════════════════════════════════════════ */
+
+function PlanningHorizonViz({ points, targetIncome }: { points: PlanningHorizonPoint[]; targetIncome: number }) {
+  const [viewMode, setViewMode] = useState<'cumulative' | 'monthly' | 'channel'>('cumulative');
+  const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
+
+  if (points.length === 0) return null;
+
+  const milestones = points.filter(p => p.milestone !== null);
+  const lastPoint = points[points.length - 1];
+  const breakeven = points.find(p => p.milestone === 'Breakeven');
+  const onTrackPct = Math.round(points.filter(p => p.onTrack).length / points.length * 100);
+
+  // Quarterly aggregation
+  const quarters = [];
+  for (let q = 0; q < Math.ceil(points.length / 3); q++) {
+    const qPoints = points.slice(q * 3, q * 3 + 3);
+    quarters.push({
+      label: `Q${q + 1}`,
+      income: qPoints.reduce((s, p) => s + p.gdc + p.aum + p.affiliate + p.override + p.channel, 0),
+      target: Math.round(targetIncome / 4),
+      gdc: qPoints.reduce((s, p) => s + p.gdc, 0),
+      aum: qPoints.reduce((s, p) => s + p.aum, 0),
+      affiliate: qPoints.reduce((s, p) => s + p.affiliate, 0),
+      override: qPoints.reduce((s, p) => s + p.override, 0),
+      channel: qPoints.reduce((s, p) => s + p.channel, 0),
+    });
+  }
+
+  const hoveredPoint = hoveredMonth !== null ? points[hoveredMonth - 1] : null;
+
+  return (
+    <div className="space-y-3">
+      {/* KPI Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <KPI label="3-Year Cumulative" value={fmtSm(lastPoint.cumulativeIncome)} sub={`vs ${fmtSm(lastPoint.cumulativeTarget)} target`} variant={lastPoint.cumulativeIncome >= lastPoint.cumulativeTarget * 0.9 ? 'grn' : 'red'} />
+        <KPI label="On-Track Rate" value={`${onTrackPct}%`} sub={`${points.filter(p => p.onTrack).length}/${points.length} months`} variant={onTrackPct >= 80 ? 'grn' : onTrackPct >= 50 ? 'gld' : 'red'} />
+        {breakeven && <KPI label="Breakeven" value={`Month ${breakeven.month}`} sub={breakeven.month <= 12 ? 'Year 1' : breakeven.month <= 24 ? 'Year 2' : 'Year 3'} variant="blu" />}
+        <KPI label="Year 3 Run Rate" value={fmtSm(Math.round((lastPoint.gdc + lastPoint.aum + lastPoint.affiliate + lastPoint.override + lastPoint.channel) * 12))} sub="Annualized" variant="grn" />
+      </div>
+
+      {/* View mode toggle */}
+      <div className="flex gap-1 justify-center">
+        {(['cumulative', 'monthly', 'channel'] as const).map(mode => (
+          <button key={mode} onClick={() => setViewMode(mode)}
+            className={`text-[9px] px-2 py-0.5 rounded-full transition-colors ${
+              viewMode === mode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}>
+            {mode === 'cumulative' ? '📈 Cumulative' : mode === 'monthly' ? '📊 Monthly' : '🎯 By Channel'}
+          </button>
+        ))}
+      </div>
+
+      {/* Cumulative view: progress bar per year */}
+      {viewMode === 'cumulative' && (
+        <div className="space-y-2">
+          {[0, 1, 2].map(yr => {
+            const yrPoints = points.slice(yr * 12, (yr + 1) * 12);
+            if (yrPoints.length === 0) return null;
+            const yrIncome = yrPoints.reduce((s, p) => s + p.gdc + p.aum + p.affiliate + p.override + p.channel, 0);
+            const yrTarget = targetIncome;
+            const pct = Math.min(100, Math.round(yrIncome / yrTarget * 100));
+            return (
+              <div key={yr} className="space-y-0.5">
+                <div className="flex justify-between text-[10px]">
+                  <span className="font-semibold">Year {yr + 1}</span>
+                  <span className={pct >= 90 ? 'text-green-400' : pct >= 60 ? 'text-amber-400' : 'text-red-400'}>
+                    {fmtSm(yrIncome)} / {fmtSm(yrTarget)} ({pct}%)
+                  </span>
+                </div>
+                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-500 ${
+                    pct >= 90 ? 'bg-green-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                  }`} style={{ width: `${pct}%` }} />
+                </div>
+                {/* Monthly mini-bars */}
+                <div className="flex gap-px">
+                  {yrPoints.map((pt, i) => {
+                    const monthIncome = pt.gdc + pt.aum + pt.affiliate + pt.override + pt.channel;
+                    const monthTarget = targetIncome / 12;
+                    const mPct = Math.min(100, Math.round(monthIncome / monthTarget * 100));
+                    return (
+                      <div key={i} className="flex-1 group relative cursor-pointer"
+                        onMouseEnter={() => setHoveredMonth(pt.month)}
+                        onMouseLeave={() => setHoveredMonth(null)}>
+                        <div className="h-6 bg-muted/50 rounded-sm overflow-hidden">
+                          <div className={`w-full rounded-sm transition-all ${
+                            pt.onTrack ? 'bg-green-500/60' : 'bg-red-500/40'
+                          }`} style={{ height: `${mPct}%`, marginTop: `${100 - mPct}%` }} />
+                        </div>
+                        {pt.milestone && (
+                          <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+                        )}
+                        <div className="text-[7px] text-center text-muted-foreground">{i + 1}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Monthly view: quarterly bars */}
+      {viewMode === 'monthly' && (
+        <div className="space-y-1">
+          {quarters.map((q, i) => {
+            const pct = Math.min(100, Math.round(q.income / q.target * 100));
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-[9px] w-6 text-right text-muted-foreground">{q.label}</span>
+                <div className="flex-1 h-4 bg-muted/30 rounded overflow-hidden relative">
+                  <div className={`h-full rounded transition-all ${pct >= 90 ? 'bg-green-500/70' : pct >= 60 ? 'bg-amber-500/70' : 'bg-red-500/50'}`}
+                    style={{ width: `${pct}%` }} />
+                  <div className="absolute right-1 top-0 h-full flex items-center text-[8px] font-mono text-foreground/70">
+                    {fmtSm(q.income)}
+                  </div>
+                </div>
+                <span className={`text-[9px] w-8 text-right font-semibold ${pct >= 90 ? 'text-green-400' : pct >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
+                  {pct}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Channel breakdown view */}
+      {viewMode === 'channel' && (
+        <div className="space-y-2">
+          {quarters.map((q, i) => (
+            <div key={i} className="space-y-0.5">
+              <div className="flex justify-between text-[9px]">
+                <span className="font-semibold">{q.label}</span>
+                <span className="text-muted-foreground">{fmtSm(q.income)}</span>
+              </div>
+              <div className="flex h-3 rounded-full overflow-hidden">
+                {q.income > 0 && <>
+                  {q.gdc > 0 && <div className="h-full" style={{ width: `${q.gdc / q.income * 100}%`, backgroundColor: '#22c55e' }} />}
+                  {q.aum > 0 && <div className="h-full" style={{ width: `${q.aum / q.income * 100}%`, backgroundColor: '#3b82f6' }} />}
+                  {q.affiliate > 0 && <div className="h-full" style={{ width: `${q.affiliate / q.income * 100}%`, backgroundColor: '#a855f7' }} />}
+                  {q.override > 0 && <div className="h-full" style={{ width: `${q.override / q.income * 100}%`, backgroundColor: '#f97316' }} />}
+                  {q.channel > 0 && <div className="h-full" style={{ width: `${q.channel / q.income * 100}%`, backgroundColor: '#06b6d4' }} />}
+                </>}
+              </div>
+            </div>
+          ))}
+          {/* Legend */}
+          <div className="flex flex-wrap gap-2 justify-center text-[8px]">
+            {[{ label: 'GDC', color: '#22c55e' }, { label: 'AUM', color: '#3b82f6' }, { label: 'Affiliate', color: '#a855f7' }, { label: 'Override', color: '#f97316' }, { label: 'Marketing', color: '#06b6d4' }].map(l => (
+              <span key={l.label} className="flex items-center gap-0.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: l.color }} />
+                {l.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Hover tooltip */}
+      {hoveredPoint && (
+        <div className="bg-card border border-border rounded-lg p-2 text-[10px]">
+          <div className="font-bold mb-1">Month {hoveredPoint.month} {hoveredPoint.milestone && `— ${hoveredPoint.milestone}`}</div>
+          <div className="grid grid-cols-3 gap-1">
+            <span>GDC: {fmtSm(hoveredPoint.gdc)}</span>
+            <span>AUM: {fmtSm(hoveredPoint.aum)}</span>
+            <span>Affiliate: {fmtSm(hoveredPoint.affiliate)}</span>
+            <span>Override: {fmtSm(hoveredPoint.override)}</span>
+            <span>Marketing: {fmtSm(hoveredPoint.channel)}</span>
+            <span className={hoveredPoint.onTrack ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+              {hoveredPoint.onTrack ? '✓ On Track' : '⚠ Behind'}
+            </span>
+          </div>
+          <div className="mt-1 text-muted-foreground">
+            Cumulative: {fmtSm(hoveredPoint.cumulativeIncome)} / {fmtSm(hoveredPoint.cumulativeTarget)}
+          </div>
+        </div>
+      )}
+
+      {/* Milestones timeline */}
+      {milestones.length > 0 && (
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {milestones.map(m => (
+            <div key={m.month} className={`flex-shrink-0 px-2 py-1 rounded text-[8px] border ${
+              m.onTrack ? 'border-green-500/30 bg-green-500/10 text-green-400' : 'border-red-500/30 bg-red-500/10 text-red-400'
+            }`}>
+              <div className="font-bold">{m.milestone}</div>
+              <div>M{m.month}: {fmtSm(m.cumulativeIncome)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

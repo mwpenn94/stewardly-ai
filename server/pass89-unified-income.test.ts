@@ -19,6 +19,7 @@ describe('Pass 89 — Unified Income Planning Engine', () => {
     aumExisting: 5000000,
     aumNew: 0,
     aumTrailPct: 1,
+    aumOverrideRate: 100,
     affCounts: { a: 1, b: 2, c: 1, d: 0 },
     affAvgProd: { a: 8000, b: 6000, c: 10000, d: 0 },
     teamSize: 0,

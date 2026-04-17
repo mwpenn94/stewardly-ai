@@ -630,6 +630,65 @@ const AFF_LABELS: Record<string, string> = {
 };
 export const AFF_RATES: Record<string, number> = { a: 0.15, b: 0.10, c: 0.20, d: 0.08 };
 
+/* ═══ AUM OVERRIDE RATES (payout % of advisory fee kept by advisor) ═══ */
+export const AUM_OVERRIDE_DEFAULTS: Record<RoleId, number> = {
+  new: 85, exp: 90, sa: 90, dir: 92, md: 95, rvp: 97,
+};
+
+/* ═══ AFFILIATE INCOME MODES ═══ */
+export type AffiliateMode = 'recruiter' | 'producer';
+
+/** Producer mode: user IS the affiliate earning from their own deals */
+export interface ProducerModeInputs {
+  dealsPerMonth: number;       // # deals closed per month
+  avgCommissionPerDeal: number; // avg commission earned per deal
+  splitPct: number;            // % of commission user keeps (co-broker split)
+  fixedBonusPerDeal: number;   // flat bonus per deal (milestone/referral)
+  monthlyRetainer: number;     // any monthly retainer/base from affiliate arrangement
+}
+
+export const PRODUCER_DEFAULTS: ProducerModeInputs = {
+  dealsPerMonth: 2,
+  avgCommissionPerDeal: 3000,
+  splitPct: 50,
+  fixedBonusPerDeal: 500,
+  monthlyRetainer: 0,
+};
+
+/** Calculate producer-mode affiliate income */
+export function calcProducerAffiliateIncome(inputs: ProducerModeInputs): {
+  annualIncome: number;
+  monthlyIncome: number;
+  commissionIncome: number;
+  bonusIncome: number;
+  retainerIncome: number;
+} {
+  const monthlyCommission = inputs.dealsPerMonth * inputs.avgCommissionPerDeal * (inputs.splitPct / 100);
+  const monthlyBonus = inputs.dealsPerMonth * inputs.fixedBonusPerDeal;
+  const monthlyTotal = monthlyCommission + monthlyBonus + inputs.monthlyRetainer;
+  return {
+    annualIncome: Math.round(monthlyTotal * 12),
+    monthlyIncome: Math.round(monthlyTotal),
+    commissionIncome: Math.round(monthlyCommission * 12),
+    bonusIncome: Math.round(monthlyBonus * 12),
+    retainerIncome: Math.round(inputs.monthlyRetainer * 12),
+  };
+}
+
+/* ═══ PROGRESSIVE DISCLOSURE LEVELS ═══ */
+export type ComplexityLevel = 'simple' | 'detailed' | 'expert';
+
+/** Sections visible at each complexity level */
+export const COMPLEXITY_SECTIONS: Record<ComplexityLevel, Set<string>> = {
+  simple: new Set(['target', 'role', 'summary', 'splits-pie']),
+  detailed: new Set(['target', 'role', 'summary', 'splits-pie', 'splits-sliders', 'channel-details', 'roll-up-table', 'economics']),
+  expert: new Set(['target', 'role', 'summary', 'splits-pie', 'splits-sliders', 'channel-details', 'roll-up-table', 'economics', 'cross-cascade', 'audit-trail', 'sensitivity', 'time-phased', 'scenarios', 'export']),
+};
+
+export function isSectionVisible(section: string, level: ComplexityLevel): boolean {
+  return COMPLEXITY_SECTIONS[level].has(section);
+}
+
 /** Enabled channels configuration */
 export interface EnabledChannels {
   gdc: boolean; aum: boolean; affiliate: boolean; override: boolean; channel: boolean;
@@ -652,9 +711,12 @@ export function calcUnifiedIncomePlan(params: {
   aumExisting: number;
   aumNew: number;
   aumTrailPct: number;
+  aumOverrideRate: number; // payout % of advisory fee kept by advisor (default 90)
   /* Affiliate channel */
+  affiliateMode: AffiliateMode;
   affCounts: { a: number; b: number; c: number; d: number };
   affAvgProd: { a: number; b: number; c: number; d: number };
+  producerInputs: ProducerModeInputs;
   /* Override channel */
   teamSize: number;
   teamAvgGDC: number;
@@ -680,9 +742,10 @@ export function calcUnifiedIncomePlan(params: {
   const gdcProjected = enabledChannels.gdc ? (funnel.wbTarget + funnel.expTarget) : 0;
   const gdcGap = Math.max(0, gdcTarget - gdcProjected);
 
-  // AUM projected
+  // AUM projected (with override/payout rate)
+  const aumPayoutRate = (params.aumOverrideRate ?? 90) / 100;
   const aumIncome = enabledChannels.aum
-    ? Math.round((params.aumExisting * (params.aumTrailPct / 100)) + (params.aumNew * (params.aumTrailPct / 100) * 0.5))
+    ? Math.round(((params.aumExisting * (params.aumTrailPct / 100)) + (params.aumNew * (params.aumTrailPct / 100) * 0.5)) * aumPayoutRate)
     : 0;
   const requiredAUM = enabledChannels.aum && params.aumTrailPct > 0 ? Math.round(aumTarget / (params.aumTrailPct / 100)) : 0;
   const aumGap = Math.max(0, aumTarget - aumIncome);
@@ -691,15 +754,43 @@ export function calcUnifiedIncomePlan(params: {
     projectedIncome: aumIncome, requiredBookForTarget: requiredAUM, gap: aumGap,
   };
 
-  // Affiliate projected
-  const affDetails: AffiliatePlanDetail[] = (['a','b','c','d'] as const).map(t => {
-    const count = enabledChannels.affiliate ? params.affCounts[t] : 0;
-    const avgProd = params.affAvgProd[t];
-    const rate = AFF_RATES[t];
-    const projected = Math.round(count * avgProd * rate);
-    return { type: t, label: AFF_LABELS[t], count, avgProduction: avgProd, incomeRate: rate, projectedIncome: projected };
-  });
-  const affTotalProjected = affDetails.reduce((s, d) => s + d.projectedIncome, 0);
+  // Affiliate projected — dual mode
+  let affDetails: AffiliatePlanDetail[];
+  let affTotalProjected: number;
+  let producerResult: ReturnType<typeof calcProducerAffiliateIncome> | null = null;
+
+  if (params.affiliateMode === 'producer' && enabledChannels.affiliate) {
+    // Producer mode: user IS the affiliate
+    producerResult = calcProducerAffiliateIncome(params.producerInputs);
+    affTotalProjected = producerResult.annualIncome;
+    affDetails = [{
+      type: 'a', label: 'Commission Income', count: params.producerInputs.dealsPerMonth * 12,
+      avgProduction: params.producerInputs.avgCommissionPerDeal, incomeRate: params.producerInputs.splitPct / 100,
+      projectedIncome: producerResult.commissionIncome,
+    }, {
+      type: 'b', label: 'Deal Bonuses', count: params.producerInputs.dealsPerMonth * 12,
+      avgProduction: params.producerInputs.fixedBonusPerDeal, incomeRate: 1,
+      projectedIncome: producerResult.bonusIncome,
+    }, {
+      type: 'c', label: 'Monthly Retainer', count: 12,
+      avgProduction: params.producerInputs.monthlyRetainer, incomeRate: 1,
+      projectedIncome: producerResult.retainerIncome,
+    }, {
+      type: 'd', label: 'Total Producer Income', count: 0,
+      avgProduction: 0, incomeRate: 0,
+      projectedIncome: 0, // placeholder row
+    }];
+  } else {
+    // Recruiter mode: recruiting affiliates who bring in revenue
+    affDetails = (['a','b','c','d'] as const).map(t => {
+      const count = enabledChannels.affiliate ? params.affCounts[t] : 0;
+      const avgProd = params.affAvgProd[t];
+      const rate = AFF_RATES[t];
+      const projected = Math.round(count * avgProd * rate);
+      return { type: t, label: AFF_LABELS[t], count, avgProduction: avgProd, incomeRate: rate, projectedIncome: projected };
+    });
+    affTotalProjected = affDetails.reduce((s, d) => s + d.projectedIncome, 0);
+  }
   const affGap = Math.max(0, affTarget - affTotalProjected);
 
   // Override projected
@@ -1517,6 +1608,287 @@ export function dragRebalanceSplit(
 ): IncomeSplits {
   const clamped = Math.max(0, Math.min(100, Math.round(newPct)));
   return redistributeSplits(ch, clamped, currentSplits, enabledChannels);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PASS 98 — CLIENT-PRACTICE CROSS-CASCADE ("Also My Client")
+   ═══════════════════════════════════════════════════════════════ */
+
+/**
+ * When a user toggles "Also My Client", the client profile data cascades
+ * INTO the practice planning engine to recognize holistic benefits.
+ * This function calculates the practice-relevant metrics from client data.
+ */
+export interface ClientPracticeInputs {
+  clientIncome: number;
+  clientNetWorth: number;
+  clientSavings: number;
+  clientRetirement401k: number;
+  clientAge: number;
+  clientDep: number;
+  clientMortgage: number;
+  clientDebt: number;
+  clientExistingInsurance: number;
+  clientIsBiz: boolean;
+  clientBizRevenue: number;
+  clientBizEmployees: number;
+  clientRiskTolerance: string;
+}
+
+export interface ClientPracticeOpportunity {
+  /** Estimated AUM opportunity from client's investable assets */
+  aumOpportunity: number;
+  /** Estimated annual advisory fee from client AUM */
+  advisoryFeeAnnual: number;
+  /** Estimated insurance gap (protection need - existing) */
+  insuranceGap: number;
+  /** Estimated GDC from insurance gap */
+  insuranceGDC: number;
+  /** Business insurance opportunity (key person, buy-sell) */
+  bizInsuranceGDC: number;
+  /** Total estimated first-year GDC from this client */
+  totalFirstYearGDC: number;
+  /** Estimated recurring annual revenue from this client */
+  recurringAnnual: number;
+  /** Client lifetime value (10-year horizon) */
+  clientLTV: number;
+  /** Recommended channels based on client profile */
+  recommendedChannels: string[];
+  /** Opportunity score 0-100 */
+  opportunityScore: number;
+}
+
+export function calcClientPracticeOpportunity(inputs: ClientPracticeInputs): ClientPracticeOpportunity {
+  // AUM opportunity: investable assets = savings + 401k + (net worth - mortgage - debt) * 0.3
+  const investableAssets = Math.max(0, inputs.clientSavings + inputs.clientRetirement401k +
+    Math.max(0, (inputs.clientNetWorth - inputs.clientMortgage - inputs.clientDebt) * 0.3));
+  const aumOpportunity = investableAssets;
+  const advisoryFeeAnnual = Math.round(aumOpportunity * 0.01); // 1% advisory fee
+
+  // Insurance gap: DIME method simplified
+  const incomeReplacement = inputs.clientIncome * 10;
+  const mortgagePayoff = inputs.clientMortgage;
+  const debtPayoff = inputs.clientDebt;
+  const education = inputs.clientDep * 50000;
+  const totalNeed = incomeReplacement + mortgagePayoff + debtPayoff + education;
+  const insuranceGap = Math.max(0, totalNeed - inputs.clientExistingInsurance);
+  // Average GDC per $1000 of coverage: ~$15 for term, ~$50 for perm
+  const avgGDCPer1000 = inputs.clientAge < 45 ? 20 : 35;
+  const insuranceGDC = Math.round((insuranceGap / 1000) * avgGDCPer1000);
+
+  // Business insurance opportunity
+  let bizInsuranceGDC = 0;
+  if (inputs.clientIsBiz) {
+    // Key person insurance: 5-10x salary for key employees
+    const keyPersonNeed = inputs.clientBizRevenue * 2;
+    bizInsuranceGDC += Math.round((keyPersonNeed / 1000) * 30);
+    // Group benefits: $800 GDC per employee
+    bizInsuranceGDC += inputs.clientBizEmployees * 800;
+  }
+
+  const totalFirstYearGDC = insuranceGDC + bizInsuranceGDC;
+  const recurringAnnual = advisoryFeeAnnual + Math.round(totalFirstYearGDC * 0.05); // 5% renewal
+  const clientLTV = Math.round(totalFirstYearGDC + recurringAnnual * 10); // 10-year horizon
+
+  // Recommended channels
+  const recommendedChannels: string[] = [];
+  if (insuranceGDC > 0) recommendedChannels.push('gdc');
+  if (aumOpportunity > 100000) recommendedChannels.push('aum');
+  if (inputs.clientIsBiz) recommendedChannels.push('override'); // team building opportunity
+  if (inputs.clientIsBiz && inputs.clientBizEmployees > 5) recommendedChannels.push('channel');
+
+  // Opportunity score
+  let score = 0;
+  if (inputs.clientIncome > 100000) score += 20;
+  if (inputs.clientIncome > 250000) score += 10;
+  if (investableAssets > 500000) score += 20;
+  if (investableAssets > 1000000) score += 10;
+  if (insuranceGap > 500000) score += 15;
+  if (inputs.clientIsBiz) score += 15;
+  if (inputs.clientDep > 0) score += 10;
+  score = Math.min(100, score);
+
+  return {
+    aumOpportunity, advisoryFeeAnnual, insuranceGap, insuranceGDC,
+    bizInsuranceGDC, totalFirstYearGDC, recurringAnnual, clientLTV,
+    recommendedChannels, opportunityScore: score,
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PASS 98 — CASCADE CHAIN VISUALIZATION DATA
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface CascadeNode {
+  id: string;
+  label: string;
+  value: number;
+  level: number; // 0 = root, 1 = channel, 2 = sub-input
+  type: 'target' | 'split' | 'channel' | 'input' | 'output';
+  color: string;
+}
+
+export interface CascadeEdge {
+  from: string;
+  to: string;
+  label: string;
+  direction: 'down' | 'up';
+  active: boolean;
+}
+
+export interface CascadeChainData {
+  nodes: CascadeNode[];
+  edges: CascadeEdge[];
+}
+
+export function buildCascadeChain(
+  plan: UnifiedIncomePlan,
+  enabledChannels: EnabledChannels,
+  splits: IncomeSplits,
+  targetIncome: number,
+): CascadeChainData {
+  const nodes: CascadeNode[] = [];
+  const edges: CascadeEdge[] = [];
+
+  // Root node
+  nodes.push({ id: 'target', label: 'Target Income', value: targetIncome, level: 0, type: 'target', color: '#f59e0b' });
+
+  // Channel nodes
+  const channelConfigs: { key: keyof EnabledChannels; label: string; color: string; subInputs: { id: string; label: string }[] }[] = [
+    { key: 'gdc', label: 'GDC Production', color: '#22c55e', subInputs: [
+      { id: 'targetGDC', label: 'Target GDC' },
+      { id: 'approaches', label: 'Daily Approaches' },
+      { id: 'bracketRate', label: 'Bracket Rate' },
+    ]},
+    { key: 'aum', label: 'AUM/Advisory', color: '#3b82f6', subInputs: [
+      { id: 'aumBook', label: 'AUM Book' },
+      { id: 'trailPct', label: 'Trail %' },
+      { id: 'overrideRate', label: 'Override Rate' },
+    ]},
+    { key: 'affiliate', label: 'Affiliate Income', color: '#a855f7', subInputs: [
+      { id: 'affCounts', label: 'Affiliate Counts' },
+      { id: 'affProduction', label: 'Avg Production' },
+    ]},
+    { key: 'override', label: 'Team Override', color: '#f97316', subInputs: [
+      { id: 'teamSize', label: 'Team Size' },
+      { id: 'teamAvgGDC', label: 'Team Avg GDC' },
+      { id: 'ovrRate', label: 'Override Rate' },
+    ]},
+    { key: 'channel', label: 'Marketing', color: '#06b6d4', subInputs: [
+      { id: 'channelSpend', label: 'Monthly Spend' },
+      { id: 'channelROI', label: 'Channel ROI' },
+    ]},
+  ];
+
+  for (const cfg of channelConfigs) {
+    if (!enabledChannels[cfg.key]) continue;
+    const splitPct = splits[cfg.key];
+    const chTarget = Math.round(targetIncome * splitPct / 100);
+    const chId = `ch_${cfg.key}`;
+
+    nodes.push({ id: chId, label: cfg.label, value: chTarget, level: 1, type: 'channel', color: cfg.color });
+    edges.push({ from: 'target', to: chId, label: `${splitPct}%`, direction: 'down', active: splitPct > 0 });
+
+    // Sub-input nodes
+    for (const sub of cfg.subInputs) {
+      const subId = `${cfg.key}_${sub.id}`;
+      nodes.push({ id: subId, label: sub.label, value: 0, level: 2, type: 'input', color: cfg.color });
+      edges.push({ from: chId, to: subId, label: '', direction: 'down', active: true });
+    }
+
+    // Output node (projected)
+    const projId = `${cfg.key}_projected`;
+    let projected = 0;
+    if (cfg.key === 'gdc') projected = plan.channels.gdc.projected;
+    else if (cfg.key === 'aum') projected = plan.channels.aum.detail.projectedIncome;
+    else if (cfg.key === 'affiliate') projected = plan.channels.affiliate.totalProjected;
+    else if (cfg.key === 'override') projected = plan.channels.override.detail.projectedIncome;
+    else if (cfg.key === 'channel') projected = plan.channels.channel.detail.projectedAnnualRevenue;
+    nodes.push({ id: projId, label: 'Projected', value: projected, level: 2, type: 'output', color: cfg.color });
+    edges.push({ from: projId, to: chId, label: '', direction: 'up', active: true });
+  }
+
+  // Total projected node
+  nodes.push({ id: 'totalProjected', label: 'Total Projected', value: plan.totalProjected, level: 0, type: 'output', color: '#22c55e' });
+  for (const cfg of channelConfigs) {
+    if (!enabledChannels[cfg.key]) continue;
+    edges.push({ from: `${cfg.key}_projected`, to: 'totalProjected', label: '', direction: 'up', active: true });
+  }
+
+  return { nodes, edges };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PASS 98 — INTERACTIVE PLANNING HORIZON HELPERS
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface PlanningHorizonPoint {
+  month: number;
+  label: string;
+  cumulativeIncome: number;
+  cumulativeTarget: number;
+  gdc: number;
+  aum: number;
+  affiliate: number;
+  override: number;
+  channel: number;
+  milestone: string | null;
+  onTrack: boolean;
+}
+
+export function calcPlanningHorizon(
+  plan: UnifiedIncomePlan,
+  targetIncome: number,
+  enabledChannels: EnabledChannels,
+  horizonMonths: number = 36,
+  role: RoleId = 'new',
+): PlanningHorizonPoint[] {
+  const ramp = RAMP_CURVES[role] || RAMP_CURVES.new;
+  const points: PlanningHorizonPoint[] = [];
+  let cumIncome = 0;
+  let cumTarget = 0;
+  const monthlyTarget = targetIncome / 12;
+
+  for (let m = 1; m <= horizonMonths; m++) {
+    const rampIdx = Math.min(m - 1, ramp.length - 1);
+    const rampFactor = ramp[rampIdx];
+    const seasonIdx = (m - 1) % 12;
+    const seasonFactor = SEASONAL_FACTORS[seasonIdx];
+    const factor = rampFactor * seasonFactor;
+
+    const gdc = enabledChannels.gdc ? Math.round(plan.channels.gdc.projected / 12 * factor) : 0;
+    const aum = enabledChannels.aum ? Math.round(plan.channels.aum.detail.projectedIncome / 12 * Math.min(1, rampFactor * 1.2)) : 0;
+    const affiliate = enabledChannels.affiliate ? Math.round(plan.channels.affiliate.totalProjected / 12 * factor) : 0;
+    const override = enabledChannels.override ? Math.round(plan.channels.override.detail.projectedIncome / 12 * factor) : 0;
+    const channel = enabledChannels.channel ? Math.round(plan.channels.channel.detail.projectedAnnualRevenue / 12 * factor) : 0;
+    const monthTotal = gdc + aum + affiliate + override + channel;
+
+    cumIncome += monthTotal;
+    cumTarget += monthlyTarget;
+
+    // Milestones
+    let milestone: string | null = null;
+    if (m === 3) milestone = 'Q1 Review';
+    else if (m === 6) milestone = 'Mid-Year';
+    else if (m === 12) milestone = 'Year 1';
+    else if (m === 24) milestone = 'Year 2';
+    else if (m === 36) milestone = 'Year 3';
+    else if (cumIncome >= cumTarget && m > 1 && points[m - 2] && points[m - 2].cumulativeIncome < points[m - 2].cumulativeTarget) {
+      milestone = 'Breakeven';
+    }
+
+    points.push({
+      month: m,
+      label: `M${m}`,
+      cumulativeIncome: cumIncome,
+      cumulativeTarget: cumTarget,
+      gdc, aum, affiliate, override, channel,
+      milestone,
+      onTrack: cumIncome >= cumTarget * 0.9,
+    });
+  }
+
+  return points;
 }
 
 export { fmt, fmtSm, pct };

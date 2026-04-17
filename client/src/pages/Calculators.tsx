@@ -310,6 +310,11 @@ export default function Calculators() {
   const [ppAffAvgProd, setPpAffAvgProd] = useState(() => ({ ...ROLE_DEFAULTS.new.defaultAffProd }));
   const [ppTeamAvgGDC, setPpTeamAvgGDC] = useState(100000);
   const [ppEnabledChannels, setPpEnabledChannels] = useState<{ gdc: boolean; aum: boolean; affiliate: boolean; override: boolean; channel: boolean }>({ gdc: true, aum: true, affiliate: true, override: true, channel: true });
+  const [ppAumOverrideRate, setPpAumOverrideRate] = useState(90);
+  const [ppAffiliateMode, setPpAffiliateMode] = useState<'recruiter' | 'producer'>('recruiter');
+  const [ppProducerInputs, setPpProducerInputs] = useState({ dealsPerMonth: 2, avgCommissionPerDeal: 3000, splitPct: 50, fixedBonusPerDeal: 500, monthlyRetainer: 0 });
+  const [ppComplexity, setPpComplexity] = useState<'simple' | 'detailed' | 'expert'>('detailed');
+  const [ppAlsoMyClient, setPpAlsoMyClient] = useState(false);
   /* CAC & COGS Overrides */
   const [ppCacOverrides, setPpCacOverrides] = useState<Partial<Record<string, number>>>({});
   const [ppCogsOverrides, setPpCogsOverrides] = useState<Partial<Record<string, number>>>({});
@@ -991,6 +996,17 @@ export default function Calculators() {
     aumExisting: ppAumExisting, setAumExisting: setPpAumExisting,
     aumNew: ppAumNew, setAumNew: setPpAumNew,
     aumTrailPct: ppAumTrailPct, setAumTrailPct: setPpAumTrailPct,
+    aumOverrideRate: ppAumOverrideRate, setAumOverrideRate: setPpAumOverrideRate,
+    affiliateMode: ppAffiliateMode, setAffiliateMode: setPpAffiliateMode,
+    producerInputs: ppProducerInputs, setProducerInputs: setPpProducerInputs,
+    complexity: ppComplexity, setComplexity: setPpComplexity,
+    alsoMyClient: ppAlsoMyClient, setAlsoMyClient: setPpAlsoMyClient,
+    /* Client data for cross-cascade */
+    clientIncome: income, clientNetWorth: nw, clientSavings: savings,
+    clientRetirement401k: retirement401k, clientAge: age, clientDep: dep,
+    clientMortgage: mortgage, clientDebt: debt, clientExistingInsurance: existIns,
+    clientIsBiz: isBiz, clientBizRevenue: bizRevenue, clientBizEmployees: bizEmployees,
+    clientRiskTolerance: riskTolerance,
     pnlLevel: ppPnlLevel, setPnlLevel: setPpPnlLevel,
     pnlProducers: ppPnlProducers, setPnlProducers: setPpPnlProducers,
     pnlAvgGDC: ppPnlAvgGDC, setPnlAvgGDC: setPpPnlAvgGDC,
