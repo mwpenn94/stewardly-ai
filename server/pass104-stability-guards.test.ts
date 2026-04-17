@@ -219,24 +219,24 @@ describe("Wealth Engine panel wiring completeness", () => {
   });
 });
 
-// ── 7. MarketTicker must be present in AppShell ──────────────────────────
+//// ── 7. MarketTicker removed from AppShell (Pass 107 — Phase 1 spec) ──────
 
-describe("MarketTicker in AppShell", () => {
+describe("MarketTicker removed from AppShell (intentional)", () => {
   const appShellSrc = fs.readFileSync(
     path.join(ROOT, "client/src/components/AppShell.tsx"),
     "utf-8",
   );
 
-  it("imports MarketTicker", () => {
-    expect(appShellSrc).toContain("MarketTicker");
+  it("does NOT render MarketTicker in AppShell", () => {
+    expect(appShellSrc).not.toContain("<MarketTicker");
   });
 
-  it("renders MarketTicker in the layout", () => {
-    expect(appShellSrc).toContain("<MarketTicker");
+  it("MarketTicker component file still exists", () => {
+    expect(fs.existsSync(path.join(ROOT, "client/src/components/MarketTicker.tsx"))).toBe(true);
   });
 });
 
-// ── 8. ExportDataButton in AdminAuditTrail has label ─────────────────────
+// ── 8.ExportDataButton in AdminAuditTrail has label ─────────────────────
 
 describe("AdminAuditTrail CSV export", () => {
   const auditSrc = fs.readFileSync(

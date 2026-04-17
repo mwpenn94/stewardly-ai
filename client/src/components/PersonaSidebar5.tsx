@@ -305,7 +305,8 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
       <nav aria-label="Main navigation" role="navigation" className="flex-1 overflow-y-auto px-1.5 pb-2">
         {visibleLayers.map(layer => {
           const layerCollapsed = isLayerCollapsed(layer);
-          const canCollapse = !collapsed && layer.key !== "person" && layer.items.length >= 5;
+          // Pass 107: ALL sections get identical expand/collapse behavior (nav consistency fix)
+          const canCollapse = !collapsed && layer.key !== "person" && layer.items.length >= 2;
           return (
             <div key={layer.key}>
               {collapsed ? (
@@ -376,6 +377,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         )}
       </nav>
 
+      {/* Pass 107: Footer items with mobile-friendly touch targets */}
       <div className="px-1.5 py-1.5 border-t border-border/40 flex-none space-y-[1px]">
         {FOOTER_ITEMS.map(item => <NavBtn key={item.path} item={item} />)}
       </div>

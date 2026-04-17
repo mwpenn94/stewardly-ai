@@ -118,7 +118,7 @@ describe("Deepgram Service", () => {
     if ("error" in result) {
       expect(["NOT_CONFIGURED", "API_ERROR"]).toContain(result.code);
     }
-  });
+  }, 30000);
 });
 
 // ─── Daily.co Service ──────────────────────────────────────────────
@@ -159,7 +159,7 @@ describe("Daily.co Service", () => {
     if ("error" in result) {
       expect(result.code).toBe("NOT_CONFIGURED");
     }
-  });
+  }, 30000);
 });
 
 // ─── Video Conferencing Router ─────────────────────────────────────

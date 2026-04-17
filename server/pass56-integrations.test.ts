@@ -38,7 +38,7 @@ describe("IMF DataMapper Pipeline", () => {
     if (result.status === "error") {
       expect(result.error).not.toBe("Unknown provider");
     }
-  });
+  }, 30000);
 
   it("IMF DataMapper API URL should be well-formed", () => {
     const indicators = ["NGDP_RPCH", "PCPIPCH", "BCA_NGDPD"];

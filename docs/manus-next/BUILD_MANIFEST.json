@@ -1,0 +1,94 @@
+{
+  "project": "Stewardly AI (WealthBridge AI)",
+  "version": "107b",
+  "buildDate": "2026-04-17T00:00:00Z",
+  "provenance": {
+    "originPass": 1,
+    "currentPass": 107,
+    "totalPasses": 107,
+    "convergenceMethod": "recursive-optimization-converged",
+    "specFile": "recursive-optimization-converged-final (2).md"
+  },
+  "metrics": {
+    "totalLinesOfCode": 413987,
+    "clientLines": 174175,
+    "serverLines": 229930,
+    "schemaLines": 9882,
+    "pageComponents": 148,
+    "uiComponents": 228,
+    "serverServices": 363,
+    "serverRouters": 99,
+    "testFiles": 318,
+    "testsPassing": 9669,
+    "testsFailing": 2,
+    "failingTestsReason": "Transient Census API ECONNRESET (network, not code)",
+    "databaseTables": 365,
+    "buildTime": "32s",
+    "testSuiteTime": "84s"
+  },
+  "stack": {
+    "frontend": "React 19 + Tailwind 4 + shadcn/ui + wouter",
+    "backend": "Express 4 + tRPC 11 + Drizzle ORM",
+    "database": "MySQL/TiDB",
+    "auth": "Manus OAuth + JWT sessions",
+    "ai": "LLM via invokeLLM (GPT-4o class)",
+    "storage": "S3 via storagePut/storageGet",
+    "payments": "Stripe Checkout + Webhooks",
+    "voice": "Edge TTS + Deepgram STT",
+    "video": "Daily.co rooms + transcription",
+    "maps": "Google Maps via Manus proxy",
+    "data": "FRED, BLS, BEA, Census, SEC EDGAR, FINRA, GLEIF, OpenFIGI, NAIC, FFIEC, FDIC, CoinGecko, IMF, ExchangeRate-API, Treasury Fiscal, World Bank"
+  },
+  "domains": {
+    "A": {
+      "name": "Wealth Engine Calculators",
+      "panels": 28,
+      "methods": 46,
+      "categories": 17,
+      "references": 101,
+      "refTips": 49,
+      "saveSlots": 10
+    },
+    "B": {
+      "name": "Practice Management Engine",
+      "functions": 38,
+      "roleDefaults": 5,
+      "cascadeAudit": true
+    },
+    "C": {
+      "name": "Advanced Strategies",
+      "panels": ["PremiumFinancing", "ILITTrust", "ExecComp", "CharitablePlanning", "DueDiligence"],
+      "dueDiligenceItems": 20
+    },
+    "D": {
+      "name": "Data Integrations",
+      "pipelines": 16,
+      "governmentAPIs": 14,
+      "brokerageIntegrations": ["Plaid", "SnapTrade"]
+    }
+  },
+  "surfaces": {
+    "commandCenter": {
+      "tabs": ["Overview", "CRM", "Campaigns", "ATS", "LinkedIn", "Segments", "Assets"]
+    },
+    "unifiedAI": {
+      "modes": ["Chat", "Dev", "Auto"],
+      "streaming": true,
+      "endpoints": ["/api/chat/stream", "/api/codechat/stream"]
+    },
+    "sharing": {
+      "components": ["ShareButton", "RecipientPicker", "PermissionSelector", "OmissionToggle", "SharingStatusIndicator"]
+    },
+    "progressiveDisclosure": {
+      "levels": ["Essential", "Standard", "Professional", "Expert"],
+      "navItemsCovered": 53
+    }
+  },
+  "regressionBaseline": {
+    "testFiles": 393,
+    "testsPassing": 9669,
+    "testsFailing": 2,
+    "buildPasses": true,
+    "capturedAt": "2026-04-17T04:17:57Z"
+  }
+}

@@ -184,7 +184,7 @@ describe("SOFR Rates", () => {
     if (!process.env.FRED_API_KEY) {
       expect(result).toBeNull();
     }
-  });
+  }, 30000);
 });
 
 describe("SMS-iT Adapter", () => {

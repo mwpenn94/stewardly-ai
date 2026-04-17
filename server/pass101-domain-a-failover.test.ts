@@ -235,16 +235,17 @@ describe("Pass 101 — Navigation orphan route fixes", () => {
   });
 });
 
-/* ── 6. MarketTicker restored in AppShell ─────────────────────── */
-describe("Pass 101 — MarketTicker in AppShell (regression fix)", () => {
+/* ── 6. MarketTicker removed from AppShell (Pass 107 — Phase 1 spec) ── */
+describe("Pass 107 — MarketTicker removed from AppShell (intentional)", () => {
   const src = readFile("client/src/components/AppShell.tsx");
 
-  it("imports MarketTicker", () => {
-    expect(src).toContain("import { MarketTicker }");
+  it("does NOT render MarketTicker in AppShell (removed per Phase 1 spec)", () => {
+    expect(src).not.toContain("<MarketTicker");
   });
 
-  it("renders MarketTicker in main content area", () => {
-    expect(src).toContain("<MarketTicker");
+  it("MarketTicker component still exists as standalone (not deleted)", () => {
+    const exists = require('fs').existsSync(require('path').resolve(__dirname, '..', 'client/src/components/MarketTicker.tsx'));
+    expect(exists).toBe(true);
   });
 });
 
