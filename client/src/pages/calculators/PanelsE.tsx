@@ -1,7 +1,8 @@
 /* PanelsE — v2.6 Absent Panels: Advanced Strategies, Business Client, Timeline, Partner */
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { fmt, fmtSm, pct, calcAdvanced, calcBizClient, calcPartner, buildActionPlan } from './engine';
+import { calcAdvanced, calcBizClient, calcPartner, buildActionPlan } from './engine';
+import { fmt, fmtSm, pct } from './format';
 import type { AdvResult, BizClientResult, PartnerResult, ActionPhase } from './engine';
 import { FormInput, ResultBadge, KPI, RefTip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
 

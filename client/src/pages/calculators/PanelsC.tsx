@@ -11,12 +11,12 @@ import {
   BarChart3, GitCompare, FileText, ListChecks, BookOpen, Layers, Building2
 } from 'lucide-react';
 import {
-  fmt, fmtSm, pct,
   STRATEGIES, CALC_METHODS, DUE_DILIGENCE, buildActionPlan,
   computeScorecard, calcCashFlow, calcProtection,
   getBracketRate, RATES,
   type HorizonData
 } from './engine';
+import { fmt, fmtSm, pct } from './format';
 import { RefTip, ExportPDFButton, type PanelProps } from './shared';
 import { REFERENCE_CATEGORIES, FUNNEL_BENCHMARKS, METHODOLOGY_DISCLOSURE, REF_CATEGORY_TIPS } from './references';
 

@@ -436,7 +436,6 @@ export function ShareButton({
   );
 }
 
-export default ShareButton;
 
 
 // ─── Omission Toggle (Standalone) ────────────────────────────────────────

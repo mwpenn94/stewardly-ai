@@ -1,3 +1,4 @@
+import { fmt, fmtSm, pct } from './format';
 /* Panels A: Profile (1), Cash Flow (2), Protection (3), Growth (4) */
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   User, DollarSign, Shield, TrendingUp, Building2, CheckCircle2, XCircle
 } from 'lucide-react';
-import { fmt, fmtSm, pct } from './engine';
+;
 import { FormInput, ScoreBadge, ResultBadge, KPI, ScoreGauge, RefTip, PillarTooltip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
 
 export function ProfilePanel(p: PanelProps) {

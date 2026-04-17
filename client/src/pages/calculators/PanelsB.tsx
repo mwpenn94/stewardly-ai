@@ -9,7 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import {
   Clock, Building2, Scale, GraduationCap, ChevronDown, ChevronUp, Shield, TrendingUp, Layers
 } from 'lucide-react';
-import { fmt, fmtSm, pct, calcBucketStrategy, calcFloorUpside, calcGuytonKlinger, calcRothLadder } from './engine';
+import { calcBucketStrategy, calcFloorUpside, calcGuytonKlinger, calcRothLadder } from './engine';
+import { fmt, fmtSm, pct } from './format';
 import { FormInput, ResultBadge, KPI, RefTip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
 
 /* ═══ COLLAPSIBLE SECTION (Progressive Disclosure) ═══ */

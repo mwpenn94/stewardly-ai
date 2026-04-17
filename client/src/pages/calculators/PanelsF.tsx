@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, DollarSign, TrendingUp, PieChart, Shield } from 'lucide-react';
 import { RefTip, KPI, CrossCalcRecs, ExportPDFButton } from './shared';
-import { fmt, fmtSm, pct, calcIncomeStreams } from './engine';
+import { calcIncomeStreams } from './engine';
+import { fmt, fmtSm, pct } from './format';
 import type { IncomeStream, IncomeStreamResult } from './engine';
 import type { PanelProps } from './shared';
 

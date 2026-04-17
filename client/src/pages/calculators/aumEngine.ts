@@ -6,7 +6,6 @@
    ═══════════════════════════════════════════════════════════════ */
 
 // fmt/fmtSm/pct from standalone leaf module (avoids TDZ)
-export { fmt, fmtSm, pct } from './format';
 
 /* ═══ AUM OVERRIDE CASCADE ═══
    The formula p² + p − 1/3 = 0 has positive root ≈ 0.26375 (26.375%).

@@ -2862,7 +2862,7 @@ export default function Chat() {
               <button type="button"
                 
                 onClick={() => setShowModelMenu(!showModelMenu)}
-                className={`md:hidden h-7 text-[10px] rounded-lg px-2 flex items-center gap-1 transition-all ${
+                className={`hidden h-7 text-[10px] rounded-lg px-2 items-center gap-1 transition-all ${
                   isMultiModel
                     ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
                     : "bg-secondary/30 border border-border text-muted-foreground"
@@ -2937,7 +2937,7 @@ export default function Chat() {
                     onClick={() => setAdvancedOpen((p) => !p)}
                     aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
                     aria-expanded={advancedOpen}
-                    className={`hidden md:flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
+                    className={`flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
                       advancedOpen
                         ? "bg-secondary/60 text-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"

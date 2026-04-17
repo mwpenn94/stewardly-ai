@@ -1,3 +1,4 @@
+import { fmt, fmtSm, pct } from './format';
 /* ═══════════════════════════════════════════════════════════════
    PanelsG — AUM Override Cascade, AUM Pipeline, Affiliate Pipeline,
              Activity Metrics, Production Forecasting
@@ -12,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KPI, RefTip } from './shared';
-import { fmt, fmtSm, pct } from './engine';
+;
 import {
   solveOverrideFormula, DEFAULT_OVERRIDE_RATE, DEFAULT_TIERS,
   DEFAULT_FEE_BREAKPOINTS, getBlendedFeeRate,

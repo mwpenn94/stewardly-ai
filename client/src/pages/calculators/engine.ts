@@ -19,7 +19,6 @@ export const RATES = {
 
 /* ═══ HELPER FUNCTIONS ═══ */
 // fmt, fmtSm, pct live in format.ts (zero-import leaf) to avoid TDZ crashes
-export { fmt, fmtSm, pct } from './format';
 export function fv(p: number, m: number, r: number, y: number): number {
   const rm = r / 12;
   if (rm === 0) return p + m * y * 12;

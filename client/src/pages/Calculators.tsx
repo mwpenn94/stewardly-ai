@@ -20,11 +20,12 @@ import {
 } from 'lucide-react';
 
 import {
-  RATES, fmt, fmtSm, pct, getBracketRate,
+  RATES, getBracketRate,
   computeScorecard, buildRecommendations, buildHorizonData,
   calcCashFlow, calcProtection, calcGrowth, calcRetirement, calcTax, calcEstate, calcEducation,
   calcIncomeStreams,
 } from './calculators/engine';
+import { fmt, fmtSm, pct } from './calculators/format';
 import type { IncomeStream } from './calculators/engine';
 
 /* ─── Lazy-loaded panel groups ─── */

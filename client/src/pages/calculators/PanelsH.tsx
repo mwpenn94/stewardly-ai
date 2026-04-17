@@ -1,3 +1,4 @@
+import { fmt, pct } from './format';
 /* ═══ PanelsH — Domain A: Practice Management Strategy Surfaces ═══ */
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +17,7 @@ import {
   calcPnLBusinessEconomics,
   calcGDCOverrideOpt,
 } from './domainAEngine';
-import { fmt, pct } from './engine';
+;
 
 /* ─── Shared helpers ─── */
 const N = (props: { label: string; value: number; onChange: (v: number) => void; prefix?: string; suffix?: string; min?: number; max?: number; step?: number }) => (

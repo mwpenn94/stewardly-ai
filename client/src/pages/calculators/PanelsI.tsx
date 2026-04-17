@@ -1,3 +1,4 @@
+import { fmt, pct } from './format';
 /* ═══ PanelsI — Domain B: Client Planning P0 Surfaces ═══ */
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info, Wallet, CreditCard, Gavel, FileCheck, Dices, Percent, Plus, Trash2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { fmt, pct } from './engine';
+;
 
 /* ─── Shared input helper ─── */
 const N = (props: { label: string; value: number; onChange: (v: number) => void; prefix?: string; suffix?: string; min?: number; max?: number; step?: number }) => (

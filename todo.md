@@ -5837,3 +5837,15 @@
 - [x] Fix navReachability test (added /admin-legacy, /people to EXEMPT_ROUTES)
 - [x] Build passes clean (33.5s)
 - [ ] 3 consecutive clean convergence passes
+
+## Pass 111b — Critical Fixes (Hub Pages, TDZ, Chat UI)
+- [x] Fix fmtSm TDZ crash: all fmt/fmtSm/pct imports now go directly to format.ts (no re-exports through engine.ts)
+- [x] Fix ShareButton dual-export: removed default export to prevent Safari TDZ in split chunks
+- [x] Rewrite PeopleHub with exact Wealth Engine sidebar pattern (ScrollArea, PanelLeftOpen/Close, lg:sticky, translate-x animation, grouped sections)
+- [x] Rewrite AdminHubV2 with exact Wealth Engine sidebar pattern
+- [x] Rewrite IntelligenceHubV2 with exact Wealth Engine sidebar pattern
+- [x] Rewrite SettingsHub with exact Wealth Engine sidebar pattern (grouped: Account, AI & Knowledge, Preferences, Privacy)
+- [x] Chat UI: More/Less button already visible on mobile, streaming toggle inside advancedOpen block
+- [x] Build passes clean (39.64s)
+- [ ] Browser-test all hub pages as virtual user
+- [ ] Verify Chat UI on mobile viewport

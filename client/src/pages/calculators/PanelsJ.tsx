@@ -1,3 +1,4 @@
+import { fmt, pct } from './format';
 /* ═══ PanelsJ — Domain C: Advanced Strategy Surfaces + Domain D: Due Diligence ═══ */
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Info, Landmark, Gavel, Briefcase, Gift, FileCheck, ExternalLink, CheckCircle2, AlertTriangle, BookOpen, Search, Shield, TrendingUp, Scale, Clock, Filter } from 'lucide-react';
-import { fmt, pct } from './engine';
+;
 
 /* ─── Shared input helper ─── */
 const N = (props: { label: string; value: number; onChange: (v: number) => void; prefix?: string; suffix?: string; min?: number; max?: number; step?: number }) => (
