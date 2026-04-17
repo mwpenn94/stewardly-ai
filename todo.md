@@ -5794,3 +5794,8 @@
 - [x] navReachability test updated for /my-plan redirect (EXEMPT_ROUTES)
 - [x] 3 consecutive clean passes: 394/394 files, 9,698+ tests (excl. 3 flaky external API timeouts)
 - [x] Build clean at ~35-46s (chunk size warnings only)
+
+## Pass 110b — Publish Fix
+- [x] Regenerate pnpm-lock.yaml to include all 28 workspace package shells (pnpm install --no-frozen-lockfile)
+- [x] Verify build passes (34.15s clean)
+- [x] Save checkpoint and re-publish
