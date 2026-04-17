@@ -168,6 +168,12 @@ const masteryRouter = router({
       return getDueItems(ctx.user.id, input?.limit ?? 50);
     }),
 
+  /** Alias for dueNow — used by StudyBuddy hub */
+  dueItems: protectedProcedure
+    .query(async ({ ctx }) => {
+      return getDueItems(ctx.user.id, 50);
+    }),
+
   /**
    * Returns a ready-to-render mixed-modality review session.
    *

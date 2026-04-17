@@ -7,6 +7,7 @@
  * 
  * Improves C1 (Navigation Coherence) by providing context on deep pages.
  */
+import React from "react";
 import { useLocation, Link } from "wouter";
 import {
   Breadcrumb,
@@ -132,16 +133,18 @@ export function PageBreadcrumb({
           </BreadcrumbLink>
         </BreadcrumbItem>
         {breadcrumbs.map((crumb, i) => (
-          <BreadcrumbItem key={i}>
+          <React.Fragment key={i}>
             <BreadcrumbSeparator />
-            {crumb.href ? (
-              <BreadcrumbLink asChild>
-                <Link href={crumb.href}>{crumb.label}</Link>
-              </BreadcrumbLink>
-            ) : (
-              <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
-            )}
-          </BreadcrumbItem>
+            <BreadcrumbItem>
+              {crumb.href ? (
+                <BreadcrumbLink asChild>
+                  <Link href={crumb.href}>{crumb.label}</Link>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+          </React.Fragment>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

@@ -5585,3 +5585,12 @@
 8. **Onboarding Checklist** — database-backed (294L) with 4 workflow types
 9. **Workflow Orchestrator** — event chains in v5Features.ts
 10. **Progressive ChartRenderer** — InlineChart + ProgressiveMessage with [CHART:N] placeholders
+
+## Pass 104 — Fix All Breaking Pages + Stability Guards
+
+- [x] Diagnose all breaking pages via Playwright (16 pages + 68 panels tested)
+- [x] Fix PageBreadcrumb nested <li> (BreadcrumbSeparator moved to sibling of BreadcrumbItem)
+- [x] Fix StudyBuddy 404 (added missing dueItems procedure to mastery router)
+- [x] Add 16 stability guard tests (breadcrumb DOM, procedure alignment, nav-route, panel wiring)
+- [x] Full test suite: 391 files, 9,606 tests, all passing
+- [x] Build clean (33s), Playwright: 0 errors across all pages
