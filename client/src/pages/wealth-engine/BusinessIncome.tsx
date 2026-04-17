@@ -35,7 +35,9 @@ function safeNum(raw: string, min = 0, max = 1e12): number | null {
   return Math.max(min, Math.min(max, n));
 }
 
-export default function BusinessIncome() {
+export default function BusinessIncome({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -135,7 +137,7 @@ export default function BusinessIncome() {
 
 
   return (
-    <AppShell title="Business Income">
+    <Shell title="Business Income">
       <SEOHead title="Business Income Engine" description="Practice income modeling with role-based projections and team economics" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <div className="flex items-center gap-3">
@@ -608,6 +610,6 @@ export default function BusinessIncome() {
           Income projections are illustrative based on industry averages and the WealthBridge v7 BIE model. Actual results will vary.
         </p>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

@@ -63,7 +63,9 @@ function formatBenchmarkValue(key: string, data: any): string {
   return "—";
 }
 
-export default function RetirementPage() {
+export default function RetirementPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -228,7 +230,7 @@ export default function RetirementPage() {
 
 
   return (
-    <AppShell title="Retirement">
+    <Shell title="Retirement">
       <SEOHead title="Retirement" description="Retirement planning projections and Monte Carlo analysis" />
       <SectionErrorBoundary sectionName="Retirement Calculator">
       <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
@@ -602,7 +604,7 @@ export default function RetirementPage() {
         </Card>
       </div>
       </SectionErrorBoundary>
-    </AppShell>
+    </Shell>
   );
 }
 

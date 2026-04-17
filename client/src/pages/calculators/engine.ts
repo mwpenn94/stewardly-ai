@@ -1,7 +1,9 @@
 /* ═══════════════════════════════════════════════════════════════
    WealthBridge Unified Wealth Engine v7 — Calculation Engine
    Extracted from Calculators.tsx for code-splitting
-   ═══════════════════════════════════════════════════════════════ */
+   ═════════════════════════════════════════════════════════════ */
+import { fmt, fmtSm, pct } from './format';
+export { fmt, fmtSm, pct };
 
 /* ═══ RATES — Age-based premium rate tables from industry data (2025-2026) ═══ */
 export const RATES = {
@@ -18,7 +20,7 @@ export const RATES = {
 };
 
 /* ═══ HELPER FUNCTIONS ═══ */
-// fmt, fmtSm, pct live in format.ts (zero-import leaf) to avoid TDZ crashes
+// fmt, fmtSm, pct imported from format.ts (zero-import leaf) to avoid TDZ crashes
 export function fv(p: number, m: number, r: number, y: number): number {
   const rm = r / 12;
   if (rm === 0) return p + m * y * 12;

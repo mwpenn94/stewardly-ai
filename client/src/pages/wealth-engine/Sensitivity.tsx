@@ -68,7 +68,9 @@ function heatColor(value: number, min: number, max: number): string {
 
 // ─── COMPONENT ──────────────────────────────────────────────────────
 
-export default function Sensitivity() {
+export default function Sensitivity({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -134,7 +136,7 @@ export default function Sensitivity() {
 
 
   return (
-    <AppShell title="What-If Sensitivity">
+    <Shell title="What-If Sensitivity">
       <SEOHead title="What-If Sensitivity" description="Two-variable sensitivity analysis for financial projections" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Header */}
@@ -419,6 +421,6 @@ export default function Sensitivity() {
           at the specified parameter combination. Actual results will vary. Not investment, tax, or legal advice.
         </p>
       </div>
-    </AppShell>
+    </Shell>
   );
 }

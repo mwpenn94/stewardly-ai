@@ -2862,7 +2862,7 @@ export default function Chat() {
               <button type="button"
                 
                 onClick={() => setShowModelMenu(!showModelMenu)}
-                className={`hidden h-7 text-[10px] rounded-lg px-2 items-center gap-1 transition-all ${
+                className={`flex md:hidden h-7 text-[10px] rounded-lg px-2 items-center gap-1 transition-all ${
                   isMultiModel
                     ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
                     : "bg-secondary/30 border border-border text-muted-foreground"
@@ -2972,8 +2972,8 @@ export default function Chat() {
 
                 {showModelMenu && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 sm:w-56 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="hidden md:block fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
+                    <div className="hidden md:block absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 sm:w-56 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
                       <div className="px-2 py-1 text-[9px] text-muted-foreground/60 uppercase tracking-wider">Select models (multi = consensus)</div>
                       {(() => {
                         let lastFamily = "";

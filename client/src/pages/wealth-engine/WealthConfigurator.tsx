@@ -96,7 +96,9 @@ function SliderInput({
 }
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────
-export default function WealthConfigurator() {
+export default function WealthConfigurator({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -228,7 +230,7 @@ export default function WealthConfigurator() {
   const finalYear = simData?.[simData.length - 1];
 
   return (
-    <AppShell title="Wealth Configurator">
+    <Shell title="Wealth Configurator">
       <SEOHead title="Wealth Configurator" description="Build and simulate custom wealth strategies with the Unified Wealth Engine" />
       <div className="min-h-screen">
         {/* Header */}
@@ -361,7 +363,7 @@ export default function WealthConfigurator() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

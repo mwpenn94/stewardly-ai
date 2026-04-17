@@ -101,7 +101,9 @@ function normalizeProjection(
   }));
 }
 
-export default function HolisticComparisonPage() {
+export default function HolisticComparisonPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -196,7 +198,7 @@ export default function HolisticComparisonPage() {
 
 
   return (
-    <AppShell title="Holistic Comparison">
+    <Shell title="Holistic Comparison">
       <SEOHead title="Holistic Comparison" description="Compare holistic wealth strategies" />
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         <header className="space-y-1">
@@ -373,7 +375,7 @@ export default function HolisticComparisonPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

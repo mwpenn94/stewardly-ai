@@ -40,7 +40,9 @@ const ROLES = [
   { key: "rvp", label: "Regional VP" },
 ] as const;
 
-export default function PracticeToWealthPage() {
+export default function PracticeToWealthPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [role, setRole] = useState<(typeof ROLES)[number]["key"]>("dir");
@@ -154,7 +156,7 @@ export default function PracticeToWealthPage() {
 
 
   return (
-    <AppShell title="Practice → Wealth">
+    <Shell title="Practice → Wealth">
       <SEOHead title="Practice to Wealth" description="Business income projections for advisory practices" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         <div>
@@ -280,7 +282,7 @@ export default function PracticeToWealthPage() {
           />
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

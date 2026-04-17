@@ -1,6 +1,6 @@
 # Stewardly — Comprehensive Platform Guide
 
-**Version:** 9.0 | **Updated:** March 20, 2026 | **Author:** Manus AI
+**Version:** 10.0 | **Updated:** April 17, 2026 | **Author:** Manus AI
 
 ---
 
@@ -837,51 +837,53 @@ The chat interface adapts its sidebar to an overlay on mobile viewports, with a 
 
 ## Navigation and Page Map
 
-### Sidebar Navigation Structure
+### Hub-Based Architecture (v10)
 
-The chat sidebar organizes navigation into three sections based on user role:
+Stewardly uses a **hub-based navigation architecture**. The main sidebar (PersonaSidebar5) provides top-level navigation to hub pages. Each hub page contains its own **internal sidebar** with sub-navigation, keeping the interface organized and consistent.
 
-**Tools Section** (available to all authenticated users):
+### Main Sidebar Navigation
 
-| Label | Route | Description |
-|-------|-------|-------------|
-| Calculators | `/calculators` | 20+ financial calculators |
-| Products | `/products` | Product catalog and search |
-| Meetings | `/meetings` | Meeting management and notes |
-| Insights | `/insights` | AI-generated financial insights |
-| Planning | `/planning` | Financial planning tools |
-| Coach | `/coach` | Behavioral coaching AI |
-| Compliance | `/compliance` | Compliance monitoring |
-| Marketplace | `/marketplace` | Extended product marketplace |
-| Workflows | `/workflows` | Workflow management |
-| Study Buddy | `/study` | Educational study assistant |
-| Education | `/education` | Education center and modules |
-| Student Loans | `/student-loans` | Student loan optimization |
-| Equity Comp | `/equity-comp` | Equity compensation planning |
-| Digital Assets | `/digital-assets` | Cryptocurrency portfolio tracking |
-| COI Network | `/coi-network` | Centers of influence management |
-| Data Intelligence | `/data-intelligence` | Data ingestion and analysis hub |
-| Agentic Hub | `/agentic` | Autonomous agent operations |
-| Licensed Review | `/licensed-review` | Compliance review queue |
-| Agent Ops | `/agent-operations` | Agent monitoring dashboard |
-| Insurance | `/insurance-quotes` | Insurance quote generation |
-| Estate Planning | `/estate-planning` | Estate document drafting |
-| Premium Finance | `/premium-finance` | Premium finance cases |
-| Email Campaigns | `/email-campaigns` | Email campaign management |
-| Integrations | `/integrations` | Integration pipeline management |
-| Professionals | `/professionals` | Professional directory and referrals |
-| Model Results | `/model-results` | Analytical model visualizations dashboard |
-| Analytics Hub | `/analytics` | Analytics and reporting hub |
+The main sidebar organizes navigation into role-gated sections:
 
-**Admin Section** (role-gated):
+| Section | Label | Route | Description |
+|---------|-------|-------|-------------|
+| **Core** | Chat | `/chat` | AI conversation interface (default landing) |
+| **Core** | Documents | `/settings/knowledge` | Knowledge management and document library |
+| **Wealth** | Financial Twin | `/financial-twin` | Digital financial twin dashboard |
+| **Wealth** | Wealth Engine | `/wealth-engine` | 30+ planning, protection, and growth tools |
+| **Wealth** | Products | `/products` | Product catalog and search |
+| **Professional** | My Work | `/my-work` | Task queue, compliance reviews, workflows |
+| **Professional** | People | `/people` | CRM, relationships, leads, campaigns |
+| **Professional** | Intelligence | `/intelligence-hub` | Market data, product intelligence, analytics |
+| **Leadership** | Team | `/manager` | Team management and KPIs (disclosure level 3) |
+| **Leadership** | Organizations | `/organizations` | Organization management (disclosure level 3) |
+| **Platform** | Admin | `/admin` | Platform administration hub (disclosure level 4) |
+| **Footer** | Learning | `/learning` | Life and health exam prep |
+| **Footer** | Settings | `/settings` | User preferences and configuration |
+| **Footer** | Help | `/help` | Help center |
 
-| Label | Route | Minimum Role |
-|-------|-------|-------------|
-| Portal | `/portal` | Advisor |
-| Organizations | `/organizations` | Advisor |
-| Manager Dashboard | `/manager` | Manager |
-| Global Admin | `/admin` | Admin |
-| AI Improvement | `/improvement` | Admin |
+### Hub Pages with Internal Sidebars
+
+Each hub page has its own internal sidebar for sub-navigation:
+
+**Wealth Engine Hub** (`/wealth-engine`) — 30+ tools organized into 5 sections:
+- **Overview**: Dashboard with financial scores and quick actions
+- **Plan** (8 tools): Retirement Planner, Tax Projector, Estate Planning, Risk Assessment, Income Projection, Social Security, Medicare, All Calculators
+- **Protect** (5 tools): Quick Bundle, Protection Score, Strategy Comparison, Insurance Analysis, Quick Quote Hub, Holistic Comparison
+- **Grow** (7 tools): Engine Dashboard, Owner Comp, Business Valuation, Business Income, Practice-to-Wealth, Financial Twin, Workflows
+- **Tools** (5 tools): Configurator, Sensitivity, What-If Analysis, Team Builder, Reference Hub
+
+**People Hub** (`/people`) — CRM and relationship management:
+- Clients, Relationships, Leads, Pipeline, Compliance, Email Campaigns, Marketing Assets, Outreach, Command Center, Client Onboarding, Annual Review, Business Exit, Premium Finance, Portal, Client Dashboard
+
+**Intelligence Hub** (`/intelligence-hub`) — Data and market intelligence:
+- Overview, Market Data, Product Intelligence, Data Pipelines, Enrichment, Portal Analytics, Rebalancing, Insights, Operations, Comparables
+
+**Admin Hub** (`/admin`) — Platform administration:
+- Dashboard, System Health, Data Freshness, BCP, Fairness, Rate Management, Billing, API Keys, Webhooks, Team, Lead Sources, Platform Reports, Knowledge Management, Platform Guide, Audit Trail, Integrations
+
+**Settings Hub** (`/settings`) — User configuration:
+- Profile, AI Settings, Privacy & Data, Data Sharing, Integrations, Notifications, Appearance, Accessibility
 
 ### Additional Routes
 
@@ -893,16 +895,11 @@ The chat sidebar organizes navigation into three sections based on user role:
 | `/terms` | Terms | Terms of service |
 | `/org/:slug` | OrgLanding | Organization-specific landing page |
 | `/privacy` | Privacy | Privacy policy and data practices |
-| `/settings` | SettingsHub | User settings (8 tabs) |
-| `/settings/:tab` | SettingsHub | Direct tab access (incl. privacy-data, data-sharing) |
-| `/documents` | Documents | Document management |
-| `/suitability` | Suitability | Suitability assessment |
-| `/ai-settings` | AISettings | AI model configuration |
-| `/admin/bcp` | BCP | Business continuity plan and system health |
-| `/model-results` | ModelResults | Model Results Dashboard with 8 model visualizations |
-| `/org-branding` | OrgBrandingEditor | Organization branding |
-| `/carrier-connector` | CarrierConnector | Carrier API connections |
-| `/market` | MarketData | Real-time market data |
+| `/calculators` | Calculators | Standalone calculator access (also embedded in Wealth Engine) |
+| `/life-health` | LifeHealth | Life and health exam prep |
+| `/my-work` | MyWork | Task queue and compliance reviews |
+| `/tax-planning` | TaxPlanning | Tax projection tools |
+| `/estate` | EstatePlanning | Estate planning tools |
 | `/404` | NotFound | 404 error page |
 
 ---

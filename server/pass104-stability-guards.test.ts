@@ -163,10 +163,15 @@ describe("Navigation-Route alignment", () => {
     expect(navPaths.length).toBeGreaterThan(10);
   });
 
+  // Hub routes with catch-all params (e.g. /wealth-engine/:tab?) cover all sub-paths
+  const HUB_PREFIXES = ["/wealth-engine/"];
+
   it("every navigation path has a route or lazy import in App.tsx", () => {
     const orphans: string[] = [];
     for (const p of navPaths) {
       if (EXEMPT.has(p)) continue;
+      // Sub-paths under hub routes are covered by catch-all params
+      if (HUB_PREFIXES.some((prefix) => p.startsWith(prefix))) continue;
       // Check if the path appears in App.tsx (as route path or in a comment)
       // Strip leading / for partial matching
       const segment = p.replace(/^\//, "");

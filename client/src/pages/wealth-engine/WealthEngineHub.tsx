@@ -1,51 +1,41 @@
 /**
- * Wealth Engine Hub — force-multiplier landing page.
+ * Wealth Engine Hub — sidebar-driven hub page.
  *
- * Single destination that unifies every calculator + planning engine +
- * advisory workflow. Replaces the need to bounce between Calculators,
- * EngineDashboard, QuickQuoteFlow, StrategyComparison, FinancialPlanning,
- * Tax, Estate, Insurance, Risk, Owner Compensation, Business Valuation,
- * and multi-line Quick Bundle.
+ * Uses the exact same sidebar pattern as PeopleHub, SettingsHub, AdminHubV2,
+ * and IntelligenceHubV2 for a consistent navigation experience.
  *
- * Layout:
- *   • HERO — client snapshot + "Run all engines" CTA
- *   • ENGINES — 3 columns grouped by purpose:
- *       Plan     (Retirement, Tax, Estate, Risk, FP, Education, SS, Medicare,
- *                 HSA, Charitable, Divorce, Income Projection)
- *       Protect  (Multi-Line Quick Bundle, Insurance Analysis, Protection Score,
- *                 Quick Quote, Strategy Comparison, Premium Finance, IUL, LTC)
- *       Grow     (Engine Dashboard, Owner Comp, Business Valuation, BIE,
- *                 Practice-to-Wealth, Wealth Projection, Monte Carlo)
- *   • QUICK BUNDLE — inline 4-field form that streams live multi-line quote
- *     preview without leaving the page
- *   • GUARDRAILS — live guardrail badges from /wealthEngine.getGuardrails
+ * The sidebar groups 30+ tools into Plan / Protect / Grow / Quick Tools.
+ * "Overview" is the default tab showing the hero + score strip + quick bundle.
+ * All other tabs navigate to their standalone routes.
  */
 
-import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect, useMemo, lazy, Suspense } from "react";
+import { useRoute, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { SEOHead } from "@/components/SEOHead";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { SEOHead } from "@/components/SEOHead";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { DisclosureSection } from "@/components/DisclosureSection";
 import ServiceDegradedFallback from "@/components/ServiceDegradedFallback";
+import Tier0InstantCard from "@/components/wealth-engine/Tier0InstantCard";
 import {
   Sparkles, Calculator, PiggyBank, Shield, TrendingUp, Building2,
   Scale, Heart, GraduationCap, HandCoins, DollarSign, Stethoscope,
   BarChart3, Loader2, ArrowRight, Users, Target, FileText,
   Briefcase, Rocket, ShieldCheck, Workflow, Zap, Gauge,
+  PanelLeftClose, PanelLeftOpen, LayoutGrid,
 } from "lucide-react";
-import Tier0InstantCard from "@/components/wealth-engine/Tier0InstantCard";
 
+// ─── FORMATTING HELPERS ────────────────────────────────────────────
 const fmt = (n: number) => {
   if (!Number.isFinite(n)) return "—";
   if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
@@ -53,146 +43,111 @@ const fmt = (n: number) => {
   if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
   return `$${Math.round(n).toLocaleString()}`;
 };
-
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
-// ─── ENGINE MANIFEST ────────────────────────────────────────────────
-// 30+ tools organized by intent. Each has a deep link so clicking
-// takes the user straight to the right calculator.
+// ─── NAV DEFINITION ────────────────────────────────────────────────
+type WETab =
+  | "overview"
+  | "retirement" | "tax" | "estate" | "risk" | "income" | "social-security" | "medicare" | "calculators"
+  | "quick-bundle" | "protection-score" | "strategy-comparison" | "insurance-analysis"
+  | "engine-dashboard" | "owner-comp" | "business-valuation" | "practice-to-wealth" | "financial-twin" | "workflows"
+  | "configurator" | "sensitivity" | "what-if" | "references" | "team-builder" | "holistic-comparison"
+  | "quick-quote-hub" | "business-income";
 
-type EngineTool = {
+interface NavItem {
+  id: WETab;
   label: string;
-  desc: string;
-  path: string;
-  icon: React.ReactNode;
-  accent: string;
+  icon: React.ElementType;
+  slug: string;
+  /** If set, clicking navigates to this external route instead of embedding */
+  externalPath?: string;
   badge?: string;
-};
-
-const PLAN_TOOLS: EngineTool[] = [
-  { label: "Retirement Planner", desc: "Goal + smooth + guardrails", path: "/wealth-engine/retirement", icon: <PiggyBank className="w-4 h-4" />, accent: "text-amber-400" },
-  { label: "Tax Projector", desc: "Brackets + Roth + multi-year", path: "/tax-planning", icon: <DollarSign className="w-4 h-4" />, accent: "text-violet-400" },
-  { label: "Estate Planning", desc: "Docs + trusts + estate tax", path: "/estate", icon: <Briefcase className="w-4 h-4" />, accent: "text-blue-400" },
-  { label: "Risk Assessment", desc: "Suitability + gap analysis", path: "/risk-assessment", icon: <Scale className="w-4 h-4" />, accent: "text-red-400" },
-  { label: "Income Projection", desc: "Income + debt + cash flow", path: "/income-projection", icon: <TrendingUp className="w-4 h-4" />, accent: "text-emerald-400" },
-  { label: "Social Security", desc: "Claiming strategy + FRA", path: "/social-security", icon: <Calculator className="w-4 h-4" />, accent: "text-cyan-400" },
-  { label: "Medicare", desc: "Plan selection + IRMAA", path: "/medicare", icon: <Stethoscope className="w-4 h-4" />, accent: "text-rose-400" },
-  { label: "HSA Optimizer", desc: "Triple tax stacking", path: "/calculators", icon: <Heart className="w-4 h-4" />, accent: "text-pink-400" },
-  { label: "Education Funding", desc: "529 + scholarships + aid", path: "/calculators", icon: <GraduationCap className="w-4 h-4" />, accent: "text-indigo-400" },
-  { label: "Charitable Giving", desc: "DAF + CRT + bunching", path: "/calculators", icon: <HandCoins className="w-4 h-4" />, accent: "text-orange-400" },
-];
-
-const PROTECT_TOOLS: EngineTool[] = [
-  { label: "Quick Bundle", desc: "Multi-line proposal in 30s", path: "/wealth-engine/quick-quote", icon: <Sparkles className="w-4 h-4" />, accent: "text-accent", badge: "New" },
-  { label: "Protection Score", desc: "12-dimension gap analysis", path: "/protection-score", icon: <ShieldCheck className="w-4 h-4" />, accent: "text-emerald-400" },
-  { label: "Strategy Comparison", desc: "7 strategies side-by-side", path: "/wealth-engine/strategy-comparison", icon: <BarChart3 className="w-4 h-4" />, accent: "text-violet-400" },
-  { label: "Insurance Analysis", desc: "Life / DI / LTC / P&C", path: "/insurance-analysis", icon: <Shield className="w-4 h-4" />, accent: "text-rose-400" },
-  { label: "IUL Projection", desc: "Illustrated rate scenarios", path: "/calculators", icon: <TrendingUp className="w-4 h-4" />, accent: "text-amber-400" },
-  { label: "Premium Finance", desc: "HNW leverage analysis", path: "/calculators", icon: <Building2 className="w-4 h-4" />, accent: "text-blue-400" },
-  { label: "Disability Income", desc: "Own-occ DI quoting", path: "/calculators", icon: <Heart className="w-4 h-4" />, accent: "text-red-400" },
-  { label: "Long-Term Care", desc: "Hybrid vs traditional", path: "/insurance-analysis", icon: <Shield className="w-4 h-4" />, accent: "text-pink-400" },
-];
-
-const GROW_TOOLS: EngineTool[] = [
-  { label: "Engine Dashboard", desc: "UWE + BIE + HE + SCUI", path: "/engine-dashboard", icon: <BarChart3 className="w-4 h-4" />, accent: "text-accent" },
-  { label: "Owner Comp", desc: "S-Corp vs LLC vs C-Corp", path: "/wealth-engine/owner-comp", icon: <Building2 className="w-4 h-4" />, accent: "text-blue-400", badge: "New" },
-  { label: "Business Valuation", desc: "SDE multiples + exit plan", path: "/wealth-engine/business-valuation", icon: <Rocket className="w-4 h-4" />, accent: "text-emerald-400", badge: "New" },
-  { label: "Practice-to-Wealth", desc: "Producer income → HNW", path: "/wealth-engine/practice-to-wealth", icon: <Workflow className="w-4 h-4" />, accent: "text-violet-400" },
-  { label: "Monte Carlo", desc: "Volatility + percentile bands", path: "/financial-twin", icon: <Zap className="w-4 h-4" />, accent: "text-amber-400" },
-  { label: "Financial Twin", desc: "Personal wealth dashboard", path: "/financial-twin", icon: <Users className="w-4 h-4" />, accent: "text-cyan-400" },
-  { label: "Wealth Projection", desc: "30-year UWE simulate", path: "/wealth-engine/retirement", icon: <TrendingUp className="w-4 h-4" />, accent: "text-indigo-400" },
-  { label: "Workflows", desc: "5 automated playbooks", path: "/workflows", icon: <Workflow className="w-4 h-4" />, accent: "text-rose-400" },
-];
-
-// ─── ENGINE CARD ────────────────────────────────────────────────────
-function EngineCard({ tool }: { tool: EngineTool }) {
-  const [, navigate] = useLocation();
-  return (
-    <button type="button"
-      onClick={() => navigate(tool.path)}
-      className="card-lift group relative text-left rounded-xl border border-border/60 bg-card/60 p-3 hover:border-accent/40 transition-colors"
-    >
-      <div className="flex items-start gap-2.5">
-        <div className={`mt-0.5 shrink-0 ${tool.accent}`}>{tool.icon}</div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            <p className="text-[13px] font-medium truncate">{tool.label}</p>
-            {tool.badge && (
-              <Badge variant="outline" className="h-4 text-[9px] px-1 border-accent/40 text-accent">
-                {tool.badge}
-              </Badge>
-            )}
-          </div>
-          <p className="text-[11px] text-muted-foreground/75 mt-0.5 line-clamp-2">{tool.desc}</p>
-        </div>
-        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-accent transition-colors mt-0.5" />
-      </div>
-    </button>
-  );
 }
+interface NavSection { group: string; items: NavItem[]; }
 
-// ─── SECTION ────────────────────────────────────────────────────────
-function EngineSection({
-  title, subtitle, icon, tools,
-}: { title: string; subtitle: string; icon: React.ReactNode; tools: EngineTool[] }) {
-  return (
-    <Card className="bg-card/40 border-border/40">
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-accent">{icon}</span>
-          <CardTitle className="text-sm">{title}</CardTitle>
-        </div>
-        <CardDescription className="text-[11px]">{subtitle}</CardDescription>
-      </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {tools.map((tool) => <EngineCard key={tool.label + tool.path} tool={tool} />)}
-      </CardContent>
-    </Card>
-  );
-}
+const NAV_SECTIONS: NavSection[] = [
+  { group: "Overview", items: [
+    { id: "overview", label: "Overview", icon: LayoutGrid, slug: "overview" },
+  ]},
+  { group: "Plan", items: [
+    { id: "retirement", label: "Retirement Planner", icon: PiggyBank, slug: "retirement" },
+    { id: "tax", label: "Tax Projector", icon: DollarSign, slug: "tax", externalPath: "/tax-planning" },
+    { id: "estate", label: "Estate Planning", icon: Briefcase, slug: "estate", externalPath: "/estate" },
+    { id: "risk", label: "Risk Assessment", icon: Scale, slug: "risk", externalPath: "/risk-assessment" },
+    { id: "income", label: "Income Projection", icon: TrendingUp, slug: "income", externalPath: "/income-projection" },
+    { id: "social-security", label: "Social Security", icon: Calculator, slug: "social-security", externalPath: "/social-security" },
+    { id: "medicare", label: "Medicare", icon: Stethoscope, slug: "medicare", externalPath: "/medicare" },
+    { id: "calculators", label: "All Calculators", icon: Calculator, slug: "calculators", externalPath: "/calculators" },
+  ]},
+  { group: "Protect", items: [
+    { id: "quick-bundle", label: "Quick Bundle", icon: Sparkles, slug: "quick-bundle", badge: "New" },
+    { id: "protection-score", label: "Protection Score", icon: ShieldCheck, slug: "protection-score", externalPath: "/protection-score" },
+    { id: "strategy-comparison", label: "Strategy Comparison", icon: BarChart3, slug: "strategy-comparison" },
+    { id: "insurance-analysis", label: "Insurance Analysis", icon: Shield, slug: "insurance-analysis", externalPath: "/insurance-analysis" },
+    { id: "quick-quote-hub", label: "Quick Quote Hub", icon: Zap, slug: "quick-quote-hub" },
+    { id: "holistic-comparison", label: "Holistic Comparison", icon: Target, slug: "holistic-comparison" },
+  ]},
+  { group: "Grow", items: [
+    { id: "engine-dashboard", label: "Engine Dashboard", icon: BarChart3, slug: "engine-dashboard", externalPath: "/engine-dashboard" },
+    { id: "owner-comp", label: "Owner Comp", icon: Building2, slug: "owner-comp", badge: "New" },
+    { id: "business-valuation", label: "Business Valuation", icon: Rocket, slug: "business-valuation", badge: "New" },
+    { id: "business-income", label: "Business Income", icon: DollarSign, slug: "business-income" },
+    { id: "practice-to-wealth", label: "Practice-to-Wealth", icon: Workflow, slug: "practice-to-wealth" },
+    { id: "financial-twin", label: "Financial Twin", icon: Users, slug: "financial-twin", externalPath: "/financial-twin" },
+    { id: "workflows", label: "Workflows", icon: Workflow, slug: "workflows", externalPath: "/workflows" },
+  ]},
+  { group: "Tools", items: [
+    { id: "configurator", label: "Configurator", icon: Gauge, slug: "configurator" },
+    { id: "sensitivity", label: "Sensitivity", icon: BarChart3, slug: "sensitivity" },
+    { id: "what-if", label: "What-If Analysis", icon: Zap, slug: "what-if" },
+    { id: "team-builder", label: "Team Builder", icon: Users, slug: "team-builder" },
+    { id: "references", label: "Reference Hub", icon: FileText, slug: "references" },
+  ]},
+];
 
-// ─── QUICK BUNDLE (inline) ──────────────────────────────────────────
+const ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
+
+// ─── LAZY EMBEDDED PAGES ───────────────────────────────────────────
+const WeRetirement = lazy(() => import("./Retirement"));
+const WeStrategyComparison = lazy(() => import("./StrategyComparison"));
+const WePracticeToWealth = lazy(() => import("./PracticeToWealth"));
+const WeQuickQuote = lazy(() => import("./QuickQuoteFlow"));
+const WeTeamBuilder = lazy(() => import("./TeamBuilder"));
+const WeSensitivity = lazy(() => import("./Sensitivity"));
+const WeWhatIfSensitivity = lazy(() => import("./WhatIfSensitivity"));
+const WeReferenceHub = lazy(() => import("./ReferenceHub"));
+const WeBusinessIncome = lazy(() => import("./BusinessIncome"));
+const WeWealthConfigurator = lazy(() => import("./WealthConfigurator"));
+const WeBusinessValuation = lazy(() => import("./BusinessValuationPage"));
+const WeBusinessIncomeQuickQuote = lazy(() => import("./BusinessIncomeQuickQuote"));
+const WeOwnerComp = lazy(() => import("./OwnerCompPage"));
+const WeQuickQuoteHub = lazy(() => import("./QuickQuoteHub"));
+const WeHolisticComparison = lazy(() => import("./HolisticComparison"));
+
+// ─── INLINE QUICK BUNDLE ───────────────────────────────────────────
 interface BundleForm {
-  age: number;
-  income: number;
-  dependents: number;
-  isBizOwner: boolean;
-  hasHome: boolean;
-  netWorth: number;
-  stateCode: string;
+  age: number; income: number; dependents: number;
+  isBizOwner: boolean; hasHome: boolean; netWorth: number; stateCode: string;
 }
 
 function InlineQuickBundle() {
   const [, navigate] = useLocation();
   const [form, setForm] = useState<BundleForm>({
-    age: 35,
-    income: 120_000,
-    dependents: 2,
-    isBizOwner: false,
-    hasHome: true,
-    netWorth: 250_000,
-    stateCode: "TX",
+    age: 35, income: 120_000, dependents: 2,
+    isBizOwner: false, hasHome: true, netWorth: 250_000, stateCode: "TX",
   });
-
   const bundleMut = trpc.wealthEngine.multiLineQuickQuote.useMutation({
     onError: (e: any) => toast.error(e.message),
   });
-
   const result = bundleMut.data?.data;
   const total = result?.totals.annualPremiumAll ?? 0;
   const critical = result?.totals.annualPremiumCritical ?? 0;
   const asPct = result?.totals.asPctOfIncome ?? 0;
 
-  const onRun = () =>
-    bundleMut.mutate({
-      age: form.age,
-      income: form.income,
-      dependents: form.dependents,
-      isBizOwner: form.isBizOwner,
-      hasHome: form.hasHome,
-      netWorth: form.netWorth,
-      stateCode: form.stateCode,
-    });
+  const onRun = () => bundleMut.mutate({
+    age: form.age, income: form.income, dependents: form.dependents,
+    isBizOwner: form.isBizOwner, hasHome: form.hasHome, netWorth: form.netWorth, stateCode: form.stateCode,
+  });
 
   return (
     <Card className="bg-card/60 border-accent/20">
@@ -200,181 +155,30 @@ function InlineQuickBundle() {
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-accent" />
           <CardTitle className="text-sm">Quick Bundle</CardTitle>
-          <Badge variant="outline" className="h-4 text-[9px] px-1 border-accent/40 text-accent">
-            Multi-line
-          </Badge>
+          <Badge variant="outline" className="h-4 text-[9px] px-1 border-accent/40 text-accent">Multi-Line</Badge>
         </div>
-        <CardDescription className="text-[11px]">
-          Tell us about the client — get a bundled proposal across life, DI, LTC, P&C, umbrella, and business in under a second.
-        </CardDescription>
+        <CardDescription className="text-[11px]">Generate a multi-line protection proposal in 30 seconds</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase text-muted-foreground">Age</Label>
-            <Input
-              type="number"
-              value={form.age}
-              onChange={(e) => setForm({ ...form, age: +e.target.value })}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase text-muted-foreground">Income</Label>
-            <Input
-              type="number"
-              value={form.income}
-              onChange={(e) => setForm({ ...form, income: +e.target.value })}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase text-muted-foreground">Net Worth</Label>
-            <Input
-              type="number"
-              value={form.netWorth}
-              onChange={(e) => setForm({ ...form, netWorth: +e.target.value })}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase text-muted-foreground">Dependents</Label>
-            <Input
-              type="number"
-              value={form.dependents}
-              onChange={(e) => setForm({ ...form, dependents: +e.target.value })}
-              className="h-8 text-xs"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase text-muted-foreground">State</Label>
-            <Input
-              value={form.stateCode}
-              maxLength={2}
-              onChange={(e) => setForm({ ...form, stateCode: e.target.value.toUpperCase() })}
-              className="h-8 text-xs uppercase"
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-md border border-border/60 px-3 h-8">
-            <Label className="text-[11px] cursor-pointer">Homeowner</Label>
-            <Switch
-              checked={form.hasHome}
-              onCheckedChange={(v) => setForm({ ...form, hasHome: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-md border border-border/60 px-3 h-8">
-            <Label className="text-[11px] cursor-pointer">Biz owner</Label>
-            <Switch
-              checked={form.isBizOwner}
-              onCheckedChange={(v) => setForm({ ...form, isBizOwner: v })}
-            />
-          </div>
-          <Button
-            onClick={onRun}
-            disabled={bundleMut.isPending}
-            className="h-8 text-xs gap-1.5"
-          >
-            {bundleMut.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-            Run bundle
-          </Button>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+          <div><Label className="text-[10px]">Age</Label><Input type="number" value={form.age} onChange={e => setForm(p => ({ ...p, age: +e.target.value }))} className="h-8 text-xs" /></div>
+          <div><Label className="text-[10px]">Income</Label><Input type="number" value={form.income} onChange={e => setForm(p => ({ ...p, income: +e.target.value }))} className="h-8 text-xs" /></div>
+          <div><Label className="text-[10px]">Dependents</Label><Input type="number" value={form.dependents} onChange={e => setForm(p => ({ ...p, dependents: +e.target.value }))} className="h-8 text-xs" /></div>
+          <div><Label className="text-[10px]">Net Worth</Label><Input type="number" value={form.netWorth} onChange={e => setForm(p => ({ ...p, netWorth: +e.target.value }))} className="h-8 text-xs" /></div>
         </div>
-
-        {/* Results */}
+        <div className="flex items-center gap-4 mb-3">
+          <label className="flex items-center gap-1.5 text-[11px]"><Switch checked={form.isBizOwner} onCheckedChange={v => setForm(p => ({ ...p, isBizOwner: v }))} className="scale-75" /> Business Owner</label>
+          <label className="flex items-center gap-1.5 text-[11px]"><Switch checked={form.hasHome} onCheckedChange={v => setForm(p => ({ ...p, hasHome: v }))} className="scale-75" /> Homeowner</label>
+        </div>
+        <Button size="sm" onClick={onRun} disabled={bundleMut.isPending} className="gap-1.5">
+          {bundleMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          Run Quick Bundle
+        </Button>
         {result && (
-          <div className="pt-2 space-y-3 border-t border-border/40">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <StatChip label="All lines" value={fmt(total)} accent="text-foreground" />
-              <StatChip label="Critical only" value={fmt(critical)} accent="text-emerald-400" />
-              <StatChip label="% of income" value={pct(asPct)} accent="text-accent" />
-              <StatChip label="Coverage lines" value={`${result.coverageLines.length}`} accent="text-muted-foreground" />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Coverage Lines</p>
-                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                  {result.coverageLines.map((line: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between gap-2 text-[11px] rounded-md border border-border/40 p-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <Badge
-                            variant="outline"
-                            className={`h-4 text-[9px] px-1 ${
-                              line.priority === "critical"
-                                ? "border-red-400/50 text-red-400"
-                                : line.priority === "recommended"
-                                  ? "border-accent/50 text-accent"
-                                  : "border-border text-muted-foreground"
-                            }`}
-                          >
-                            {line.priority}
-                          </Badge>
-                          <span className="truncate">{line.product}</span>
-                        </div>
-                        <p className="text-[10px] text-muted-foreground/70 truncate mt-0.5">{line.rationale}</p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-xs font-mono">{fmt(line.annualPremium)}</div>
-                        <div className="text-[10px] text-muted-foreground">{fmt(line.monthlyPremium)}/mo</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Planning Actions</p>
-                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                  {result.planningActions.map((action: any, i: number) => (
-                    <div key={i} className="flex items-start gap-2 text-[11px] rounded-md border border-border/40 p-2">
-                      <Badge
-                        variant="outline"
-                        className={`h-4 text-[9px] px-1 shrink-0 ${
-                          action.priority === "critical"
-                            ? "border-red-400/50 text-red-400"
-                            : action.priority === "recommended"
-                              ? "border-accent/50 text-accent"
-                              : "border-border text-muted-foreground"
-                        }`}
-                      >
-                        {action.priority}
-                      </Badge>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate">{action.action}</p>
-                        <p className="text-[10px] text-muted-foreground/70 mt-0.5 line-clamp-2">{action.impact}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-[11px]"
-                onClick={() => navigate("/wealth-engine/quick-quote")}
-              >
-                Full Quick Quote flow <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-[11px]"
-                onClick={() => navigate("/wealth-engine/strategy-comparison")}
-              >
-                Strategy comparison
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-[11px] text-muted-foreground"
-                onClick={() => navigate("/insurance-analysis")}
-              >
-                Insurance deep dive
-              </Button>
-            </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-lg bg-background/50 p-2"><p className="text-[10px] text-muted-foreground">Total Annual</p><p className="text-sm font-bold text-accent">{fmt(total)}</p></div>
+            <div className="rounded-lg bg-background/50 p-2"><p className="text-[10px] text-muted-foreground">Critical Only</p><p className="text-sm font-bold">{fmt(critical)}</p></div>
+            <div className="rounded-lg bg-background/50 p-2"><p className="text-[10px] text-muted-foreground">% of Income</p><p className="text-sm font-bold">{pct(asPct)}</p></div>
           </div>
         )}
       </CardContent>
@@ -382,214 +186,223 @@ function InlineQuickBundle() {
   );
 }
 
-function StatChip({ label, value, accent }: { label: string; value: string; accent: string }) {
-  return (
-    <div className="rounded-md border border-border/40 bg-secondary/30 p-2">
-      <p className="text-[9px] text-muted-foreground/70 uppercase tracking-wider">{label}</p>
-      <p className={`text-sm font-semibold tabular-nums ${accent}`}>{value}</p>
-    </div>
-  );
-}
-
-// ─── TIER 0 INSTANT SCORES ──────────────────────────────────────────
-// Pass 45 (C3 Progressive Disclosure): Zillow-zestimate-style instant
-// scores across key domains. <200ms load, one-thumb mobile zone.
-function Tier0ScoreStrip() {
-  const healthQ = trpc.financialHealth.latest.useQuery(undefined, {
-    staleTime: 60_000,
-    retry: false,
-  });
-  const h = healthQ.data;
-  const total = h ? (h as any).totalScore ?? null : null;
-  const spend = h ? (h as any).spendScore ?? null : null;
-  const save = h ? (h as any).saveScore ?? null : null;
-  const borrow = h ? (h as any).borrowScore ?? null : null;
-  const plan = h ? (h as any).planScore ?? null : null;
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-      <Tier0InstantCard
-        title="Financial Health"
-        score={total}
-        maxScore={100}
-        subtitle={total != null ? `Spend ${spend}/25 · Save ${save}/25 · Borrow ${borrow}/25 · Plan ${plan}/25` : "Calculate your score"}
-        configureHref="/financial-twin"
-        configureLabel="View"
-        icon={<Gauge className="w-5 h-5 text-muted-foreground" />}
-        loading={healthQ.isLoading}
-      />
-      <Tier0InstantCard
-        title="Retirement"
-        score={null}
-        subtitle="Run projection"
-        configureHref="/wealth-engine/retirement"
-        configureLabel="Plan"
-        icon={<PiggyBank className="w-5 h-5 text-amber-400" />}
-      />
-      <Tier0InstantCard
-        title="Protection"
-        score={null}
-        subtitle="12-dimension gap analysis"
-        configureHref="/protection-score"
-        configureLabel="Score"
-        icon={<ShieldCheck className="w-5 h-5 text-emerald-400" />}
-      />
-      <Tier0InstantCard
-        title="Tax Impact"
-        score={null}
-        subtitle="Bracket + Roth analysis"
-        configureHref="/tax-planning"
-        configureLabel="Analyze"
-        icon={<DollarSign className="w-5 h-5 text-violet-400" />}
-      />
-      <Tier0InstantCard
-        title="Estate Plan"
-        score={null}
-        subtitle="Documents + trusts"
-        configureHref="/estate"
-        configureLabel="Review"
-        icon={<Briefcase className="w-5 h-5 text-blue-400" />}
-      />
-    </div>
-  );
-}
-
-// ─── HERO ───────────────────────────────────────────────────────────
-function HubHero({ role }: { role: string | undefined }) {
+// ─── HERO + SCORE STRIP (Overview tab) ─────────────────────────────
+function HubHero({ role }: { role?: string }) {
   const [, navigate] = useLocation();
-  const tagline = useMemo(() => {
-    if (role === "admin" || role === "manager") return "One hub. Every engine. Every client.";
-    if (role === "advisor") return "Quote, plan, and protect — in a single pass.";
-    return "Your complete financial plan, on demand.";
-  }, [role]);
-
   return (
-    <Card className="bg-card/60 border-accent/20 relative overflow-hidden">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: "radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.14) 0%, transparent 70%)",
-        }}
-      />
-      <CardContent className="relative py-6 px-6 flex flex-col lg:flex-row items-start lg:items-center gap-4 justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            <h1 className="text-xl font-heading font-semibold">Wealth Engine</h1>
+    <Card className="bg-gradient-to-br from-card via-card to-accent/5 border-accent/20">
+      <CardContent className="p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-lg md:text-xl font-bold flex items-center gap-2">
+              <Gauge className="w-5 h-5 text-accent" /> Wealth Engine
+            </h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              30+ planning, protection, and growth tools — unified in one hub.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">{tagline}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            className="h-9 gap-1.5"
-            onClick={() => navigate("/wealth-engine/quick-quote")}
-          >
-            <Sparkles className="w-4 h-4" /> Quick Quote
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 gap-1.5"
-            onClick={() => navigate("/engine-dashboard")}
-          >
-            <BarChart3 className="w-4 h-4" /> Strategy Compare
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 gap-1.5"
-            onClick={() => navigate("/wealth-engine/owner-comp")}
-          >
-            <Building2 className="w-4 h-4" /> Owner Comp
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-9 gap-1.5"
-            onClick={() => navigate("/financial-twin")}
-          >
-            <Users className="w-4 h-4" /> Financial Twin
-          </Button>
+          <div className="flex gap-2">
+            <ShareButton contentType="wealth-engine" contentId="wealth-analysis" contentTitle="Wealth Analysis" variant="ghost" size="sm" />
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-// ─── MAIN PAGE ──────────────────────────────────────────────────────
+function Tier0ScoreStrip() {
+  const scoreQ = trpc.wealthEngine.getGuardrails.useQuery(undefined, { retry: 1 });
+  if (!scoreQ.data) return null;
+  const g = scoreQ.data;
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {[
+        { label: "Protection", value: g.protectionScore ?? "—", color: "text-emerald-400" },
+        { label: "Growth", value: g.growthScore ?? "—", color: "text-blue-400" },
+        { label: "Tax Efficiency", value: g.taxScore ?? "—", color: "text-violet-400" },
+        { label: "Overall", value: g.overallScore ?? "—", color: "text-accent" },
+      ].map(s => (
+        <Card key={s.label} className="bg-card/40 border-border/30">
+          <CardContent className="p-3 text-center">
+            <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ─── OVERVIEW CONTENT ──────────────────────────────────────────────
+function OverviewContent() {
+  const { user } = useAuth();
+  return (
+    <div className="space-y-5">
+      <ServiceDegradedFallback serviceId="llm" degradedMessage="AI-powered analysis may be slower or unavailable. Calculator tools still work normally.">
+        <></>
+      </ServiceDegradedFallback>
+      <HubHero role={user?.role} />
+      <Tier0ScoreStrip />
+      <DisclosureSection minLevel={2} label="Quick Bundle Calculator" showTeaser>
+        <InlineQuickBundle />
+      </DisclosureSection>
+      <Tier0InstantCard />
+      <p className="text-[10px] text-muted-foreground text-center pt-2">
+        Outputs are illustrative and use industry-standard heuristics. For binding
+        quotes, file applications through the carrier connector. For formal financial
+        plans, engage a licensed advisor.
+      </p>
+    </div>
+  );
+}
+
+// ─── MAIN HUB ──────────────────────────────────────────────────────
 export default function WealthEngineHub() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const [matchTab, paramsTab] = useRoute("/wealth-engine/:tab");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const initialTab: WETab = (matchTab && paramsTab?.tab && ALL_ITEMS.find(t => t.slug === paramsTab.tab))
+    ? ALL_ITEMS.find(t => t.slug === paramsTab.tab)!.id
+    : "overview";
+  const [activeTab, setActiveTab] = useState<WETab>(initialTab);
+
+  // Sync URL ↔ tab
+  useEffect(() => {
+    const item = ALL_ITEMS.find(t => t.id === activeTab);
+    if (!item) return;
+    // For external paths, navigate away
+    if (item.externalPath) {
+      navigate(item.externalPath);
+      return;
+    }
+    const slug = item.slug || "overview";
+    navigate(`/wealth-engine/${slug}`, { replace: true });
+  }, [activeTab, navigate]);
+
+  useEffect(() => {
+    if (matchTab && paramsTab?.tab) {
+      const tab = ALL_ITEMS.find(t => t.slug === paramsTab.tab);
+      if (tab && tab.id !== activeTab) setActiveTab(tab.id);
+    }
+  }, [matchTab, paramsTab?.tab]);
+
+  const handleTabClick = (item: NavItem) => {
+    if (item.externalPath) {
+      navigate(item.externalPath);
+    } else {
+      setActiveTab(item.id);
+    }
+    setSidebarOpen(false);
+  };
 
   return (
     <AppShell title="Wealth Engine">
       <SEOHead title="Wealth Engine" description="Unified wealth planning, protection, and growth engine" />
-      <div className="flex justify-end px-4 pt-2"><ShareButton contentType="wealth-engine" contentId="wealth-analysis" contentTitle="Wealth Analysis" variant="ghost" size="sm" /></div>
-      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
-        <ServiceDegradedFallback serviceId="llm" degradedMessage="AI-powered analysis may be slower or unavailable. Calculator tools still work normally.">
-          <></>
-        </ServiceDegradedFallback>
-        <HubHero role={user?.role} />
+      <div className="flex min-h-full bg-background relative">
+        {/* ─── MOBILE SIDEBAR OVERLAY ─── */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} role="presentation" aria-hidden="true" />
+        )}
 
-        <Tier0ScoreStrip />
-
-        <DisclosureSection minLevel={2} label="Quick Bundle Calculator" showTeaser>
-          <InlineQuickBundle />
-        </DisclosureSection>
-
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid grid-cols-2 sm:grid-cols-4 max-w-md">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="plan">Plan</TabsTrigger>
-            <TabsTrigger value="protect">Protect</TabsTrigger>
-            <TabsTrigger value="grow">Grow</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all" className="mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <EngineSection
-                title="Plan"
-                subtitle="Retirement, tax, estate, and lifestyle projection"
-                icon={<Target className="w-4 h-4" />}
-                tools={PLAN_TOOLS}
-              />
-              <EngineSection
-                title="Protect"
-                subtitle="Insurance, quoting, protection score"
-                icon={<Shield className="w-4 h-4" />}
-                tools={PROTECT_TOOLS}
-              />
-              <EngineSection
-                title="Grow"
-                subtitle="Owner economics + practice growth + simulations"
-                icon={<Rocket className="w-4 h-4" />}
-                tools={GROW_TOOLS}
-              />
+        {/* ─── SIDEBAR ─── */}
+        <aside role="complementary" aria-label="Wealth Engine navigation sidebar" className={`
+          fixed inset-y-0 left-0 lg:sticky lg:top-0 z-50 lg:z-auto
+          w-56 shrink-0 border-r border-border bg-card flex flex-col
+          max-h-[100dvh] lg:max-h-screen lg:self-start
+          transition-transform duration-200 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}>
+          <div className="p-3 border-b border-border/50 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Gauge className="w-5 h-5 text-primary" />
+                <span className="text-sm font-bold text-foreground">Wealth Engine</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Plan · Protect · Grow</p>
             </div>
-          </TabsContent>
-          <TabsContent value="plan" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {PLAN_TOOLS.map((t) => <EngineCard key={t.label} tool={t} />)}
-            </div>
-          </TabsContent>
-          <TabsContent value="protect" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {PROTECT_TOOLS.map((t) => <EngineCard key={t.label} tool={t} />)}
-            </div>
-          </TabsContent>
-          <TabsContent value="grow" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {GROW_TOOLS.map((t) => <EngineCard key={t.label} tool={t} />)}
-            </div>
-          </TabsContent>
-        </Tabs>
+            <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
+              <PanelLeftClose className="w-4 h-4" />
+            </Button>
+          </div>
 
-        {/* Footer — compliance note */}
-        <p className="text-[10px] text-muted-foreground text-center pt-2">
-          Outputs are illustrative and use industry-standard heuristics. For binding
-          quotes, file applications through the carrier connector. For formal financial
-          plans, engage a licensed advisor.
-        </p>
+          <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
+            <nav className="p-2 space-y-3" role="navigation" aria-label="Wealth Engine sections">
+              {NAV_SECTIONS.map(section => (
+                <div key={section.group} role="group" aria-label={section.group}>
+                  <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1">{section.group}</p>
+                  <div role="list">
+                    {section.items.map(item => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id && !item.externalPath;
+                      return (
+                        <button type="button" key={item.id} role="listitem"
+                          onClick={() => handleTabClick(item)}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                            isActive
+                              ? 'bg-primary/10 text-primary border border-primary/30'
+                              : 'text-muted-foreground hover:bg-background hover:text-foreground border border-transparent'
+                          }`}>
+                          <Icon className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                          {item.badge && (
+                            <Badge variant="outline" className="ml-auto h-4 text-[8px] px-1 border-accent/40 text-accent shrink-0">
+                              {item.badge}
+                            </Badge>
+                          )}
+                          {item.externalPath && (
+                            <ArrowRight className="w-3 h-3 ml-auto text-muted-foreground/40 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </nav>
+          </ScrollArea>
+
+          <div className="p-3 border-t border-border/50 bg-background">
+            <div className="text-center text-[9px] text-muted-foreground/30">Wealth Engine · {ALL_ITEMS.length} tools</div>
+          </div>
+        </aside>
+
+        {/* ─── MAIN CONTENT ─── */}
+        <main className="flex-1 min-w-0" role="main" aria-label="Wealth Engine content">
+          <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-6">
+            {/* ─── TOOLBAR ─── */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-card rounded-lg border border-border px-3 py-2">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
+                  <PanelLeftOpen className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-medium text-foreground">
+                  {ALL_ITEMS.find(t => t.id === activeTab)?.label ?? "Overview"}
+                </span>
+              </div>
+            </div>
+
+            <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>}>
+              {activeTab === "overview" && <OverviewContent />}
+              {activeTab === "retirement" && <WeRetirement embedded />}
+              {activeTab === "strategy-comparison" && <WeStrategyComparison embedded />}
+              {activeTab === "quick-bundle" && <InlineQuickBundle />}
+              {activeTab === "practice-to-wealth" && <WePracticeToWealth embedded />}
+              {activeTab === "owner-comp" && <WeOwnerComp embedded />}
+              {activeTab === "business-valuation" && <WeBusinessValuation embedded />}
+              {activeTab === "business-income" && <WeBusinessIncome embedded />}
+              {activeTab === "configurator" && <WeWealthConfigurator embedded />}
+              {activeTab === "sensitivity" && <WeSensitivity embedded />}
+              {activeTab === "what-if" && <WeWhatIfSensitivity embedded />}
+              {activeTab === "team-builder" && <WeTeamBuilder embedded />}
+              {activeTab === "references" && <WeReferenceHub embedded />}
+              {activeTab === "quick-quote-hub" && <WeQuickQuoteHub embedded />}
+              {activeTab === "holistic-comparison" && <WeHolisticComparison embedded />}
+            </Suspense>
+          </div>
+        </main>
       </div>
     </AppShell>
   );

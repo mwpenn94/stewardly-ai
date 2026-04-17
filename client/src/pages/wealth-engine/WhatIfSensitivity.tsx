@@ -99,7 +99,9 @@ const fmt = (n: number) => {
 
 /* ── component ─────────────────────────────────────────────── */
 
-export default function WhatIfSensitivity() {
+export default function WhatIfSensitivity({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [rowParam, setRowParam] = useState("savingsRate");
@@ -253,7 +255,7 @@ export default function WhatIfSensitivity() {
 
 
   return (
-    <AppShell title="What-If Sensitivity">
+    <Shell title="What-If Sensitivity">
       <SEOHead title="What-If Sensitivity" description="Scenario modeling and sensitivity analysis" />
       <div className="max-w-5xl mx-auto space-y-6 p-4">
         {/* Header */}
@@ -432,6 +434,6 @@ export default function WhatIfSensitivity() {
           </div>
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }

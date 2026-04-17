@@ -55,7 +55,7 @@ export default function MyWork() {
     enabled: isAuthenticated,
   });
 
-  const complianceQ = trpc.compliance.getReviews.useQuery(undefined, {
+  const complianceQ = trpc.compliance.getReviews.useQuery({ limit: 20, status: "all" }, {
     enabled: isAuthenticated,
   });
 

@@ -78,7 +78,9 @@ function scoreDomains(inputs: QuickQuoteInputs): Record<DomainKey, number> {
   };
 }
 
-export default function QuickQuoteFlowPage() {
+export default function QuickQuoteFlowPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -162,7 +164,7 @@ export default function QuickQuoteFlowPage() {
 
 
   return (
-    <AppShell title="Quick Quote">
+    <Shell title="Quick Quote">
       <SEOHead title="Quick Quote" description="Insurance and financial product quick quote" />
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
         <header className="space-y-1">
@@ -284,7 +286,7 @@ export default function QuickQuoteFlowPage() {
           </Card>
         )}
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

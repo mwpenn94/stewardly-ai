@@ -46,7 +46,9 @@ const fmt = (n: number) => {
 };
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
-export default function OwnerCompPage() {
+export default function OwnerCompPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -98,7 +100,7 @@ export default function OwnerCompPage() {
 
 
   return (
-    <AppShell title="Owner Compensation">
+    <Shell title="Owner Compensation">
       <SEOHead title="Owner Compensation" description="Compare owner compensation across entity types" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
         {/* Header */}
@@ -389,7 +391,7 @@ export default function OwnerCompPage() {
           April 2026 tax constants. Illustrative only — engage a CPA before filing.
         </p>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

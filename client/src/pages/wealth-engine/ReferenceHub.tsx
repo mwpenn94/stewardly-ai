@@ -40,7 +40,9 @@ type SortDir = "asc" | "desc";
 
 /* ── component ────────────────────────────────────────────────── */
 
-export default function ReferenceHub() {
+export default function ReferenceHub({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const { data: references } = trpc.wealthEngine.productReferences.useQuery(undefined, { enabled: isAuthenticated, retry: false, staleTime: 5 * 60_000 });
@@ -158,7 +160,7 @@ export default function ReferenceHub() {
 
 
   return (
-    <AppShell title="Reference Hub">
+    <Shell title="Reference Hub">
       <SEOHead title="Reference Hub" description="Wealth engine benchmarks, product data, and methodology" />
       <div className="max-w-5xl mx-auto space-y-6 p-4">
         {/* Header */}
@@ -432,7 +434,7 @@ export default function ReferenceHub() {
           )}
         </Card>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

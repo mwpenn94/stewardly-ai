@@ -78,7 +78,9 @@ interface Campaign {
 
 /* ── component ─────────────────────────────────────────────────── */
 
-export default function TeamBuilder() {
+export default function TeamBuilder({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [tab, setTab] = useState("compose");
@@ -249,7 +251,7 @@ export default function TeamBuilder() {
 
 
   return (
-    <AppShell title="BIE Team Builder">
+    <Shell title="BIE Team Builder">
       <SEOHead title="Team Builder" description="Build and analyze advisory team economics" />
       <div className="max-w-6xl mx-auto space-y-6 p-4">
         {/* Header */}
@@ -769,7 +771,7 @@ export default function TeamBuilder() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

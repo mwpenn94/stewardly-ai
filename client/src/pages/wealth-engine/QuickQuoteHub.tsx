@@ -86,7 +86,9 @@ const CATEGORY_META: Record<QuickQuoteCategory, { label: string; icon: React.Rea
 
 type ScopeKey = "user" | "advisor" | "manager" | "steward";
 
-export default function QuickQuoteHubPage() {
+export default function QuickQuoteHubPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const [, navigate] = useLocation();
   const { profile, hasProfile, completenessStatus } = useFinancialProfile();
   const [scope, setScope] = useState<ScopeKey>("user");
@@ -102,7 +104,7 @@ export default function QuickQuoteHubPage() {
   );
 
   return (
-    <AppShell title="Quick Quote Hub">
+    <Shell title="Quick Quote Hub">
       <SEOHead title="Quick Quote Hub" description="Multi-line quick quote comparison tool" />
       <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
         <header className="space-y-1">
@@ -236,7 +238,7 @@ export default function QuickQuoteHubPage() {
           financial professional before acting on any output.
         </p>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

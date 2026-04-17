@@ -498,19 +498,17 @@ Response (typed, Superjson) → React Query Cache → UI`} />
                     </thead>
                     <tbody>
                       <RouteRow path="/chat" page="Chat" role="user" desc="Main AI conversation" />
-                      <RouteRow path="/operations" page="OperationsHub" role="user" desc="Workflow & tasks" />
-                      <RouteRow path="/intelligence-hub" page="IntelligenceHub" role="user" desc="AI models & data" />
-                      <RouteRow path="/advisory" page="AdvisoryHub" role="user" desc="Products & cases" />
-                      <RouteRow path="/relationships" page="RelationshipsHub" role="user" desc="Client network" />
-                      <RouteRow path="/market-data" page="MarketData" role="user" desc="Market intelligence" />
-                      <RouteRow path="/integrations" page="Integrations" role="user" desc="Connected services" />
-                      <RouteRow path="/settings/:tab" page="SettingsHub" role="user" desc="12 settings tabs" />
+                      <RouteRow path="/wealth-engine" page="WealthEngineHub" role="user" desc="30+ financial tools (sidebar hub)" />
+                      <RouteRow path="/financial-twin" page="FinancialTwin" role="user" desc="Digital financial twin" />
+                      <RouteRow path="/products" page="Products" role="user" desc="Product catalog" />
+                      <RouteRow path="/my-work" page="MyWork" role="user" desc="Task queue & compliance" />
+                      <RouteRow path="/people" page="PeopleHub" role="user" desc="CRM & relationships (sidebar hub)" />
+                      <RouteRow path="/intelligence-hub" page="IntelligenceHubV2" role="user" desc="Market & data intelligence (sidebar hub)" />
+                      <RouteRow path="/settings/:tab" page="SettingsHub" role="user" desc="User preferences (sidebar hub)" />
                       <RouteRow path="/help" page="Help" role="user" desc="Documentation" />
-                      <RouteRow path="/portal" page="Portal" role="advisor" desc="Client management" />
-                      <RouteRow path="/organizations" page="Organizations" role="advisor" desc="Org management" />
                       <RouteRow path="/manager" page="ManagerDashboard" role="manager" desc="Team dashboard" />
-                      <RouteRow path="/admin" page="GlobalAdmin" role="admin" desc="Platform admin" />
-                      <RouteRow path="/admin/intelligence" page="AdminIntelligence" role="admin" desc="AI monitoring" />
+                      <RouteRow path="/organizations" page="Organizations" role="advisor" desc="Org management" />
+                      <RouteRow path="/admin" page="AdminHubV2" role="admin" desc="Platform admin (sidebar hub)" />
                       <RouteRow path="/admin/guide" page="PlatformGuide" role="admin" desc="This page" />
                     </tbody>
                   </table>
@@ -525,10 +523,10 @@ Response (typed, Superjson) → React Query Cache → UI`} />
                     </p>
                     <div className="space-y-2">
                       {[
-                        { role: "user", level: 0, items: "Chat, Operations, Intelligence, Advisory, Relationships, Market Data, Documents, Integrations, Passive Actions, My Progress, Settings, Help" },
-                        { role: "advisor", level: 1, items: "+ Portal, Organizations, Integration Health, Improvement Engine" },
-                        { role: "manager", level: 2, items: "+ Manager Dashboard" },
-                        { role: "admin", level: 3, items: "+ Global Admin, Platform Guide" },
+                        { role: "user", level: 0, items: "Chat, Documents, Financial Twin, Wealth Engine, Products, My Work, People Hub, Intelligence Hub, Learning, Settings, Help" },
+                        { role: "advisor", level: 1, items: "+ Portal (via People Hub)" },
+                        { role: "manager", level: 2, items: "+ Team, Organizations (disclosure level 3)" },
+                        { role: "admin", level: 3, items: "+ Admin Hub (disclosure level 4)" },
                       ].map(r => (
                         <div key={r.role} className="flex items-start gap-3 rounded-md border border-border p-3">
                           <Badge variant={r.role === "admin" ? "default" : "outline"} className="shrink-0 mt-0.5">

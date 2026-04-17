@@ -127,7 +127,9 @@ function checkInputGuardrails(
   return warnings;
 }
 
-export default function StrategyComparisonPage() {
+export default function StrategyComparisonPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -296,7 +298,7 @@ export default function StrategyComparisonPage() {
 
 
   return (
-    <AppShell title="Strategy Comparison">
+    <Shell title="Strategy Comparison">
       <SEOHead title="Strategy Comparison" description="Compare wealth-building strategies side by side" />
       <SectionErrorBoundary sectionName="Strategy Comparison">
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
@@ -977,7 +979,7 @@ export default function StrategyComparisonPage() {
         </Card>
       </div>
       </SectionErrorBoundary>
-    </AppShell>
+    </Shell>
   );
 }
 

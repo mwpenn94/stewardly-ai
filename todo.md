@@ -5853,3 +5853,30 @@
 - [x] Fix PeopleHub RelationshipsHub crash — fixed .data access on undefined tRPC result (leadsQ.data → leadsQ)
 - [x] Playwright verification: all 6 hub pages load without error boundaries (People, Admin, Intelligence, Settings, Wealth Engine, Chat)
 - [x] Playwright verification: mobile viewport tests pass (Chat mobile, People mobile)
+- [ ] Fix Wealth Engine crash: engine.ts uses fmtSm but never imports it from format.ts
+- [ ] Fix My Work crash: compliance.getReviews requires input object but MyWork passes undefined
+- [ ] Fix Chat UI: reduce redundancy, fix model selector overlap on mobile
+- [ ] Add consistent internal sidebar to Wealth Engine hub page
+- [ ] Verify Settings hub sidebar works correctly (already has sidebar pattern)
+- [ ] Verify Knowledge Management works correctly within Admin hub sidebar
+- [ ] Browser-test every page as virtual user before delivery
+- [ ] Update all in-app and codebase documentation
+
+## Pass 112 — Critical Fixes & Documentation (Apr 17, 2026)
+- [x] Fix Wealth Engine crash: engine.ts missing import of fmtSm from format.ts
+- [x] Fix Wealth Engine: add re-export of fmt/fmtSm/pct from engine.ts for EmbedCalculator
+- [x] Fix My Work crash: compliance.getReviews called with undefined instead of required input object
+- [x] Rewrite WealthEngineHub with internal sidebar pattern (30+ tools in 5 sections)
+- [x] Add embedded prop to all wealth-engine sub-pages to prevent double AppShell
+- [x] Fix Chat UI model selector overlap on mobile (gate desktop popup with hidden md:block)
+- [x] Make mobile model button visible on mobile (md:hidden instead of hidden)
+- [x] Update PLATFORM_GUIDE.md to v10 with hub-based architecture documentation
+- [x] Update PlatformGuide.tsx in-app routes and sidebar navigation tables
+- [x] Update wealth-engine package README with hub architecture docs
+- [x] Browser-test all 26 pages — all return HTTP 200
+- [x] Verify Wealth Engine loads without fmtSm error in browser
+- [x] Fix navReachability test: regex now handles optional params (:tab?) correctly
+- [x] Fix pass104 test: wealth-engine sub-paths exempted (covered by catch-all route)
+- [x] Fix pass74 test: added SectionErrorBoundary to 11 major hub routes in App.tsx
+- [x] All 3 previously failing tests now pass (43/43)
+- [x] Build passes clean with all fixes

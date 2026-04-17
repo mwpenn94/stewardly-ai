@@ -33,7 +33,9 @@ const fmt = (n: number) => {
 };
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
-export default function BusinessValuationPage() {
+export default function BusinessValuationPage({ embedded = false }: { embedded?: boolean } = {}) {
+  const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
+
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
   const [, navigate] = useLocation();
@@ -79,7 +81,7 @@ export default function BusinessValuationPage() {
 
 
   return (
-    <AppShell title="Business Valuation">
+    <Shell title="Business Valuation">
       <SEOHead title="Business Valuation" description="Estimate and compare business valuations" />
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
         <div className="flex items-center gap-2">
@@ -251,7 +253,7 @@ export default function BusinessValuationPage() {
           commission a formal valuation before any sale or succession event.
         </p>
       </div>
-    </AppShell>
+    </Shell>
   );
 }
 

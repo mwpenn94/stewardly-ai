@@ -41,22 +41,7 @@ import Welcome from "./pages/Welcome";
 // ── Lazy loaded (code-split — loaded on demand) ──────────────────────
 const Calculators = lazy(() => import("./pages/Calculators"));
 const EmbedCalculator = lazy(() => import("./pages/EmbedCalculator"));
-// Wealth-engine pages (Phase 4 — UWE/BIE/HE React UI)
-const WeStrategyComparison = lazy(() => import("./pages/wealth-engine/StrategyComparison"));
-const WeRetirement = lazy(() => import("./pages/wealth-engine/Retirement"));
-const WePracticeToWealth = lazy(() => import("./pages/wealth-engine/PracticeToWealth"));
-const WeQuickQuote = lazy(() => import("./pages/wealth-engine/QuickQuoteFlow"));
-const WeTeamBuilder = lazy(() => import("./pages/wealth-engine/TeamBuilder"));
-const WeSensitivity = lazy(() => import("./pages/wealth-engine/Sensitivity"));
-const WeWhatIfSensitivity = lazy(() => import("./pages/wealth-engine/WhatIfSensitivity"));
-const WeReferenceHub = lazy(() => import("./pages/wealth-engine/ReferenceHub"));
-const WeBusinessIncome = lazy(() => import("./pages/wealth-engine/BusinessIncome"));
-const WeWealthConfigurator = lazy(() => import("./pages/wealth-engine/WealthConfigurator"));
-const WeBusinessValuation = lazy(() => import("./pages/wealth-engine/BusinessValuationPage"));
-const WeBusinessIncomeQuickQuote = lazy(() => import("./pages/wealth-engine/BusinessIncomeQuickQuote"));
-const WeOwnerComp = lazy(() => import("./pages/wealth-engine/OwnerCompPage"));
-const WeQuickQuoteHub = lazy(() => import("./pages/wealth-engine/QuickQuoteHub"));
-const WeHolisticComparison = lazy(() => import("./pages/wealth-engine/HolisticComparison"));
+// Wealth-engine hub (Phase 4 — single hub with internal sidebar navigation)
 const WeWealthEngineHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
@@ -193,27 +178,12 @@ function Router() {
         <Route path={"/privacy"} component={Privacy} />
 
         {/* Core app routes */}
-        <Route path={"/chat"} component={Chat} />
+        <Route path={"/chat"}>{() => <SectionErrorBoundary sectionName="Chat"><Chat /></SectionErrorBoundary>}</Route>
         <Route path={"/chat/:id"} component={Chat} />
-        <Route path={"/calculators"} component={Calculators} />
+        <Route path={"/calculators"}>{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path="/my-plan">{() => { window.location.replace('/calculators?panel=myplan'); return null; }}</Route>
-        {/* ── Wealth Engine (Phase 4) — wrapped in SectionErrorBoundary ─── */}
-        <Route path={"/wealth-engine/strategy-comparison"}>{() => <SectionErrorBoundary sectionName="Strategy Comparison"><WeStrategyComparison /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/retirement"}>{() => <SectionErrorBoundary sectionName="Retirement Calculator"><WeRetirement /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/practice-to-wealth"}>{() => <SectionErrorBoundary sectionName="Practice to Wealth"><WePracticeToWealth /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/quick-quote"}>{() => <SectionErrorBoundary sectionName="Quick Quote"><WeQuickQuote /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/team-builder"}>{() => <SectionErrorBoundary sectionName="Team Builder"><WeTeamBuilder /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/sensitivity"}>{() => <SectionErrorBoundary sectionName="Sensitivity Analysis"><WeSensitivity /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/references"}>{() => <SectionErrorBoundary sectionName="Reference Hub"><WeReferenceHub /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/business-income"}>{() => <SectionErrorBoundary sectionName="Business Income"><WeBusinessIncome /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/configurator"}>{() => <SectionErrorBoundary sectionName="Wealth Configurator"><WeWealthConfigurator /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/what-if"}>{() => <SectionErrorBoundary sectionName="What-If Analysis"><WeWhatIfSensitivity /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/business-valuation"}>{() => <SectionErrorBoundary sectionName="Business Valuation"><WeBusinessValuation /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/business-income-quick-quote"}>{() => <SectionErrorBoundary sectionName="Business Income Quick Quote"><WeBusinessIncomeQuickQuote /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/owner-comp"}>{() => <SectionErrorBoundary sectionName="Owner Compensation"><WeOwnerComp /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/quick-quote-hub"}>{() => <SectionErrorBoundary sectionName="Quick Quote Hub"><WeQuickQuoteHub /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine/holistic-comparison"}>{() => <SectionErrorBoundary sectionName="Holistic Comparison"><WeHolisticComparison /></SectionErrorBoundary>}</Route>
-        <Route path={"/wealth-engine"}>{() => <SectionErrorBoundary sectionName="Wealth Engine"><WeWealthEngineHub /></SectionErrorBoundary>}</Route>
+        {/* ── Wealth Engine Hub — single route with internal sidebar navigation ─── */}
+        <Route path="/wealth-engine/:tab?">{() => <SectionErrorBoundary sectionName="Wealth Engine"><WeWealthEngineHub /></SectionErrorBoundary>}</Route>
         {/* Unified AI Surface (Chat + Code + Agent) */}
         <Route path={"/ai"} component={UnifiedAI} />
         {/* Code Chat (admin foundation — also accessible standalone) */}
@@ -222,11 +192,11 @@ function Router() {
         <Route path={"/consensus"} component={ConsensusPage} />
         {/* Engine Dashboard (parallel main-branch UWE/BIE/HE visualization) */}
         <Route path={"/engine-dashboard"} component={EngineDashboard} />
-        <Route path={"/products"} component={Products} />
+        <Route path={"/products"}>{() => <SectionErrorBoundary sectionName="Products"><Products /></SectionErrorBoundary>}</Route>
         <Route path={"/manager"} component={ManagerDashboard} />
         <Route path={"/org-branding"} component={OrgBrandingEditor} />
-        <Route path="/admin" component={AdminHubV2} />
-        <Route path="/admin/:tab" component={AdminHubV2} />
+        <Route path="/admin">{() => <SectionErrorBoundary sectionName="Admin"><AdminHubV2 /></SectionErrorBoundary>}</Route>
+        <Route path="/admin/:tab">{() => <SectionErrorBoundary sectionName="Admin"><AdminHubV2 /></SectionErrorBoundary>}</Route>
         <Route path="/admin-legacy" component={GlobalAdmin} />
         {/* meetings, insights, planning, coach, compliance, marketplace → redirected to hubs */}
         <Route path={"/portal"} component={Portal} />
@@ -319,20 +289,20 @@ function Router() {
         {/* Rebalancing — portfolio drift preview (hybrid build loop pass 3) */}
         <Route path={"/rebalancing"} component={RebalancingPage} />
 
-        <Route path={"/operations"} component={OperationsHub} />
+        <Route path={"/operations"}>{() => <SectionErrorBoundary sectionName="Operations"><OperationsHub /></SectionErrorBoundary>}</Route>
         <Route path={"/agents"} component={AgentManager} />
-        <Route path={"/intelligence-hub"} component={IntelligenceHubV2} />
-        <Route path="/intelligence-hub/:tab" component={IntelligenceHubV2} />
+        <Route path={"/intelligence-hub"}>{() => <SectionErrorBoundary sectionName="Intelligence Hub"><IntelligenceHubV2 /></SectionErrorBoundary>}</Route>
+        <Route path="/intelligence-hub/:tab">{() => <SectionErrorBoundary sectionName="Intelligence Hub"><IntelligenceHubV2 /></SectionErrorBoundary>}</Route>
         <Route path={"/advisory"} component={AdvisoryHub} />
         <Route path={"/relationships"} component={RelationshipsHub} />
-        <Route path="/people" component={PeopleHub} />
-        <Route path="/people/:tab" component={PeopleHub} />
+        <Route path="/people">{() => <SectionErrorBoundary sectionName="People"><PeopleHub /></SectionErrorBoundary>}</Route>
+        <Route path="/people/:tab">{() => <SectionErrorBoundary sectionName="People"><PeopleHub /></SectionErrorBoundary>}</Route>
 
         {/* Unified Settings hub */}
         <Route path={"/settings"}>
           <Redirect to="/settings/profile" />
         </Route>
-        <Route path={"/settings/:tab"} component={SettingsHub} />
+        <Route path={"/settings/:tab"}>{() => <SectionErrorBoundary sectionName="Settings"><SettingsHub /></SectionErrorBoundary>}</Route>
 
         {/* Legacy redirects — keep old URLs working */}
         <Route path={"/documents"}>

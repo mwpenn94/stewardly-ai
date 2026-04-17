@@ -194,12 +194,15 @@ describe("Navigation reachability", () => {
     // Compile each app route into a regex. Convert `:param` to `[^/]+`
     // so parameterized routes like `/settings/:tab` match concrete hrefs
     // like `/settings/profile`.
-    const routePatterns = appRoutes.map((r) => ({
-      raw: r,
-      re: new RegExp(
-        "^" + r.replace(/\//g, "\\/").replace(/:[a-zA-Z]+/g, "[^/]+") + "$",
-      ),
-    }));
+    const routePatterns = appRoutes.map((r) => {
+      // 1. Escape slashes first
+      let pattern = r.replace(/\//g, "\\/");
+      // 2. Handle optional params like \/:tab? → make the whole \/segment optional
+      pattern = pattern.replace(/\\\/:([a-zA-Z]+)\?/g, "(?:\\/[^/]+)?");
+      // 3. Handle required params like \/:id → match any segment
+      pattern = pattern.replace(/:([a-zA-Z]+)/g, "[^/]+");
+      return { raw: r, re: new RegExp("^" + pattern + "$") };
+    });
     const missing = navHrefs.filter(
       (h) => !routePatterns.some((p) => p.re.test(h)),
     );
