@@ -18,7 +18,7 @@ import {
   type HorizonData
 } from './engine';
 import { RefTip, ExportPDFButton, type PanelProps } from './shared';
-import { REFERENCE_CATEGORIES, FUNNEL_BENCHMARKS, METHODOLOGY_DISCLOSURE } from './references';
+import { REFERENCE_CATEGORIES, FUNNEL_BENCHMARKS, METHODOLOGY_DISCLOSURE, REF_CATEGORY_TIPS } from './references';
 
 export interface SavedScenario {
   id: number;
@@ -762,7 +762,7 @@ export function ReferencesPanel() {
         </h2>
         <ExportPDFButton title="References and Due Diligence" />
       </div>
-      <p className="text-sm text-muted-foreground mb-4">50+ citations across 14 categories. Calculation methodology, industry benchmarks, product sources, and compliance resources.</p>
+      <p className="text-sm text-muted-foreground mb-4">100+ citations across 17 categories. Calculation methodology, industry benchmarks, product sources, compliance resources, and estate/trust planning.</p>
 
       {/* Quick expand/collapse all */}
       <div className="flex gap-2 mb-4">
@@ -822,8 +822,9 @@ export function ReferencesPanel() {
       {REFERENCE_CATEGORIES.map(cat => (
         <Card key={cat.id} className="mb-3">
           <CardHeader className="pb-2 cursor-pointer" onClick={() => toggle(cat.id)}>
-            <CardTitle className="text-sm flex items-justify gap-2">
+            <CardTitle className="text-sm flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-primary">{cat.name}</span>
+              {REF_CATEGORY_TIPS[cat.id] && <RefTip text={REF_CATEGORY_TIPS[cat.id]} refId={cat.id} />}
               <Badge variant="secondary" className="text-[10px] ml-auto mr-2">{cat.entries.length}</Badge>
               <span className="text-xs text-muted-foreground">{expandedCats.has(cat.id) ? '−' : '+'}</span>
             </CardTitle>

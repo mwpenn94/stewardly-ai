@@ -1116,7 +1116,7 @@ export default function Calculators() {
           </div>
           <div className="flex items-center justify-between pt-1 border-t border-border/30">
             <span className="text-[10px] text-muted-foreground/50">
-              {sessionsQuery.data?.length || 0}/10 slots
+              {sessionsQuery.data?.length || 0}/10 save slots
             </span>
             <button type="button" onClick={handleExportPdf} className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors" title="Print Report">
               Print
@@ -1320,7 +1320,7 @@ export default function Calculators() {
         <DialogContent aria-describedby="save-desc">
           <DialogHeader>
             <DialogTitle>Save Session</DialogTitle>
-            <DialogDescription id="save-desc">Save your current calculator inputs as a named session for later retrieval. Sessions are stored securely and can be loaded from any device.</DialogDescription>
+            <DialogDescription id="save-desc">Save your current calculator inputs as a named session ({sessionsQuery.data?.length || 0}/10 slots used). Sessions are stored securely and can be loaded from any device.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <label htmlFor="session-name" className="text-sm text-muted-foreground">Session Name</label>
@@ -1340,7 +1340,7 @@ export default function Calculators() {
         <DialogContent aria-describedby="load-desc">
           <DialogHeader>
             <DialogTitle>Load Session</DialogTitle>
-            <DialogDescription id="load-desc">Select a previously saved session to restore its calculator inputs. Loading a session will replace your current inputs.</DialogDescription>
+            <DialogDescription id="load-desc">Select a previously saved session to restore its calculator inputs ({sessionsQuery.data?.length || 0}/10 slots used). Loading a session will replace your current inputs.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 max-h-64 overflow-y-auto" role="list" aria-label="Saved sessions">
             {sessionsQuery.data?.length === 0 && (

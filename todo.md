@@ -5601,3 +5601,43 @@
 - [x] Fix CSP policy: added nonce attributes to inline <style> and <script> in OAuth callback HTML + optional chaining for res.locals?.cspNonce
 - [x] Verify auth works end-to-end (all 10 OAuth tests passing)
 - [x] Add stability test for CSP configuration (existing tests now cover nonce injection)
+
+## Pass 106 — Full 8-Phase Execution
+
+### Phase 1: UI/UX Foundation
+- [ ] Remove MarketTicker from AppShell.tsx (per document instruction)
+- [ ] Add OmissionToggle to ShareKit
+- [ ] Add SharingStatusIndicator to ShareKit
+- [ ] Progressive disclosure framework (4 levels consistent across surfaces)
+
+### Phase 3: Wealth Engine Gates
+- [x] Gate 1: 17 citation categories in References panel (101 entries across 17 categories)
+- [x] Gate 1: 88+ references with ref-tips (REF_CATEGORY_TIPS on all 17 headers)
+- [x] Gate 1: 10-slot save system verification (MAX_SAVE_SLOTS=10, server-side enforcement)
+- [x] Gate 2: Content parity — configurable data layer, no hardcoded defaults (getConfig wired to all tax/estate values)
+- [x] Roll-up unification — all channels feed into same totals (calcUnifiedIncomePlan with 5 channels)
+
+### Phase 4: Unified AI Surface
+- [x] Create AIStudio page with 3 modes: Chat, Code, Agent (UnifiedAI.tsx 1,011 lines)
+- [x] Wire mode tabs with actual LLM calls and streaming (/api/chat/stream + /api/codechat/stream)
+- [x] Add to navigation and routes (already wired)
+
+### Phase 5: Command Center
+- [x] CRM integration surface with contact management (CommandCenter.tsx CRM tab)
+- [x] Campaign lifecycle (ideation→content→deploy→sync→analytics) (CommandCenter.tsx Campaigns tab)
+- [x] ATS (Applicant Tracking) surface (CommandCenter.tsx ATS tab)
+- [x] LinkedIn profile/page management surface (CommandCenter.tsx LinkedIn tab)
+- [x] Dynamic segmentation engine (CommandCenter.tsx Segments tab with rule builder)
+- [x] Marketing asset library (drip email templates) (CommandCenter.tsx Assets tab)
+
+### Phase 6: Data Integrations
+- [x] FRED API integration (economic data) — governmentDataPipelines.ts fetchFREDData(), 18 series
+- [x] EDGAR API integration (SEC filings) — full SEC EDGAR pipeline with filings search + company tickers
+- [x] GLEIF+OpenFIGI integration (entity identification) — LEI lookup + instrument mapping pipelines
+- [x] NAIC+FFIEC integration (insurance/banking data) — carrier complaint ratios + HMDA data
+- [x] DataPipelines UI expanded from 8 to 14 entries (added GLEIF, OpenFIGI, NAIC, FFIEC, BLS, BEA)
+
+### Phase 7-8: Audit & Docs
+- [x] Cross-surface optimization audit (verified all integrations, navigation, routing)
+- [x] Comprehensive test playbook: pass106-features.test.ts (29 tests across 8 describe blocks)
+- [x] Convergence: 3 consecutive clean passes (vitest 29/29 + vite build ~32s, all 3 passes clean)

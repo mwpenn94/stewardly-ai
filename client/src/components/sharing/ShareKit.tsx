@@ -437,3 +437,80 @@ export function ShareButton({
 }
 
 export default ShareButton;
+
+
+// ─── Omission Toggle (Standalone) ────────────────────────────────────────
+/** Standalone toggle for field-level PII redaction. Use inside any sharing context. */
+export function OmissionToggle({
+  checked,
+  onChange,
+  label = "Redact sensitive fields",
+  description = "Hide PII, account numbers, and SSN from shared view",
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label?: string;
+  description?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg border border-border/50">
+      <div className="flex items-center gap-2">
+        <EyeOff className="w-4 h-4 text-muted-foreground" />
+        <div>
+          <div className="text-sm font-medium">{label}</div>
+          <div className="text-xs text-muted-foreground">{description}</div>
+        </div>
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+// ─── Sharing Status Indicator ────────────────────────────────────────────
+export type SharingStatus = "private" | "shared" | "public" | "expired";
+
+const STATUS_CONFIG: Record<SharingStatus, { label: string; color: string; icon: string; description: string }> = {
+  private: { label: "Private", color: "text-muted-foreground bg-muted/50", icon: "🔒", description: "Only you can access" },
+  shared: { label: "Shared", color: "text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/30", icon: "👥", description: "Shared with specific people" },
+  public: { label: "Public", color: "text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-950/30", icon: "🌐", description: "Anyone with the link" },
+  expired: { label: "Expired", color: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/30", icon: "⏰", description: "Share link has expired" },
+};
+
+/** Shows the current sharing status of a resource (private, shared, public, expired). */
+export function SharingStatusIndicator({
+  status,
+  recipientCount = 0,
+  compact = false,
+}: {
+  status: SharingStatus;
+  recipientCount?: number;
+  compact?: boolean;
+}) {
+  const config = STATUS_CONFIG[status];
+
+  if (compact) {
+    return (
+      <Badge variant="outline" className={`gap-1 ${config.color} border-current/20`}>
+        <span className="text-xs">{config.icon}</span>
+        <span>{config.label}</span>
+        {status === "shared" && recipientCount > 0 && (
+          <span className="text-xs opacity-70">({recipientCount})</span>
+        )}
+      </Badge>
+    );
+  }
+
+  return (
+    <div className={`flex items-center gap-2.5 px-3 py-2 rounded-lg ${config.color}`}>
+      <span className="text-base">{config.icon}</span>
+      <div>
+        <div className="text-sm font-medium">{config.label}</div>
+        <div className="text-xs opacity-70">
+          {status === "shared" && recipientCount > 0
+            ? `Shared with ${recipientCount} ${recipientCount === 1 ? "person" : "people"}`
+            : config.description}
+        </div>
+      </div>
+    </div>
+  );
+}

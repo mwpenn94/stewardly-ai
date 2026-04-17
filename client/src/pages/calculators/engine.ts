@@ -307,10 +307,10 @@ export function calcTax(income: number, stateRate: number, isSelfEmployed: boole
   const marginalRate = brackets.find(([l]) => income <= l)?.[1] ?? 0.37;
   const effectiveRate = income > 0 ? (fedTax + income * stateRate) / income : 0;
   const strategies: TXResult['strategies'] = [];
-  const max401k = 23500;
+  const max401k = getConfig('max401k');
   const gap401k = Math.max(0, max401k - retirement401k);
   if (gap401k > 0) strategies.push({name:'Max 401(k)', saving: Math.round(gap401k * marginalRate), note: `Contribute additional ${fmt(gap401k)}/yr`});
-  const maxHSA = filing === 'mfj' ? 8300 : 4150;
+  const maxHSA = filing === 'mfj' ? getConfig('maxHSA').family : getConfig('maxHSA').single;
   const gapHSA = Math.max(0, maxHSA - hsaContrib);
   if (gapHSA > 0) strategies.push({name:'Max HSA', saving: Math.round(gapHSA * (marginalRate + 0.0765)), note: 'Triple tax advantage'});
   const rothAmount = Math.min(50000, income * 0.1);
@@ -320,7 +320,7 @@ export function calcTax(income: number, stateRate: number, isSelfEmployed: boole
   strategies.push({name:'Roth Conversion', saving: Math.round(rothTaxFree - rothTaxNow), note: `Convert ${fmt(rothAmount)} now, save ${fmt(rothTaxFree - rothTaxNow)} in taxes over 20yr`});
   if (charitableGiving > 0) strategies.push({name:'Charitable Deduction', saving: Math.round(charitableGiving * marginalRate), note: `${fmt(charitableGiving)} giving × ${pct(marginalRate)} rate`});
   if (isSelfEmployed) strategies.push({name:'QBI Deduction (§199A)', saving: Math.round(Math.min(income * 0.2, 182100) * marginalRate), note: '20% of qualified business income'});
-  const stdDeduction = filing === 'mfj' ? 29200 : 14600;
+  const stdDeduction = getConfig('standardDeduction')[filing as keyof typeof CONFIGURABLE_DEFAULTS.standardDeduction] ?? getConfig('standardDeduction').single;
   strategies.push({name:'Standard Deduction', saving: Math.round(stdDeduction * marginalRate), note: `${fmt(stdDeduction)} (${filing === 'mfj' ? 'MFJ' : 'Single'})`});
   const totalSaving = strategies.reduce((a,s) => a + s.saving, 0);
   return { strategies, totalSaving, effectiveRate, marginalRate,
@@ -336,7 +336,7 @@ export interface ESResult {
 export function calcEstate(grossEstate: number, exemption: number, growthRate: number,
   giftingAnnual: number, willStatus: string): ESResult {
   const taxable = Math.max(0, grossEstate - exemption);
-  const estateTax = Math.round(taxable * 0.40);
+  const estateTax = Math.round(taxable * getConfig('estateTaxRate'));
   const ilitSaving = estateTax;
   const netToHeirs = grossEstate - estateTax;
   const withPlanning = grossEstate - Math.round(estateTax * 0.1);
@@ -894,7 +894,7 @@ export function calcRothLadder(
   targetBracketFill: number // 0-1, how much of the bracket headroom to fill
 ): RothLadderResult {
   const brackets = filing === 'mfj' ? RATES.bracketsMFJ : RATES.bracketsSingle;
-  const stdDeduction = filing === 'mfj' ? 29200 : 14600;
+  const stdDeduction = getConfig('standardDeduction')[filing as keyof typeof CONFIGURABLE_DEFAULTS.standardDeduction] ?? getConfig('standardDeduction').single;
   const years: RothLadderYear[] = [];
   let tradBal = traditionalBalance;
   let rothBal = 0;

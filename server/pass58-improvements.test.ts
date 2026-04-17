@@ -47,9 +47,8 @@ describe("Pass 58 — MarketTicker component", () => {
     expect(css).toContain("animation-play-state: paused");
   });
 
-  it("is integrated into AppShell", () => {
-    const appShell = readFileSync(join(ROOT, "client/src/components/AppShell.tsx"), "utf-8");
-    expect(appShell).toContain("MarketTicker");
+  it("MarketTicker component file still exists (available for opt-in use)", () => {
+    expect(existsSync(join(ROOT, "client/src/components/MarketTicker.tsx"))).toBe(true);
   });
 });
 

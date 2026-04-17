@@ -143,6 +143,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Lightbulb", label: "Product Intelligence", href: "/product-intelligence", minRole: "advisor", section: "intelligence" },
 
   // ── RELATIONSHIPS — client + document + integration management
+  { iconName: "LayoutGrid", label: "Command Center", href: "/command-center", minRole: "advisor", section: "relationships" },
   { iconName: "Users", label: "Relationships", href: "/relationships", minRole: "user", section: "relationships" },
   { iconName: "LayoutDashboard", label: "Client Dashboard", href: "/client-dashboard", minRole: "user", section: "relationships" },
   { iconName: "Target", label: "Lead Pipeline", href: "/leads", minRole: "advisor", section: "relationships" },

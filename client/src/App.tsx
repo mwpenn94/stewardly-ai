@@ -163,6 +163,7 @@ const DataPipelines = lazy(() => import("./pages/DataPipelines"));
 const OutreachAutomation = lazy(() => import("./pages/OutreachAutomation"));
 const ApiDocumentation = lazy(() => import("./pages/ApiDocumentation"));
 const AdminAuditTrail = lazy(() => import("./pages/AdminAuditTrail"));
+const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 
 function Router() {
   return (
@@ -356,6 +357,7 @@ function Router() {
         <Route path={"/outreach-automation"} component={OutreachAutomation} />
         <Route path={"/api-docs"} component={ApiDocumentation} />
         <Route path={"/admin/audit-trail"} component={AdminAuditTrail} />
+        <Route path={"/command-center"} component={CommandCenter} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
         <Route path={"/404"} component={NotFound} />

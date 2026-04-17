@@ -1125,7 +1125,7 @@ export async function listCalculatorSessions(userId: number) {
   }).from(calculatorScenarios)
     .where(eq(calculatorScenarios.userId, userId))
     .orderBy(desc(calculatorScenarios.updatedAt))
-    .limit(50);
+    .limit(MAX_SAVE_SLOTS);
 }
 
 export async function getCalculatorSession(id: number, userId: number) {
@@ -1137,6 +1137,8 @@ export async function getCalculatorSession(id: number, userId: number) {
   return rows[0] ?? null;
 }
 
+export const MAX_SAVE_SLOTS = 10;
+
 export async function saveCalculatorSession(userId: number, data: {
   name: string;
   calculatorType: string;
@@ -1145,6 +1147,14 @@ export async function saveCalculatorSession(userId: number, data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  // Enforce 10-slot limit
+  const existing = await db.select({ id: calculatorScenarios.id })
+    .from(calculatorScenarios)
+    .where(eq(calculatorScenarios.userId, userId))
+    .orderBy(desc(calculatorScenarios.updatedAt));
+  if (existing.length >= MAX_SAVE_SLOTS) {
+    throw new Error(`Maximum ${MAX_SAVE_SLOTS} save slots reached. Please delete an existing session first.`);
+  }
   const result = await db.insert(calculatorScenarios).values({
     userId,
     name: data.name,
