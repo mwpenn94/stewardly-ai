@@ -91,8 +91,8 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Leadership",
     minRole: "manager",
     items: [
-      { label: "Team", icon: UserCog, path: "/manager", match: ["/manager"] },
-      { label: "Organizations", icon: Building2, path: "/organizations", match: ["/organizations", "/org-branding"] },
+      { label: "Team", icon: UserCog, path: "/manager", match: ["/manager"], disclosureLevel: 3 },
+      { label: "Organizations", icon: Building2, path: "/organizations", match: ["/organizations", "/org-branding"], disclosureLevel: 3 },
     ],
   },
   {
@@ -100,7 +100,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Platform",
     minRole: "admin",
     items: [
-      { label: "Admin", icon: Cog, path: "/admin", match: ["/admin", "/agents", "/consensus", "/admin/intelligence", "/admin/improvement", "/admin/improvement-engine", "/admin/system-health", "/admin/data-freshness", "/admin/bcp", "/admin/fairness", "/admin/rate-management", "/admin/billing", "/admin/api-keys", "/admin/webhooks", "/admin/team", "/admin/lead-sources", "/admin/platform-reports", "/admin/knowledge", "/admin/guide", "/admin/audit-trail", "/admin/integrations"] },
+      { label: "Admin", icon: Cog, path: "/admin", match: ["/admin", "/agents", "/consensus", "/admin/intelligence", "/admin/improvement", "/admin/improvement-engine", "/admin/system-health", "/admin/data-freshness", "/admin/bcp", "/admin/fairness", "/admin/rate-management", "/admin/billing", "/admin/api-keys", "/admin/webhooks", "/admin/team", "/admin/lead-sources", "/admin/platform-reports", "/admin/knowledge", "/admin/guide", "/admin/audit-trail", "/admin/integrations"], disclosureLevel: 4 },
     ],
   },
 ];

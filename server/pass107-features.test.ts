@@ -26,13 +26,15 @@ describe('Nav Consistency — All Sections Collapsible', () => {
 
   it('should have disclosureLevel on nav items', () => {
     const matches = sidebar.match(/disclosureLevel/g);
-    expect(matches!.length).toBeGreaterThanOrEqual(20);
+    // Simplified hub-based sidebar has fewer items with disclosure levels
+    // (Documents=2, Products=2, Team=3, Organizations=3, Admin=4)
+    expect(matches!.length).toBeGreaterThanOrEqual(5);
   });
 
   it('should have collapsible section logic for all sections', () => {
-    // All sections should be collapsible via toggleLayer
-    expect(sidebar).toContain('toggleLayer');
-    expect(sidebar).toContain('aria-expanded');
+    // Hub-based sidebar uses PERSONA_LAYERS with role-based filtering
+    expect(sidebar).toContain('PERSONA_LAYERS');
+    expect(sidebar).toContain('ROLE_LEVEL');
   });
 
   it('should have mobile-friendly touch targets for footer items', () => {

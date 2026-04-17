@@ -158,21 +158,24 @@ describe("Route registration", () => {
 /* ── 4. Sidebar navigation ───────────────────────────────────── */
 describe("Sidebar navigation", () => {
   const sidebarSrc = readFile("client/src/components/PersonaSidebar5.tsx");
+  const adminHubSrc = readFile("client/src/pages/AdminHubV2.tsx");
+  const appSrc = readFile("client/src/App.tsx");
 
-  it("includes API Docs nav item", () => {
-    expect(sidebarSrc).toContain("API Docs");
-    expect(sidebarSrc).toContain("/api-docs");
+  it("includes API Docs route in App.tsx", () => {
+    expect(appSrc).toContain("/api-docs");
+    expect(appSrc).toContain("ApiDocumentation");
   });
 
-  it("includes Audit Trail nav item", () => {
-    expect(sidebarSrc).toContain("Audit Trail");
+  it("includes Audit Trail nav item in Admin hub", () => {
+    expect(adminHubSrc).toContain("Audit Trail");
+    expect(adminHubSrc).toContain("audit-trail");
+  });
+
+  it("sets correct disclosure levels in sidebar", () => {
+    // Admin hub is at disclosureLevel 4 in the main sidebar
+    expect(sidebarSrc).toContain("disclosureLevel: 4");
+    // Admin match includes /admin/audit-trail
     expect(sidebarSrc).toContain("/admin/audit-trail");
-  });
-
-  it("sets correct disclosure levels", () => {
-    // API Docs at level 3 (Advanced), Audit Trail at level 4 (Expert)
-    expect(sidebarSrc).toContain('label: "API Docs"');
-    expect(sidebarSrc).toContain('label: "Audit Trail"');
   });
 });
 

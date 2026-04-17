@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 export default function IntelligenceHub({ embedded = false }: { embedded?: boolean } = {}) {
   const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
@@ -126,8 +128,6 @@ function OverviewSection() {
         <CardHeader>
           <CardTitle className="text-base">Intelligence Feed</CardTitle>
           <CardDescription>Recent insights and predictions from your AI models</CardDescription>
-import { ShareButton } from "@/components/sharing/ShareKit";
-import { DisclosureSection } from "@/components/DisclosureSection";
         </CardHeader>
         <CardContent className="space-y-3">
           <InsightItem

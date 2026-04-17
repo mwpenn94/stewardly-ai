@@ -263,7 +263,7 @@ describe("Pass 111: Hub pages structure", () => {
     });
 
     it("has a mobile nav toggle", () => {
-      expect(peopleHub).toContain("mobileNavOpen");
+      expect(peopleHub).toContain("sidebarOpen");
     });
   });
 

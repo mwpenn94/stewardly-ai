@@ -5849,3 +5849,7 @@
 - [x] Build passes clean (39.64s)
 - [ ] Browser-test all hub pages as virtual user
 - [ ] Verify Chat UI on mobile viewport
+- [x] Fix IntelligenceHub ShareButton crash — moved corrupted mid-file imports to top of file, removed dead import from App.tsx
+- [x] Fix PeopleHub RelationshipsHub crash — fixed .data access on undefined tRPC result (leadsQ.data → leadsQ)
+- [x] Playwright verification: all 6 hub pages load without error boundaries (People, Admin, Intelligence, Settings, Wealth Engine, Chat)
+- [x] Playwright verification: mobile viewport tests pass (Chat mobile, People mobile)

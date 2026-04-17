@@ -33,7 +33,7 @@ export default function RelationshipsHub({ embedded = false }: { embedded?: bool
 
   // Wire to real data where available
   const { data: leadsQ, isLoading: _pageLoading } = trpc.leadPipeline.getPipeline.useQuery(undefined, { enabled: isAuthenticated, retry: false });
-  const leadCount = ((leadsQ.data as any)?.leads ?? []).length;
+  const leadCount = ((leadsQ as any)?.leads ?? []).length;
 
   if (_pageLoading) {
     return (

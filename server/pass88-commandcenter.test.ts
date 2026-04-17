@@ -135,29 +135,29 @@ describe("Phase 5 — Command Center Integration", () => {
   });
 
   describe("Navigation integration", () => {
-    const sidebarPath = join(CLIENT, "components", "PersonaSidebar5.tsx");
-    const sidebarContent = readFileSync(sidebarPath, "utf-8");
-    const appPath = join(CLIENT, "App.tsx");
-    const appContent = readFileSync(appPath, "utf-8");
+    const peopleHubContent = readFileSync(join(CLIENT, "pages", "PeopleHub.tsx"), "utf-8");
+    const intelHubContent = readFileSync(join(CLIENT, "pages", "IntelligenceHubV2.tsx"), "utf-8");
+    const sidebarContent = readFileSync(join(CLIENT, "components", "PersonaSidebar5.tsx"), "utf-8");
+    const appContent = readFileSync(join(CLIENT, "App.tsx"), "utf-8");
 
-    it("has Email Campaigns nav item", () => {
-      expect(sidebarContent).toContain("Email Campaigns");
-      expect(sidebarContent).toContain("/email-campaigns");
+    it("has Email Campaigns nav item in PeopleHub", () => {
+      expect(peopleHubContent).toContain("Email Campaigns");
+      expect(peopleHubContent).toContain("email-campaigns");
     });
 
-    it("has Marketing Assets nav item", () => {
-      expect(sidebarContent).toContain("Marketing Assets");
-      expect(sidebarContent).toContain("/marketing-assets");
+    it("has Marketing Assets nav item in PeopleHub", () => {
+      expect(peopleHubContent).toContain("Marketing Assets");
+      expect(peopleHubContent).toContain("marketing-assets");
     });
 
-    it("has Data Pipelines nav item", () => {
-      expect(sidebarContent).toContain("Data Pipelines");
-      expect(sidebarContent).toContain("/data-pipelines");
+    it("has Data Pipelines nav item in IntelligenceHub", () => {
+      expect(intelHubContent).toContain("Data Pipelines");
+      expect(intelHubContent).toContain("data-pipelines");
     });
 
-    it("has Outreach Automation nav item", () => {
-      expect(sidebarContent).toContain("Outreach Automation");
-      expect(sidebarContent).toContain("/outreach-automation");
+    it("has Outreach Automation nav item in PeopleHub", () => {
+      expect(peopleHubContent).toContain("Outreach Automation");
+      expect(peopleHubContent).toContain("outreach");
     });
 
     it("has routes for all new pages in App.tsx", () => {
@@ -165,6 +165,13 @@ describe("Phase 5 — Command Center Integration", () => {
       expect(appContent).toContain("/outreach-automation");
       expect(appContent).toContain("DataPipelines");
       expect(appContent).toContain("OutreachAutomation");
+    });
+
+    it("sidebar match paths include hub sub-routes", () => {
+      expect(sidebarContent).toContain("/email-campaigns");
+      expect(sidebarContent).toContain("/marketing-assets");
+      expect(sidebarContent).toContain("/data-pipelines");
+      expect(sidebarContent).toContain("/outreach-automation");
     });
   });
 

@@ -93,7 +93,7 @@ const PlatformGuide = lazy(() => import("./pages/PlatformGuide"));
 const PassiveActions = lazy(() => import("./pages/PassiveActions"));
 const MarketData = lazy(() => import("./pages/MarketData"));
 const OperationsHub = lazy(() => import("./pages/OperationsHub"));
-const IntelligenceHub = lazy(() => import("./pages/IntelligenceHub"));
+// IntelligenceHub is now loaded via IntelligenceHubV2 (which imports it as IntelligenceOverview)
 const AdvisoryHub = lazy(() => import("./pages/AdvisoryHub"));
 const RelationshipsHub = lazy(() => import("./pages/RelationshipsHub"));
 const Help = lazy(() => import("./pages/Help"));

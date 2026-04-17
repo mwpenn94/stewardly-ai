@@ -144,7 +144,7 @@ describe("Suspense boundaries with lazy loading", () => {
   it("lazy-loads non-critical pages", () => {
     const lazyPages = [
       "Calculators", "Products", "ManagerDashboard", "SettingsHub",
-      "Integrations", "OperationsHub", "IntelligenceHub", "AdvisoryHub",
+      "Integrations", "OperationsHub", "IntelligenceHubV2", "AdvisoryHub",
       "RelationshipsHub", "Help", "MarketData", "PassiveActions",
     ];
     for (const page of lazyPages) {
