@@ -4,7 +4,7 @@
               Recruiting, Channels, Dashboard, P&L,
               Goal Tracker, Monthly Production
    ═══════════════════════════════════════════════════════════════ */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,7 +22,8 @@ import {
   calcTrackFunnel, blendSources, buildMonthlyProduction, calcGoalProgress,
   fmt, fmtSm, pct,
   calcUnifiedIncomePlan, calcChannelEconomics, calcSensitivity, calcTimePhasedProjections, AFF_RATES, CHANNEL_BENCHMARKS,
-  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics, type SensitivityResult, type TimePhasedResult,
+  backSolveChannelTarget, backSolveChannelProjected, autoBalanceSplits, calcChannelBalances, CHANNEL_KEYS,
+  type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics, type SensitivityResult, type TimePhasedResult, type BackSolveResult, type ChannelBalance,
 } from './practiceEngine';
 import { KPI, RefTip } from './shared';
 import { exportToExcel, exportToPDF, type ExportPlanData } from './exportPlan';
@@ -353,6 +354,81 @@ export function MyPlanPanel(p: PracticeProps) {
   const syncTargetToProjected = () => {
     forwardCascade(plan.totalProjected);
   };
+
+  /** Cross-cascade: user edits a channel's target directly in the roll-up table */
+  const handleChannelTargetEdit = useCallback((ch: keyof EnabledChannels, newTarget: number) => {
+    const newSplits = backSolveChannelTarget(ch, newTarget, p.targetIncome, p.incomeSplits, p.enabledChannels);
+    p.setIncomeSplits(newSplits);
+    cascadeChannel(ch, newSplits[ch]);
+  }, [p.targetIncome, p.incomeSplits, p.enabledChannels]);
+
+  /** Cross-cascade: user edits a channel's projected directly in the roll-up table */
+  const handleChannelProjectedEdit = useCallback((ch: keyof EnabledChannels, newProjected: number) => {
+    const result = backSolveChannelProjected(ch, newProjected, p.targetIncome, p.incomeSplits, p.enabledChannels, {
+      aumTrailPct: p.aumTrailPct,
+      affCounts: p.affCounts,
+      affAvgProd: p.affAvgProd,
+      teamSize: Math.max(1, p.teamMembers.length || 1),
+      overrideRate: p.overrideRate,
+      channelAnnualRev: Math.round(chMetrics.tRevMo * 12),
+      channelSpend: p.channelSpend,
+    });
+    p.setIncomeSplits(result.newSplits);
+    // Apply channel-specific back-solved values
+    if (result.gdcTarget !== undefined) p.setTargetGDC(result.gdcTarget);
+    if (result.aumExisting !== undefined) p.setAumExisting(result.aumExisting);
+    if (result.affCountScale !== undefined && result.affCountScale !== 1) {
+      const sf = result.affCountScale;
+      p.setAffCounts({
+        a: Math.max(0, Math.round(p.affCounts.a * sf)),
+        b: Math.max(0, Math.round(p.affCounts.b * sf)),
+        c: Math.max(0, Math.round(p.affCounts.c * sf)),
+        d: Math.max(0, Math.round(p.affCounts.d * sf)),
+      });
+    }
+    if (result.teamAvgGDC !== undefined) p.setTeamAvgGDC(result.teamAvgGDC);
+    if (result.channelSpendScale !== undefined && result.channelSpendScale !== 1) {
+      const sf = result.channelSpendScale;
+      const newSpend: Record<string, number> = {};
+      for (const [k, v] of Object.entries(p.channelSpend)) {
+        newSpend[k] = Math.round(v * sf);
+      }
+      p.setChannelSpend(newSpend);
+    }
+  }, [p.targetIncome, p.incomeSplits, p.enabledChannels, p.aumTrailPct, p.affCounts, p.affAvgProd, p.teamMembers.length, p.overrideRate, chMetrics.tRevMo, p.channelSpend]);
+
+  /** Auto-balance: redistribute splits to match actual projected proportions */
+  const handleAutoBalance = useCallback(() => {
+    const newSplits = autoBalanceSplits(plan, p.enabledChannels, p.incomeSplits, p.targetIncome);
+    p.setIncomeSplits(newSplits);
+  }, [plan, p.enabledChannels, p.incomeSplits, p.targetIncome]);
+
+  /** Per-channel sync: match target to projected (roll-up per channel) */
+  const syncChannelTargetToProjected = useCallback((ch: keyof EnabledChannels) => {
+    const projected: Record<keyof EnabledChannels, number> = {
+      gdc: plan.channels.gdc.projected,
+      aum: plan.channels.aum.detail.projectedIncome,
+      affiliate: plan.channels.affiliate.totalProjected,
+      override: plan.channels.override.detail.projectedIncome,
+      channel: plan.channels.channel.detail.projectedAnnualRevenue,
+    };
+    handleChannelTargetEdit(ch, projected[ch]);
+  }, [plan, handleChannelTargetEdit]);
+
+  /** Per-channel sync: match projected to target (roll-down per channel) */
+  const syncChannelProjectedToTarget = useCallback((ch: keyof EnabledChannels) => {
+    const targets: Record<keyof EnabledChannels, number> = {
+      gdc: plan.channels.gdc.target,
+      aum: plan.channels.aum.target,
+      affiliate: plan.channels.affiliate.target,
+      override: plan.channels.override.target,
+      channel: plan.channels.channel.target,
+    };
+    handleChannelProjectedEdit(ch, targets[ch]);
+  }, [plan, handleChannelProjectedEdit]);
+
+  // Channel balances for cross-cascade visibility
+  const channelBalances = useMemo(() => calcChannelBalances(plan, p.enabledChannels), [plan, p.enabledChannels]);
 
   /** Toggle a channel on/off with smart split redistribution */
   const toggleChannel = (ch: keyof typeof p.enabledChannels) => {
@@ -779,37 +855,19 @@ export function MyPlanPanel(p: PracticeProps) {
 
         <Separator />
 
-        {/* ─── SECTION 4: Unified Income Roll-Up ─── */}
-        <SectionHeader>4. Unified Income Roll-Up</SectionHeader>
-        <DataTable
-          headers={['Channel', 'Enabled', 'Target', 'Projected', 'Gap', 'Status']}
-          rows={[
-            [p.enabledChannels.gdc ? 'GDC Production' : <span key="gn" className="text-muted-foreground line-through">GDC Production</span>,
-              p.enabledChannels.gdc ? '✓' : '—',
-              fmtSm(plan.channels.gdc.target), fmtSm(plan.channels.gdc.projected), plan.channels.gdc.gap > 0 ? fmtSm(plan.channels.gdc.gap) : '—',
-              <Badge key="gs" variant="outline" className={`text-[9px] ${!p.enabledChannels.gdc ? 'text-muted-foreground' : plan.channels.gdc.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.gdc ? 'Off' : plan.channels.gdc.gap === 0 ? '✓' : '⚠'}</Badge>],
-            [p.enabledChannels.aum ? 'AUM/Advisory' : <span key="an" className="text-muted-foreground line-through">AUM/Advisory</span>,
-              p.enabledChannels.aum ? '✓' : '—',
-              fmtSm(plan.channels.aum.target), fmtSm(plan.channels.aum.detail.projectedIncome), plan.channels.aum.detail.gap > 0 ? fmtSm(plan.channels.aum.detail.gap) : '—',
-              <Badge key="as" variant="outline" className={`text-[9px] ${!p.enabledChannels.aum ? 'text-muted-foreground' : plan.channels.aum.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.aum ? 'Off' : plan.channels.aum.detail.gap === 0 ? '✓' : '⚠'}</Badge>],
-            [p.enabledChannels.affiliate ? 'Affiliates' : <span key="fn" className="text-muted-foreground line-through">Affiliates</span>,
-              p.enabledChannels.affiliate ? '✓' : '—',
-              fmtSm(plan.channels.affiliate.target), fmtSm(plan.channels.affiliate.totalProjected), plan.channels.affiliate.gap > 0 ? fmtSm(plan.channels.affiliate.gap) : '—',
-              <Badge key="fs" variant="outline" className={`text-[9px] ${!p.enabledChannels.affiliate ? 'text-muted-foreground' : plan.channels.affiliate.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.affiliate ? 'Off' : plan.channels.affiliate.gap === 0 ? '✓' : '⚠'}</Badge>],
-            [p.enabledChannels.override ? 'Team Override' : <span key="on" className="text-muted-foreground line-through">Team Override</span>,
-              p.enabledChannels.override ? '✓' : '—',
-              fmtSm(plan.channels.override.target), fmtSm(plan.channels.override.detail.projectedIncome), plan.channels.override.detail.gap > 0 ? fmtSm(plan.channels.override.detail.gap) : '—',
-              <Badge key="os" variant="outline" className={`text-[9px] ${!p.enabledChannels.override ? 'text-muted-foreground' : plan.channels.override.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.override ? 'Off' : plan.channels.override.detail.gap === 0 ? '✓' : '⚠'}</Badge>],
-            [p.enabledChannels.channel ? 'Marketing' : <span key="cn" className="text-muted-foreground line-through">Marketing</span>,
-              p.enabledChannels.channel ? '✓' : '—',
-              fmtSm(plan.channels.channel.target), fmtSm(plan.channels.channel.detail.projectedAnnualRevenue), plan.channels.channel.detail.gap > 0 ? fmtSm(plan.channels.channel.detail.gap) : '—',
-              <Badge key="cs" variant="outline" className={`text-[9px] ${!p.enabledChannels.channel ? 'text-muted-foreground' : plan.channels.channel.detail.gap === 0 ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>{!p.enabledChannels.channel ? 'Off' : plan.channels.channel.detail.gap === 0 ? '✓' : '⚠'}</Badge>],
-            [<b key="tt" className="text-primary">TOTAL</b>, '',
-              <b key="tv" className="text-primary">{fmtSm(p.targetIncome)}</b>,
-              <b key="tp" className="text-green-400">{fmtSm(plan.totalProjected)}</b>,
-              plan.totalGap > 0 ? <b key="tg" className="text-red-400">{fmtSm(plan.totalGap)}</b> : <b key="tg" className="text-green-400">—</b>,
-              <Badge key="ts" variant="outline" className={`text-[9px] ${plan.onTrack ? 'text-green-400 border-green-400/30' : 'text-red-400 border-red-400/30'}`}>{plan.onTrack ? '✓ On Track' : '⚠ Gap'}</Badge>],
-          ]}
+        {/* ─── SECTION 4: Unified Income Roll-Up — Cross-Cascade ─── */}
+        <SectionHeader>4. Unified Income Roll-Up
+          <RefTip text="Click any Target or Projected value to edit directly. Changes cascade: editing a Target adjusts splits and sub-inputs (roll-down). Editing a Projected back-solves the inputs needed (roll-up). Use per-channel sync buttons for quick alignment." refId="cross-cascade" />
+        </SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Click any <b>Target</b> or <b>Projected</b> cell to edit. Changes cross-cascade: targets adjust splits ↓, projected values back-solve inputs ↑. Per-channel sync buttons align target ↔ projected.</p>
+        <CrossCascadeTable
+          plan={plan}
+          p={p}
+          channelBalances={channelBalances}
+          onTargetEdit={handleChannelTargetEdit}
+          onProjectedEdit={handleChannelProjectedEdit}
+          onSyncTargetToProjected={syncChannelTargetToProjected}
+          onSyncProjectedToTarget={syncChannelProjectedToTarget}
         />
 
         {/* KPI Summary */}
@@ -822,24 +880,29 @@ export function MyPlanPanel(p: PracticeProps) {
           <KPI label="Daily Appr" value={String(funnel.dailyApproaches)} variant="" />
         </div>
 
-        {/* Backward Cascade Summary: shows actual projected vs target with sync actions */}
+        {/* Cross-Cascade Control Panel */}
         <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 mt-2">
           <div className="flex items-center justify-between mb-1">
-            <div className="text-[11px] font-bold text-primary">Backward Cascade Summary</div>
-            <div className="flex gap-1">
+            <div className="text-[11px] font-bold text-primary">Cross-Cascade Controls</div>
+            <div className="flex gap-1 flex-wrap">
               {plan.totalProjected !== p.targetIncome && plan.totalProjected > 0 && (
                 <Button size="sm" variant="outline" className="h-5 text-[9px] px-2 border-primary/30 text-primary hover:bg-primary/10" onClick={syncTargetToProjected}>
-                  Sync Target ← Projected ({fmtSm(plan.totalProjected)})
+                  ↑ Sync Target ← Projected ({fmtSm(plan.totalProjected)})
                 </Button>
               )}
               {plan.totalGap > 0 && (
                 <Button size="sm" variant="outline" className="h-5 text-[9px] px-2 border-amber-400/30 text-amber-400 hover:bg-amber-400/10" onClick={() => forwardCascade(p.targetIncome)}>
-                  Re-cascade All Channels
+                  ↓ Re-cascade All Channels
                 </Button>
               )}
+              <Button size="sm" variant="outline" className="h-5 text-[9px] px-2 border-blue-400/30 text-blue-400 hover:bg-blue-400/10" onClick={handleAutoBalance}>
+                ⇄ Auto-Balance Splits
+              </Button>
             </div>
           </div>
-          <p className="text-[10px] text-muted-foreground mb-2">Adjusting any channel input above automatically recalculates the unified total. Use <b>Sync Target</b> to adopt projected as your new target (roll-up), or <b>Re-cascade</b> to push the current target down to all channels (roll-down).</p>
+          <p className="text-[10px] text-muted-foreground mb-2">
+            <b>↑ Roll-Up:</b> Adopt projected as new target. <b>↓ Roll-Down:</b> Push target to all channels. <b>⇄ Auto-Balance:</b> Realign splits to match actual projected proportions.
+          </p>
           <div className="flex flex-wrap gap-2">
             <KPI label="Target" value={fmtSm(p.targetIncome)} variant="gld" />
             <KPI label="Projected" value={fmtSm(plan.totalProjected)} variant={plan.onTrack ? 'grn' : 'red'} />
@@ -847,6 +910,20 @@ export function MyPlanPanel(p: PracticeProps) {
             <KPI label="Monthly Projected" value={fmtSm(Math.round(plan.totalProjected / 12))} variant="blu" />
             <KPI label="Implied Annual" value={fmtSm(plan.totalProjected)} variant="blu" />
           </div>
+          {/* Per-channel balance indicators */}
+          {channelBalances.length > 0 && (
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-5 gap-1">
+              {channelBalances.map(cb => (
+                <div key={cb.channel} className={`text-center p-1.5 rounded border ${cb.surplus >= 0 ? 'border-green-400/20 bg-green-400/5' : 'border-red-400/20 bg-red-400/5'}`}>
+                  <div className="text-[9px] font-semibold" style={{ color: SPLIT_COLORS[cb.channel] }}>{SPLIT_LABELS[cb.channel]}</div>
+                  <div className={`text-[10px] font-bold ${cb.surplus >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {cb.surplus >= 0 ? '+' : ''}{fmtSm(cb.surplus)}
+                  </div>
+                  <div className="text-[8px] text-muted-foreground">{cb.surplusPct >= 0 ? '+' : ''}{cb.surplusPct}% of target</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -955,6 +1032,159 @@ export function MyPlanPanel(p: PracticeProps) {
       </CardContent>
     </Card>
     </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CROSS-CASCADE TABLE — Editable roll-up with bidirectional cascade
+   ═══════════════════════════════════════════════════════════════ */
+
+interface CrossCascadeTableProps {
+  plan: ReturnType<typeof calcUnifiedIncomePlan>;
+  p: PracticeProps;
+  channelBalances: ChannelBalance[];
+  onTargetEdit: (ch: keyof EnabledChannels, newTarget: number) => void;
+  onProjectedEdit: (ch: keyof EnabledChannels, newProjected: number) => void;
+  onSyncTargetToProjected: (ch: keyof EnabledChannels) => void;
+  onSyncProjectedToTarget: (ch: keyof EnabledChannels) => void;
+}
+
+function EditableCell({ value, onCommit, enabled, color }: {
+  value: number; onCommit: (v: number) => void; enabled: boolean; color?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  if (!enabled) return <span className="text-muted-foreground">{fmtSm(value)}</span>;
+  if (!editing) {
+    return (
+      <button
+        className="text-right font-mono cursor-pointer hover:bg-primary/10 px-1 py-0.5 rounded transition-colors border border-transparent hover:border-primary/20"
+        style={{ color: color || undefined }}
+        onClick={() => { setDraft(String(value)); setEditing(true); }}
+        title="Click to edit — changes cascade automatically"
+      >
+        {fmtSm(value)}
+      </button>
+    );
+  }
+  return (
+    <Input
+      type="number"
+      autoFocus
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={() => { const v = Math.max(0, Math.round(+draft || 0)); onCommit(v); setEditing(false); }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') { const v = Math.max(0, Math.round(+draft || 0)); onCommit(v); setEditing(false); }
+        if (e.key === 'Escape') setEditing(false);
+      }}
+      className="h-6 w-24 text-[10px] text-right font-mono"
+    />
+  );
+}
+
+function CrossCascadeTable({ plan, p, channelBalances, onTargetEdit, onProjectedEdit, onSyncTargetToProjected, onSyncProjectedToTarget }: CrossCascadeTableProps) {
+  const rows: { key: keyof EnabledChannels; label: string; target: number; projected: number; gap: number }[] = [
+    { key: 'gdc', label: 'GDC Production', target: plan.channels.gdc.target, projected: plan.channels.gdc.projected, gap: plan.channels.gdc.gap },
+    { key: 'aum', label: 'AUM/Advisory', target: plan.channels.aum.target, projected: plan.channels.aum.detail.projectedIncome, gap: plan.channels.aum.detail.gap },
+    { key: 'affiliate', label: 'Affiliates', target: plan.channels.affiliate.target, projected: plan.channels.affiliate.totalProjected, gap: plan.channels.affiliate.gap },
+    { key: 'override', label: 'Team Override', target: plan.channels.override.target, projected: plan.channels.override.detail.projectedIncome, gap: plan.channels.override.detail.gap },
+    { key: 'channel', label: 'Marketing', target: plan.channels.channel.target, projected: plan.channels.channel.detail.projectedAnnualRevenue, gap: plan.channels.channel.detail.gap },
+  ];
+
+  return (
+    <div className="overflow-x-auto -mx-2 px-2">
+      <table role="table" className="w-full text-xs border-collapse min-w-[500px]">
+        <thead>
+          <tr className="bg-muted/40 text-foreground/90">
+            <th className="px-2 py-1.5 font-semibold text-left">Channel</th>
+            <th className="px-2 py-1.5 font-semibold text-center">Split</th>
+            <th className="px-2 py-1.5 font-semibold text-right">Target ↓</th>
+            <th className="px-2 py-1.5 font-semibold text-right">Projected ↑</th>
+            <th className="px-2 py-1.5 font-semibold text-right">Gap</th>
+            <th className="px-2 py-1.5 font-semibold text-center">Sync</th>
+            <th className="px-2 py-1.5 font-semibold text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(r => {
+            const enabled = p.enabledChannels[r.key];
+            const balance = channelBalances.find(cb => cb.channel === r.key);
+            const surplus = balance?.surplus ?? 0;
+            return (
+              <tr key={r.key} className="border-b border-border/30 hover:bg-card/50">
+                <td className="px-2 py-1">
+                  {enabled
+                    ? <span className="font-semibold" style={{ color: SPLIT_COLORS[r.key] }}>{r.label}</span>
+                    : <span className="text-muted-foreground line-through">{r.label}</span>
+                  }
+                </td>
+                <td className="px-2 py-1 text-center">
+                  <span className="text-[10px] font-mono text-muted-foreground">{p.incomeSplits[r.key]}%</span>
+                </td>
+                <td className="px-2 py-1 text-right">
+                  <EditableCell value={r.target} onCommit={v => onTargetEdit(r.key, v)} enabled={enabled} />
+                </td>
+                <td className="px-2 py-1 text-right">
+                  <EditableCell value={r.projected} onCommit={v => onProjectedEdit(r.key, v)} enabled={enabled} color={surplus >= 0 ? '#4ade80' : '#f87171'} />
+                </td>
+                <td className="px-2 py-1 text-right">
+                  {!enabled ? <span className="text-muted-foreground">—</span>
+                    : r.gap > 0 ? <span className="text-amber-400">{fmtSm(r.gap)}</span>
+                    : <span className="text-green-400">—</span>
+                  }
+                </td>
+                <td className="px-2 py-1 text-center">
+                  {enabled && r.target !== r.projected && (
+                    <div className="flex gap-0.5 justify-center">
+                      <button
+                        className="text-[8px] px-1 py-0.5 rounded border border-primary/20 text-primary hover:bg-primary/10 transition-colors"
+                        onClick={() => onSyncTargetToProjected(r.key)}
+                        title={`Set ${r.label} target = projected (${fmtSm(r.projected)})`}
+                      >↑ T←P</button>
+                      <button
+                        className="text-[8px] px-1 py-0.5 rounded border border-amber-400/20 text-amber-400 hover:bg-amber-400/10 transition-colors"
+                        onClick={() => onSyncProjectedToTarget(r.key)}
+                        title={`Adjust inputs so ${r.label} projected = target (${fmtSm(r.target)})`}
+                      >↓ P←T</button>
+                    </div>
+                  )}
+                  {enabled && r.target === r.projected && (
+                    <span className="text-[8px] text-green-400">✓ Aligned</span>
+                  )}
+                </td>
+                <td className="px-2 py-1 text-center">
+                  <Badge variant="outline" className={`text-[9px] ${
+                    !enabled ? 'text-muted-foreground' :
+                    r.gap === 0 ? 'text-green-400 border-green-400/30' :
+                    'text-amber-400 border-amber-400/30'
+                  }`}>
+                    {!enabled ? 'Off' : r.gap === 0 ? '✓' : '⚠'}
+                  </Badge>
+                </td>
+              </tr>
+            );
+          })}
+          {/* TOTAL row */}
+          <tr className="border-t-2 border-primary/30 bg-muted/20">
+            <td className="px-2 py-1.5"><b className="text-primary">TOTAL</b></td>
+            <td className="px-2 py-1.5 text-center"><span className="text-[10px] font-mono text-muted-foreground">100%</span></td>
+            <td className="px-2 py-1.5 text-right"><b className="text-primary">{fmtSm(p.targetIncome)}</b></td>
+            <td className="px-2 py-1.5 text-right"><b className="text-green-400">{fmtSm(plan.totalProjected)}</b></td>
+            <td className="px-2 py-1.5 text-right">
+              {plan.totalGap > 0 ? <b className="text-red-400">{fmtSm(plan.totalGap)}</b> : <b className="text-green-400">—</b>}
+            </td>
+            <td className="px-2 py-1.5"></td>
+            <td className="px-2 py-1.5 text-center">
+              <Badge variant="outline" className={`text-[9px] ${plan.onTrack ? 'text-green-400 border-green-400/30' : 'text-red-400 border-red-400/30'}`}>
+                {plan.onTrack ? '✓ On Track' : '⚠ Gap'}
+              </Badge>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }
 

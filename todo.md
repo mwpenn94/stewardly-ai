@@ -5364,3 +5364,19 @@
 - [x] Pass 94 vitest tests: 38 tests covering calcSensitivity, calcTimePhasedProjections, export data structure
 - [x] Total: 83 tests across 4 test files (passes 91-94), all passing
 - [x] Production build verified (45s, no errors)
+
+## Pass 95 — True Cross-Cascade Engine (Roll-Up / Roll-Down)
+- [x] Cross-cascade engine functions: redistributeSplits, backSolveChannelTarget, backSolveChannelProjected
+- [x] autoBalanceSplits: redistribute splits to match actual projected proportions
+- [x] calcChannelBalances: per-channel surplus/deficit visibility
+- [x] Editable roll-up table: click Target or Projected cells to edit directly with bidirectional cascade
+- [x] Per-channel sync buttons: ↑ T←P (match target to projected) and ↓ P←T (match projected to target)
+- [x] Auto-Balance Splits button: realign splits to match actual projected proportions
+- [x] Cross-Cascade Controls panel: roll-up, roll-down, auto-balance, per-channel balance indicators
+- [x] EditableCell component with inline editing, Enter/Escape, auto-commit on blur
+- [x] CrossCascadeTable component with 7-column layout (Channel, Split, Target↓, Projected↑, Gap, Sync, Status)
+- [x] Fixed pass89 test: added missing enabledChannels parameter
+- [x] Pass 95 vitest tests: 30 tests covering redistributeSplits, backSolveChannelTarget, backSolveChannelProjected, autoBalanceSplits, calcChannelBalances, integration
+- [x] Total: 95 tests across 5 test files (passes 89, 91-95), all passing
+- [x] Production build verified (45s, no errors)
+- [x] Recursive convergence: 3 consecutive clean passes confirmed — CONVERGED

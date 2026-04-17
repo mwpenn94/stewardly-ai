@@ -9,6 +9,7 @@ describe('Pass 89 — Unified Income Planning Engine', () => {
     targetIncome: 150000,
     splits: { gdc: 55, aum: 20, affiliate: 10, override: 10, channel: 5 },
     role: 'exp' as const,
+    enabledChannels: { gdc: true, aum: true, affiliate: true, override: true, channel: true },
     targetGDC: 82500, // 55% of 150k
     wbPct: 60,
     bracketOverride: 'auto',

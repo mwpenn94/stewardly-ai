@@ -1126,4 +1126,195 @@ export function calcTimePhasedProjections(params: {
   };
 }
 
+/* ═══ CROSS-CASCADE ENGINE — Roll-Up / Roll-Down ═══ */
+
+/** Channel keys for iteration */
+export const CHANNEL_KEYS: (keyof EnabledChannels)[] = ['gdc', 'aum', 'affiliate', 'override', 'channel'];
+
+/**
+ * Back-solve: given a desired channel TARGET amount, compute the new split %
+ * and return the adjusted splits (preserving 100% sum by proportionally adjusting others).
+ */
+export function backSolveChannelTarget(
+  ch: keyof EnabledChannels,
+  newChannelTarget: number,
+  targetIncome: number,
+  currentSplits: IncomeSplits,
+  enabledChannels: EnabledChannels,
+): IncomeSplits {
+  if (targetIncome <= 0) return currentSplits;
+  const newPct = Math.max(0, Math.min(100, Math.round(newChannelTarget / targetIncome * 100)));
+  return redistributeSplits(ch, newPct, currentSplits, enabledChannels);
+}
+
+/**
+ * Back-solve: given a desired channel PROJECTED amount, compute what sub-inputs
+ * would produce it. Returns an object describing which state setters to call.
+ */
+export interface BackSolveResult {
+  channel: keyof EnabledChannels;
+  newSplitPct: number;
+  newSplits: IncomeSplits;
+  gdcTarget?: number;
+  aumExisting?: number;
+  affCountScale?: number;
+  teamAvgGDC?: number;
+  channelSpendScale?: number;
+}
+
+export function backSolveChannelProjected(
+  ch: keyof EnabledChannels,
+  newProjected: number,
+  targetIncome: number,
+  currentSplits: IncomeSplits,
+  enabledChannels: EnabledChannels,
+  current: {
+    aumTrailPct: number;
+    affCounts: { a: number; b: number; c: number; d: number };
+    affAvgProd: { a: number; b: number; c: number; d: number };
+    teamSize: number;
+    overrideRate: number;
+    channelAnnualRev: number;
+    channelSpend: Record<string, number>;
+  },
+): BackSolveResult {
+  const newPct = targetIncome > 0 ? Math.max(0, Math.min(100, Math.round(newProjected / targetIncome * 100))) : 0;
+  const newSplits = redistributeSplits(ch, newPct, currentSplits, enabledChannels);
+  const result: BackSolveResult = { channel: ch, newSplitPct: newPct, newSplits };
+
+  switch (ch) {
+    case 'gdc':
+      result.gdcTarget = Math.round(newProjected);
+      break;
+    case 'aum':
+      if (current.aumTrailPct > 0) {
+        result.aumExisting = Math.round(newProjected / (current.aumTrailPct / 100));
+      }
+      break;
+    case 'affiliate': {
+      const currentAffProjected = (['a','b','c','d'] as const).reduce((sum, t) =>
+        sum + Math.round(current.affCounts[t] * current.affAvgProd[t] * (AFF_RATES[t] || 0.1)), 0);
+      result.affCountScale = currentAffProjected > 0 ? newProjected / currentAffProjected : 1;
+      break;
+    }
+    case 'override': {
+      const teamSz = Math.max(1, current.teamSize);
+      const ovrRate = current.overrideRate > 0 ? current.overrideRate / 100 : 0.08;
+      result.teamAvgGDC = Math.round(newProjected / (teamSz * ovrRate));
+      break;
+    }
+    case 'channel': {
+      result.channelSpendScale = current.channelAnnualRev > 0 ? newProjected / current.channelAnnualRev : 1;
+      break;
+    }
+  }
+  return result;
+}
+
+/**
+ * Redistribute splits: set one channel to a new %, adjust others proportionally to maintain 100% sum.
+ */
+export function redistributeSplits(
+  ch: keyof EnabledChannels,
+  newPct: number,
+  currentSplits: IncomeSplits,
+  enabledChannels: EnabledChannels,
+): IncomeSplits {
+  const next = { ...currentSplits };
+  const oldPct = next[ch];
+  const delta = newPct - oldPct;
+  next[ch] = newPct;
+  if (delta === 0) return next;
+
+  const otherKeys = CHANNEL_KEYS.filter(k => k !== ch && enabledChannels[k]);
+  const otherSum = otherKeys.reduce((s, k) => s + next[k], 0);
+  if (otherKeys.length === 0) return next;
+
+  if (otherSum > 0) {
+    const targetOtherSum = Math.max(0, otherSum - delta);
+    const scale = targetOtherSum / otherSum;
+    let distributed = 0;
+    otherKeys.forEach((k, i) => {
+      if (i === otherKeys.length - 1) {
+        next[k] = Math.max(0, 100 - newPct - distributed);
+      } else {
+        const adjusted = Math.max(0, Math.round(next[k] * scale));
+        next[k] = adjusted;
+        distributed += adjusted;
+      }
+    });
+  } else {
+    const remaining = Math.max(0, 100 - newPct);
+    const even = Math.floor(remaining / otherKeys.length);
+    otherKeys.forEach((k, i) => {
+      next[k] = i === otherKeys.length - 1 ? remaining - even * (otherKeys.length - 1) : even;
+    });
+  }
+  return next;
+}
+
+/**
+ * Auto-balance: redistribute splits based on actual projected proportions.
+ */
+export function autoBalanceSplits(
+  plan: UnifiedIncomePlan,
+  enabledChannels: EnabledChannels,
+  currentSplits: IncomeSplits,
+  targetIncome: number,
+): IncomeSplits {
+  if (targetIncome <= 0) return currentSplits;
+  const projected: Record<keyof EnabledChannels, number> = {
+    gdc: plan.channels.gdc.projected,
+    aum: plan.channels.aum.detail.projectedIncome,
+    affiliate: plan.channels.affiliate.totalProjected,
+    override: plan.channels.override.detail.projectedIncome,
+    channel: plan.channels.channel.detail.projectedAnnualRevenue,
+  };
+  const totalProjected = CHANNEL_KEYS.filter(k => enabledChannels[k]).reduce((s, k) => s + projected[k], 0);
+  if (totalProjected <= 0) return currentSplits;
+
+  const next = { ...currentSplits };
+  let sum = 0;
+  const enabledKeys = CHANNEL_KEYS.filter(k => enabledChannels[k]);
+  enabledKeys.forEach((k, i) => {
+    if (i === enabledKeys.length - 1) {
+      next[k] = 100 - sum;
+    } else {
+      const p = Math.round(projected[k] / totalProjected * 100);
+      next[k] = p;
+      sum += p;
+    }
+  });
+  CHANNEL_KEYS.filter(k => !enabledChannels[k]).forEach(k => { next[k] = 0; });
+  return next;
+}
+
+/**
+ * Per-channel surplus/deficit for cross-cascade visibility.
+ */
+export interface ChannelBalance {
+  channel: keyof EnabledChannels;
+  target: number;
+  projected: number;
+  surplus: number;
+  surplusPct: number;
+}
+
+export function calcChannelBalances(plan: UnifiedIncomePlan, enabledChannels: EnabledChannels): ChannelBalance[] {
+  const channels: { key: keyof EnabledChannels; target: number; projected: number }[] = [
+    { key: 'gdc', target: plan.channels.gdc.target, projected: plan.channels.gdc.projected },
+    { key: 'aum', target: plan.channels.aum.target, projected: plan.channels.aum.detail.projectedIncome },
+    { key: 'affiliate', target: plan.channels.affiliate.target, projected: plan.channels.affiliate.totalProjected },
+    { key: 'override', target: plan.channels.override.target, projected: plan.channels.override.detail.projectedIncome },
+    { key: 'channel', target: plan.channels.channel.target, projected: plan.channels.channel.detail.projectedAnnualRevenue },
+  ];
+  return channels.filter(c => enabledChannels[c.key]).map(c => ({
+    channel: c.key,
+    target: c.target,
+    projected: c.projected,
+    surplus: c.projected - c.target,
+    surplusPct: c.target > 0 ? Math.round((c.projected - c.target) / c.target * 100) : 0,
+  }));
+}
+
 export { fmt, fmtSm, pct };
