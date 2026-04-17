@@ -71,3 +71,31 @@ This document tracks refactoring decisions and structural changes that inform th
 | P3 | @platform/video | Low | Thin wrapper around Daily.co |
 | P3 | @platform/comms | Medium | Marketing automation |
 | P3 | @platform/premium-finance | Low | Domain-specific |
+
+## Pass 108 Additions
+
+### R-011: Business Exit Analysis
+**Current location**: `client/src/pages/BusinessExit.tsx` + `server/routers/v4Features.ts` (businessExit router)
+**Target package**: `@manus-next/business-exit`
+**Rationale**: LLM-powered business valuation with multiple methodologies (DCF, EBITDA multiples, asset-based, comparable transactions). Frontend now wired to tRPC with full CRUD.
+
+### R-012: Annual Review Generator
+**Current location**: `client/src/pages/AnnualReview.tsx` + `server/routers/v4Features.ts` (annualReview router)
+**Target package**: `@manus-next/annual-review`
+**Rationale**: AI-generated comprehensive annual client reviews with portfolio performance, goal tracking, and recommendation engine. Frontend wired to tRPC.
+
+### R-013: Tax Projection Engine
+**Current location**: `client/src/pages/TaxProjector.tsx` + `server/routers/v4Features.ts` (tax router)
+**Target package**: `@manus-next/tax-engine`
+**Rationale**: Multi-year tax projection with scenario comparison (current vs. proposed). Wired to backend tax router with full projection capabilities.
+
+### R-014: Command Center Hub
+**Current location**: `client/src/pages/CommandCenter.tsx` (rewritten Pass 108)
+**Status**: Now wired to live tRPC (leadPipeline, emailCampaign, clientSegmentation). Previously used SAMPLE_ arrays.
+**Target package**: `@manus-next/command-center`
+**Rationale**: Unified operations hub with 7 tabs — all now backed by real database persistence.
+
+### R-015: Manus-Next Dashboard
+**Current location**: `client/src/pages/ManusNextDashboard.tsx`
+**Target package**: `@manus-next/dashboard`
+**Rationale**: Capability validation surface that mirrors Manus UI/UX patterns. Users can validate all 17 planned @manus-next/* packages, view extraction status, and run endpoint health checks.

@@ -164,6 +164,12 @@ const OutreachAutomation = lazy(() => import("./pages/OutreachAutomation"));
 const ApiDocumentation = lazy(() => import("./pages/ApiDocumentation"));
 const AdminAuditTrail = lazy(() => import("./pages/AdminAuditTrail"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
+const BusinessExit = lazy(() => import("./pages/BusinessExit"));
+const AnnualReview = lazy(() => import("./pages/AnnualReview"));
+const ComplianceCopilot = lazy(() => import("./pages/ComplianceCopilot"));
+const TaxProjector = lazy(() => import("./pages/TaxProjector"));
+const PremiumFinanceRates = lazy(() => import("./pages/PremiumFinanceRates"));
+const ManusNextDashboard = lazy(() => import("./pages/ManusNextDashboard"));
 
 function Router() {
   return (
@@ -358,6 +364,12 @@ function Router() {
         <Route path={"/api-docs"} component={ApiDocumentation} />
         <Route path={"/admin/audit-trail"} component={AdminAuditTrail} />
         <Route path={"/command-center"} component={CommandCenter} />
+        <Route path={"/business-exit"} component={BusinessExit} />
+        <Route path={"/annual-review"} component={AnnualReview} />
+        <Route path={"/compliance-copilot"} component={ComplianceCopilot} />
+        <Route path={"/tax-projector"} component={TaxProjector} />
+        <Route path={"/premium-finance-rates"} component={PremiumFinanceRates} />
+        <Route path={"/manus-next"} component={ManusNextDashboard} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
         <Route path={"/404"} component={NotFound} />

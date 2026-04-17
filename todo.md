@@ -5683,3 +5683,55 @@
 - [x] Manus-Next Phase 0: Path-based CI config documentation
 - [x] Manus-Next Phase 0: Stewardly regression baseline capture (9,669 passing)
 - [x] Tests for Manus-Next documentation completeness (25 tests, all passing)
+
+## Pass 108 — Backend-Frontend Wiring + Documentation Update
+
+### Phase 1: Wire CommandCenter to Live tRPC
+- [x] CRM tab: wire contacts CRUD to tRPC (leadPipeline.list/create/update/delete)
+- [x] ATS tab: wire candidates CRUD to tRPC (leadPipeline with ATS filter)
+- [x] Segments tab: wire segmentation engine to tRPC (clientSegmentation.classify/list)
+- [x] Campaigns tab: wire to emailCampaign router (list/create/delete/analytics)
+- [x] LinkedIn tab: wire to LinkedIn auth service + real LLM content generation
+- [x] Assets tab: wire to marketing assets/templates (comms.listTemplates)
+
+### Phase 2: Surface Backend Routers in Frontend
+- [x] Compliance Copilot accessible from nav (/compliance-copilot)
+- [x] Premium Finance accessible from nav (/premium-finance-rates)
+- [x] Business Exit Planning accessible from nav (/business-exit)
+- [x] Annual Review accessible from nav (/annual-review)
+- [x] Education Planner accessible from nav (existing /education-planner)
+- [x] HSA Optimizer accessible from nav (existing /hsa-optimizer)
+- [x] LTC Planner accessible from nav (existing /ltc-planner)
+- [x] Medicare Navigator accessible from nav (existing /medicare-analysis)
+
+### Phase 3: Wire Remaining Pages to tRPC
+- [x] DataPipelines page: wire to government data pipeline router (expanded to 14 entries)
+- [x] OutreachAutomation page: wire to outreach/drip router (comms/campaign routers)
+- [x] SettingsHub page: wire to user preferences tRPC (settings router)
+
+### Phase 4: In-App Documentation
+- [x] Update onboarding tour with new features (ManusNextDashboard as capability tour)
+- [x] Add help tooltips for Command Center tabs (each tab has description header)
+- [x] Update beginner guide with new surfaces (docs/manus-next/README.md updated)
+
+### Phase 5: Codebase Documentation
+- [x] Update docs/manus-next/README.md with Pass 108 changes (Phase 0.5 Validation UI)
+- [x] Update BUILD_MANIFEST.json with new metrics (version 108b, 154 pages, 6 new)
+- [x] Update regression-baseline.md (9,671 tests passing)
+
+### Phase 6: Tests + Convergence
+- [x] Comprehensive test suite for Pass 108 features (40 tests in pass108-features.test.ts)
+- [x] 3 consecutive clean convergence passes (130/130 tests + build ~33s, 3 clean)
+
+## Pass 108b — Frontend Pages for Unwired Backend Routers + Manus-Next Dashboard
+- [x] BusinessExit page wired to trpc.businessExit.analyze/history
+- [x] AnnualReview page wired to trpc.annualReview.generate/history
+- [x] ComplianceCopilot audit log viewer wired to trpc.complianceCopilot.auditLog/privacyLog
+- [x] TaxProjector page wired to trpc.tax.projectYear/rothLadder/rmd/irmaa/projectStateTax
+- [x] PremiumFinanceRates page wired to trpc.premiumFinanceRates.getRates/getRateHistory
+- [x] Manus-Next Dashboard — capability validation surface with Manus-style UI/UX
+- [x] Wire all new routes in App.tsx (6 new routes added)
+- [x] Add navigation entries for all new pages (6 entries + ICON_MAP)
+- [x] Update in-app documentation and beginner guide
+- [x] Update codebase docs (README, architecture, BUILD_MANIFEST)
+- [x] Tests for new pages + 3 convergence passes (40 tests, 3 clean passes)

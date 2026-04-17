@@ -17,6 +17,7 @@ This document traces the evolution of Stewardly AI (originally WealthBridge AI) 
 | 101-104 | Stability | Regression fixes, stability guards, nav reachability, MarketTicker lifecycle |
 | 105-106 | Enrichment | 17 citation categories (101 refs), 10-slot save system, configurable data layer, roll-up unification |
 | 107 | Command Center | Unified hub (7 tabs), sharing UI kit, progressive disclosure, Manus-Next foundation |
+| 108 | Backend-Frontend Parity | CommandCenter wired to live tRPC, 6 new frontend pages (BusinessExit, AnnualReview, ComplianceCopilot, TaxProjector, PremiumFinanceRates, ManusNextDashboard), expanded ICON_MAP, documentation updates |
 
 ## Architecture Decisions
 

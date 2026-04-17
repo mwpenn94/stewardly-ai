@@ -1,25 +1,25 @@
 {
   "project": "Stewardly AI (WealthBridge AI)",
-  "version": "107b",
-  "buildDate": "2026-04-17T00:00:00Z",
+  "version": "108b",
+  "buildDate": "2026-04-17T16:00:00Z",
   "provenance": {
     "originPass": 1,
-    "currentPass": 107,
-    "totalPasses": 107,
+    "currentPass": 108,
+    "totalPasses": 108,
     "convergenceMethod": "recursive-optimization-converged",
     "specFile": "recursive-optimization-converged-final (2).md"
   },
   "metrics": {
-    "totalLinesOfCode": 413987,
-    "clientLines": 174175,
-    "serverLines": 229930,
+    "totalLinesOfCode": 406610,
+    "clientLines": 176000,
+    "serverLines": 230000,
     "schemaLines": 9882,
-    "pageComponents": 148,
-    "uiComponents": 228,
+    "pageComponents": 154,
+    "uiComponents": 230,
     "serverServices": 363,
     "serverRouters": 99,
-    "testFiles": 318,
-    "testsPassing": 9669,
+    "testFiles": 319,
+    "testsPassing": 9671,
     "testsFailing": 2,
     "failingTestsReason": "Transient Census API ECONNRESET (network, not code)",
     "databaseTables": 365,
@@ -69,7 +69,11 @@
   },
   "surfaces": {
     "commandCenter": {
-      "tabs": ["Overview", "CRM", "Campaigns", "ATS", "LinkedIn", "Segments", "Assets"]
+      "tabs": ["Overview", "CRM", "Campaigns", "ATS", "LinkedIn", "Segments", "Assets"],
+      "wiredToTRPC": true,
+      "crmBackend": "leadPipeline",
+      "campaignsBackend": "emailCampaign",
+      "segmentsBackend": "clientSegmentation"
     },
     "unifiedAI": {
       "modes": ["Chat", "Dev", "Auto"],
@@ -81,14 +85,24 @@
     },
     "progressiveDisclosure": {
       "levels": ["Essential", "Standard", "Professional", "Expert"],
-      "navItemsCovered": 53
+      "navItemsCovered": 59
+    },
+    "newFrontendPages": {
+      "pass108": [
+        { "page": "BusinessExit", "route": "/business-exit", "backend": "businessExit" },
+        { "page": "AnnualReview", "route": "/annual-review", "backend": "annualReview" },
+        { "page": "ComplianceCopilot", "route": "/compliance-copilot", "backend": "complianceCopilot" },
+        { "page": "TaxProjector", "route": "/tax-projector", "backend": "tax" },
+        { "page": "PremiumFinanceRates", "route": "/premium-finance-rates", "backend": "premiumFinanceRates" },
+        { "page": "ManusNextDashboard", "route": "/manus-next", "backend": "capability validation UI" }
+      ]
     }
   },
   "regressionBaseline": {
-    "testFiles": 393,
-    "testsPassing": 9669,
+    "testFiles": 319,
+    "testsPassing": 9671,
     "testsFailing": 2,
     "buildPasses": true,
-    "capturedAt": "2026-04-17T04:17:57Z"
+    "capturedAt": "2026-04-17T16:00:00Z"
   }
 }
