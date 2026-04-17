@@ -1891,4 +1891,237 @@ export function calcPlanningHorizon(
   return points;
 }
 
+/* ═══ PASS 100: ROLL-UP UNIFICATION & P&L ═══ */
+
+/** Unified P&L statement combining all income channels */
+export interface UnifiedPnL {
+  /* Revenue lines */
+  gdcRevenue: number;
+  aumRevenue: number;
+  affiliateRevenue: number;
+  overrideRevenue: number;
+  channelRevenue: number;
+  totalRevenue: number;
+  /* Cost lines */
+  gdcCOGS: number;
+  aumCOGS: number;
+  affiliateCOGS: number;
+  overrideCOGS: number;
+  channelCOGS: number;
+  totalCOGS: number;
+  /* Margins */
+  grossProfit: number;
+  grossMarginPct: number;
+  /* Operating expenses */
+  opEx: number;
+  ebitda: number;
+  ebitdaMarginPct: number;
+  /* Tax & net */
+  estimatedTax: number;
+  netIncome: number;
+  netMarginPct: number;
+  /* Per-channel breakdown */
+  channelBreakdown: { channel: string; revenue: number; cogs: number; margin: number; marginPct: number; pctOfTotal: number }[];
+  /* GDC bracket analysis */
+  currentBracket: GDCBracket;
+  nextBracket: GDCBracket | null;
+  gdcToNextBracket: number;
+  bracketLift: number; // additional income from reaching next bracket
+}
+
+/** Calculate unified P&L from a completed income plan */
+export function calcUnifiedPnL(plan: UnifiedIncomePlan, economics: ChannelEconomics[], taxRate: number = 0.25, opExPct: number = 0.15): UnifiedPnL {
+  const gdcRev = plan.channels.gdc.projected;
+  const aumRev = plan.channels.aum.detail.projectedIncome;
+  const affRev = plan.channels.affiliate.totalProjected;
+  const ovrRev = plan.channels.override.detail.projectedIncome;
+  const chRev = plan.channels.channel.detail.projectedAnnualRevenue;
+  const totalRev = gdcRev + aumRev + affRev + ovrRev + chRev;
+
+  // COGS from economics or defaults
+  const ecoMap = new Map(economics.map(e => [e.channel, e]));
+  const gdcCOGS = ecoMap.get('gdc')?.cogsDollar ?? Math.round(gdcRev * 0.35);
+  const aumCOGS = ecoMap.get('aum')?.cogsDollar ?? Math.round(aumRev * 0.25);
+  const affCOGS = ecoMap.get('affiliate')?.cogsDollar ?? Math.round(affRev * 0.40);
+  const ovrCOGS = ecoMap.get('override')?.cogsDollar ?? Math.round(ovrRev * 0.15);
+  const chCOGS = ecoMap.get('channel')?.cogsDollar ?? Math.round(chRev * 0.45);
+  const totalCOGS = gdcCOGS + aumCOGS + affCOGS + ovrCOGS + chCOGS;
+
+  const grossProfit = totalRev - totalCOGS;
+  const grossMarginPct = totalRev > 0 ? Math.round(grossProfit / totalRev * 100) : 0;
+
+  const opEx = Math.round(totalRev * opExPct);
+  const ebitda = grossProfit - opEx;
+  const ebitdaMarginPct = totalRev > 0 ? Math.round(ebitda / totalRev * 100) : 0;
+
+  const estimatedTax = Math.round(Math.max(0, ebitda) * taxRate);
+  const netIncome = ebitda - estimatedTax;
+  const netMarginPct = totalRev > 0 ? Math.round(netIncome / totalRev * 100) : 0;
+
+  const channels = [
+    { channel: 'GDC', revenue: gdcRev, cogs: gdcCOGS },
+    { channel: 'AUM', revenue: aumRev, cogs: aumCOGS },
+    { channel: 'Affiliate', revenue: affRev, cogs: affCOGS },
+    { channel: 'Override', revenue: ovrRev, cogs: ovrCOGS },
+    { channel: 'Channel', revenue: chRev, cogs: chCOGS },
+  ];
+
+  const channelBreakdown = channels.map(c => ({
+    channel: c.channel,
+    revenue: c.revenue,
+    cogs: c.cogs,
+    margin: c.revenue - c.cogs,
+    marginPct: c.revenue > 0 ? Math.round((c.revenue - c.cogs) / c.revenue * 100) : 0,
+    pctOfTotal: totalRev > 0 ? Math.round(c.revenue / totalRev * 100) : 0,
+  }));
+
+  // GDC bracket analysis
+  const totalGDC = gdcRev; // GDC production is the bracket determinant
+  const currentBracket = getBracket(totalGDC);
+  const currentIdx = GDC_BRACKETS.indexOf(currentBracket);
+  const nextBracket = currentIdx < GDC_BRACKETS.length - 1 ? GDC_BRACKETS[currentIdx + 1] : null;
+  const gdcToNextBracket = nextBracket ? Math.max(0, nextBracket.mn - totalGDC) : 0;
+  const bracketLift = nextBracket ? Math.round(totalGDC * (nextBracket.r - currentBracket.r)) : 0;
+
+  return {
+    gdcRevenue: gdcRev, aumRevenue: aumRev, affiliateRevenue: affRev,
+    overrideRevenue: ovrRev, channelRevenue: chRev, totalRevenue: totalRev,
+    gdcCOGS, aumCOGS, affiliateCOGS: affCOGS, overrideCOGS: ovrCOGS, channelCOGS: chCOGS, totalCOGS,
+    grossProfit, grossMarginPct,
+    opEx, ebitda, ebitdaMarginPct,
+    estimatedTax, netIncome, netMarginPct,
+    channelBreakdown,
+    currentBracket, nextBracket, gdcToNextBracket, bracketLift,
+  };
+}
+
+/** Combined chart data for roll-up visualization */
+export interface RollUpChartData {
+  labels: string[];
+  datasets: { label: string; data: number[]; color: string }[];
+  totals: number[];
+  targetLine: number[];
+}
+
+/** Generate combined chart data from time-phased projections */
+export function calcRollUpChartData(
+  points: TimePhasedPoint[],
+  targetIncome: number,
+  viewMode: 'monthly' | 'quarterly' | 'annual' = 'monthly'
+): RollUpChartData {
+  if (viewMode === 'quarterly') {
+    const quarters: { label: string; gdc: number; aum: number; affiliate: number; override: number; channel: number }[] = [];
+    for (let q = 0; q < Math.ceil(points.length / 3); q++) {
+      const slice = points.slice(q * 3, q * 3 + 3);
+      quarters.push({
+        label: `Q${q + 1}`,
+        gdc: slice.reduce((s, p) => s + p.gdc, 0),
+        aum: slice.reduce((s, p) => s + p.aum, 0),
+        affiliate: slice.reduce((s, p) => s + p.affiliate, 0),
+        override: slice.reduce((s, p) => s + p.override, 0),
+        channel: slice.reduce((s, p) => s + p.channel, 0),
+      });
+    }
+    return {
+      labels: quarters.map(q => q.label),
+      datasets: [
+        { label: 'GDC', data: quarters.map(q => q.gdc), color: '#3b82f6' },
+        { label: 'AUM', data: quarters.map(q => q.aum), color: '#10b981' },
+        { label: 'Affiliate', data: quarters.map(q => q.affiliate), color: '#f59e0b' },
+        { label: 'Override', data: quarters.map(q => q.override), color: '#8b5cf6' },
+        { label: 'Channel', data: quarters.map(q => q.channel), color: '#ec4899' },
+      ],
+      totals: quarters.map(q => q.gdc + q.aum + q.affiliate + q.override + q.channel),
+      targetLine: quarters.map(() => Math.round(targetIncome / 4)),
+    };
+  }
+
+  if (viewMode === 'annual') {
+    const years: { label: string; gdc: number; aum: number; affiliate: number; override: number; channel: number }[] = [];
+    for (let y = 0; y < Math.ceil(points.length / 12); y++) {
+      const slice = points.slice(y * 12, y * 12 + 12);
+      years.push({
+        label: `Year ${y + 1}`,
+        gdc: slice.reduce((s, p) => s + p.gdc, 0),
+        aum: slice.reduce((s, p) => s + p.aum, 0),
+        affiliate: slice.reduce((s, p) => s + p.affiliate, 0),
+        override: slice.reduce((s, p) => s + p.override, 0),
+        channel: slice.reduce((s, p) => s + p.channel, 0),
+      });
+    }
+    return {
+      labels: years.map(y => y.label),
+      datasets: [
+        { label: 'GDC', data: years.map(y => y.gdc), color: '#3b82f6' },
+        { label: 'AUM', data: years.map(y => y.aum), color: '#10b981' },
+        { label: 'Affiliate', data: years.map(y => y.affiliate), color: '#f59e0b' },
+        { label: 'Override', data: years.map(y => y.override), color: '#8b5cf6' },
+        { label: 'Channel', data: years.map(y => y.channel), color: '#ec4899' },
+      ],
+      totals: years.map(y => y.gdc + y.aum + y.affiliate + y.override + y.channel),
+      targetLine: years.map(() => targetIncome),
+    };
+  }
+
+  // Monthly (default)
+  return {
+    labels: points.map(p => p.label),
+    datasets: [
+      { label: 'GDC', data: points.map(p => p.gdc), color: '#3b82f6' },
+      { label: 'AUM', data: points.map(p => p.aum), color: '#10b981' },
+      { label: 'Affiliate', data: points.map(p => p.affiliate), color: '#f59e0b' },
+      { label: 'Override', data: points.map(p => p.override), color: '#8b5cf6' },
+      { label: 'Channel', data: points.map(p => p.channel), color: '#ec4899' },
+    ],
+    totals: points.map(p => p.gdc + p.aum + p.affiliate + p.override + p.channel),
+    targetLine: points.map(() => Math.round(targetIncome / 12)),
+  };
+}
+
+/* ═══ CONFIGURABLE DEFAULTS (Continuous Improvement Architecture) ═══ */
+
+/** All engine defaults in one place — no hardcoded values scattered in UI */
+export interface EngineConfig {
+  /* Funnel defaults */
+  defaultFunnelRates: { ap: number; sh: number; cl: number; pl: number };
+  /* AUM defaults */
+  defaultAumTrailPct: number;
+  defaultAumOverrideRate: number;
+  /* Affiliate defaults */
+  defaultAffMode: AffiliateMode;
+  /* Override defaults */
+  defaultOverrideRate: number;
+  /* Channel spend defaults */
+  defaultChannelSpend: Record<string, number>;
+  /* P&L defaults */
+  defaultTaxRate: number;
+  defaultOpExPct: number;
+  /* Planning horizon */
+  defaultHorizonMonths: number;
+  /* Progressive disclosure */
+  defaultComplexity: 'simple' | 'intermediate' | 'comprehensive';
+}
+
+/** Default engine configuration — override per-org or per-user */
+export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
+  defaultFunnelRates: { ap: 20, sh: 60, cl: 50, pl: 40 },
+  defaultAumTrailPct: 1.0,
+  defaultAumOverrideRate: 90,
+  defaultAffMode: 'recruiter',
+  defaultOverrideRate: 10,
+  defaultChannelSpend: {
+    'Social Media': 500, 'SEO/Content': 300, 'Paid Ads': 800,
+    'Email Marketing': 200, 'Events/Seminars': 1000, 'Referral Program': 400,
+  },
+  defaultTaxRate: 0.25,
+  defaultOpExPct: 0.15,
+  defaultHorizonMonths: 36,
+  defaultComplexity: 'intermediate',
+};
+
+/** Merge user overrides with defaults */
+export function mergeEngineConfig(overrides: Partial<EngineConfig>): EngineConfig {
+  return { ...DEFAULT_ENGINE_CONFIG, ...overrides };
+}
+
 export { fmt, fmtSm, pct };

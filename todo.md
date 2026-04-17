@@ -5417,3 +5417,32 @@
 - [x] Cross-hierarchy alignment verification across all cascade paths
 - [x] Pass 97-99 vitest tests: 37 tests covering AUM override, producer affiliate, progressive disclosure, client-practice cross-cascade, cascade chain, planning horizon
 - [x] Final convergence: 3/3 clean passes, 186 tests across 8 files, build verified (31s)
+
+## Pass 100 — Critical Bug Fixes & Phase 1-3 Scope
+### Critical Bugs
+- [x] Fix "React is not defined" error in PanelsD.tsx:467 (replaced React.useEffect with useEffect import)
+- [x] Fix all missing prop errors in Calculators.tsx → PanelsD.tsx wiring
+- [x] Diagnose and fix all browser console errors across the app (clean console after restart)
+
+### Phase 1 — UI/UX Foundation
+- [x] Remove stock ticker (MarketTicker already not imported/used anywhere)
+- [x] Client Profile already in Client Planning group in wealth engine nav (verified)
+- [ ] Nav consistency: identical expand/collapse behavior across sidebar sections (deferred)
+- [ ] Settings fully accessible on mobile (deferred)
+- [x] Progressive disclosure framework (Simple/Detailed/Expert with Alt+1/2/3 shortcuts)
+
+### Phase 3 — Wealth Engine (TOP PRIORITY)
+- [ ] Gate 1: Structural inheritance from HTML v7.6 (nav items, citation categories, references, ref-tips, save system) (deferred)
+- [ ] Gate 2: Content parity — identical inputs produce identical outputs (deferred)
+- [x] Gate 3a: AUM override cascade — hierarchy visualization (p²+p−1/3=0 in aumEngine.ts), what-if modeling, user-adjustable rates (0-100% slider)
+- [x] Gate 3b: Multi-channel production planning — AUM pipeline funnel, affiliate pipeline funnel (dual recruiter/producer modes), activity metrics, production forecasting, ramp modeling
+- [ ] Gate 3c Domain A: Practice Management — 6 strategy surfaces with leading-persona references (deferred)
+- [x] Gate 3c Domain B: Client Planning — retirement income engineering (Bucket/Floor-Upside/Guyton-Klinger tabs), tax-bracket engineering (Roth Conversion Ladder), protection suite, balance sheet
+- [ ] Gate 3c Domain C: Advanced Strategies — premium financing, ILIT/trust structuring, executive compensation, charitable planning (deferred)
+- [ ] Gate 3c Domain D: References — due diligence summaries, searchable/filterable, auto-updatable (deferred)
+- [x] Roll-up unification — Unified P&L (Section 11), Roll-Up Revenue Chart (Section 12), GDC bracket analysis with progress bar
+- [x] Continuous improvement architecture — EngineConfig with mergeEngineConfig, no hardcoded defaults
+- [x] Scenario auto-save to database (tRPC CRUD + sync status indicator)
+- [x] Server-side PDF report generation (PDFKit branded multi-page report)
+- [x] Vitest tests: 39 new tests covering retirement engineering, P&L, roll-up charts, configurable defaults, producer affiliate, PDF generation
+- [x] Recursive convergence: 3/3 clean passes, 225 tests across 9 files

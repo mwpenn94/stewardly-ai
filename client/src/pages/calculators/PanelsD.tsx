@@ -4,7 +4,8 @@
               Recruiting, Channels, Dashboard, P&L,
               Goal Tracker, Monthly Production
    ═══════════════════════════════════════════════════════════════ */
-import { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,8 @@ import {
   type ClientPracticeInputs, type ClientPracticeOpportunity, type CascadeChainData, type PlanningHorizonPoint,
   backSolveChannelTarget, backSolveChannelProjected, autoBalanceSplits, calcChannelBalances, CHANNEL_KEYS,
   dragRebalanceSplit, createAuditEntry, calcScenarioDiff,
+  calcUnifiedPnL, calcRollUpChartData, DEFAULT_ENGINE_CONFIG, mergeEngineConfig,
+  type UnifiedPnL, type RollUpChartData, type EngineConfig,
   type RoleId, type TeamMember, type RecruitTrack, type IncomeSplits, type EnabledChannels, type ChannelEconomics, type SensitivityResult, type TimePhasedResult, type BackSolveResult, type ChannelBalance,
   type CascadeAuditEntry, type CascadeInputSnapshot, type CascadeDirection, type ScenarioDiffResult,
 } from './practiceEngine';
@@ -302,7 +305,7 @@ export function MyPlanPanel(p: PracticeProps) {
   }), [p.targetIncome, plan, p.role, p.enabledChannels]);
 
   // Keyboard shortcuts
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       // Ctrl+Z: Undo last audit entry
@@ -733,7 +736,35 @@ export function MyPlanPanel(p: PracticeProps) {
                 enabledChannels: p.enabledChannels, plan, economics, sensitivity,
               };
               exportToPDF(exportData);
-            }}>PDF</Button>
+            }}>Print PDF</Button>
+            <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={async () => {
+              try {
+                const channels = (['gdc', 'aum', 'affiliate', 'override', 'channel'] as const).map(ch => ({
+                  name: ch === 'gdc' ? 'GDC Production' : ch === 'aum' ? 'AUM Advisory' : ch === 'affiliate' ? 'Affiliate' : ch === 'override' ? 'Override' : 'Marketing',
+                  enabled: p.enabledChannels[ch],
+                  splitPct: p.incomeSplits[ch],
+                  target: plan.channels[ch].target,
+                  projected: ch === 'gdc' ? plan.channels.gdc.projected : ch === 'aum' ? plan.channels.aum.detail.projectedIncome : ch === 'affiliate' ? plan.channels.affiliate.totalProjected : ch === 'override' ? plan.channels.override.detail.projectedIncome : plan.channels.channel.detail.projectedAnnualRevenue,
+                  gap: plan.channels[ch].gap,
+                }));
+                const body = {
+                  planName: `${HIER_NAMES[p.role]} Income Plan`,
+                  role: HIER_NAMES[p.role],
+                  generatedAt: new Date().toLocaleDateString(),
+                  targetIncome: p.targetIncome,
+                  totalProjected: plan.totalProjected,
+                  totalGap: plan.totalGap,
+                  channels,
+                  funnel: { approaches: funnel.approaches, factFinds: funnel.factFinds, proposals: funnel.proposals, closes: funnel.closes, avgCaseSize: funnel.avgCaseSize },
+                };
+                const res = await fetch('/api/practice-plan/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                if (!res.ok) throw new Error('PDF generation failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `practice-plan-${Date.now()}.pdf`; a.click();
+                URL.revokeObjectURL(url);
+              } catch { alert('PDF generation failed. Please try again.'); }
+            }}>Download PDF</Button>
             <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
               const exportData: ExportPlanData = {
                 role: p.role, targetIncome: p.targetIncome, incomeSplits: p.incomeSplits,
@@ -1417,6 +1448,28 @@ export function MyPlanPanel(p: PracticeProps) {
         <PlanningHorizonViz points={planningHorizon} targetIncome={p.targetIncome} />
         </>}
 
+        <Separator />
+
+        {/* ─── SECTION 11: Unified P&L Statement ─── */}
+        {isSectionVisible('economics', p.complexity) && <>
+        <SectionHeader>11. Practice P&L Statement
+          <Badge variant="outline" className="ml-2 text-[9px]">Roll-Up</Badge>
+        </SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Combined revenue, COGS, margins, and net income across all channels with GDC bracket analysis.</p>
+        <UnifiedPnLSection plan={plan} economics={economics} taxRate={p.pnlTaxRate / 100} opExPct={p.pnlOpEx > 0 ? p.pnlOpEx / plan.totalProjected : 0.15} />
+        </>}
+
+        <Separator />
+
+        {/* ─── SECTION 12: Roll-Up Visualization ─── */}
+        {isSectionVisible('time-phased', p.complexity) && <>
+        <SectionHeader>12. Roll-Up Revenue Chart
+          <Badge variant="outline" className="ml-2 text-[9px]">Combined</Badge>
+        </SectionHeader>
+        <p className="text-[10px] text-muted-foreground -mt-1 mb-2">Stacked channel revenue over time with target line overlay. Toggle monthly/quarterly/annual views.</p>
+        <RollUpChartSection points={timePhased.points} targetIncome={p.targetIncome} />
+        </>}
+
       </CardContent>
     </Card>
     </section>
@@ -1619,40 +1672,75 @@ function ScenarioManager({ p, plan, funnel }: { p: PracticeProps; plan: ReturnTy
   const [scenarios, setScenarios] = useState<SavedScenario[]>(() => loadScenarios());
   const [newName, setNewName] = useState('');
   const [showCompare, setShowCompare] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  // Database persistence via tRPC
+  const saveMut = trpc.calculatorEngine.saveScenario.useMutation({
+    onSuccess: () => setSyncStatus('saved'),
+    onError: () => setSyncStatus('error'),
+  });
+
+  const buildScenario = (): SavedScenario => ({
+    name: newName.trim() || `Scenario ${scenarios.length + 1}`,
+    savedAt: Date.now(),
+    targetIncome: p.targetIncome,
+    incomeSplits: { ...p.incomeSplits },
+    enabledChannels: { ...p.enabledChannels },
+    role: p.role,
+    targetGDC: p.targetGDC,
+    aumExisting: p.aumExisting,
+    aumNew: p.aumNew,
+    aumTrailPct: p.aumTrailPct,
+    affCounts: { ...p.affCounts },
+    affAvgProd: { ...p.affAvgProd },
+    teamAvgGDC: p.teamAvgGDC,
+    overrideRate: p.overrideRate,
+    cacOverrides: { ...p.cacOverrides },
+    cogsOverrides: { ...p.cogsOverrides },
+    totalProjected: plan.totalProjected,
+    totalGap: plan.totalGap,
+    channelProjections: {
+      gdc: plan.channels.gdc.projected,
+      aum: plan.channels.aum.detail.projectedIncome,
+      affiliate: plan.channels.affiliate.totalProjected,
+      override: plan.channels.override.detail.projectedIncome,
+      channel: plan.channels.channel.detail.projectedAnnualRevenue,
+    },
+  });
 
   const handleSave = () => {
-    const name = newName.trim() || `Scenario ${scenarios.length + 1}`;
-    const scenario: SavedScenario = {
-      name,
-      savedAt: Date.now(),
-      targetIncome: p.targetIncome,
-      incomeSplits: { ...p.incomeSplits },
-      enabledChannels: { ...p.enabledChannels },
-      role: p.role,
-      targetGDC: p.targetGDC,
-      aumExisting: p.aumExisting,
-      aumNew: p.aumNew,
-      aumTrailPct: p.aumTrailPct,
-      affCounts: { ...p.affCounts },
-      affAvgProd: { ...p.affAvgProd },
-      teamAvgGDC: p.teamAvgGDC,
-      overrideRate: p.overrideRate,
-      cacOverrides: { ...p.cacOverrides },
-      cogsOverrides: { ...p.cogsOverrides },
-      totalProjected: plan.totalProjected,
-      totalGap: plan.totalGap,
-      channelProjections: {
-        gdc: plan.channels.gdc.projected,
-        aum: plan.channels.aum.detail.projectedIncome,
-        affiliate: plan.channels.affiliate.totalProjected,
-        override: plan.channels.override.detail.projectedIncome,
-        channel: plan.channels.channel.detail.projectedAnnualRevenue,
-      },
-    };
+    const scenario = buildScenario();
     const next = [...scenarios, scenario];
     setScenarios(next);
     saveScenarios(next);
     setNewName('');
+    // Also persist to database
+    setSyncStatus('saving');
+    saveMut.mutate({
+      name: scenario.name,
+      calculatorType: 'practice_plan',
+      inputsJson: {
+        targetIncome: scenario.targetIncome,
+        incomeSplits: scenario.incomeSplits,
+        enabledChannels: scenario.enabledChannels,
+        role: scenario.role,
+        targetGDC: scenario.targetGDC,
+        aumExisting: scenario.aumExisting,
+        aumNew: scenario.aumNew,
+        aumTrailPct: scenario.aumTrailPct,
+        affCounts: scenario.affCounts,
+        affAvgProd: scenario.affAvgProd,
+        teamAvgGDC: scenario.teamAvgGDC,
+        overrideRate: scenario.overrideRate,
+        cacOverrides: scenario.cacOverrides,
+        cogsOverrides: scenario.cogsOverrides,
+      },
+      resultsJson: {
+        totalProjected: scenario.totalProjected,
+        totalGap: scenario.totalGap,
+        channelProjections: scenario.channelProjections,
+      },
+    });
   };
 
   const handleLoad = (s: SavedScenario) => {
@@ -1686,6 +1774,11 @@ function ScenarioManager({ p, plan, funnel }: { p: PracticeProps; plan: ReturnTy
           <PInput label="Scenario Name" value={newName} onChange={setNewName} />
         </div>
         <Button size="sm" className="h-8 text-[11px]" onClick={handleSave}>Save Current Plan</Button>
+        {syncStatus !== 'idle' && (
+          <span className={`text-[9px] ml-1 ${syncStatus === 'saved' ? 'text-green-400' : syncStatus === 'saving' ? 'text-blue-400' : 'text-amber-400'}`}>
+            {syncStatus === 'saving' ? '⟳ Syncing...' : syncStatus === 'saved' ? '✓ Saved to cloud' : '⚠ Local only'}
+          </span>
+        )}
       </div>
 
       {/* Saved scenarios list */}
@@ -3650,6 +3743,219 @@ function PlanningHorizonViz({ points, targetIncome }: { points: PlanningHorizonP
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   UNIFIED P&L SECTION — Roll-up P&L with bracket analysis
+   ═══════════════════════════════════════════════════════════════ */
+function UnifiedPnLSection({ plan, economics, taxRate, opExPct }: {
+  plan: ReturnType<typeof calcUnifiedIncomePlan>;
+  economics: ChannelEconomics[];
+  taxRate: number;
+  opExPct: number;
+}) {
+  const pnl = useMemo(() => calcUnifiedPnL(plan, economics, taxRate, opExPct), [plan, economics, taxRate, opExPct]);
+
+  const rows: { label: string; value: number; bold?: boolean; indent?: boolean; color?: string; separator?: boolean }[] = [
+    { label: 'GDC Production', value: pnl.gdcRevenue, indent: true },
+    { label: 'AUM/Advisory', value: pnl.aumRevenue, indent: true },
+    { label: 'Affiliate Income', value: pnl.affiliateRevenue, indent: true },
+    { label: 'Team Override', value: pnl.overrideRevenue, indent: true },
+    { label: 'Marketing Channels', value: pnl.channelRevenue, indent: true },
+    { label: 'Total Revenue', value: pnl.totalRevenue, bold: true, color: 'text-blue-400' },
+    { label: '', value: 0, separator: true },
+    { label: 'Cost of Revenue (COGS)', value: -pnl.totalCOGS, indent: true, color: 'text-red-400' },
+    { label: 'Gross Profit', value: pnl.grossProfit, bold: true, color: pnl.grossProfit >= 0 ? 'text-green-400' : 'text-red-400' },
+    { label: `Gross Margin`, value: pnl.grossMarginPct, indent: true },
+    { label: '', value: 0, separator: true },
+    { label: 'Operating Expenses', value: -pnl.opEx, indent: true, color: 'text-red-400' },
+    { label: 'EBITDA', value: pnl.ebitda, bold: true, color: pnl.ebitda >= 0 ? 'text-emerald-400' : 'text-red-400' },
+    { label: `EBITDA Margin`, value: pnl.ebitdaMarginPct, indent: true },
+    { label: '', value: 0, separator: true },
+    { label: `Estimated Tax (${Math.round(taxRate * 100)}%)`, value: -pnl.estimatedTax, indent: true, color: 'text-amber-400' },
+    { label: 'Net Income', value: pnl.netIncome, bold: true, color: pnl.netIncome >= 0 ? 'text-green-300' : 'text-red-400' },
+    { label: `Net Margin`, value: pnl.netMarginPct, indent: true },
+  ];
+
+  return (
+    <div className="space-y-3">
+      {/* P&L Table */}
+      <div className="bg-card/50 rounded-lg border border-border/50 overflow-hidden">
+        <table className="w-full text-[10px]">
+          <thead>
+            <tr className="bg-muted/30">
+              <th className="text-left px-3 py-1.5 font-medium">Line Item</th>
+              <th className="text-right px-3 py-1.5 font-medium">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => r.separator ? (
+              <tr key={i}><td colSpan={2} className="border-t border-border/30 py-0.5" /></tr>
+            ) : (
+              <tr key={i} className={r.bold ? 'bg-muted/20' : ''}>
+                <td className={`px-3 py-1 ${r.indent ? 'pl-6' : ''} ${r.bold ? 'font-bold' : ''} ${r.color || ''}`}>
+                  {r.label}
+                </td>
+                <td className={`text-right px-3 py-1 tabular-nums ${r.bold ? 'font-bold' : ''} ${r.color || ''}`}>
+                  {r.label.includes('Margin') ? `${r.value}%` : fmtSm(r.value)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Channel Breakdown */}
+      <div className="grid grid-cols-5 gap-1">
+        {pnl.channelBreakdown.map(ch => (
+          <div key={ch.channel} className="bg-card/30 rounded p-2 text-center border border-border/30">
+            <div className="text-[8px] text-muted-foreground">{ch.channel}</div>
+            <div className="text-[11px] font-bold tabular-nums">{fmtSm(ch.revenue)}</div>
+            <div className="text-[8px] text-muted-foreground">{ch.marginPct}% margin</div>
+            <div className="text-[8px] text-muted-foreground">{ch.pctOfTotal}% of total</div>
+          </div>
+        ))}
+      </div>
+
+      {/* GDC Bracket Analysis */}
+      <div className="bg-card/30 rounded-lg border border-border/30 p-3">
+        <div className="text-[10px] font-medium mb-1">GDC Bracket Analysis</div>
+        <div className="flex items-center gap-4 text-[10px]">
+          <div>
+            <span className="text-muted-foreground">Current: </span>
+            <span className="font-bold text-blue-400">{pnl.currentBracket.l}</span>
+            <span className="text-muted-foreground ml-1">({pct(pnl.currentBracket.r)} payout)</span>
+          </div>
+          {pnl.nextBracket && (
+            <>
+              <div>
+                <span className="text-muted-foreground">Next: </span>
+                <span className="font-bold text-emerald-400">{pnl.nextBracket.l}</span>
+                <span className="text-muted-foreground ml-1">({pct(pnl.nextBracket.r)} payout)</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Gap: </span>
+                <span className="font-bold text-amber-400">{fmtSm(pnl.gdcToNextBracket)}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Bracket Lift: </span>
+                <span className="font-bold text-green-400">+{fmtSm(pnl.bracketLift)}</span>
+              </div>
+            </>
+          )}
+        </div>
+        {/* Bracket progress bar */}
+        {pnl.nextBracket && (
+          <div className="mt-2">
+            <div className="h-2 bg-muted/30 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all"
+                style={{ width: `${Math.min(100, ((pnl.gdcRevenue - pnl.currentBracket.mn) / (pnl.nextBracket.mn - pnl.currentBracket.mn)) * 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-[8px] text-muted-foreground mt-0.5">
+              <span>{fmtSm(pnl.currentBracket.mn)}</span>
+              <span>{fmtSm(pnl.nextBracket.mn)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ROLL-UP CHART SECTION — Stacked channel revenue over time
+   ═══════════════════════════════════════════════════════════════ */
+function RollUpChartSection({ points, targetIncome }: {
+  points: TimePhasedResult['points'];
+  targetIncome: number;
+}) {
+  const [viewMode, setViewMode] = useState<'monthly' | 'quarterly' | 'annual'>('quarterly');
+
+  const chartData = useMemo(() => calcRollUpChartData(points, targetIncome, viewMode), [points, targetIncome, viewMode]);
+
+  const barData = chartData.labels.map((label, i) => ({
+    label,
+    GDC: chartData.datasets[0].data[i],
+    AUM: chartData.datasets[1].data[i],
+    Affiliate: chartData.datasets[2].data[i],
+    Override: chartData.datasets[3].data[i],
+    Channel: chartData.datasets[4].data[i],
+    total: chartData.totals[i],
+    target: chartData.targetLine[i],
+  }));
+
+  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+  return (
+    <div className="space-y-3">
+      {/* View mode toggle */}
+      <div className="flex gap-1">
+        {(['monthly', 'quarterly', 'annual'] as const).map(mode => (
+          <button
+            key={mode}
+            onClick={() => setViewMode(mode)}
+            className={`px-2 py-0.5 rounded text-[9px] border transition-colors ${
+              viewMode === mode
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card/30 border-border/30 text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* Stacked bar chart */}
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={barData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <XAxis dataKey="label" tick={{ fontSize: 8, fill: '#888' }} />
+            <YAxis tick={{ fontSize: 8, fill: '#888' }} tickFormatter={v => `$${Math.round(v / 1000)}K`} />
+            <Tooltip
+              contentStyle={{ background: '#1a1a2e', border: '1px solid #333', borderRadius: 8, fontSize: 10 }}
+              formatter={(v: number, name: string) => [fmtSm(v), name]}
+            />
+            <Legend wrapperStyle={{ fontSize: 9 }} />
+            <Bar dataKey="GDC" stackId="a" fill={colors[0]} />
+            <Bar dataKey="AUM" stackId="a" fill={colors[1]} />
+            <Bar dataKey="Affiliate" stackId="a" fill={colors[2]} />
+            <Bar dataKey="Override" stackId="a" fill={colors[3]} />
+            <Bar dataKey="Channel" stackId="a" fill={colors[4]} />
+            <Line type="monotone" dataKey="target" stroke="#ef4444" strokeDasharray="5 5" strokeWidth={2} dot={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="bg-card/30 rounded p-2 text-center border border-border/30">
+          <div className="text-[8px] text-muted-foreground">Total Projected</div>
+          <div className="text-[11px] font-bold text-blue-400 tabular-nums">{fmtSm(chartData.totals.reduce((s, v) => s + v, 0))}</div>
+        </div>
+        <div className="bg-card/30 rounded p-2 text-center border border-border/30">
+          <div className="text-[8px] text-muted-foreground">Avg {viewMode === 'monthly' ? 'Monthly' : viewMode === 'quarterly' ? 'Quarterly' : 'Annual'}</div>
+          <div className="text-[11px] font-bold text-emerald-400 tabular-nums">{fmtSm(Math.round(chartData.totals.reduce((s, v) => s + v, 0) / Math.max(1, chartData.totals.length)))}</div>
+        </div>
+        <div className="bg-card/30 rounded p-2 text-center border border-border/30">
+          <div className="text-[8px] text-muted-foreground">Target</div>
+          <div className="text-[11px] font-bold text-amber-400 tabular-nums">{fmtSm(chartData.targetLine.reduce((s, v) => s + v, 0))}</div>
+        </div>
+        <div className="bg-card/30 rounded p-2 text-center border border-border/30">
+          <div className="text-[8px] text-muted-foreground">Variance</div>
+          {(() => {
+            const totalProj = chartData.totals.reduce((s, v) => s + v, 0);
+            const totalTgt = chartData.targetLine.reduce((s, v) => s + v, 0);
+            const variance = totalProj - totalTgt;
+            return <div className={`text-[11px] font-bold tabular-nums ${variance >= 0 ? 'text-green-400' : 'text-red-400'}`}>{variance >= 0 ? '+' : ''}{fmtSm(variance)}</div>;
+          })()}
+        </div>
+      </div>
     </div>
   );
 }

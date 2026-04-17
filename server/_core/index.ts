@@ -475,6 +475,22 @@ async function startServer() {
     buildApiV1Router({ validate: defaultEnvValidator() }),
   );
 
+  // ─── Practice Plan PDF Generation ───────────────────────────────────
+  app.post("/api/practice-plan/pdf", generalLimiter, async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      const { generatePracticePlanPdf } = await import("../services/practicePlanPdf");
+      const pdfBuffer = await generatePracticePlanPdf(req.body);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="practice-plan-${Date.now()}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (err: any) {
+      logger.error({ operation: 'pdf.generate', error: err.message }, '[PDF] Generation failed');
+      res.status(500).json({ error: 'PDF generation failed' });
+    }
+  });
+
   // ─── tRPC API with sensitive route rate limiting ─────────────────────
   app.use("/api/trpc", sensitiveTrpcGuard);
   app.use(

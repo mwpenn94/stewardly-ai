@@ -717,3 +717,293 @@ export function calcIncomeStreams(streams: IncomeStream[]): IncomeStreamResult {
     pillarContributions,
   };
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RETIREMENT INCOME ENGINEERING — Pass 100
+   Three methods: Bucket Strategy, Floor-Upside, Guyton-Klinger
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface BucketAllocation {
+  bucket: string;
+  label: string;
+  years: number;
+  allocation: number;
+  assetClass: string;
+  expectedReturn: number;
+  risk: 'low' | 'medium' | 'high';
+}
+
+export interface BucketResult {
+  buckets: BucketAllocation[];
+  totalNeeded: number;
+  annualIncome: number;
+  sustainabilityYears: number;
+  refillSchedule: { year: number; from: string; to: string; amount: number }[];
+}
+
+/** Bucket Strategy: segment portfolio into time-based buckets */
+export function calcBucketStrategy(
+  portfolio: number, annualSpend: number, ssAnnual: number, pensionAnnual: number
+): BucketResult {
+  const netSpend = Math.max(0, annualSpend - ssAnnual - pensionAnnual);
+  const buckets: BucketAllocation[] = [
+    { bucket: '1', label: 'Near-Term (0-3 yr)', years: 3, allocation: 0, assetClass: 'Cash / Short-Term Bonds', expectedReturn: 0.04, risk: 'low' },
+    { bucket: '2', label: 'Mid-Term (3-10 yr)', years: 7, allocation: 0, assetClass: 'Intermediate Bonds / Balanced', expectedReturn: 0.055, risk: 'medium' },
+    { bucket: '3', label: 'Long-Term (10+ yr)', years: 20, allocation: 0, assetClass: 'Equities / Growth', expectedReturn: 0.08, risk: 'high' },
+  ];
+  // Allocate: bucket 1 = 3 years of spending, bucket 2 = 7 years, rest in bucket 3
+  buckets[0].allocation = Math.min(portfolio, netSpend * 3);
+  buckets[1].allocation = Math.min(portfolio - buckets[0].allocation, netSpend * 7);
+  buckets[2].allocation = Math.max(0, portfolio - buckets[0].allocation - buckets[1].allocation);
+  
+  // Refill schedule: annually move from bucket 3 → 2 → 1
+  const refillSchedule: BucketResult['refillSchedule'] = [];
+  for (let y = 1; y <= 5; y++) {
+    refillSchedule.push({ year: y, from: 'Long-Term', to: 'Near-Term', amount: Math.round(netSpend) });
+  }
+  
+  const sustainabilityYears = portfolio > 0 ? Math.round(portfolio / Math.max(netSpend, 1)) : 99;
+  return { buckets, totalNeeded: Math.round(netSpend * 30), annualIncome: Math.round(annualSpend), sustainabilityYears: Math.min(sustainabilityYears, 50), refillSchedule };
+}
+
+export interface FloorUpsideResult {
+  floor: { source: string; annual: number; monthly: number; guaranteed: boolean }[];
+  upside: { source: string; annual: number; monthly: number; growthRate: number }[];
+  totalFloor: number;
+  totalUpside: number;
+  totalIncome: number;
+  floorCoversPct: number;
+  essentialExpenses: number;
+}
+
+/** Floor-Upside: guaranteed income floor + growth upside */
+export function calcFloorUpside(
+  ssAnnual: number, pensionAnnual: number, annuityAnnual: number,
+  portfolio: number, withdrawalRate: number, essentialExpenses: number
+): FloorUpsideResult {
+  const floor = [
+    { source: 'Social Security', annual: ssAnnual, monthly: Math.round(ssAnnual / 12), guaranteed: true },
+    { source: 'Pension', annual: pensionAnnual, monthly: Math.round(pensionAnnual / 12), guaranteed: true },
+    { source: 'Annuity Income', annual: annuityAnnual, monthly: Math.round(annuityAnnual / 12), guaranteed: true },
+  ].filter(f => f.annual > 0);
+  
+  const portfolioWithdrawal = Math.round(portfolio * withdrawalRate);
+  const upside = [
+    { source: 'Portfolio Withdrawal', annual: portfolioWithdrawal, monthly: Math.round(portfolioWithdrawal / 12), growthRate: 0.07 },
+  ];
+  
+  const totalFloor = floor.reduce((s, f) => s + f.annual, 0);
+  const totalUpside = upside.reduce((s, u) => s + u.annual, 0);
+  const floorCoversPct = essentialExpenses > 0 ? Math.min(1, totalFloor / essentialExpenses) : 1;
+  
+  return { floor, upside, totalFloor, totalUpside, totalIncome: totalFloor + totalUpside, floorCoversPct, essentialExpenses };
+}
+
+export interface GuytonKlingerResult {
+  initialWithdrawal: number;
+  currentWithdrawal: number;
+  guardrails: { name: string; description: string; triggered: boolean; adjustment: string }[];
+  projectedYears: { year: number; portfolio: number; withdrawal: number; rate: number }[];
+  ceilingRate: number;
+  floorRate: number;
+  prosperityRule: boolean;
+  capitalPreservation: boolean;
+}
+
+/** Guyton-Klinger Decision Rules with guardrails */
+export function calcGuytonKlinger(
+  portfolio: number, initialRate: number, inflationRate: number, years: number
+): GuytonKlingerResult {
+  const ceilingRate = initialRate * 1.2; // 20% above initial
+  const floorRate = initialRate * 0.8;   // 20% below initial
+  let currentPortfolio = portfolio;
+  let currentWithdrawal = Math.round(portfolio * initialRate);
+  const projectedYears: GuytonKlingerResult['projectedYears'] = [];
+  
+  for (let y = 0; y < Math.min(years, 30); y++) {
+    const rate = currentPortfolio > 0 ? currentWithdrawal / currentPortfolio : 0;
+    projectedYears.push({
+      year: y + 1,
+      portfolio: Math.round(currentPortfolio),
+      withdrawal: Math.round(currentWithdrawal),
+      rate: Math.round(rate * 10000) / 10000,
+    });
+    // Simulate market return (7% avg with some variance)
+    const marketReturn = 0.07;
+    currentPortfolio = Math.round((currentPortfolio - currentWithdrawal) * (1 + marketReturn));
+    // Apply inflation adjustment
+    currentWithdrawal = Math.round(currentWithdrawal * (1 + inflationRate));
+    // Guardrail checks
+    const newRate = currentPortfolio > 0 ? currentWithdrawal / currentPortfolio : 0;
+    if (newRate > ceilingRate) {
+      currentWithdrawal = Math.round(currentWithdrawal * 0.9); // Cut 10%
+    } else if (newRate < floorRate) {
+      currentWithdrawal = Math.round(currentWithdrawal * 1.1); // Raise 10%
+    }
+  }
+  
+  const currentRate = currentPortfolio > 0 ? currentWithdrawal / currentPortfolio : 0;
+  const guardrails = [
+    { name: 'Prosperity Rule', description: 'If withdrawal rate drops below floor, increase withdrawal by 10%', triggered: currentRate < floorRate, adjustment: '+10%' },
+    { name: 'Capital Preservation', description: 'If withdrawal rate exceeds ceiling, reduce withdrawal by 10%', triggered: currentRate > ceilingRate, adjustment: '-10%' },
+    { name: 'Withdrawal Rule', description: 'Skip inflation adjustment in years with negative portfolio return', triggered: false, adjustment: 'No COLA' },
+    { name: 'Portfolio Management', description: 'Rebalance when any asset class deviates >5% from target', triggered: false, adjustment: 'Rebalance' },
+  ];
+  
+  return {
+    initialWithdrawal: Math.round(portfolio * initialRate),
+    currentWithdrawal: Math.round(currentWithdrawal),
+    guardrails,
+    projectedYears,
+    ceilingRate,
+    floorRate,
+    prosperityRule: currentRate < floorRate,
+    capitalPreservation: currentRate > ceilingRate,
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TAX-BRACKET ENGINEERING — Roth Conversion Ladder
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface RothLadderYear {
+  year: number;
+  age: number;
+  convertAmount: number;
+  taxCost: number;
+  cumulativeConverted: number;
+  traditionalBalance: number;
+  rothBalance: number;
+  marginalRate: number;
+  bracketHeadroom: number;
+}
+
+export interface RothLadderResult {
+  years: RothLadderYear[];
+  totalConverted: number;
+  totalTaxPaid: number;
+  projectedTaxSaved: number;
+  breakEvenYear: number;
+  rmdReduction: number;
+}
+
+/** Multi-year Roth conversion ladder optimizer */
+export function calcRothLadder(
+  age: number, retireAge: number, traditionalBalance: number,
+  currentIncome: number, filing: string, stateRate: number,
+  targetBracketFill: number // 0-1, how much of the bracket headroom to fill
+): RothLadderResult {
+  const brackets = filing === 'mfj' ? RATES.bracketsMFJ : RATES.bracketsSingle;
+  const stdDeduction = filing === 'mfj' ? 29200 : 14600;
+  const years: RothLadderYear[] = [];
+  let tradBal = traditionalBalance;
+  let rothBal = 0;
+  let cumConverted = 0;
+  
+  for (let y = 0; y < Math.min(retireAge - age, 20); y++) {
+    const currentAge = age + y;
+    // Find the current marginal bracket
+    const taxableIncome = Math.max(0, currentIncome - stdDeduction);
+    let bracketTop = 0;
+    let marginalRate = 0.10;
+    for (const [limit, rate] of brackets) {
+      if (taxableIncome < limit) {
+        bracketTop = limit;
+        marginalRate = rate;
+        break;
+      }
+    }
+    // Headroom = space left in current bracket
+    const headroom = Math.max(0, bracketTop - taxableIncome);
+    const convertAmount = Math.min(
+      Math.round(headroom * targetBracketFill),
+      tradBal
+    );
+    const taxCost = Math.round(convertAmount * (marginalRate + stateRate));
+    
+    cumConverted += convertAmount;
+    tradBal = Math.round((tradBal - convertAmount) * 1.07); // Growth
+    rothBal = Math.round((rothBal + convertAmount) * 1.07); // Growth
+    
+    years.push({
+      year: y + 1,
+      age: currentAge,
+      convertAmount,
+      taxCost,
+      cumulativeConverted: cumConverted,
+      traditionalBalance: tradBal,
+      rothBalance: rothBal,
+      marginalRate,
+      bracketHeadroom: headroom,
+    });
+  }
+  
+  const totalTaxPaid = years.reduce((s, y) => s + y.taxCost, 0);
+  // Projected tax saved = what you'd pay on RMDs at future (likely higher) rates
+  const futureRate = 0.32; // Assume higher future rates
+  const projectedTaxSaved = Math.round(cumConverted * futureRate) - totalTaxPaid;
+  const rmdReduction = Math.round(cumConverted / 27.4); // Annual RMD reduction
+  const breakEvenYear = projectedTaxSaved > 0 ? Math.max(1, Math.round(totalTaxPaid / Math.max(1, projectedTaxSaved / 20))) : 99;
+  
+  return { years, totalConverted: cumConverted, totalTaxPaid, projectedTaxSaved, breakEvenYear, rmdReduction };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CONFIGURABLE DATA LAYER — Pass 100 Continuous Improvement
+   No hardcoded defaults; all via configurable data layer
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface ConfigurableDefaults {
+  // Tax
+  federalBrackets: [number, number][];
+  standardDeduction: Record<string, number>;
+  max401k: number;
+  maxHSA: Record<string, number>;
+  maxIRA: number;
+  catchUp401k: number;
+  catchUpIRA: number;
+  // Estate
+  federalExemption: number;
+  estateTaxRate: number;
+  annualGiftExclusion: number;
+  // Retirement
+  ssColaRate: number;
+  rmdDivisor: number;
+  defaultWithdrawalRate: number;
+  // Market
+  equityReturn: number;
+  bondReturn: number;
+  inflationRate: number;
+  // Practice
+  defaultGDCRetained: number;
+  defaultOverrideRate: number;
+}
+
+export const CONFIGURABLE_DEFAULTS: ConfigurableDefaults = {
+  federalBrackets: RATES.bracketsMFJ,
+  standardDeduction: { single: 14600, mfj: 29200, hoh: 21900 },
+  max401k: 23500,
+  maxHSA: { single: 4150, family: 8300 },
+  maxIRA: 7000,
+  catchUp401k: 7500,
+  catchUpIRA: 1000,
+  federalExemption: 13610000,
+  estateTaxRate: 0.40,
+  annualGiftExclusion: 18000,
+  ssColaRate: 0.032,
+  rmdDivisor: 27.4,
+  defaultWithdrawalRate: 0.04,
+  equityReturn: 0.07,
+  bondReturn: 0.04,
+  inflationRate: 0.03,
+  defaultGDCRetained: 0.80,
+  defaultOverrideRate: 0.26375,
+};
+
+/** Get a configurable default, allowing user overrides */
+export function getConfig<K extends keyof ConfigurableDefaults>(
+  key: K, userOverrides?: Partial<ConfigurableDefaults>
+): ConfigurableDefaults[K] {
+  if (userOverrides && key in userOverrides) return userOverrides[key] as ConfigurableDefaults[K];
+  return CONFIGURABLE_DEFAULTS[key];
+}

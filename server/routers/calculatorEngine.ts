@@ -15,6 +15,10 @@ import { BIE } from "../engines/bie";
 import { HE } from "../engines/he";
 import { PRESETS as HE_SHARED_PRESETS } from "../shared/calculators/he";
 import { SCUI } from "../shared/calculators/scui";
+import {
+  listCalculatorSessions, getCalculatorSession,
+  saveCalculatorSession, updateCalculatorSession, deleteCalculatorSession,
+} from "../db";
 import type {
   CompanyKey, RoleKey, SeasonalityKey, FrequencyKey,
   ClientProfile, StrategyConfig, BIEStrategy,
@@ -412,4 +416,58 @@ export const calculatorEngineRouter = router({
   sp500History: publicProcedure.query(() => {
     return Object.entries(SCUI.SP500_HISTORY).map(([year, ret]) => ({ year: Number(year), return: ret as number }));
   }),
+
+  // ─── SCENARIO PERSISTENCE (auto-save/load/delete) ─────────────────
+  listScenarios: protectedProcedure
+    .input(z.object({ calculatorType: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const all = await listCalculatorSessions(ctx.user.id);
+      if (input?.calculatorType) return all.filter(s => s.calculatorType === input.calculatorType);
+      return all;
+    }),
+
+  getScenario: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ ctx, input }) => {
+      return getCalculatorSession(input.id, ctx.user.id);
+    }),
+
+  saveScenario: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(256),
+      calculatorType: z.string().min(1).max(64),
+      inputsJson: z.any(),
+      resultsJson: z.any().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return saveCalculatorSession(ctx.user.id, {
+        name: input.name,
+        calculatorType: input.calculatorType,
+        inputsJson: input.inputsJson,
+        resultsJson: input.resultsJson ?? null,
+      });
+    }),
+
+  updateScenario: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1).max(256).optional(),
+      inputsJson: z.any().optional(),
+      resultsJson: z.any().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const data: Record<string, any> = {};
+      if (input.name !== undefined) data.name = input.name;
+      if (input.inputsJson !== undefined) data.inputsJson = input.inputsJson;
+      if (input.resultsJson !== undefined) data.resultsJson = input.resultsJson;
+      await updateCalculatorSession(input.id, ctx.user.id, data);
+      return { success: true };
+    }),
+
+  deleteScenario: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      await deleteCalculatorSession(input.id, ctx.user.id);
+      return { success: true };
+    }),
 });
