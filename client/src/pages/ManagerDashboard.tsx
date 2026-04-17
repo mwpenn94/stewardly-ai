@@ -42,7 +42,7 @@ export default function ManagerDashboard() {
     return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>;
   }
 
-  const pendingItems = reviewQueue.data || [];
+  const pendingItems = reviewQueue || [];
   const pendingCount = pendingItems.length;
   const auditItems = auditTrail.data || [];
   const stats = feedbackStats.data || { total: 0, up: 0, down: 0 };

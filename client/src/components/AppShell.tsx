@@ -17,6 +17,7 @@ import { useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
 import { recordPageVisit } from "@/hooks/useRecentPages";
+import { MarketTicker } from "@/components/MarketTicker";
 // Build Loop Pass 9 (G56): the old nav import block, ICON_MAP, getIcon,
 // and ~300 lines of sidebarContent / renderNavItem / renderSectionedTools
 // were deleted because PersonaSidebar5 fully replaces them. AppShell now
@@ -287,6 +288,7 @@ export default function AppShell({ children, title }: AppShellProps) {
           aria-label="Main content"
           aria-busy={globalBusy ? true : undefined}
         >
+          <MarketTicker />
           <PageBreadcrumb className="px-4 pt-3 pb-1" />
           {children}
         </main>

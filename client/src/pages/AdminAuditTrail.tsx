@@ -116,6 +116,7 @@ export default function AdminAuditTrail() {
               data={filtered}
               filename="audit-trail"
               columns={["actionType", "featureId", "actorId", "targetUserId", "previousValue", "newValue", "reason", "createdAt"]}
+              label="Export CSV"
             />
           </div>
         </header>

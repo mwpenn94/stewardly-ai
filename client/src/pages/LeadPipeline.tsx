@@ -92,9 +92,6 @@ export default function LeadPipeline() {
       return next;
     });
   }, []);
-  const selectAll = useCallback(() => {
-    setSelectedIds(new Set(filtered.map((l: any) => l.id)));
-  }, [filtered]);
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
   const pipelineQ = trpc.leadPipeline.getPipeline.useQuery(
@@ -136,6 +133,10 @@ export default function LeadPipeline() {
       return true;
     });
   }, [leads, search, sourceFilter]);
+
+  const selectAll = useCallback(() => {
+    setSelectedIds(new Set(filtered.map((l: any) => l.id)));
+  }, [filtered]);
 
   const byColumn = useMemo(() => {
     const map: Record<string, typeof filtered> = {};

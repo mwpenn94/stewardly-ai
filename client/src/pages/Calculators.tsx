@@ -36,7 +36,7 @@ import { IncomeStreamsPanel } from './calculators/PanelsF';
 import { CalcNarrator } from './calculators/CalcNarrator';
 import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, GoalTrackerPanel, MonthlyProductionPanel, type PracticeProps } from './calculators/PanelsD';
 import { AUMOverrideCascadePanel, AUMPipelinePanel, AffiliatePipelinePanel } from './calculators/PanelsG';
-import { ProductionOptPanel, ChannelDiversPanel, MarketingROIPanel } from './calculators/PanelsH';
+import { ProductionOptPanel, ChannelDiversPanel, MarketingROIPanel, RecruitingFunnelPanel, PnLBusinessEconomicsPanel, GDCOverrideOptPanel } from './calculators/PanelsH';
 import { BalanceSheetPanel, DebtManagementPanel, TrustEngineeringPanel, GovernanceIPSPanel, MonteCarloPanel, StockCompPanel } from './calculators/PanelsI';
 import { PremiumFinancingPanel, ILITTrustPanel, ExecCompPanel, CharitablePlanningPanel, DueDiligencePanel } from './calculators/PanelsJ';
 import {
@@ -53,7 +53,7 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl' |
   'goaltracker' | 'monthlyproduction' | 'partner' | 'income' |
   'aumoverride' | 'aumpipeline' | 'affiliatepipeline' |
-  'prodopt' | 'chandivers' | 'mktgroi' |
+  'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
   'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence';
 
@@ -75,6 +75,9 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'prodopt' as PanelId, label: 'Production Optimization', icon: <Target className="w-4 h-4" /> },
     { id: 'chandivers' as PanelId, label: 'Channel Diversification', icon: <PieChart className="w-4 h-4" /> },
     { id: 'mktgroi' as PanelId, label: 'Marketing ROI', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'recruitfunnel' as PanelId, label: 'Recruiting Funnel', icon: <Users className="w-4 h-4" /> },
+    { id: 'pnlbizecon' as PanelId, label: 'Business P&L', icon: <Receipt className="w-4 h-4" /> },
+    { id: 'gdcoverride' as PanelId, label: 'GDC/Override Opt', icon: <Layers className="w-4 h-4" /> },
   ]},
   { group: 'Client Planning', items: [
     { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
@@ -1283,6 +1286,9 @@ export default function Calculators() {
           {activePanel === 'prodopt' && <ProductionOptPanel />}
           {activePanel === 'chandivers' && <ChannelDiversPanel />}
           {activePanel === 'mktgroi' && <MarketingROIPanel />}
+          {activePanel === 'recruitfunnel' && <RecruitingFunnelPanel />}
+          {activePanel === 'pnlbizecon' && <PnLBusinessEconomicsPanel />}
+          {activePanel === 'gdcoverride' && <GDCOverrideOptPanel />}
           {activePanel === 'balancesheet' && <BalanceSheetPanel nw={nw} savings={savings} retirement401k={retirement401k} mortgage={mortgage} debt={debt} />}
           {activePanel === 'debtmgmt' && <DebtManagementPanel mortgage={mortgage} debt={debt} income={income} />}
           {activePanel === 'trusteng' && <TrustEngineeringPanel grossEstate={grossEstate} exemption={exemption} />}

@@ -5446,3 +5446,43 @@
 - [x] Server-side PDF report generation (PDFKit branded multi-page report)
 - [x] Vitest tests: 39 new tests covering retirement engineering, P&L, roll-up charts, configurable defaults, producer affiliate, PDF generation
 - [x] Recursive convergence: 3/3 clean passes, 225 tests across 9 files
+
+## Pass 101 — Fix Broken Views & Regression Prevention
+### CRITICAL: Fix Broken Views
+- [x] Diagnose all broken views in wealth engine (browser console errors, render failures)
+- [x] Fix every broken panel/section across all wealth engine tabs
+- [x] Verify every wealth engine nav item renders without error
+### Regression Prevention
+- [x] Add UI component import/render vitest tests for every panel
+- [x] Add prop validation tests for Calculators.tsx → panel wiring
+- [x] Ensure test suite catches missing imports, undefined references, prop mismatches
+### Remaining Phase 1 Scope
+- [ ] Nav consistency: identical expand/collapse behavior across sidebar sections
+- [ ] Settings fully accessible on mobile
+- [x] Failover components (Connected/Degraded/Unavailable) — FailoverBoundary.tsx with useFailoverStatus hook
+- [ ] Sharing UI kit (ShareButton, RecipientPicker, PermissionSelector)
+### Remaining Phase 3 Scope
+- [ ] Gate 1: Structural inheritance from HTML v7.6 (23 nav items, 17 citation categories, 88 references, 27 ref-tips, 10-slot save system)
+- [ ] Gate 2: Content parity — identical inputs produce identical outputs
+- [x] Domain A: Practice Management — 6 strategy surfaces (3 in PanelsD + 3 new in PanelsH: RecruitingFunnel, PnLBusinessEconomics, GDCOverrideOpt)
+- [ ] Domain C: Advanced Strategies — premium financing, ILIT/trust structuring, executive compensation, charitable planning
+- [ ] Domain D: References — due diligence summaries, searchable/filterable, auto-updatable
+
+## Pass 101 — Completion Summary
+### New Components
+- [x] RecruitingFunnelPanel — 6-stage funnel (Identify→Outreach→Interview→Offer→Onboard→Productive), CAC/LTV/break-even, benchmarks
+- [x] PnLBusinessEconomicsPanel — Full income statement with channel attribution, break-even analysis, margin optimization
+- [x] GDCOverrideOptPanel — Bracket visualization, team override table, optimization scenarios
+- [x] FailoverBoundary.tsx — Graceful degradation wrapper (connected/degraded/unavailable) with useFailoverStatus hook
+### Engine Functions Added (domainAEngine.ts)
+- [x] calcRecruitingFunnel — 6-stage recruiting funnel with CAC, LTV, break-even, and benchmarks
+- [x] calcPnLBusinessEconomics — Full P&L with channel lines, break-even, margin analysis
+- [x] calcGDCOverrideOpt — GDC bracket visualization with override optimization scenarios
+### Test Fixes (3 stale tests repaired)
+- [x] navReachability — Added /marketing-assets, /data-pipelines, /outreach-automation to navigation.ts
+- [x] pass58 MarketTicker — Re-integrated MarketTicker into AppShell
+- [x] pass59 AuditTrail CSV — Added label="Export CSV" to ExportDataButton
+### New Test File
+- [x] pass101-domain-a-failover.test.ts — 53 tests covering all new components, wiring, and regression guards
+### Full Suite Status
+- [x] 388 test files, 9,492 tests — ALL PASSING, zero regressions

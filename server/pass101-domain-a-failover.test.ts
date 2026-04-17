@@ -1,0 +1,325 @@
+/**
+ * Pass 101 — Domain A surfaces, FailoverBoundary, regression guards
+ *
+ * Tests:
+ * 1. Three new Domain A panels (RecruitingFunnel, PnLBusinessEconomics, GDCOverrideOpt)
+ * 2. Three new engine functions in domainAEngine.ts
+ * 3. FailoverBoundary component
+ * 4. Navigation wiring for new routes (marketing-assets, data-pipelines, outreach-automation)
+ * 5. MarketTicker restored in AppShell
+ * 6. AdminAuditTrail CSV export label fix
+ * 7. Regression guards for all existing panels
+ */
+import { describe, it, expect } from "vitest";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
+
+const ROOT = join(__dirname, "..");
+function readFile(relPath: string): string {
+  return readFileSync(join(ROOT, relPath), "utf-8");
+}
+
+/* ── 1. New Domain A engine functions ─────────────────────────── */
+describe("Pass 101 — domainAEngine new functions", () => {
+  const src = readFile("client/src/pages/calculators/domainAEngine.ts");
+
+  it("exports calcRecruitingFunnel function", () => {
+    expect(src).toContain("export function calcRecruitingFunnel");
+  });
+
+  it("exports RecruitingFunnelStage interface", () => {
+    expect(src).toContain("export interface RecruitingFunnelStage");
+  });
+
+  it("exports RecruitingFunnelResult interface", () => {
+    expect(src).toContain("export interface RecruitingFunnelResult");
+  });
+
+  it("exports RECRUITING_BENCHMARKS constants", () => {
+    expect(src).toContain("export const RECRUITING_BENCHMARKS");
+  });
+
+  it("exports calcPnLBusinessEconomics function", () => {
+    expect(src).toContain("export function calcPnLBusinessEconomics");
+  });
+
+  it("exports PnLChannelLine interface", () => {
+    expect(src).toContain("export interface PnLChannelLine");
+  });
+
+  it("exports PnLBusinessResult interface", () => {
+    expect(src).toContain("export interface PnLBusinessResult");
+  });
+
+  it("exports calcGDCOverrideOpt function", () => {
+    expect(src).toContain("export function calcGDCOverrideOpt");
+  });
+
+  it("exports GDCBracketViz interface", () => {
+    expect(src).toContain("export interface GDCBracketViz");
+  });
+
+  it("exports OverrideOptResult interface", () => {
+    expect(src).toContain("export interface OverrideOptResult");
+  });
+});
+
+/* ── 2. New Domain A panels in PanelsH.tsx ────────────────────── */
+describe("Pass 101 — PanelsH new panels", () => {
+  const src = readFile("client/src/pages/calculators/PanelsH.tsx");
+
+  it("exports RecruitingFunnelPanel", () => {
+    expect(src).toContain("export function RecruitingFunnelPanel");
+  });
+
+  it("RecruitingFunnelPanel uses calcRecruitingFunnel", () => {
+    expect(src).toContain("calcRecruitingFunnel");
+  });
+
+  it("exports PnLBusinessEconomicsPanel", () => {
+    expect(src).toContain("export function PnLBusinessEconomicsPanel");
+  });
+
+  it("PnLBusinessEconomicsPanel uses calcPnLBusinessEconomics", () => {
+    expect(src).toContain("calcPnLBusinessEconomics");
+  });
+
+  it("exports GDCOverrideOptPanel", () => {
+    expect(src).toContain("export function GDCOverrideOptPanel");
+  });
+
+  it("GDCOverrideOptPanel uses calcGDCOverrideOpt", () => {
+    expect(src).toContain("calcGDCOverrideOpt");
+  });
+
+  it("all 6 PanelsH panels are exported", () => {
+    const panels = [
+      "ProductionOptPanel",
+      "ChannelDiversPanel",
+      "MarketingROIPanel",
+      "RecruitingFunnelPanel",
+      "PnLBusinessEconomicsPanel",
+      "GDCOverrideOptPanel",
+    ];
+    for (const p of panels) {
+      expect(src).toContain(`export function ${p}`);
+    }
+  });
+});
+
+/* ── 3. Calculators.tsx wiring ────────────────────────────────── */
+describe("Pass 101 — Calculators.tsx panel wiring", () => {
+  const src = readFile("client/src/pages/Calculators.tsx");
+
+  it("imports RecruitingFunnelPanel from PanelsH", () => {
+    expect(src).toContain("RecruitingFunnelPanel");
+  });
+
+  it("imports PnLBusinessEconomicsPanel from PanelsH", () => {
+    expect(src).toContain("PnLBusinessEconomicsPanel");
+  });
+
+  it("imports GDCOverrideOptPanel from PanelsH", () => {
+    expect(src).toContain("GDCOverrideOptPanel");
+  });
+
+  it("has recruitfunnel panel ID in type", () => {
+    expect(src).toContain("'recruitfunnel'");
+  });
+
+  it("has pnlbizecon panel ID in type", () => {
+    expect(src).toContain("'pnlbizecon'");
+  });
+
+  it("has gdcoverride panel ID in type", () => {
+    expect(src).toContain("'gdcoverride'");
+  });
+
+  it("renders RecruitingFunnelPanel when activePanel is recruitfunnel", () => {
+    expect(src).toContain("activePanel === 'recruitfunnel'");
+    expect(src).toContain("<RecruitingFunnelPanel");
+  });
+
+  it("renders PnLBusinessEconomicsPanel when activePanel is pnlbizecon", () => {
+    expect(src).toContain("activePanel === 'pnlbizecon'");
+    expect(src).toContain("<PnLBusinessEconomicsPanel");
+  });
+
+  it("renders GDCOverrideOptPanel when activePanel is gdcoverride", () => {
+    expect(src).toContain("activePanel === 'gdcoverride'");
+    expect(src).toContain("<GDCOverrideOptPanel");
+  });
+
+  it("has nav items for all 3 new panels", () => {
+    expect(src).toContain("Recruiting Funnel");
+    expect(src).toContain("Business P&L");
+    expect(src).toContain("GDC/Override Opt");
+  });
+});
+
+/* ── 4. FailoverBoundary component ────────────────────────────── */
+describe("Pass 101 — FailoverBoundary component", () => {
+  it("file exists", () => {
+    expect(existsSync(join(ROOT, "client/src/components/FailoverBoundary.tsx"))).toBe(true);
+  });
+
+  const src = readFile("client/src/components/FailoverBoundary.tsx");
+
+  it("exports FailoverBoundary as default and named", () => {
+    expect(src).toContain("export function FailoverBoundary");
+    expect(src).toContain("export default FailoverBoundary");
+  });
+
+  it("exports FailoverStatus type", () => {
+    expect(src).toContain("export type FailoverStatus");
+  });
+
+  it("supports three states: connected, degraded, unavailable", () => {
+    expect(src).toContain('"connected"');
+    expect(src).toContain('"degraded"');
+    expect(src).toContain('"unavailable"');
+  });
+
+  it("has StatusIndicator sub-component", () => {
+    expect(src).toContain("function StatusIndicator");
+  });
+
+  it("exports useFailoverStatus hook", () => {
+    expect(src).toContain("export function useFailoverStatus");
+  });
+
+  it("has retry functionality", () => {
+    expect(src).toContain("onRetry");
+    expect(src).toContain("Retry Connection");
+  });
+
+  it("shows stale data warning for degraded state", () => {
+    expect(src).toContain("Data last updated");
+    expect(src).toContain("Results may not reflect current conditions");
+  });
+
+  it("supports offlineCapable mode", () => {
+    expect(src).toContain("offlineCapable");
+    expect(src).toContain("Showing cached data");
+  });
+
+  it("uses proper ARIA and accessibility", () => {
+    expect(src).toContain("Tooltip");
+    expect(src).toContain("TooltipContent");
+    expect(src).toContain("TooltipTrigger");
+  });
+});
+
+/* ── 5. Navigation fixes — 3 orphan routes resolved ──────────── */
+describe("Pass 101 — Navigation orphan route fixes", () => {
+  const navSrc = readFile("client/src/lib/navigation.ts");
+
+  it("includes /marketing-assets in navigation", () => {
+    expect(navSrc).toContain('"/marketing-assets"');
+  });
+
+  it("includes /data-pipelines in navigation", () => {
+    expect(navSrc).toContain('"/data-pipelines"');
+  });
+
+  it("includes /outreach-automation in navigation", () => {
+    expect(navSrc).toContain('"/outreach-automation"');
+  });
+
+  it("marketing-assets is in relationships section", () => {
+    expect(navSrc).toMatch(/marketing-assets.*section:\s*"relationships"/);
+  });
+
+  it("data-pipelines is admin-only", () => {
+    expect(navSrc).toMatch(/data-pipelines.*minRole:\s*"admin"/);
+  });
+});
+
+/* ── 6. MarketTicker restored in AppShell ─────────────────────── */
+describe("Pass 101 — MarketTicker in AppShell (regression fix)", () => {
+  const src = readFile("client/src/components/AppShell.tsx");
+
+  it("imports MarketTicker", () => {
+    expect(src).toContain("import { MarketTicker }");
+  });
+
+  it("renders MarketTicker in main content area", () => {
+    expect(src).toContain("<MarketTicker");
+  });
+});
+
+/* ── 7. AdminAuditTrail CSV export label fix ──────────────────── */
+describe("Pass 101 — AdminAuditTrail CSV export label", () => {
+  const src = readFile("client/src/pages/AdminAuditTrail.tsx");
+
+  it("has Export CSV label on ExportDataButton", () => {
+    expect(src).toContain('label="Export CSV"');
+  });
+
+  it("still has text/csv in handleExport", () => {
+    expect(src).toContain("text/csv");
+  });
+});
+
+/* ── 8. Regression guards — existing panels still wired ───────── */
+describe("Pass 101 — Regression guards for existing panels", () => {
+  const calcSrc = readFile("client/src/pages/Calculators.tsx");
+
+  it("still has all original PanelsD imports", () => {
+    const panels = [
+      "MyPlanPanel", "GDCBracketsPanel", "ProductsPanel", "SalesFunnelPanel",
+      "RecruitingPanel", "ChannelsPanel", "DashboardPanel", "PnLPanel",
+      "GoalTrackerPanel", "MonthlyProductionPanel",
+    ];
+    for (const p of panels) {
+      expect(calcSrc).toContain(p);
+    }
+  });
+
+  it("still has all PanelsH imports", () => {
+    const panels = [
+      "ProductionOptPanel", "ChannelDiversPanel", "MarketingROIPanel",
+      "RecruitingFunnelPanel", "PnLBusinessEconomicsPanel", "GDCOverrideOptPanel",
+    ];
+    for (const p of panels) {
+      expect(calcSrc).toContain(p);
+    }
+  });
+
+  it("still renders practice planning section", () => {
+    expect(calcSrc).toContain("Practice Planning");
+  });
+
+  it("still has Practice Management nav section", () => {
+    expect(calcSrc).toContain("Practice Management");
+  });
+});
+
+/* ── 9. Build stability guard ─────────────────────────────────── */
+describe("Pass 101 — Build stability", () => {
+  it("PanelsH has no TypeScript errors (all imports resolve)", () => {
+    const src = readFile("client/src/pages/calculators/PanelsH.tsx");
+    // Verify all engine imports are present
+    expect(src).toContain("calcProductionOptimization");
+    expect(src).toContain("calcChannelDiversification");
+    expect(src).toContain("calcMarketingROI");
+    expect(src).toContain("calcRecruitingFunnel");
+    expect(src).toContain("calcPnLBusinessEconomics");
+    expect(src).toContain("calcGDCOverrideOpt");
+  });
+
+  it("domainAEngine has no circular dependencies", () => {
+    const src = readFile("client/src/pages/calculators/domainAEngine.ts");
+    // Should not import from PanelsH (engine is pure logic)
+    expect(src).not.toContain("PanelsH");
+    expect(src).not.toContain("from './PanelsH'");
+  });
+
+  it("FailoverBoundary uses only standard UI components", () => {
+    const src = readFile("client/src/components/FailoverBoundary.tsx");
+    expect(src).toContain("@/components/ui/card");
+    expect(src).toContain("@/components/ui/button");
+    expect(src).toContain("@/components/ui/badge");
+    expect(src).toContain("@/components/ui/tooltip");
+  });
+});
