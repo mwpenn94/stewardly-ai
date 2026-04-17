@@ -1,0 +1,19 @@
+# @manus-next/documents
+
+Document management + RAG
+
+## Status
+
+Shell created — awaiting source extraction from Stewardly monolith.
+
+## Installation
+
+```bash
+pnpm add @manus-next/documents
+```
+
+## Usage
+
+```typescript
+import { PACKAGE_NAME } from "@manus-next/documents";
+```

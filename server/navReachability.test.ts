@@ -134,6 +134,7 @@ const EXEMPT_ROUTES = new Set<string>([
   "/suitability",
   "/changelog",
   // Legacy → hub redirects (handled by wouter <Redirect>)
+  "/my-plan",
   "/study",
   "/education",
   "/meetings",

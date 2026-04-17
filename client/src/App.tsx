@@ -192,6 +192,7 @@ function Router() {
         <Route path={"/chat"} component={Chat} />
         <Route path={"/chat/:id"} component={Chat} />
         <Route path={"/calculators"} component={Calculators} />
+        <Route path="/my-plan">{() => { window.location.replace('/calculators?panel=myplan'); return null; }}</Route>
         {/* ── Wealth Engine (Phase 4) — wrapped in SectionErrorBoundary ─── */}
         <Route path={"/wealth-engine/strategy-comparison"}>{() => <SectionErrorBoundary sectionName="Strategy Comparison"><WeStrategyComparison /></SectionErrorBoundary>}</Route>
         <Route path={"/wealth-engine/retirement"}>{() => <SectionErrorBoundary sectionName="Retirement Calculator"><WeRetirement /></SectionErrorBoundary>}</Route>

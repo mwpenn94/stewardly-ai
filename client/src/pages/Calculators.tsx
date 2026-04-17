@@ -122,7 +122,15 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
    ═══════════════════════════════════════════════════════════════ */
 export default function Calculators() {
   const { user } = useAuth();
-  const [activePanel, setActivePanel] = useState<PanelId>('profile');
+  // Pass 110: Support ?panel= query param for deep-linking (e.g. /calculators?panel=myplan)
+  const [activePanel, setActivePanel] = useState<PanelId>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const p = params.get('panel');
+      if (p && NAV_SECTIONS.some(s => s.items.some(i => i.id === p))) return p as PanelId;
+    } catch {}
+    return 'profile';
+  });
   const [calcSidebarOpen, setCalcSidebarOpen] = useState(false);
 
   /* ─── SESSION MANAGEMENT STATE ─── */

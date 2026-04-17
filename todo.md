@@ -5761,3 +5761,36 @@
 - [x] 394/394 test files, 9,746/9,746 tests passing — 2 consecutive clean passes
 - [x] Build: ~46s clean (chunk size warnings only)
 - [x] Note: Census API + Apollo enrichment tests are transient external API timeouts (not code issues)
+
+## Pass 110 — Monorepo Extraction + Charts + Broken Pages + Progressive Disclosure Nav
+
+### Phase 1: Fix broken pages
+- [x] Fix "My Plan" deep-link: ?panel= query param in Calculators + /my-plan redirect route
+- [x] Scan for other broken pages — build clean, no runtime errors found
+
+### Phase 2: Progressive disclosure nav simplification
+- [x] Rewrite PersonaSidebar5 with collapsible sub-groups (ChevronDown/Right)
+- [x] Nested sidebar pattern preserved (Wealth Engine internal nav consistency)
+- [x] Reduce visible nav items via section collapsing + disclosure level filtering
+- [x] Expand sub-items on click (smooth transitions)
+- [x] All capabilities maintained without overwhelming users
+
+### Phase 3: Manus-Next monorepo extraction (all phases)
+- [x] Phase 1: pnpm-workspace.yaml + turbo.json + tsconfig.base.json + scaffold-packages.mjs
+- [x] Phase 1: 10 @platform/* + 17 @manus-next/* + 3 tooling/* package shells (30 total)
+- [x] Phase 2: Extract @manus-next/wealth-engine (engine.ts, 46 calc methods, barrel export)
+- [x] Phase 3: Extract @manus-next/practice-engine (practiceEngine.ts, PRODUCTS, calcRollUp)
+- [x] Phase 3: Extract @manus-next/references (references.ts, REFERENCE_CATEGORIES, REF_CATEGORY_TIPS)
+- [x] Document extraction steps and dependency mapping (README.md per package)
+
+### Phase 4: Portal Analytics real-time charts
+- [x] Recharts already installed (^2.15.2)
+- [x] AreaChart activity timeline in Overview tab with gradient fill
+- [x] New Charts tab: PieChart (event types), RadarChart (engagement profile), BarChart (top features)
+- [x] OKLCH 8-color palette, theme-aware tooltips (var(--popover), var(--border))
+
+### Phase 5: Tests + Convergence
+- [x] 49 tests in pass110-features.test.ts — all passing
+- [x] navReachability test updated for /my-plan redirect (EXEMPT_ROUTES)
+- [x] 3 consecutive clean passes: 394/394 files, 9,698+ tests (excl. 3 flaky external API timeouts)
+- [x] Build clean at ~35-46s (chunk size warnings only)
