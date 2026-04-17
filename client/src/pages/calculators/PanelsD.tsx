@@ -304,31 +304,7 @@ export function MyPlanPanel(p: PracticeProps) {
     enabledChannels: p.enabledChannels,
   }), [p.targetIncome, plan, p.role, p.enabledChannels]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      // Ctrl+Z: Undo last audit entry
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
-        if (auditTrail.length > 0) {
-          e.preventDefault();
-          undoAuditEntry(auditTrail[auditTrail.length - 1]);
-        }
-      }
-      // Ctrl+B: Auto-balance splits
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        handleAutoBalance();
-      }
-      // Ctrl+Shift+S: Save scenario (handled by ScenarioManager)
-      // Complexity shortcuts: 1=simple, 2=detailed, 3=expert
-      if (e.altKey && e.key === '1') { e.preventDefault(); p.setComplexity('simple'); }
-      if (e.altKey && e.key === '2') { e.preventDefault(); p.setComplexity('detailed'); }
-      if (e.altKey && e.key === '3') { e.preventDefault(); p.setComplexity('expert'); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [auditTrail, p.enabledChannels, p.incomeSplits, plan]);
+  // (Keyboard shortcuts moved after audit trail declarations — see below)
 
   // Client-Practice cross-cascade opportunity ("Also My Client")
   const clientOpportunity = useMemo(() => {
@@ -577,6 +553,28 @@ export function MyPlanPanel(p: PracticeProps) {
     // Remove this entry and all entries after it
     setAuditTrail(prev => prev.filter(e => e.id < entry.id));
   }, []);
+
+  // Keyboard shortcuts (moved here — auditTrail, undoAuditEntry, handleAutoBalance now declared)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        if (auditTrail.length > 0) {
+          e.preventDefault();
+          undoAuditEntry(auditTrail[auditTrail.length - 1]);
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        handleAutoBalance();
+      }
+      if (e.altKey && e.key === '1') { e.preventDefault(); p.setComplexity('simple'); }
+      if (e.altKey && e.key === '2') { e.preventDefault(); p.setComplexity('detailed'); }
+      if (e.altKey && e.key === '3') { e.preventDefault(); p.setComplexity('expert'); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [auditTrail, p.enabledChannels, p.incomeSplits, plan, undoAuditEntry, handleAutoBalance]);
 
   // ─── PASS 96: Drag-to-Rebalance handler ───
   const handleSplitDrag = useCallback((ch: keyof EnabledChannels, newPct: number) => {

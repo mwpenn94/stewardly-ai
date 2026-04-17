@@ -5880,3 +5880,16 @@
 - [x] Fix pass74 test: added SectionErrorBoundary to 11 major hub routes in App.tsx
 - [x] All 3 previously failing tests now pass (43/43)
 - [x] Build passes clean with all fixes
+
+## Pass 113 — Calculators auditTrail crash (Apr 17, 2026)
+- [ ] Fix "Cannot access 'auditTrail' before initialization" crash on Calculators page
+- [ ] Audit all pages for similar hoisting/circular/initialization errors
+- [ ] Browser-test Calculators, Wealth Engine, My Plan after fix
+
+## Pass 113 — Calculators auditTrail crash (Apr 17, 2026)
+- [ ] Fix Cannot access auditTrail before initialization crash on Calculators page
+- [ ] Audit all pages for similar hoisting/circular/initialization errors
+- [ ] Browser-test Calculators, Wealth Engine, My Plan after fix
+- [x] Fix Wealth Engine crash: 'Cannot access auditTrail before initialization' — moved useEffect after declarations in PanelsD.tsx
+- [x] Audit all pages for similar TDZ/initialization errors — found 3 false positives (different scopes), PanelsD.tsx was the only real issue
+- [x] Playwright-verified all 10 critical pages load without crashes
