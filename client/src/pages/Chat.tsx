@@ -994,7 +994,7 @@ export default function Chat() {
           });
           if (ttsEnabled) tts.speak(content);
           // Persist to conversation
-          if (activeConvId) {
+          if (activeConvId && content.trim()) {
             persistStreamedMutation.mutateAsync({
               conversationId: activeConvId,
               userContent: trimmed,
@@ -1195,7 +1195,7 @@ export default function Chat() {
                   });
                 } else if (event.type === "token" && event.content) {
                   // Clear tool calls once tokens start flowing (tools are done)
-                  if (activeToolCalls.length > 0) setActiveToolCalls([]);
+                  setActiveToolCalls(prev => prev.length > 0 ? [] : prev);
                   // Pass 8 (G62): every token resets the watchdog.
                   // 60s of complete silence = abort.
                   resetWatchdog();
@@ -1248,7 +1248,7 @@ export default function Chat() {
                   // Start TTS immediately with the streamed content
                   if (ttsEnabled) tts.speak(accumulated);
                   // Then persist to DB in background (won't regenerate)
-                  persistStreamedMutation.mutateAsync({
+                  if (accumulated.trim()) persistStreamedMutation.mutateAsync({
                     conversationId: activeConvId,
                     userContent: trimmed,
                     assistantContent: accumulated,

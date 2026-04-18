@@ -176,6 +176,20 @@ const GUEST_FEATURES: FeatureCard[] = [
 
 // ── Capability chips shown below feature cards ─────────────────────
 const CAPABILITY_CHIPS = [
+  // ── Wealth Engine ──
+  { icon: Calculator, label: "Retirement Projections", prompt: "Run a retirement projection: age 35, income $120k, saving 15%, target retirement age 60" },
+  { icon: Shield, label: "Protection Analysis", prompt: "Analyze my insurance protection gaps for a family with $150k income and two kids" },
+  { icon: TrendingUp, label: "Stock Lookup", prompt: "Look up the current price and performance of SPY" },
+  { icon: Scale, label: "Compare Products", prompt: "Compare term life vs whole life vs IUL insurance" },
+  // ── Learning Engine ──
+  { icon: GraduationCap, label: "Study & Exam Prep", prompt: "Quiz me on Series 65 exam topics — give me 5 practice questions" },
+  { icon: BookOpen, label: "CE Credit Tracking", prompt: "What continuing education credits do I need to maintain my licenses?" },
+  { icon: Lightbulb, label: "Case Study Practice", prompt: "Give me a financial planning case study to work through" },
+  // ── Command Center ──
+  { icon: Users, label: "Client Outreach", prompt: "Draft a professional follow-up email for a prospect interested in retirement planning" },
+  { icon: FileText, label: "Marketing Content", prompt: "Create a social media post about the importance of estate planning" },
+  { icon: Zap, label: "Pipeline Review", prompt: "Help me prioritize my lead pipeline — what should I focus on today?" },
+  // ── AI & Research ──
   { icon: Search, label: "Web Search", prompt: "Search the web for the latest 30-year mortgage rates" },
   { icon: Globe, label: "Read Webpages", prompt: "Read and summarize this page: https://www.investopedia.com/terms/r/roth-ira.asp" },
   { icon: Brain, label: "Deep Research", prompt: "Research the pros and cons of Roth conversion ladders for early retirees" },
@@ -183,9 +197,6 @@ const CAPABILITY_CHIPS = [
   { icon: BarChart3, label: "Analyze Data", prompt: "Analyze this data: AAPL 5yr return 180%, MSFT 200%, GOOG 150%, AMZN 120% — which performed best risk-adjusted?" },
   { icon: Image, label: "Generate Images", prompt: "Generate a professional infographic showing the power of compound interest over 30 years" },
   { icon: FileOutput, label: "Create Documents", prompt: "Generate a comprehensive retirement planning guide for someone starting at age 35" },
-  { icon: Calculator, label: "Retirement Projections", prompt: "Run a retirement projection: age 35, income $120k, saving 15%, target retirement age 60" },
-  { icon: TrendingUp, label: "Stock Lookup", prompt: "Look up the current price and performance of SPY" },
-  { icon: Scale, label: "Compare Products", prompt: "Compare term life vs whole life vs IUL insurance" },
 ];
 
 const USER_FEATURES: FeatureCard[] = [
@@ -374,7 +385,7 @@ export default function ChatGreetingV2({
       {/* Capability discovery chips — show all available AI tools */}
       <motion.div className="w-full space-y-2" initial="hidden" animate="visible" variants={variant} custom={7}>
         <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
-          <Zap className="w-3 h-3 text-accent/60" /> I can also
+          <Zap className="w-3 h-3 text-accent/60" /> Wealth · Learning · Practice · AI
         </div>
         <div className="flex flex-wrap gap-1.5">
           {CAPABILITY_CHIPS.map((chip) => {

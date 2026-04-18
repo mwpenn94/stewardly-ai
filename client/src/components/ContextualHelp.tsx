@@ -160,6 +160,52 @@ const PAGE_HELP: Record<string, PageHelp> = {
       { title: "Extraction Progress", description: "The Extraction tab shows the monolith-to-monorepo journey with phase-by-phase progress.", category: "tip" },
     ],
   },
+  "/learning": {
+    title: "Learning Hub",
+    description: "Structured learning tracks, exam prep, CE credits, and professional development — also accessible via chat.",
+    tips: [
+      { title: "Exam Prep", description: "Practice for Series 6, 7, 63, 65, 66, SIE, CFP, CLU, ChFC and more with AI-generated questions.", category: "tip" },
+      { title: "Study Buddy", description: "Use the Study Buddy for interactive flashcards and spaced repetition.", category: "tip" },
+      { title: "CE Credits", description: "Track your continuing education requirements by state and designation.", category: "tip" },
+      { title: "Chat Integration", description: "Ask the AI to quiz you or explain concepts — just say 'quiz me on Series 65' in chat.", category: "faq" },
+    ],
+  },
+  "/people": {
+    title: "People Hub",
+    description: "Manage your client relationships, leads, and professional network — also accessible via chat.",
+    tips: [
+      { title: "Client Profiles", description: "View and manage detailed client profiles with financial summaries and interaction history.", category: "tip" },
+      { title: "Pipeline Management", description: "Track leads through your sales pipeline with stage-based organization.", category: "tip" },
+      { title: "Chat Integration", description: "Ask the AI to draft follow-up emails or prioritize your pipeline — just describe what you need in chat.", category: "faq" },
+    ],
+  },
+  "/operations": {
+    title: "Operations Hub",
+    description: "Active work items, AI agent management, compliance reviews, and execution history.",
+    tips: [
+      { title: "Active Tasks", description: "View and manage your pending tasks, compliance reviews, and scheduled actions.", category: "tip" },
+      { title: "Agent Status", description: "Monitor AI agents running background tasks like market monitoring and data updates.", category: "tip" },
+      { title: "Execution History", description: "Review past actions and their outcomes for audit trail purposes.", category: "tip" },
+    ],
+  },
+  "/financial-twin": {
+    title: "Digital Financial Twin",
+    description: "Your comprehensive financial model — a living digital representation of your complete financial picture.",
+    tips: [
+      { title: "Data Sources", description: "Connect accounts via Plaid and SnapTrade for real-time data, or enter information manually.", category: "tip" },
+      { title: "What-If Scenarios", description: "Run projections by adjusting assumptions like income growth, market returns, or major life events.", category: "tip" },
+      { title: "Chat Integration", description: "Ask the AI 'what if I retire at 55?' and it will use your twin data for accurate projections.", category: "faq" },
+    ],
+  },
+  "/my-plan": {
+    title: "My Financial Plan",
+    description: "Your personalized financial plan with goals, milestones, and progress tracking.",
+    tips: [
+      { title: "Goal Setting", description: "Set specific financial goals with target amounts and dates.", category: "tip" },
+      { title: "Progress Tracking", description: "Track your progress toward each goal with visual indicators and milestone markers.", category: "tip" },
+      { title: "Plan Updates", description: "Your plan updates automatically as your financial twin data changes.", category: "tip" },
+    ],
+  },
 };
 
 const GLOBAL_SHORTCUTS: HelpTip[] = [

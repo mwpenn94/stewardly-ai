@@ -81,7 +81,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Capabilities",
     minRole: "user",
     items: [
-      { label: "Agent Hub", icon: Rocket, path: "/manus-next", match: ["/manus-next", "/agent"] },
+      { label: "System Status", icon: Rocket, path: "/manus-next", match: ["/manus-next", "/agent"], disclosureLevel: 3 },
     ],
   },
   {

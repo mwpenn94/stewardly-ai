@@ -258,8 +258,9 @@ export function useTTS({
         onEndRef.current?.();
       };
 
-      audio.onerror = (e) => {
-        console.warn("[TTS] Audio playback error:", e);
+      audio.onerror = () => {
+        // Silently degrade — repeated onerror events are normal when
+        // the browser blocks autoplay or the audio context is suspended.
         cleanup();
         guardRef.current = false;
         setIsSpeaking(false);
@@ -269,8 +270,7 @@ export function useTTS({
       // Play — on iOS this should work because the shared element was
       // unlocked by a user gesture. If it still fails, fall back to browser TTS.
       audio.play().catch((err) => {
-        console.warn("[TTS] Play failed, will retry once:", err.message);
-        // One retry after a short delay
+        // Single retry after short delay — suppress console noise
         setTimeout(() => {
           if (cancelledRef.current) {
             cleanup();
@@ -280,10 +280,11 @@ export function useTTS({
             return;
           }
           audio.play().catch(() => {
-            console.warn("[TTS] Retry failed, falling back to browser TTS");
+            // Silently fall back to browser TTS
             cleanup();
-            // Signal that we need browser fallback
-            // (handled by the caller via the returned promise)
+            guardRef.current = false;
+            setIsSpeaking(false);
+            onEndRef.current?.();
           });
         }, 150);
       });

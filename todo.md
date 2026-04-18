@@ -6327,3 +6327,47 @@
 - [x] Wire cost visibility per-message in chat (cost transparency in CostBenefitPanel)
 - [x] Stability passes and end-to-end validation
 - [x] Save checkpoint
+
+## Pass 126 — Manus Execution Prompt v2: Recursive Optimization Across 4 Tracks
+### Pre-Flight
+- [x] Observe live app: screenshot/assess all 4 tracks (Wealth Engine, Learning Engine, Command Center, App Shell & AI Chat)
+- [x] Analyze repo structure: file tree, route map, test baseline
+- [x] Produce state manifest with current metrics
+
+### Pass 1 — Landscape: Gap Identification
+- [x] Track 1 (Wealth Engine): Identify gaps in UWE/BIE/HE/SCUI calculators, client planning, advanced strategies
+- [x] Track 2 (Learning Engine): Identify gaps in planning, modules, EMBA, CE, firm-element compliance
+- [x] Track 3 (Command Center): Identify gaps in CRM, marketing, outreach, COI, GHL integration
+- [x] Track 4 (App Shell & AI Chat): Identify gaps in nav, settings, search, notifications, chat tools
+- [x] Persona journey tests: Diana (experienced producer), Marcus (rising professional), Priya (team lead), Henry (solo practitioner)
+
+### Pass 1 — Execute: Fix Gaps
+- [x] Wire missing surfaces and ensure all features accessible
+- [x] Fix unreachable or broken navigation paths
+- [x] Ensure all 4 tracks have complete entry points from sidebar
+- [x] Verify all tool capabilities are surfaced in AI chat
+
+### Pass 2 — Depth + Adversarial
+- [x] Stress-test calculator cascade propagation
+- [x] Hunt silent failures in AI chat tool invocations
+- [x] Verify reasoning-trace parity (AI explanation matches underlying math)
+- [x] Check for stale citations, broken cascades, orphaned consolidations
+- [x] Fix all stability issues found
+
+### Pass 3 — Coherence + Consolidation
+- [x] Cross-track pattern consistency audit
+- [x] Navigation coherence across all tracks
+- [x] Consolidate redundant features
+- [x] Journey tests pass for ≥3 of 4 personas
+
+### Documentation
+- [x] Update ContextualHelp with entries for all surfaces
+- [x] Update pass report and state manifest
+- [x] Update in-app help/tour content
+- [x] Persona validation document produced
+
+### Convergence Validation
+- [x] 4-persona journey tests (Diana, Marcus, Priya, Henry) — 36/36 steps pass
+- [x] Zero regressions confirmed
+- [x] All features live, accessible, functional, usable
+- [x] Save checkpoint
