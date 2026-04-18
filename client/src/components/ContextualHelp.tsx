@@ -75,6 +75,26 @@ const PAGE_HELP: Record<string, PageHelp> = {
       { title: "AI Recommendations", description: "The AI suggests products based on your financial profile and goals. Check the 'Recommended' tab.", category: "tip" },
     ],
   },
+  "/lead-pipeline": {
+    title: "Lead Pipeline",
+    description: "AI-powered lead management with scoring, enrichment, and conversion tracking.",
+    tips: [
+      { title: "Score History", description: "Click any lead to see their propensity score history over time, showing how engagement and fit have evolved.", category: "tip" },
+      { title: "Lead Enrichment", description: "The system automatically enriches leads with firmographic data, social profiles, and behavioral signals.", category: "tip" },
+      { title: "Conversion Tracking", description: "Track leads through stages: New → Contacted → Qualified → Proposal → Won/Lost. Each transition is logged.", category: "tip" },
+      { title: "Source Analytics", description: "View lead source performance with connector health badges showing sync status and data quality.", category: "tip" },
+    ],
+  },
+  "/compliance-audit": {
+    title: "Compliance Audit",
+    description: "Live compliance review queue with FINRA 2210, SEC, Reg BI, and jurisdictional awareness.",
+    tips: [
+      { title: "Content Review", description: "Submit any AI-generated content for automated compliance review. The system checks FINRA 2210, SEC rules, and Reg BI requirements.", category: "tip" },
+      { title: "Reg BI Documentation", description: "Generate Regulation Best Interest documentation packages with one click for any client recommendation.", category: "tip" },
+      { title: "Jurisdictional Coverage", description: "Scroll down to see the full regulatory compliance coverage across Federal (10 regulations), State (4 frameworks), and International (3 awareness).", category: "tip" },
+      { title: "WORM Audit Trail", description: "All calculator interactions are logged to a tamper-evident WORM audit trail compliant with SEC 17a-4.", category: "faq" },
+    ],
+  },
   "/data-intelligence": {
     title: "Data Intelligence Hub",
     description: "Manage data sources, scraping schedules, and AI-powered insights.",

@@ -2,6 +2,13 @@
 import { authFetch } from "@/lib/sessionToken";
 import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { WealthEngineProvider, type WealthEngineData } from '@/contexts/WealthEngineContext';
+import { useCascadeToast } from '@/hooks/useCascadeToast';
+
+/* Thin bridge so the hook runs inside the component tree */
+function CascadeToastBridge({ data }: { data: WealthEngineData }) {
+  useCascadeToast(data);
+  return null;
+}
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -1373,6 +1380,8 @@ export default function Calculators() {
           {activePanel === 'charitable' && <CharitablePlanningPanel income={income} />}
           {activePanel === 'duediligence' && <DueDiligencePanel />}
           {/* ═══ NEW ADVISORY & DATA PANELS (cascade-connected) ═══ */}
+          {/* Real-time cascade toast notifications */}
+          <CascadeToastBridge data={weData} />
           <WealthEngineProvider value={weData}>
             <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="animate-spin">⏳</span></div>}>
               {activePanel === 'planning-hierarchy' && <WePlanningHierarchy />}

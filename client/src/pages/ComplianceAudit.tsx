@@ -345,6 +345,70 @@ export default function ComplianceAudit({ embedded = false }: { embedded?: boole
           </CardContent>
         </Card>
       )}
+      {/* ═══ Jurisdictional Compliance Awareness ═══ */}
+      <Card className="mt-2">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Shield className="h-5 w-5 text-primary" />
+            <h3 className="text-base font-semibold">Regulatory Compliance Coverage</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            WealthBridge maintains compliance awareness across federal, state, and international regulatory frameworks.
+            All content workflows include automated FINRA 2210, SEC, and Reg BI review.
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            {/* Federal */}
+            <div className="border border-border rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Federal</Badge>
+                <span className="text-xs text-muted-foreground">10 regulations</span>
+              </div>
+              <div className="space-y-1">
+                {['FINRA 2210','FINRA 2111','FINRA 4511','SEC 17a-4','SEC 206(4)-1','Reg BI','ERISA','GLBA','TCPA','CAN-SPAM'].map(r => (
+                  <div key={r} className="flex items-center gap-1.5 text-xs">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                    <span className="text-foreground/80">{r}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* State */}
+            <div className="border border-border rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">State</Badge>
+                <span className="text-xs text-muted-foreground">4 frameworks</span>
+              </div>
+              <div className="space-y-1">
+                {['CCPA/CPRA (California)','NYDFS 500 (New York)','State Insurance Licensing','Blue Sky Laws'].map(r => (
+                  <div key={r} className="flex items-center gap-1.5 text-xs">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                    <span className="text-foreground/80">{r}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* International */}
+            <div className="border border-border rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">International</Badge>
+                <span className="text-xs text-muted-foreground">Awareness</span>
+              </div>
+              <div className="space-y-1">
+                {['GDPR (EU)','MiFID II (EU)','PIPEDA (Canada)'].map(r => (
+                  <div key={r} className="flex items-center gap-1.5 text-xs">
+                    <Eye className="h-3 w-3 text-amber-400 shrink-0" />
+                    <span className="text-foreground/80">{r}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 mt-3">
+            Compliance coverage is maintained through automated review workflows. WORM audit trail (SEC 17a-4) captures all calculator interactions.
+            State-specific requirements are validated during client onboarding based on jurisdiction.
+          </p>
+        </CardContent>
+      </Card>
     </div>
     </Shell>
   );

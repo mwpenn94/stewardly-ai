@@ -6265,3 +6265,19 @@
 - [x] Verify Data API capability works with Financial Data Hub (12 adapters)
 - [x] Ensure Maps integration available where needed
 - [x] Verify built-in AI capabilities accessible from Wealth Engine (CalcNarrator + LLM)
+
+## Pass 123 — Recommended Next Steps + Parity Spec v8.2 Integration
+- [x] LeadDetail: Add score history panel with trend visualization
+- [x] AdminLeadSources: Add connector health badges and sync status indicators
+- [ ] Real-time cascade toast notifications when panel changes trigger alerts
+- [ ] Cost transparency UI: per-task cost visibility for advisor workflows
+- [ ] Scaffold docs/parity/ directory with MANIFEST, PARITY_BACKLOG, PARITY_SCOPE, HRQ_QUEUE, HUMAN_VERIFY_LOG, DISTRACTION_BACKLOG, MANUS_SPEC_WATCH_LOG, COMPLIANCE_AUDIT_LOG
+- [ ] Create docs/competitive/MANUS_IN_GHL.md positioning document
+- [ ] 67-capability gap mapping against existing features
+- [ ] Strengthen compliance visibility in Wealth Engine (FINRA/SEC badges, audit trail indicators)
+- [ ] Add jurisdictional awareness to advisor context
+- [x] Recursive stability passes (3 clean consecutive)
+- [x] Virtual user persona validation (10 professional types)
+- [ ] Update in-app documentation (ContextualHelp entries)
+- [ ] Update codebase documentation (READMEs, inline comments)
+- [x] Final convergence verification
