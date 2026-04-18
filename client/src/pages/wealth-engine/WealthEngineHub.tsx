@@ -32,7 +32,7 @@ import {
   Scale, Heart, GraduationCap, HandCoins, DollarSign, Stethoscope,
   BarChart3, Loader2, ArrowRight, Users, Target, FileText,
   Briefcase, Rocket, ShieldCheck, Workflow, Zap, Gauge,
-  PanelLeftClose, PanelLeftOpen, LayoutGrid,
+  PanelLeftClose, PanelLeftOpen, LayoutGrid, ChevronRight, Home, Layers,
 } from "lucide-react";
 
 // ─── FORMATTING HELPERS ────────────────────────────────────────────
@@ -70,6 +70,7 @@ const NAV_SECTIONS: NavSection[] = [
     { id: "overview", label: "Overview", icon: LayoutGrid, slug: "overview" },
   ]},
   { group: "Plan", items: [
+    { id: "planning-hierarchy" as WETab, label: "Planning Hierarchy", icon: Layers, slug: "planning-hierarchy", badge: "New" },
     { id: "retirement", label: "Retirement Planner", icon: PiggyBank, slug: "retirement" },
     { id: "tax", label: "Tax Projector", icon: DollarSign, slug: "tax", externalPath: "/tax-planning" },
     { id: "estate", label: "Estate Planning", icon: Briefcase, slug: "estate", externalPath: "/estate" },
@@ -123,6 +124,7 @@ const WeBusinessIncomeQuickQuote = lazy(() => import("./BusinessIncomeQuickQuote
 const WeOwnerComp = lazy(() => import("./OwnerCompPage"));
 const WeQuickQuoteHub = lazy(() => import("./QuickQuoteHub"));
 const WeHolisticComparison = lazy(() => import("./HolisticComparison"));
+const WePlanningHierarchy = lazy(() => import("./PlanningHierarchyPanel"));
 
 // ─── INLINE QUICK BUNDLE ───────────────────────────────────────────
 interface BundleForm {
@@ -372,15 +374,41 @@ export default function WealthEngineHub() {
         {/* ─── MAIN CONTENT ─── */}
         <main className="flex-1 min-w-0" role="main" aria-label="Wealth Engine content">
           <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-6">
-            {/* ─── TOOLBAR ─── */}
+            {/* ─── BREADCRUMB + TOOLBAR ─── */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-card rounded-lg border border-border px-3 py-2">
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
                   <PanelLeftOpen className="w-4 h-4" />
                 </Button>
-                <span className="text-sm font-medium text-foreground">
-                  {ALL_ITEMS.find(t => t.id === activeTab)?.label ?? "Overview"}
-                </span>
+                <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs">
+                  <button type="button" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                    <Home className="w-3 h-3" />
+                    <span className="hidden sm:inline">Home</span>
+                  </button>
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                  <button type="button" onClick={() => setActiveTab("overview")} className={`transition-colors flex items-center gap-1 ${
+                    activeTab === "overview" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                  }`}>
+                    <Gauge className="w-3 h-3" />
+                    <span>Wealth Engine</span>
+                  </button>
+                  {activeTab !== "overview" && (() => {
+                    const currentItem = ALL_ITEMS.find(t => t.id === activeTab);
+                    const currentSection = NAV_SECTIONS.find(s => s.items.some(i => i.id === activeTab));
+                    if (!currentItem) return null;
+                    return (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                        <span className="text-muted-foreground/60 hidden sm:inline">{currentSection?.group}</span>
+                        {currentSection && <ChevronRight className="w-3 h-3 text-muted-foreground/50 hidden sm:inline" />}
+                        <span className="text-foreground font-medium flex items-center gap-1">
+                          {(() => { const Icon = currentItem.icon; return <Icon className="w-3 h-3" />; })()}
+                          {currentItem.label}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </nav>
               </div>
             </div>
 
@@ -400,6 +428,7 @@ export default function WealthEngineHub() {
               {activeTab === "references" && <WeReferenceHub embedded />}
               {activeTab === "quick-quote-hub" && <WeQuickQuoteHub embedded />}
               {activeTab === "holistic-comparison" && <WeHolisticComparison embedded />}
+              {activeTab === "planning-hierarchy" && <WePlanningHierarchy />}
             </Suspense>
           </div>
         </main>

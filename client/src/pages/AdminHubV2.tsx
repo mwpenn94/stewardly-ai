@@ -13,7 +13,7 @@ import {
   Loader2, Cog, Activity, TrendingUp, DollarSign, BarChart3,
   BookOpen, Globe, Users, CreditCard, Key, Webhook,
   FileText, Zap, ShieldCheck, Scale, Shield, Bot, GitMerge,
-  Settings2, Brain, PanelLeftClose, PanelLeftOpen,
+  Settings2, Brain, PanelLeftClose, PanelLeftOpen, ChevronRight, Home,
 } from "lucide-react";
 
 const GlobalAdmin = lazy(() => import("./GlobalAdmin"));
@@ -177,7 +177,27 @@ export default function AdminHubV2() {
                 <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
                   <PanelLeftOpen className="w-4 h-4" />
                 </Button>
-                <span className="text-sm font-medium text-foreground">{ALL_ITEMS.find(t => t.id === activeTab)?.label}</span>
+                <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs">
+                  <button type="button" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                    <Home className="w-3 h-3" /><span className="hidden sm:inline">Home</span>
+                  </button>
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                  <button type="button" onClick={() => setActiveTab("overview")} className={`transition-colors flex items-center gap-1 ${activeTab === "overview" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+                    <Cog className="w-3 h-3" /><span>Admin</span>
+                  </button>
+                  {activeTab !== "overview" && (() => {
+                    const currentItem = ALL_ITEMS.find(t => t.id === activeTab);
+                    const currentSection = NAV_SECTIONS.find(s => s.items.some(i => i.id === activeTab));
+                    if (!currentItem) return null;
+                    const Icon = currentItem.icon;
+                    return (<>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                      <span className="text-muted-foreground/60 hidden sm:inline">{currentSection?.group}</span>
+                      {currentSection && <ChevronRight className="w-3 h-3 text-muted-foreground/50 hidden sm:inline" />}
+                      <span className="text-foreground font-medium flex items-center gap-1"><Icon className="w-3 h-3" />{currentItem.label}</span>
+                    </>);
+                  })()}
+                </nav>
               </div>
             </div>
             <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>}>

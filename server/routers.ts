@@ -2182,6 +2182,7 @@ import { professionalPracticeRouter } from "./routers/professionalPractice";
 import { finalOrphansRouter } from "./routers/finalOrphans";
 import { billingRouter } from "./stripe/billingRouter";
 import { videoConferencingRouter } from "./routers/videoConferencing";
+import { planningHierarchyRouter } from "./routers/planningHierarchy";
 
 const clientErrorsRouter = router({
   report: publicProcedure
@@ -2374,6 +2375,7 @@ export const appRouter = router({
   videoConferencing: videoConferencingRouter,
   plaid: plaidRouter,
   sharing: sharingRouter,
+  planningHierarchy: planningHierarchyRouter,
 });
 
 export type AppRouter = typeof appRouter;

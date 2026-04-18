@@ -178,8 +178,7 @@ function Router() {
         <Route path={"/privacy"} component={Privacy} />
 
         {/* Core app routes */}
-        <Route path={"/chat"}>{() => <SectionErrorBoundary sectionName="Chat"><Chat /></SectionErrorBoundary>}</Route>
-        <Route path={"/chat/:id"} component={Chat} />
+        <Route path="/chat/:id?">{() => <SectionErrorBoundary sectionName="Chat"><Chat /></SectionErrorBoundary>}</Route>
         <Route path={"/calculators"}>{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path="/my-plan">{() => { window.location.replace('/calculators?panel=myplan'); return null; }}</Route>
         {/* ── Wealth Engine Hub — single route with internal sidebar navigation ─── */}

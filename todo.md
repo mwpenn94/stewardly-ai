@@ -5895,3 +5895,33 @@
 - [x] Playwright-verified all 10 critical pages load without crashes
 - [ ] Fix Calculators crash: 'Cannot read properties of undefined (reading length)' — null-safety audit across entire Wealth Engine
 - [x] Fix Calculators 'Cannot read properties of undefined (reading length)' — timePhased.points changed to timePhased.monthly, added null guard in calcRollUpChartData
+- [x] Add automated smoke tests (vitest) that check all routes load without crashes
+- [x] Add breadcrumb navigation to all Wealth Engine sub-pages (and all other hub pages)
+- [x] Conduct expert CFP/advisor assessment of all client-facing workflows and produce gap analysis report
+
+## Pass 114 — Smoke Tests, Breadcrumbs, CFP Assessment (Apr 17, 2026)
+- [x] Fix CodeChat.tsx mid-file import: moved useCodeChatStream import to top of file
+- [x] Fix Comparables.tsx mid-file imports: moved ShareButton and DisclosureSection imports to top
+- [x] Fix LearningTrackDetail.tsx false positive: rewrapped JSX text so 'import' doesn't start a trimmed line
+- [x] All 9 smoke tests pass (server/smokeRoutes.test.ts)
+- [x] Add breadcrumb navigation to WealthEngineHub (Home > Wealth Engine > Section > Tool)
+- [x] Add breadcrumb navigation to PeopleHub (Home > People > Section > Tool)
+- [x] Add breadcrumb navigation to AdminHubV2 (Home > Admin > Section > Tool)
+- [x] Add breadcrumb navigation to IntelligenceHubV2 (Home > Intelligence > Section > Tool)
+- [x] Add breadcrumb navigation to SettingsHub (Home > Settings > Section > Tool)
+- [x] Build passes clean after all breadcrumb additions
+
+## Pass 114 — Chat Bug Fix
+- [x] Fix AI chat first prompt returning nothing (empty response)
+  - Root cause: /chat and /chat/:id were separate Route entries in wouter Switch — navigating from /chat to /chat/:id unmounted the component, aborting the in-flight SSE stream
+  - Fix 1: Combined into single Route path="/chat/:id?" with optional param
+  - Fix 2: Fixed sseStreamHandler.ts using wrong env vars (FORGE_API_KEY → BUILT_IN_FORGE_API_KEY)
+
+## Pass 114 — CFP Assessment & Unified Hierarchical Planning Architecture
+- [x] Write comprehensive CFP/advisor expert assessment document (CFP-ADVISOR-ASSESSMENT.md, 820 lines)
+- [x] Design unified hierarchical planning architecture (client ↔ practice roll-up/roll-down)
+- [x] Align client planning with practice management structure (holistic, comprehensive, forward/back)
+- [x] Ensure PFR workflow support in unified wealth engine
+- [x] Add rich reasoning and references to client-level planning (matching practice-level quality)
+- [x] Implement "Also My Client" roll-up from client profiles to practice management
+- [x] Update unified wealth engine to support hierarchical planning alignment

@@ -53,6 +53,8 @@ import {
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
+import { ShareButton } from "@/components/sharing/ShareKit";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 // Score badge — 0..3 on the rubric, color-coded.
 function ScoreBadge({ score }: { score: number }) {
@@ -203,8 +205,6 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
               How Stewardly compares to the best existing and planned apps in
               the financial advisory space — scored on an 18-feature rubric
               drawn from the comprehensive platform guide.
-import { ShareButton } from "@/components/sharing/ShareKit";
-import { DisclosureSection } from "@/components/DisclosureSection";
             </p>
           </div>
           <div className="flex items-center gap-2">

@@ -413,10 +413,10 @@ async function attemptNativeStream(
 ): Promise<AsyncIterable<string> | null> {
   // We need access to the raw API URL and key to do native streaming.
   // Import them from the environment — same as _core/llm.ts uses.
-  const apiUrl = process.env.FORGE_API_URL
-    ? `${process.env.FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`
+  const apiUrl = process.env.BUILT_IN_FORGE_API_URL
+    ? `${process.env.BUILT_IN_FORGE_API_URL.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
-  const apiKey = process.env.FORGE_API_KEY;
+  const apiKey = process.env.BUILT_IN_FORGE_API_KEY;
 
   if (!apiKey) return null;
 

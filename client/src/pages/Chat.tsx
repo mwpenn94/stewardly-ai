@@ -141,7 +141,7 @@ export default function Chat() {
   // Prior to this the 30 feedbackSpecs were defined but had zero consumers.
   const pil = usePlatformIntelligence();
   const [location, navigate] = useLocation();
-  const [matchChat, paramsChat] = useRoute("/chat/:id");
+  const [matchChat, paramsChat] = useRoute("/chat/:id?");
   const utils = trpc.useUtils();
   const { notifications: wsNotifications, unreadCount: wsUnreadCount, connected: wsConnected, markAsRead, markAllAsRead, clearNotifications } = useNotifications();
   const { notifications: onboardingNotifs, unreadCount: onboardingUnread } = useOnboardingNotifications();

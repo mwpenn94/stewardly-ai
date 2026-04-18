@@ -1,5 +1,3 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 /**
  * EMBA Learning — Track Detail page (pass 58).
  *
@@ -19,6 +17,8 @@ import { getLoginUrl } from "@/const";
  * which in turn read from the DB tables populated by embaImport.ts.
  */
 
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 import { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { persistTrackVisit } from "./lib/recentTracks";
@@ -154,8 +154,8 @@ export default function LearningTrackDetail() {
               <BookOpen className="h-10 w-10 text-muted-foreground mx-auto" />
               <p className="font-medium">Track not found</p>
               <p className="text-sm text-muted-foreground">
-                No exam track with slug <code>{slug}</code>. An admin can
-                import content from{" "}
+                No exam track with slug <code>{slug}</code>. An admin can import
+                content from{" "}
                 <Link href="/learning/studio" className="underline">Content Studio
                 </Link>
                 .

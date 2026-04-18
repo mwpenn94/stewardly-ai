@@ -6728,3 +6728,200 @@ export const viewShares = mysqlTable("view_shares", {
 }));
 export type ViewShare = typeof viewShares.$inferSelect;
 export type InsertViewShare = typeof viewShares.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// UNIFIED HIERARCHICAL PLANNING ARCHITECTURE
+// Forward/backward, roll-up/roll-down planning with rich reasoning & references
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── PLANNING NODES (Hierarchical tree: platform→region→team→advisor→client→goal→strategy→implementation) ───
+// DB table: planning_nodes
+export const planningNodes = mysqlTable("planning_nodes", {
+  id: int("id").autoincrement().primaryKey(),
+  parentId: int("parent_id"),
+  level: mysqlEnum("level", ["platform", "region", "team", "advisor", "client", "goal", "strategy", "implementation"]).notNull(),
+  entityType: varchar("entity_type", { length: 100 }).notNull(),
+  entityId: int("entity_id").notNull(),
+  ownerId: int("owner_id").notNull(),
+  label: varchar("label", { length: 500 }),
+  forwardTarget: decimal("forward_target", { precision: 14, scale: 2 }),
+  forwardTargetDate: date("forward_target_date"),
+  forwardMilestones: json("forward_milestones"),
+  forwardAssumptions: json("forward_assumptions"),
+  backwardRequiredInput: decimal("backward_required_input", { precision: 14, scale: 2 }),
+  backwardRequiredDate: date("backward_required_date"),
+  backwardSteps: json("backward_steps"),
+  currentValue: decimal("current_value", { precision: 14, scale: 2 }),
+  gapValue: decimal("gap_value", { precision: 14, scale: 2 }),
+  gapPercentage: decimal("gap_percentage", { precision: 6, scale: 2 }),
+  nodeTrend: mysqlEnum("node_trend", ["improving", "stable", "declining"]).default("stable"),
+  probabilityOfSuccess: decimal("probability_of_success", { precision: 5, scale: 2 }),
+  reasoningChain: json("reasoning_chain"),
+  alternativesConsidered: json("alternatives_considered"),
+  suitabilityScore: decimal("suitability_score", { precision: 5, scale: 2 }),
+  complianceFlags: json("compliance_flags"),
+  lastReviewDate: date("last_review_date"),
+  nextReviewDate: date("next_review_date"),
+  nodeStatus: mysqlEnum("node_status", ["draft", "active", "review", "archived"]).default("draft"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  parentIdx: index("idx_planning_nodes_parent").on(table.parentId),
+  ownerIdx: index("idx_planning_nodes_owner").on(table.ownerId),
+  levelIdx: index("idx_planning_nodes_level").on(table.level),
+  entityIdx: index("idx_planning_nodes_entity").on(table.entityType, table.entityId),
+}));
+export type PlanningNode = typeof planningNodes.$inferSelect;
+export type InsertPlanningNode = typeof planningNodes.$inferInsert;
+
+// ─── CLIENT GOALS (15 goal categories linked to planning nodes) ─────────────
+// DB table: client_goals
+export const clientGoals = mysqlTable("client_goals", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id"),
+  planningNodeId: int("planning_node_id"),
+  goalCategory: mysqlEnum("goal_category", [
+    "protection", "retirement", "estate", "tax", "education", "debt",
+    "growth", "business", "cash_flow", "premium_finance", "ilit",
+    "exec_comp", "charitable", "legacy", "healthcare",
+  ]).notNull(),
+  goalName: varchar("goal_name", { length: 255 }).notNull(),
+  goalDescription: text("goal_description"),
+  targetAmount: decimal("target_amount", { precision: 14, scale: 2 }),
+  currentAmount: decimal("current_amount", { precision: 14, scale: 2 }),
+  targetDate: date("target_date"),
+  timeHorizonYears: int("time_horizon_years"),
+  priorityRank: int("priority_rank"),
+  probabilityOfSuccess: decimal("probability_of_success", { precision: 5, scale: 2 }),
+  confidenceIntervalLow: decimal("confidence_interval_low", { precision: 14, scale: 2 }),
+  confidenceIntervalHigh: decimal("confidence_interval_high", { precision: 14, scale: 2 }),
+  dependsOnGoals: json("depends_on_goals"),
+  conflictsWithGoals: json("conflicts_with_goals"),
+  goalStatus: mysqlEnum("goal_status", [
+    "identified", "agreed", "in_progress", "on_track",
+    "at_risk", "achieved", "deferred", "abandoned",
+  ]).default("identified"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdx: index("idx_client_goals_client").on(table.clientId),
+  advisorIdx: index("idx_client_goals_advisor").on(table.advisorId),
+  nodeIdx: index("idx_client_goals_node").on(table.planningNodeId),
+  categoryIdx: index("idx_client_goals_category").on(table.goalCategory),
+}));
+export type ClientGoal = typeof clientGoals.$inferSelect;
+export type InsertClientGoal = typeof clientGoals.$inferInsert;
+
+// ─── PLANNING REFERENCES (Rich citations for reasoning & compliance) ────────
+// DB table: planning_references
+export const planningReferences = mysqlTable("planning_references", {
+  id: int("id").autoincrement().primaryKey(),
+  planningNodeId: int("planning_node_id").notNull(),
+  refType: mysqlEnum("ref_type", [
+    "regulatory", "academic", "carrier", "market_data",
+    "case_law", "internal", "illustration", "fact_sheet",
+  ]).notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  citation: text("citation"),
+  url: varchar("url", { length: 2000 }),
+  relevance: text("relevance"),
+  dateAccessed: date("date_accessed"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  nodeIdx: index("idx_planning_refs_node").on(table.planningNodeId),
+  typeIdx: index("idx_planning_refs_type").on(table.refType),
+}));
+export type PlanningReference = typeof planningReferences.$inferSelect;
+export type InsertPlanningReference = typeof planningReferences.$inferInsert;
+
+// ─── PERSONAL FINANCIAL REVIEWS (PFR lifecycle management) ──────────────────
+// DB table: personal_financial_reviews
+export const personalFinancialReviews = mysqlTable("personal_financial_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id").notNull(),
+  planningNodeId: int("planning_node_id"),
+  reviewType: mysqlEnum("review_type", ["initial", "annual", "life_event", "regulatory", "ad_hoc"]).notNull(),
+  reviewDate: date("review_date").notNull(),
+  documentUrl: varchar("document_url", { length: 2000 }),
+  documentKey: varchar("document_key", { length: 500 }),
+  sectionsIncluded: json("sections_included"),
+  calculatorOutputsSnapshot: json("calculator_outputs_snapshot"),
+  goalHierarchySnapshot: json("goal_hierarchy_snapshot"),
+  recommendationsSnapshot: json("recommendations_snapshot"),
+  advisorApprovedAt: timestamp("advisor_approved_at"),
+  clientAcknowledgedAt: timestamp("client_acknowledged_at"),
+  eSignatureId: int("e_signature_id"),
+  suitabilityDocumentation: json("suitability_documentation"),
+  complianceReviewStatus: mysqlEnum("compliance_review_status", ["pending", "approved", "flagged", "escalated"]).default("pending"),
+  complianceReviewerId: int("compliance_reviewer_id"),
+  complianceReviewDate: timestamp("compliance_review_date"),
+  retentionExpiresAt: timestamp("retention_expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdx: index("idx_pfr_client").on(table.clientId),
+  advisorIdx: index("idx_pfr_advisor").on(table.advisorId),
+  reviewTypeIdx: index("idx_pfr_review_type").on(table.reviewType),
+}));
+export type PersonalFinancialReview = typeof personalFinancialReviews.$inferSelect;
+export type InsertPersonalFinancialReview = typeof personalFinancialReviews.$inferInsert;
+
+// ─── CLIENT DISCOVERY (Values, priorities, risk attitudes, life events) ─────
+// DB table: client_discovery
+export const clientDiscovery = mysqlTable("client_discovery", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id"),
+  valuesPriorities: json("values_priorities"),
+  riskAttitudes: json("risk_attitudes"),
+  familyDynamics: json("family_dynamics"),
+  healthStatus: json("health_status"),
+  employerBenefits: json("employer_benefits"),
+  existingDocuments: json("existing_documents"),
+  anticipatedLifeEvents: json("anticipated_life_events"),
+  preferredContactMethod: varchar("preferred_contact_method", { length: 50 }),
+  preferredMeetingFrequency: varchar("preferred_meeting_frequency", { length: 50 }),
+  preferredReportDetailLevel: mysqlEnum("preferred_report_detail_level", ["summary", "standard", "detailed"]).default("standard"),
+  completenessScore: decimal("completeness_score", { precision: 5, scale: 2 }),
+  lastDiscoveryDate: date("last_discovery_date"),
+  nextDiscoveryDate: date("next_discovery_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdx: index("idx_client_discovery_client").on(table.clientId),
+  advisorIdx: index("idx_client_discovery_advisor").on(table.advisorId),
+}));
+export type ClientDiscoveryRecord = typeof clientDiscovery.$inferSelect;
+export type InsertClientDiscovery = typeof clientDiscovery.$inferInsert;
+
+// ─── PLANNING ASSUMPTIONS (Hierarchical: platform→firm→advisor→client) ──────
+// DB table: planning_assumptions
+export const planningAssumptions = mysqlTable("planning_assumptions", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("owner_id").notNull(),
+  scope: mysqlEnum("assumption_scope", ["platform", "firm", "advisor", "client"]).default("advisor"),
+  scopeEntityId: int("scope_entity_id"),
+  inflationRate: decimal("inflation_rate", { precision: 5, scale: 4 }),
+  equityReturn: decimal("equity_return", { precision: 5, scale: 4 }),
+  bondReturn: decimal("bond_return", { precision: 5, scale: 4 }),
+  riskFreeRate: decimal("risk_free_rate", { precision: 5, scale: 4 }),
+  taxBracketFederal: decimal("tax_bracket_federal", { precision: 5, scale: 4 }),
+  taxBracketState: decimal("tax_bracket_state", { precision: 5, scale: 4 }),
+  capitalGainsRate: decimal("capital_gains_rate", { precision: 5, scale: 4 }),
+  estateExemption: decimal("estate_exemption", { precision: 14, scale: 2 }),
+  sofrRate: decimal("sofr_rate", { precision: 5, scale: 4 }),
+  mortalityTable: varchar("mortality_table", { length: 100 }),
+  customAssumptions: json("custom_assumptions"),
+  assumptionSource: mysqlEnum("assumption_source", ["manual", "fred_api", "market_data", "firm_default"]).default("manual"),
+  effectiveDate: date("effective_date"),
+  expiresDate: date("expires_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  ownerIdx: index("idx_planning_assumptions_owner").on(table.ownerId),
+  scopeIdx: index("idx_planning_assumptions_scope").on(table.scope, table.scopeEntityId),
+}));
+export type PlanningAssumptionRecord = typeof planningAssumptions.$inferSelect;
+export type InsertPlanningAssumption = typeof planningAssumptions.$inferInsert;

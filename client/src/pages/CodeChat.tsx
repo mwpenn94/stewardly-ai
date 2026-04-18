@@ -154,6 +154,7 @@ import {
   type EditHistoryState,
   type EditHistoryEntry,
 } from "@/components/codeChat/editHistory";
+import { useCodeChatStream, type ToolEvent, type CodeChatMessage } from "@/hooks/useCodeChatStream";
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -328,8 +329,6 @@ function GrepResultView({
     </div>
   );
 }
-
-import { useCodeChatStream, type ToolEvent, type CodeChatMessage } from "@/hooks/useCodeChatStream";
 
 // ─── Live Tool Event Display ───────────────────────────────────────────────
 

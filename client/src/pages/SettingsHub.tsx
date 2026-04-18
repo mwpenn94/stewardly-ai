@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Brain, Shield, FileText, Sparkles, User,
   Loader2, Settings2, Bell, Palette, Mic, Link2, Keyboard,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, ChevronRight, Home,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { getLoginUrl } from "@/const";
@@ -176,7 +176,27 @@ export default function SettingsHub() {
                 <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
                   <PanelLeftOpen className="w-4 h-4" />
                 </Button>
-                <span className="text-sm font-medium text-foreground">{ALL_ITEMS.find(t => t.id === activeTab)?.label}</span>
+                <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs">
+                  <button type="button" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                    <Home className="w-3 h-3" /><span className="hidden sm:inline">Home</span>
+                  </button>
+                  <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                  <button type="button" onClick={() => setActiveTab("profile")} className={`transition-colors flex items-center gap-1 ${activeTab === "profile" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}>
+                    <Settings2 className="w-3 h-3" /><span>Settings</span>
+                  </button>
+                  {activeTab !== "profile" && (() => {
+                    const currentItem = ALL_ITEMS.find(t => t.id === activeTab);
+                    const currentSection = NAV_SECTIONS.find(s => s.items.some(i => i.id === activeTab));
+                    if (!currentItem) return null;
+                    const Icon = currentItem.icon;
+                    return (<>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                      <span className="text-muted-foreground/60 hidden sm:inline">{currentSection?.group}</span>
+                      {currentSection && <ChevronRight className="w-3 h-3 text-muted-foreground/50 hidden sm:inline" />}
+                      <span className="text-foreground font-medium flex items-center gap-1"><Icon className="w-3 h-3" />{currentItem.label}</span>
+                    </>);
+                  })()}
+                </nav>
               </div>
             </div>
             {needsAuth ? (
