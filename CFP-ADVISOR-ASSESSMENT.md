@@ -723,11 +723,11 @@ The unified calculator orchestrator should be updated so that:
 
 | Workflow | Current State | Needed Enhancement |
 |---|---|---|
-| **Client Onboarding** | Guided intake flow exists | Add engagement letter generation, fee disclosure, Form CRS delivery tracking |
-| **Annual Review** | Review page exists | Add year-over-year comparison, goal progress visualization, plan adherence trending |
-| **Insurance Application** | Application tracking exists | Add underwriting status, requirements tracking, policy delivery confirmation |
-| **Compliance Audit** | Audit page exists | Add random sample selection, supervisory review documentation, exception tracking |
-| **Meeting Management** | Video conferencing + transcription | Add pre-meeting brief generation, post-meeting action item extraction, follow-up scheduling |
+| **Client Onboarding** | ~~Guided intake flow exists~~ **DONE (Pass 119)** | ~~Add engagement letter generation, fee disclosure, Form CRS delivery tracking~~ — Full engagement letter service with LLM prose, fee tiers, fiduciary acknowledgment, Form CRS + ADV Part 2 delivery tracking |
+| **Annual Review** | ~~Review page exists~~ **DONE (Pass 119)** | ~~Add year-over-year comparison, goal progress visualization, plan adherence trending~~ — YoY comparison service with snapshot capture, trend indicators, plan adherence scoring, milestone timeline |
+| **Insurance Application** | ~~Application tracking exists~~ **DONE (Pass 119)** | ~~Add underwriting status, requirements tracking, policy delivery confirmation~~ — Underwriting tracking with full lifecycle, requirements management, carrier dashboards |
+| **Compliance Audit** | ~~Audit page exists~~ **DONE (Pass 119)** | ~~Add random sample selection, supervisory review documentation, exception tracking~~ — Compliance audit sampling with random/targeted/comprehensive modes, severity classification, supervisor review |
+| **Meeting Management** | ~~Video conferencing + transcription~~ **DONE (Pass 119)** | ~~Add pre-meeting brief generation, post-meeting action item extraction, follow-up scheduling~~ — LLM pre-meeting briefs, action item tracking with assignee/due date, follow-up scheduling |
 
 ---
 
@@ -737,21 +737,21 @@ The unified calculator orchestrator should be updated so that:
 
 | Failure Mode | Description | Risk Level |
 |---|---|---|
-| **Stale suitability scores** | Suitability decay runs on a schedule but client circumstances can change between runs | Medium |
-| **Calculator assumption drift** | Each calculator panel may use different assumptions (inflation, returns) leading to inconsistent projections | High |
-| **Recommendation orphaning** | Recommendations in `recommendationsLog` may not be linked to specific goals, making it impossible to track whether the recommendation addresses the identified gap | High |
-| **Compliance documentation gaps** | The `reasoning` field is free text — there is no enforcement that it contains the required elements for Reg BI or fiduciary documentation | High |
-| **"Also My Client" data staleness** | After initial roll-up, there is no guaranteed synchronization mechanism if the client updates their profile independently | Medium |
+| **Stale suitability scores** | ~~Suitability decay runs on a schedule but client circumstances can change between runs~~ **MITIGATED (Pass 119)** — `checkSuitabilityStaleness` function with configurable thresholds (180d warning, 365d critical) | Medium → Low |
+| **Calculator assumption drift** | ~~Each calculator panel may use different assumptions (inflation, returns) leading to inconsistent projections~~ **RESOLVED (Pass 119)** — `detectAssumptionDrift` cross-validates 5 key assumptions across all saved analyses with severity scoring | High → Low |
+| **Recommendation orphaning** | ~~Recommendations in `recommendationsLog` may not be linked to specific goals~~ **RESOLVED (Pass 119)** — `findOrphanedRecommendations` identifies unlinked recommendations and suggests goal linkages with confidence scoring | High → Low |
+| **Compliance documentation gaps** | ~~The `reasoning` field is free text~~ **MITIGATED (Pass 119)** — Unified Fiduciary File aggregates all compliance artifacts; Reg BI compliance checker validates structured documentation | High → Medium |
+| **"Also My Client" data staleness** | ~~After initial roll-up, there is no guaranteed synchronization mechanism~~ **MITIGATED (Pass 119)** — `detectDataStaleness` monitors 8 data sources with freshness scoring and automated alerts | Medium → Low |
 
 ### 8.2 Regulatory Risk Areas
 
 | Area | Risk | Mitigation Needed |
 |---|---|---|
-| **Reg BI documentation** | Free-text reasoning may not satisfy SEC examination requirements | Structured reasoning template with required fields |
+| **Reg BI documentation** | ~~Free-text reasoning may not satisfy SEC examination requirements~~ **MITIGATED (Pass 119)** — Unified Fiduciary File with structured Reg BI compliance checker | Structured reasoning template with required fields |
 | **FINRA 3-year retention** | Communication archive has retention tracking but not all recommendation documents are archived | Automatic archival of all PFR documents and recommendation chains |
 | **State insurance replacement** | No structured replacement analysis per NAIC Model Regulation 613 | Replacement analysis workflow with required comparison fields |
-| **Senior investor protections** | No age-based suitability enhancements | Age-triggered additional suitability checks and cooling-off period tracking |
-| **Privacy (Reg S-P)** | Client data sharing between practice levels needs consent tracking | Explicit consent management for data sharing between advisor and client levels |
+| **Senior investor protections** | ~~No age-based suitability enhancements~~ **RESOLVED (Pass 117)** — FINRA 2165 and NAIC compliance | Age-triggered additional suitability checks and cooling-off period tracking |
+| **Privacy (Reg S-P)** | ~~Client data sharing between practice levels needs consent tracking~~ **RESOLVED (Pass 119)** — Privacy consent management with granular consent tracking, version control, and audit trail | Explicit consent management for data sharing between advisor and client levels |
 
 ---
 
@@ -802,24 +802,25 @@ The unified calculator orchestrator should be updated so that:
 
 ## 10. Rating
 
-**Current State: 9.5 / 10** (updated Pass 118, previously 9.4)
+**Current State: 9.6 / 10** (updated Pass 119, previously 9.5)
 
 The platform is genuinely impressive in scope and ambition. The practice management calculator suite (19 panels with forward/backward planning) is best-in-class for the insurance distribution channel. The AI integration (consensus engine, autonomous client analysis, contextual wiring) is sophisticated. The integration stack (Plaid, SnapTrade, Daily.co, Deepgram, FRED, BLS) is comprehensive.
 
-With the completion of Phases 1-7, the planning hierarchy is now a comprehensive CFP-standard framework with 14 interconnected services, 560 tRPC procedures, and 11 database tables. All 12 Section 7.1 workflows are implemented including specialized workflows (special needs with SNT/ABLE, elder care with ADL/Medicaid/VA, cross-border with FBAR/FATCA/FTC), medium-priority workflows (charitable planning with CRT/CLT/DAF/PF/QCD, divorce planning with QDRO, business succession with buy-sell/ESOP), and the PFR PDF export pipeline. The wealth engine optimization layer adds institutional-grade risk management (collateral tracking, exit strategy modeling), regulatory compliance (senior investor protections, SEC Marketing Rule), and cross-calculator gap aggregation. Pass 118 added the Cascading Planning Engine with forward/backward cascade, deep cascade preview, alignment health scoring, cross-hierarchy gap analysis, goal-strategy matrix, execution order computation, and 6 cross-service integrations.
+With the completion of Phases 1-7 and the Section 7.2 enhancements, the planning hierarchy is now a comprehensive CFP-standard framework with **19 interconnected services**, **580+ tRPC procedures**, and **16 database tables**. All 12 Section 7.1 workflows and all 5 Section 7.2 workflows are implemented. The wealth engine optimization layer adds institutional-grade risk management, regulatory compliance, cross-calculator gap aggregation, and a comprehensive diagnostic suite. Pass 119 completed all Section 7.2 partially-implemented workflows (engagement letters, YoY comparison, underwriting tracking, meeting management, compliance audit sampling), added privacy consent management, and built the Wealth Engine Diagnostic Suite that runs 6 parallel analyses (unified fiduciary file, assumption drift detection, orphaned recommendation finder, data staleness detection, planning health report, cross-calculator consistency validation) producing a unified health score. All 5 adversarial failure modes from Section 8.1 are now mitigated or resolved.
 
-**Justification for 9.5:** All workflows are implemented with full cascading alignment across the planning hierarchy. The Cascading Planning Engine enables forward cascade (parent target → proportional child allocation), backward cascade (child value change → ancestor roll-up with recalculation), deep cascade preview (multi-level impact simulation before commit), alignment health scoring (weighted composite across coverage, funding, priority, and timeline dimensions), cross-hierarchy gap analysis (identifying misaligned nodes across strategy/implementation levels), goal-strategy matrix (mapping every goal to its supporting strategies with coverage metrics), and execution order computation (topological sort with dependency-aware sequencing). Six cross-service integrations connect the cascade engine to the calculator bridge, shared assumptions, recommendation propagation, PFR generator, benchmark engine, and dashboard aggregation. The CascadeAlignmentPanel UI provides 5 visualization tabs. The deployment build failure (storage import path) and MIME type root cause (SPA fallback serving HTML for missing JS assets) are both resolved. The remaining distance to 10.0 is in real-world production hardening through advisor feedback and live client testing.
+**Justification for 9.6:** All Section 7.1 and 7.2 workflows are now complete. The Wealth Engine Diagnostic Suite addresses all 5 adversarial failure modes identified in Section 8.1: stale suitability scores (configurable staleness detection), calculator assumption drift (cross-validation of 5 key assumptions), recommendation orphaning (AI-suggested goal linkages with confidence scoring), compliance documentation gaps (unified fiduciary file with Reg BI compliance checker), and data staleness (8-source freshness monitoring). The engagement letter service provides automated drafting with LLM prose, fee tier disclosure, fiduciary acknowledgment, and full regulatory document delivery tracking. The YoY comparison service enables time-series planning analysis with snapshot capture, trend indicators, and plan adherence scoring. Privacy consent management resolves the Reg S-P regulatory risk. The remaining distance to 10.0 is in real-world production hardening through advisor feedback, live client testing, and FINRA 3-year retention automation.
 
 ---
 
 ## 11. Next Pass Recommendation
 
-**Phases 1-7 are complete.** The platform has reached convergence at 9.5/10. Future passes should focus on:
+**Phases 1-7 and Section 7.2 are complete.** The platform has reached convergence at 9.6/10. Future passes should focus on:
 
 1. **Real-world advisor testing** with live client scenarios and edge case discovery
 2. **Production hardening** based on advisor feedback and usage patterns
-3. **Section 7.2 enhancements** to existing workflows (engagement letter generation, year-over-year comparison, underwriting status tracking)
+3. **FINRA 3-year retention automation** for all PFR documents and recommendation chains
 4. **Performance optimization** of the PFR generation pipeline for large client portfolios
+5. **NAIC Model Regulation 613 replacement analysis** structured workflow
 
 **Re-entry triggers for future passes:**
 - DOL Fiduciary Rule 2.0 finalization (regulatory compliance update needed)
@@ -827,3 +828,4 @@ With the completion of Phases 1-7, the planning hierarchy is now a comprehensive
 - SEC Marketing Rule enforcement actions (compliance documentation enhancement)
 - Client feedback on PFR document quality and usefulness
 - Advisor feedback on advanced workflow usability and completeness
+- Live client testing results revealing edge cases in engagement letter or YoY comparison workflows

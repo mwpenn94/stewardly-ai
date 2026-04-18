@@ -7168,3 +7168,112 @@ export const benchmarkComparisons = mysqlTable("benchmark_comparisons", {
 }));
 export type BenchmarkComparison = typeof benchmarkComparisons.$inferSelect;
 export type InsertBenchmarkComparison = typeof benchmarkComparisons.$inferInsert;
+
+// ─── Pass 119: Section 7.2 Enhancements ──────────────────────────
+
+export const engagementLetters = mysqlTable("engagement_letters", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id").notNull(),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  advisorName: varchar("advisor_name", { length: 255 }).notNull(),
+  firmName: varchar("firm_name", { length: 255 }).notNull(),
+  scopeJson: json("scope_json"),
+  feeScheduleJson: json("fee_schedule_json"),
+  fiduciaryStandard: varchar("fiduciary_standard", { length: 50 }).default("fiduciary"),
+  engagementType: varchar("engagement_type", { length: 50 }).default("initial"),
+  effectiveDate: varchar("effective_date", { length: 20 }),
+  termMonths: int("term_months").default(12),
+  autoRenew: mysqlBoolean("auto_renew").default(true),
+  terminationNoticeDays: int("termination_notice_days").default(30),
+  formCrsJson: json("form_crs_json"),
+  advDeliveryJson: json("adv_delivery_json"),
+  privacyPolicyDelivered: mysqlBoolean("privacy_policy_delivered").default(false),
+  arbitrationClause: mysqlBoolean("arbitration_clause").default(false),
+  status: varchar("status", { length: 50 }).default("draft"),
+  letterHtml: text("letter_html"),
+  letterMarkdown: text("letter_markdown"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  clientIdx: index("idx_engagement_letters_client").on(table.clientId),
+  advisorIdx: index("idx_engagement_letters_advisor").on(table.advisorId),
+  statusIdx: index("idx_engagement_letters_status").on(table.status),
+}));
+export type EngagementLetter = typeof engagementLetters.$inferSelect;
+export type InsertEngagementLetter = typeof engagementLetters.$inferInsert;
+
+export const planningSnapshots = mysqlTable("planning_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id"),
+  snapshotDate: varchar("snapshot_date", { length: 20 }),
+  snapshotType: varchar("snapshot_type", { length: 50 }).default("manual"),
+  label: varchar("label", { length: 255 }),
+  nodesJson: json("nodes_json"),
+  goalsJson: json("goals_json"),
+  metricsJson: json("metrics_json"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientIdx: index("idx_planning_snapshots_client").on(table.clientId),
+  dateIdx: index("idx_planning_snapshots_date").on(table.snapshotDate),
+  typeIdx: index("idx_planning_snapshots_type").on(table.snapshotType),
+}));
+export type PlanningSnapshotRow = typeof planningSnapshots.$inferSelect;
+export type InsertPlanningSnapshot = typeof planningSnapshots.$inferInsert;
+
+export const underwritingTracking = mysqlTable("underwriting_tracking", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  carrier: varchar("carrier", { length: 255 }),
+  product: varchar("product", { length: 255 }),
+  status: varchar("status", { length: 50 }).default("submitted"),
+  requirementsJson: json("requirements_json"),
+  submittedAt: varchar("submitted_at", { length: 30 }),
+  lastStatusUpdate: varchar("last_status_update", { length: 30 }),
+  expectedDecisionDate: varchar("expected_decision_date", { length: 30 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  clientIdx: index("idx_underwriting_tracking_client").on(table.clientId),
+  statusIdx: index("idx_underwriting_tracking_status").on(table.status),
+}));
+export type UnderwritingTrackingRow = typeof underwritingTracking.$inferSelect;
+export type InsertUnderwritingTracking = typeof underwritingTracking.$inferInsert;
+
+// meetingActionItems table already exists (line 956) — reuse existing definition
+
+export const complianceAuditSamples = mysqlTable("compliance_audit_samples", {
+  id: int("id").autoincrement().primaryKey(),
+  reviewPeriod: varchar("review_period", { length: 50 }),
+  sampleSize: int("sample_size"),
+  selectedAccountsJson: json("selected_accounts_json"),
+  reviewType: varchar("review_type", { length: 50 }).default("random"),
+  findingsJson: json("findings_json"),
+  supervisorId: int("supervisor_id"),
+  reviewDate: varchar("review_date", { length: 20 }),
+  status: varchar("status", { length: 50 }).default("pending"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+}, (table) => ({
+  supervisorIdx: index("idx_compliance_audit_samples_supervisor").on(table.supervisorId),
+  statusIdx: index("idx_compliance_audit_samples_status").on(table.status),
+}));
+export type ComplianceAuditSampleRow = typeof complianceAuditSamples.$inferSelect;
+export type InsertComplianceAuditSample = typeof complianceAuditSamples.$inferInsert;
+
+export const privacyConsentLog = mysqlTable("privacy_consent_log", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id"),
+  consentType: varchar("consent_type", { length: 50 }),
+  granted: mysqlBoolean("granted").default(false),
+  details: text("details"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientIdx: index("idx_privacy_consent_log_client").on(table.clientId),
+  typeIdx: index("idx_privacy_consent_log_type").on(table.consentType),
+}));
+export type PrivacyConsentLogRow = typeof privacyConsentLog.$inferSelect;
+export type InsertPrivacyConsentLog = typeof privacyConsentLog.$inferInsert;

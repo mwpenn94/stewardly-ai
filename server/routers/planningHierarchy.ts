@@ -1346,4 +1346,361 @@ export const planningHierarchyRouter = router({
       const { getCascadeDashboard } = await import("../services/planningHierarchy/cascadingEngine");
       return getCascadeDashboard(input.clientNodeId);
     }),
+
+  // ─── Pass 119: Engagement Letter Service ─────────────────────
+
+  generateEngagementLetter: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      clientName: z.string(),
+      advisorName: z.string(),
+      firmName: z.string().default("Stewardly Financial"),
+      scope: z.object({
+        financialPlanning: z.boolean().default(true),
+        investmentManagement: z.boolean().default(false),
+        insurancePlanning: z.boolean().default(true),
+        taxPlanning: z.boolean().default(false),
+        estatePlanning: z.boolean().default(false),
+        retirementPlanning: z.boolean().default(true),
+        educationPlanning: z.boolean().default(false),
+        debtManagement: z.boolean().default(false),
+        businessPlanning: z.boolean().default(false),
+        charitablePlanning: z.boolean().default(false),
+        specialNeeds: z.boolean().default(false),
+        elderCare: z.boolean().default(false),
+        divorceFinancial: z.boolean().default(false),
+        crossBorder: z.boolean().default(false),
+        customServices: z.array(z.string()).default([]),
+      }),
+      feeSchedule: z.object({
+        feeType: z.enum(["aum", "flat", "hourly", "commission", "hybrid"]),
+        aum: z.object({ tiers: z.array(z.object({ minAssets: z.number(), maxAssets: z.number().nullable(), bps: z.number() })), minimumFee: z.number().optional() }).optional(),
+        flat: z.object({ annualFee: z.number(), services: z.array(z.string()) }).optional(),
+        hourly: z.object({ rate: z.number(), estimatedHours: z.number() }).optional(),
+        commission: z.object({ note: z.string() }).optional(),
+        hybrid: z.object({ components: z.array(z.object({ type: z.string(), amount: z.number(), description: z.string() })) }).optional(),
+      }),
+      fiduciaryStandard: z.enum(["fiduciary", "suitability", "best-interest"]).default("fiduciary"),
+      engagementType: z.enum(["initial", "renewal", "amendment"]).default("initial"),
+      effectiveDate: z.string(),
+      termMonths: z.number().default(12),
+      autoRenew: z.boolean().default(true),
+      terminationNoticeDays: z.number().default(30),
+      arbitrationClause: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { generateEngagementLetter, saveEngagementLetter } = await import("../services/planningHierarchy/engagementLetterService");
+      const data = {
+        ...input,
+        advisorId: ctx.user.id,
+        formCRS: { deliveredAt: null, acknowledgedAt: null, deliveryMethod: "portal" as const, version: "1.0", documentUrl: null },
+        advDelivery: { part2ADeliveredAt: null, part2BDeliveredAt: null, acknowledgedAt: null, version: "1.0" },
+        privacyPolicyDelivered: false,
+        status: "draft" as const,
+      };
+      const { html, markdown } = await generateEngagementLetter(data);
+      const id = await saveEngagementLetter(data, html, markdown);
+      return { id, html, markdown };
+    }),
+
+  listEngagementLetters: protectedProcedure
+    .input(z.object({ clientId: z.number().optional() }))
+    .query(async ({ ctx, input }) => {
+      const { listEngagementLetters } = await import("../services/planningHierarchy/engagementLetterService");
+      return listEngagementLetters(input.clientId, ctx.user.id);
+    }),
+
+  getEngagementLetter: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const { getEngagementLetter } = await import("../services/planningHierarchy/engagementLetterService");
+      return getEngagementLetter(input.id);
+    }),
+
+  updateEngagementStatus: protectedProcedure
+    .input(z.object({ id: z.number(), status: z.enum(["draft", "sent", "signed", "active", "expired", "terminated"]) }))
+    .mutation(async ({ input }) => {
+      const { updateEngagementStatus } = await import("../services/planningHierarchy/engagementLetterService");
+      return updateEngagementStatus(input.id, input.status);
+    }),
+
+  // ─── Pass 119: Year-over-Year Comparison ─────────────────────
+
+  captureSnapshot: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      snapshotType: z.enum(["annual", "quarterly", "milestone", "manual"]).default("manual"),
+      label: z.string().default("Snapshot"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { captureSnapshot } = await import("../services/planningHierarchy/yearOverYearService");
+      return captureSnapshot(input.clientId, ctx.user.id, input.snapshotType, input.label);
+    }),
+
+  getSnapshots: protectedProcedure
+    .input(z.object({ clientId: z.number(), limit: z.number().default(20) }))
+    .query(async ({ input }) => {
+      const { getSnapshots } = await import("../services/planningHierarchy/yearOverYearService");
+      return getSnapshots(input.clientId, input.limit);
+    }),
+
+  getYoYComparison: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { generateYoYComparison } = await import("../services/planningHierarchy/yearOverYearService");
+      return generateYoYComparison(input.clientId);
+    }),
+
+  getPlanAdherence: protectedProcedure
+    .input(z.object({ clientId: z.number(), periodLabel: z.string().default("Current Period") }))
+    .query(async ({ input }) => {
+      const { calculatePlanAdherence } = await import("../services/planningHierarchy/yearOverYearService");
+      return calculatePlanAdherence(input.clientId, input.periodLabel);
+    }),
+
+  deleteSnapshot: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const { deleteSnapshot } = await import("../services/planningHierarchy/yearOverYearService");
+      return deleteSnapshot(input.id);
+    }),
+
+  // ─── Pass 119: Underwriting Status Tracking ──────────────────
+
+  createUnderwritingTracking: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      carrier: z.string(),
+      product: z.string(),
+      status: z.enum(["submitted", "underwriting", "requirements-pending", "approved", "declined", "withdrawn", "issued", "delivered"]).default("submitted"),
+      requirements: z.array(z.object({
+        type: z.string(),
+        description: z.string(),
+        status: z.enum(["pending", "received", "waived"]).default("pending"),
+        dueDate: z.string().nullable().default(null),
+        receivedDate: z.string().nullable().default(null),
+      })).default([]),
+      expectedDecisionDate: z.string().nullable().default(null),
+      notes: z.string().default(""),
+    }))
+    .mutation(async ({ input }) => {
+      const { saveUnderwritingStatus } = await import("../services/planningHierarchy/engagementLetterService");
+      return saveUnderwritingStatus({ ...input, submittedAt: new Date().toISOString(), lastStatusUpdate: new Date().toISOString() });
+    }),
+
+  listUnderwritingStatuses: protectedProcedure
+    .input(z.object({ clientId: z.number().optional() }))
+    .query(async ({ input }) => {
+      const { listUnderwritingStatuses } = await import("../services/planningHierarchy/engagementLetterService");
+      return listUnderwritingStatuses(input.clientId);
+    }),
+
+  updateUnderwritingTracking: protectedProcedure
+    .input(z.object({
+      applicationId: z.number(),
+      status: z.enum(["submitted", "underwriting", "requirements-pending", "approved", "declined", "withdrawn", "issued", "delivered"]),
+      requirements: z.array(z.object({
+        type: z.string(),
+        description: z.string(),
+        status: z.enum(["pending", "received", "waived"]),
+        dueDate: z.string().nullable(),
+        receivedDate: z.string().nullable(),
+      })).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { updateUnderwritingStatus } = await import("../services/planningHierarchy/engagementLetterService");
+      return updateUnderwritingStatus(input.applicationId, input.status, input.requirements);
+    }),
+
+  // ─── Pass 119: Meeting Management Enhancements ───────────────
+
+  generatePreMeetingBrief: protectedProcedure
+    .input(z.object({ clientId: z.number(), meetingPurpose: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { generatePreMeetingBrief } = await import("../services/planningHierarchy/engagementLetterService");
+      return generatePreMeetingBrief(input.clientId, ctx.user.id, input.meetingPurpose);
+    }),
+
+  extractActionItems: protectedProcedure
+    .input(z.object({ meetingNotes: z.string() }))
+    .mutation(async ({ input }) => {
+      const { extractActionItems } = await import("../services/planningHierarchy/engagementLetterService");
+      return extractActionItems(input.meetingNotes);
+    }),
+
+  saveMeetingActionItems: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      meetingId: z.number(),
+      items: z.array(z.object({ item: z.string(), assignee: z.string(), dueDate: z.string() })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { saveMeetingActionItems } = await import("../services/planningHierarchy/engagementLetterService");
+      return saveMeetingActionItems(input.clientId, ctx.user.id, input.meetingId, input.items);
+    }),
+
+  listMeetingActionItems: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { listMeetingActionItems } = await import("../services/planningHierarchy/engagementLetterService");
+      return listMeetingActionItems(input.clientId);
+    }),
+
+  updateActionItemStatus: protectedProcedure
+    .input(z.object({ id: z.number(), status: z.enum(["pending", "done", "cancelled"]) }))
+    .mutation(async ({ input }) => {
+      const { updateActionItemStatus } = await import("../services/planningHierarchy/engagementLetterService");
+      return updateActionItemStatus(input.id, input.status);
+    }),
+
+  // ─── Pass 119: Compliance Audit Enhancements ─────────────────
+
+  generateAuditSample: protectedProcedure
+    .input(z.object({
+      reviewPeriod: z.string(),
+      sampleSize: z.number().default(10),
+      reviewType: z.enum(["random", "targeted", "comprehensive"]).default("random"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { generateAuditSample } = await import("../services/planningHierarchy/engagementLetterService");
+      return generateAuditSample(ctx.user.id, input.reviewPeriod, input.sampleSize, input.reviewType);
+    }),
+
+  saveComplianceAuditSample: protectedProcedure
+    .input(z.object({
+      reviewPeriod: z.string(),
+      sampleSize: z.number(),
+      selectedAccounts: z.array(z.number()),
+      reviewType: z.enum(["random", "targeted", "comprehensive"]),
+      findings: z.array(z.object({
+        accountId: z.number(),
+        finding: z.string(),
+        severity: z.enum(["low", "medium", "high"]),
+        resolved: z.boolean(),
+      })).default([]),
+      reviewDate: z.string(),
+      status: z.enum(["pending", "in-progress", "completed", "escalated"]).default("pending"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { saveComplianceAuditSample } = await import("../services/planningHierarchy/engagementLetterService");
+      return saveComplianceAuditSample({ ...input, supervisorId: ctx.user.id });
+    }),
+
+  listComplianceAuditSamples: protectedProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const { listComplianceAuditSamples } = await import("../services/planningHierarchy/engagementLetterService");
+      return listComplianceAuditSamples(ctx.user.id);
+    }),
+
+  // ─── Pass 119: Privacy Consent Tracking (Reg S-P) ────────────
+
+  recordPrivacyConsent: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      consentType: z.enum(["data-sharing", "third-party", "marketing", "cross-practice"]),
+      granted: z.boolean(),
+      details: z.string().default(""),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { recordPrivacyConsent } = await import("../services/planningHierarchy/engagementLetterService");
+      return recordPrivacyConsent(input.clientId, ctx.user.id, input.consentType, input.granted, input.details);
+    }),
+
+  getPrivacyConsents: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { getPrivacyConsents } = await import("../services/planningHierarchy/engagementLetterService");
+      return getPrivacyConsents(input.clientId);
+    }),
+
+  // ─── Pass 119: PFR Auto-Archival (FINRA 3-year retention) ────
+
+  archivePFR: protectedProcedure
+    .input(z.object({ pfrId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { archivePFRDocument } = await import("../services/planningHierarchy/engagementLetterService");
+      return archivePFRDocument(input.pfrId);
+    }),
+
+  listArchivedPFRs: protectedProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const { listArchivedPFRs } = await import("../services/planningHierarchy/engagementLetterService");
+      return listArchivedPFRs(ctx.user.id);
+    }),
+
+  // ─── Pass 119: Suitability & Assumption Drift Detection ──────
+
+  checkSuitabilityStaleness: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { checkSuitabilityStaleness } = await import("../services/planningHierarchy/engagementLetterService");
+      return checkSuitabilityStaleness(input.clientId);
+    }),
+
+  detectAssumptionDrift: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { detectAssumptionDrift } = await import("../services/planningHierarchy/engagementLetterService");
+      return detectAssumptionDrift(input.clientId);
+    }),
+
+  // ─── Pass 119: Comprehensive Wealth Engine Optimization ──────
+
+  generateFiduciaryFile: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const { generateUnifiedFiduciaryFile } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return generateUnifiedFiduciaryFile(input.clientId, ctx.user.id);
+    }),
+
+  detectAssumptionDriftV2: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { detectAssumptionDrift: detectDrift } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return detectDrift(input.clientId);
+    }),
+
+  findOrphanedRecommendations: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { findOrphanedRecommendations } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return findOrphanedRecommendations(input.clientId);
+    }),
+
+  linkRecommendationToGoal: protectedProcedure
+    .input(z.object({ recommendationId: z.number(), goalId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { linkRecommendationToGoal } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return linkRecommendationToGoal(input.recommendationId, input.goalId);
+    }),
+
+  detectDataStaleness: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { detectDataStaleness } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return detectDataStaleness(input.clientId);
+    }),
+
+  generatePlanningHealthReport: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { generatePlanningHealthReport } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return generatePlanningHealthReport(input.clientId);
+    }),
+
+  validateCrossCalculatorConsistency: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { validateCrossCalculatorConsistency } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return validateCrossCalculatorConsistency(input.clientId);
+    }),
+
+  runComprehensiveDiagnostic: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const { runComprehensiveDiagnostic } = await import("../services/planningHierarchy/wealthEngineOptimizer");
+      return runComprehensiveDiagnostic(input.clientId, ctx.user.id);
+    }),
 });

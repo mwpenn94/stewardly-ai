@@ -1,6 +1,6 @@
 # Stewardly AI — Comprehensive Platform Guide
 
-**Version:** 4.0 | **Date:** April 16, 2026 | **Status:** Production  
+**Version:** 4.1 | **Date:** April 18, 2026 | **Status:** Production  
 **Domains:** stewardly.manus.space, wealthai-gakeferp.manus.space
 
 ---
@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with **430,000+ lines of code** across **1,640+ source files**, **378 database tables**, **105 tRPC API routers**, and **9,883 automated tests** across **398 test files** (all passing). The platform has undergone **118 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with **435,000+ lines of code** across **1,650+ source files**, **383 database tables**, **105 tRPC API routers**, and **9,883 automated tests** across **398 test files** (all passing). The platform has undergone **119 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -54,7 +54,7 @@ The system is built on a modern TypeScript full-stack architecture with **430,00
 | Business domains | 20+ (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring, fairness, task queue, agentic execution, workflow) |
 | NPM dependencies | 95+ |
 | Dev dependencies | 30+ |
-| Recursive optimization passes | 118 |
+| Recursive optimization passes | 119 |
 
 ### 2.3 Directory Structure
 
@@ -608,6 +608,9 @@ The 112 server services are organized into functional domains:
 **Compliance & Security (10 services):**
 `compliancePrediction`, `compliancePrescreening`, `regBIDocumentation`, `regulatoryImpact`, `regulatoryMonitor`, `dynamicDisclaimers`, `dynamicPermissions`, `fairnessTesting`, `encryption`, `keyRotation`, `mfaService`
 
+**Planning Hierarchy & Wealth Engine (5 services):**
+`cascadeAlignmentEngine`, `engagementLetterService`, `yearOverYearService`, `wealthEngineOptimizer`, `planningHierarchyCore`
+
 **Infrastructure (12 services):**
 `scheduler`, `cronManager`, `scheduledTasks`, `errorHandling`, `dbResilience`, `infrastructureResilience`, `loadTesting`, `pipelineSelfTest`, `canaryDeployment`, `retentionEnforcement`, `qualityNormalization`, `infrastructureDocs`
 
@@ -910,6 +913,51 @@ The `chrome-extension/` directory contains a complete browser extension with thr
 ### 16.8 Model Registry Expansion
 
 The model registry now includes 23 models across 8 families (Gemini, GPT, Claude, OpenAI Reasoning, DeepSeek, Llama, Mistral, Mixtral/Qwen), with multi-select capability in the chat UI for consensus queries.
+
+---
+
+## 17. Pass 119 — Wealth Engine Optimization & Section 7.2 Enhancements (April 18, 2026)
+
+### 17.1 Engagement Letter Generation
+
+Automated engagement letter drafting with LLM-generated prose covering scope of services, fee disclosure (AUM/flat/hourly/commission/hybrid tiers), fiduciary acknowledgment, Form CRS delivery tracking, ADV Part 2 delivery tracking, privacy policy delivery, and arbitration clause options. Supports the full lifecycle: draft → sent → signed → active → expired → terminated. Integrates with the planning hierarchy to create engagement nodes in the planning tree.
+
+### 17.2 Year-over-Year Comparison Dashboard
+
+Time-series comparison of planning snapshots across years with automatic snapshot capture, goal progress tracking with trend indicators (improving/declining/stable/new), plan adherence scoring, and milestone timeline visualization. Computes delta analysis between any two snapshots showing node-level changes with percentage movement.
+
+### 17.3 Underwriting Tracking
+
+Full lifecycle tracking for insurance applications: submitted → underwriting → requirements-pending → approved → declined → withdrawn → issued → delivered. Tracks outstanding requirements with due dates, auto-generates follow-up reminders, and provides carrier-level status dashboards.
+
+### 17.4 Meeting Management
+
+LLM-generated pre-meeting briefs that assemble client context (goals, recent changes, outstanding action items, upcoming milestones). Action item tracking with assignee, due date, and completion status. Follow-up scheduling integration.
+
+### 17.5 Compliance Audit Sampling
+
+Random, targeted, and comprehensive audit sampling with configurable sample sizes. Finding severity classification (low/medium/high), resolution tracking, and supervisor review workflows. Supports regulatory examination preparation.
+
+### 17.6 Privacy Consent Management
+
+Granular consent tracking for data sharing, marketing, third-party access, and analytics. Version-controlled consent records with full audit trail. Supports consent withdrawal with downstream impact analysis.
+
+### 17.7 Wealth Engine Diagnostic Suite
+
+Comprehensive diagnostic that runs 6 parallel analyses and produces a unified health score:
+
+| Analysis | Purpose |
+|----------|----------|
+| Unified Fiduciary File | Aggregates suitability, recommendations, acknowledgments, disclosures, and reviews into a single compliance-ready file |
+| Assumption Drift Detection | Identifies inconsistent assumptions across calculators (inflation, discount rate, tax rate, growth rate, mortality age) |
+| Orphaned Recommendation Finder | Locates recommendations not linked to any goal, with AI-suggested goal linkages |
+| Data Staleness Detection | Checks 8 data sources for freshness, flags critical/stale/aging items |
+| Planning Health Report | Scores goal coverage, strategy alignment, and planning completeness |
+| Cross-Calculator Consistency | Validates that shared assumptions are consistent across all saved analyses |
+
+### 17.8 Cascading Planning Engine (Pass 118)
+
+Forward cascade (goals → strategies → actions), backward cascade (constraints → strategy adjustments → goal revisions), deep cascade preview with impact simulation, alignment health scoring across hierarchy levels, cross-hierarchy gap analysis with severity classification, goal-strategy matrix generation, and topological execution order computation. Integrates with 6 cross-service data sources.
 
 ---
 
