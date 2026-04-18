@@ -169,7 +169,7 @@ function GapAnalysisCard({ gapAnalysis }: { gapAnalysis: NonNullable<ReturnType<
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-xs text-muted-foreground">Current</p>
             <p className="text-lg font-semibold">{formatCurrency(current)}</p>

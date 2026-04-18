@@ -614,6 +614,26 @@ export default function Calculators() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* ─── ALSO MY CLIENT → PLANNING HIERARCHY BRIDGE ─── */
+  const bridgeMut = trpc.planningHierarchy.bridgeContactToClient.useMutation();
+  useEffect(() => {
+    if (!ppAlsoMyClient || !user) return;
+    // When toggled ON, bridge the client profile into the planning hierarchy.
+    // Debounce to avoid rapid fire when toggling.
+    const t = setTimeout(() => {
+      bridgeMut.mutate({
+        contactId: user.id, // The current user's profile as client
+        financialProfile: {
+          income, spouseIncome, netWorth: nw, savings, retirement401k,
+          mortgage, debt, existingInsurance: existIns,
+          riskTolerance, filingStatus: filing,
+        },
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ppAlsoMyClient]);
+
   const handleSave = () => {
     if (!user) { toast.error('Please sign in to save sessions'); return; }
     const inputs = gatherInputs();

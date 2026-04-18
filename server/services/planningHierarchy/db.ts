@@ -67,24 +67,33 @@ export async function updatePlanningNode(id: number, data: Partial<InsertPlannin
 
 /** Recursively collect the full ancestor chain (bottom-up roll-up) */
 export async function getAncestorChain(nodeId: number): Promise<number[]> {
+  const MAX_DEPTH = 20; // Safety guard against circular references
+  const db = await getDb();
+  if (!db) return [];
   const chain: number[] = [];
   let currentId: number | null = nodeId;
-  while (currentId) {
+  let depth = 0;
+  while (currentId && depth < MAX_DEPTH) {
     const node = await getPlanningNode(currentId);
     if (!node || !node.parentId) break;
     chain.push(node.parentId);
     currentId = node.parentId;
+    depth++;
   }
   return chain;
 }
 
 /** Recursively collect all descendant IDs (top-down roll-down) */
-export async function getDescendantIds(nodeId: number): Promise<number[]> {
+export async function getDescendantIds(nodeId: number, depth = 0): Promise<number[]> {
+  const MAX_DEPTH = 20; // Safety guard against circular references
+  if (depth >= MAX_DEPTH) return [];
+  const db = await getDb();
+  if (!db) return [];
   const ids: number[] = [];
   const children = await getChildNodes(nodeId);
   for (const child of children) {
     ids.push(child.id);
-    const grandchildren = await getDescendantIds(child.id);
+    const grandchildren = await getDescendantIds(child.id, depth + 1);
     ids.push(...grandchildren);
   }
   return ids;

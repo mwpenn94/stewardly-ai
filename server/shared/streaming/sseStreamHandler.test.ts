@@ -4,8 +4,12 @@
  * Tests cover: SSE event types, fallback simulation, error handling,
  * disconnect cleanup, and — critically — context injection parity
  * between native streaming and fallback paths.
+ *
+ * The native streaming path uses global `fetch` to call the LLM API directly.
+ * We mock `fetch` to return a non-streaming response (triggering fallback)
+ * so that the tests exercise the fallback path with our mock contextualLLM.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // Mock deepContextAssembler and contextualLLM before importing the module
 vi.mock("../../services/deepContextAssembler", () => ({
@@ -60,7 +64,29 @@ vi.mock("../../_core/logger", () => ({
   },
 }));
 
+// Mock the model registry to avoid dynamic import issues
+vi.mock("../config/modelRegistry", () => ({
+  getDefaultModelId: vi.fn().mockReturnValue("gpt-4o-mini"),
+}));
+
 describe("SSE Stream Handler", () => {
+  // Save original fetch and env
+  const originalFetch = globalThis.fetch;
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Force native streaming to fail by making fetch reject,
+    // so the handler falls through to the contextualLLM fallback path.
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error("Network unavailable in test"));
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    // Restore env vars that tests may have modified
+    process.env = { ...originalEnv };
+  });
+
   describe("SSE Event Types", () => {
     it("should define all required event types including tool_status", () => {
       const tokenEvent = { type: "token" as const, content: "Hello" };
@@ -83,7 +109,6 @@ describe("SSE Stream Handler", () => {
     let writtenData: string[];
 
     beforeEach(() => {
-      vi.clearAllMocks();
       writtenData = [];
       mockReq = {
         on: vi.fn(),
@@ -301,6 +326,7 @@ describe("SSE Stream Handler", () => {
 
       // contextualLLM should receive the ORIGINAL messages, not enriched ones
       // (contextualLLM handles its own context injection internally)
+      expect(mockContextualLLM).toHaveBeenCalled();
       const callArgs = mockContextualLLM.mock.calls[0][0];
       expect(callArgs.messages).toBe(originalMessages);
     });

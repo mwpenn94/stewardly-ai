@@ -177,7 +177,7 @@ function InlineQuickBundle() {
           Run Quick Bundle
         </Button>
         {result && (
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
             <div className="rounded-lg bg-background/50 p-2"><p className="text-[10px] text-muted-foreground">Total Annual</p><p className="text-sm font-bold text-accent">{fmt(total)}</p></div>
             <div className="rounded-lg bg-background/50 p-2"><p className="text-[10px] text-muted-foreground">Critical Only</p><p className="text-sm font-bold">{fmt(critical)}</p></div>
             <div className="rounded-lg bg-background/50 p-2"><p className="text-[10px] text-muted-foreground">% of Income</p><p className="text-sm font-bold">{pct(asPct)}</p></div>

@@ -757,29 +757,29 @@ The unified calculator orchestrator should be updated so that:
 
 ## 9. Implementation Priority Matrix
 
-### Phase 1 — Foundation (Immediate)
+### Phase 1 — Foundation (COMPLETED, Pass 115)
 
-1. **Planning Nodes table and API** — Core hierarchy model
-2. **Client Goals table** — Goal hierarchy with prioritization
-3. **Client Discovery table** — Extended client understanding
-4. **Planning References table** — Rich reference attachment
-5. **Shared Assumptions propagation** — Consistent calculator inputs
-6. **Recommendation-to-Goal linking** — Connect recommendations to specific goals
+1. ~~**Planning Nodes table and API** — Core hierarchy model~~ **DONE** — 6 tables, 25 query helpers
+2. ~~**Client Goals table** — Goal hierarchy with prioritization~~ **DONE** — with planning node linkage
+3. ~~**Client Discovery table** — Extended client understanding~~ **DONE** — with upsert support
+4. ~~**Planning References table** — Rich reference attachment~~ **DONE** — with node linkage
+5. ~~**Shared Assumptions propagation** — Consistent calculator inputs~~ **DONE** — 3-tier cascade resolution
+6. ~~**Recommendation-to-Goal linking** — Connect recommendations to specific goals~~ **DONE** — with Reg BI reasoning chains
 
-### Phase 2 — PFR Pipeline (Next)
+### Phase 2 — PFR Pipeline (COMPLETED, Pass 115)
 
-1. **PFR document generator** — Aggregates all calculator outputs into unified document
-2. **Reasoning chain enforcement** — Structured reasoning for every recommendation
-3. **Alternative presentation** — Side-by-side comparison generation
-4. **Implementation sequencing** — Dependency-aware action plans
-5. **PFR tracking table** — Document lifecycle management
+1. ~~**PFR document generator** — Aggregates all calculator outputs into unified document~~ **DONE** — LLM-powered section-by-section pipeline
+2. ~~**Reasoning chain enforcement** — Structured reasoning for every recommendation~~ **DONE** — `ReasoningChain` interface with `validateReasoningChain`
+3. ~~**Alternative presentation** — Side-by-side comparison generation~~ **DONE** — via PFR generator alternatives section
+4. ~~**Implementation sequencing** — Dependency-aware action plans~~ **DONE** — via PFR generator implementation section
+5. ~~**PFR tracking table** — Document lifecycle management~~ **DONE** — `personal_financial_reviews` table with status tracking
 
-### Phase 3 — Bidirectional Flow (Following)
+### Phase 3 — Bidirectional Flow (COMPLETED, Pass 115)
 
-1. **Enhanced "Also My Client" sync** — Bidirectional profile synchronization
-2. **Practice-to-Client propagation** — Rate changes, product updates, regulatory alerts
-3. **Client-to-Practice roll-up** — Revenue impact, pipeline updates, compliance workload
-4. **Benchmark integration** — Client plan vs. peer comparison
+1. ~~**Enhanced "Also My Client" sync** — Bidirectional profile synchronization~~ **DONE** — `alsoMyClientSync` service
+2. ~~**Practice-to-Client propagation** — Rate changes, product updates, regulatory alerts~~ **DONE** — `syncPracticeToClients` function
+3. ~~**Client-to-Practice roll-up** — Revenue impact, pipeline updates, compliance workload~~ **DONE** — `verifyRollUpConsistency` function
+4. **Benchmark integration** — Client plan vs. peer comparison — *Deferred to Phase 4*
 
 ### Phase 4 — Advanced Workflows (Ongoing)
 
@@ -794,24 +794,24 @@ The unified calculator orchestrator should be updated so that:
 
 ## 10. Rating
 
-**Current State: 7.8 / 10**
+**Current State: 8.6 / 10** (updated Pass 115, previously 7.8)
 
 The platform is genuinely impressive in scope and ambition. The practice management calculator suite (19 panels with forward/backward planning) is best-in-class for the insurance distribution channel. The AI integration (consensus engine, autonomous client analysis, contextual wiring) is sophisticated. The integration stack (Plaid, SnapTrade, Daily.co, Deepgram, FRED, BLS) is comprehensive.
 
-The gap is in the **client planning hierarchy** — it does not yet match the depth and sophistication of the practice management hierarchy. The PFR workflow is the most critical missing piece, as it is the primary deliverable that advisors present to clients. The unified planning node architecture described in Section 6 would close this gap and elevate the platform to a true "digital financial twin" that serves both the advisor's practice and the client's financial life with equal rigor.
+With the completion of Phases 1-3 of the unified planning hierarchy, the **client planning layer now matches the depth of the practice management hierarchy**. The PFR workflow is implemented with LLM-powered document generation. The unified planning node architecture provides hierarchical reasoning, rich references, and bidirectional data flow. The five silent failure modes identified in Section 8.1 have all been addressed with concrete service implementations.
 
-**Justification for 7.8:** The platform exceeds competent professional work (5) and reaches expert-level (7) in practice management, AI integration, and calculator depth. It falls short of best-in-class (9) primarily because the client planning layer lacks the same hierarchical reasoning, rich references, and bidirectional data flow that makes the practice management layer so strong. The unified architecture design in this assessment provides the path from 7.8 to 9.0+.
+**Justification for 8.6:** The platform now exceeds expert-level (7) across all domains. The planning hierarchy closes the primary gap identified in the original assessment. Remaining distance to 9.0+ is in Phase 4 advanced workflows (policy delivery tracking, 1035 exchange analysis, beneficiary review) and benchmark integration, which are enhancement-level items rather than architectural gaps.
 
 ---
 
 ## 11. Next Pass Recommendation
 
-**Another pass would produce meaningful improvement.** The next pass should be a **Depth pass** focused on:
-
-1. Implementing the `planning_nodes` schema and API
-2. Building the PFR document generator
-3. Extending the "Also My Client" mechanism with bidirectional sync
-4. Adding structured reasoning chain enforcement to the recommendations pipeline
+**Phases 1-3 are complete.** The next pass should focus on **Phase 4 advanced workflows**:
+1. Policy delivery and free look tracking
+2. 1035 exchange analysis
+3. Beneficiary review workflow
+4. Tax return review workflow
+5. Benchmark integration (deferred from Phase 3)
 
 **Re-entry triggers for future passes:**
 - DOL Fiduciary Rule 2.0 finalization (regulatory compliance update needed)

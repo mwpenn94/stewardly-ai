@@ -296,4 +296,251 @@ export const planningHierarchyRouter = router({
     .query(async ({ input }) => {
       return phDb.resolveEffectiveAssumptions(input.clientId, input.advisorId);
     }),
+
+  // ─── PFR GENERATION ───────────────────────────────────────────────────
+
+  generatePFR: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      reviewType: z.enum(["initial", "annual", "life_event", "regulatory", "ad_hoc"]),
+      planningNodeId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { generatePFR } = await import("../services/planningHierarchy/pfrGenerator");
+      const pfr = await generatePFR({
+        clientId: input.clientId,
+        advisorId: ctx.user.id,
+        reviewType: input.reviewType,
+        planningNodeId: input.planningNodeId,
+      });
+      return pfr;
+    }),
+
+  listPFRs: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { listPFRs } = await import("../services/planningHierarchy/pfrGenerator");
+      return listPFRs(input.clientId);
+    }),
+
+  getPFR: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const { getPFR } = await import("../services/planningHierarchy/pfrGenerator");
+      return getPFR(input.id);
+    }),
+
+  // ─── ALSO MY CLIENT CROSS-CASCADE ─────────────────────────────────────
+
+  bridgeContactToClient: protectedProcedure
+    .input(z.object({
+      contactId: z.number(),
+      financialProfile: z.any().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // When an advisor marks a contact as "Also My Client",
+      // create a client-level planning node linked to the advisor's practice node.
+      // 1. Find or create the advisor's practice-level root node
+      let advisorRoots = await phDb.getRootNodes(ctx.user.id);
+      let practiceNode = advisorRoots.find(n => n.level === "advisor" && n.entityType === "advisor");
+      if (!practiceNode) {
+        const id = await phDb.createPlanningNode({
+          parentId: null,
+          level: "advisor",
+          entityType: "advisor",
+          entityId: ctx.user.id,
+          ownerId: ctx.user.id,
+          label: "My Practice",
+          status: "active",
+        } as any);
+        practiceNode = await phDb.getPlanningNode(id);
+      }
+
+      // 2. Create a client-level node under the practice node
+      const clientNodeId = await phDb.createPlanningNode({
+        parentId: practiceNode!.id,
+        level: "client",
+        entityType: "client",
+        entityId: input.contactId,
+        ownerId: ctx.user.id,
+        label: `Client #${input.contactId}`,
+        status: "active",
+        metadata: {
+          bridgedFrom: "also_my_client",
+          bridgedAt: new Date().toISOString(),
+          financialProfile: input.financialProfile ?? null,
+        },
+      } as any);
+
+      // 3. Trigger roll-up so the practice node aggregates the new client
+      const rollUp = await phDb.rollUpValue(practiceNode!.id);
+
+      return { clientNodeId, practiceNodeId: practiceNode!.id, rollUp };
+    }),
+
+  // ─── FULL TREE ────────────────────────────────────────────────────────
+
+  getFullTree: protectedProcedure
+    .input(z.object({ rootNodeId: z.number().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      // Build a full tree from the user's root nodes
+      const roots = input?.rootNodeId
+        ? [await phDb.getPlanningNode(input.rootNodeId)].filter(Boolean)
+        : await phDb.getRootNodes(ctx.user.id);
+
+      async function buildTree(node: any): Promise<any> {
+        const children = await phDb.getChildNodes(node.id);
+        const refs = await phDb.getReferencesForNode(node.id);
+        return {
+          ...node,
+          references: refs,
+          children: await Promise.all(children.map(buildTree)),
+        };
+      }
+
+      return Promise.all(roots.map(buildTree));
+    }),
+
+  // ─── SHARED ASSUMPTIONS (hierarchy-resolved) ──────────────────────────
+
+  resolveSharedAssumptions: protectedProcedure
+    .input(z.object({
+      clientId: z.number().optional(),
+      advisorId: z.number().optional(),
+      teamId: z.number().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const { resolveAssumptions } = await import("../services/planningHierarchy/sharedAssumptions");
+      return resolveAssumptions(
+        ctx.user.id,
+        input?.clientId,
+        input?.advisorId ?? ctx.user.id,
+        input?.teamId,
+      );
+    }),
+
+  setSharedAssumption: protectedProcedure
+    .input(z.object({
+      scope: z.enum(["platform", "team", "advisor", "client"]),
+      scopeEntityId: z.number().nullable().optional(),
+      key: z.string(),
+      value: z.number(),
+      label: z.string().optional(),
+      source: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { setAssumption } = await import("../services/planningHierarchy/sharedAssumptions");
+      await setAssumption(
+        ctx.user.id,
+        input.scope,
+        input.scopeEntityId ?? null,
+        input.key,
+        input.value,
+        input.label,
+        input.source,
+      );
+      return { success: true };
+    }),
+
+  getDefaultAssumptions: protectedProcedure
+    .query(async () => {
+      const { DEFAULT_ASSUMPTIONS } = await import("../services/planningHierarchy/sharedAssumptions");
+      return DEFAULT_ASSUMPTIONS;
+    }),
+
+  getScopeAssumptions: protectedProcedure
+    .input(z.object({
+      scope: z.enum(["platform", "team", "advisor", "client"]),
+      scopeEntityId: z.number().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const { getAssumptionsForScope } = await import("../services/planningHierarchy/sharedAssumptions");
+      return getAssumptionsForScope(ctx.user.id, input.scope, input.scopeEntityId);
+    }),
+
+  // ─── RECOMMENDATION → GOAL LINKING ────────────────────────────────────
+
+  linkRecommendationToGoals: protectedProcedure
+    .input(z.object({
+      recommendationId: z.number(),
+      clientId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { linkRecommendationToGoals } = await import("../services/planningHierarchy/recommendationGoalLinker");
+      return linkRecommendationToGoals(
+        input.recommendationId,
+        ctx.user.id,
+        input.clientId,
+      );
+    }),
+
+  recalculateGoalProbability: protectedProcedure
+    .input(z.object({ goalId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { recalculateGoalProbability } = await import("../services/planningHierarchy/recommendationGoalLinker");
+      return recalculateGoalProbability(input.goalId);
+    }),
+
+  // ─── SUITABILITY GATE ─────────────────────────────────────────────────
+
+  checkSuitabilityGate: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const { checkSuitabilityGate } = await import("../services/planningHierarchy/recommendationGoalLinker");
+      return checkSuitabilityGate(input.userId);
+    }),
+
+  // ─── COMPLIANCE ATTESTATION ───────────────────────────────────────────
+
+  generateComplianceAttestation: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      documentId: z.number(),
+      attestationType: z.enum(["pfr_delivery", "recommendation", "replacement_analysis"]).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { generateComplianceAttestation } = await import("../services/planningHierarchy/recommendationGoalLinker");
+      return generateComplianceAttestation(
+        ctx.user.id,
+        input.clientId,
+        input.documentId,
+        input.attestationType,
+      );
+    }),
+
+  validateReasoningChain: protectedProcedure
+    .input(z.object({ chain: z.any() }))
+    .query(async ({ input }) => {
+      const { validateReasoningChain } = await import("../services/planningHierarchy/recommendationGoalLinker");
+      const missing = validateReasoningChain(input.chain);
+      return { valid: missing.length === 0, missingFields: missing };
+    }),
+
+  // ─── ALSO MY CLIENT SYNC ─────────────────────────────────────────────
+
+  syncClientToPlanning: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      profileData: z.any(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { syncClientToPlanning } = await import("../services/planningHierarchy/alsoMyClientSync");
+      return syncClientToPlanning(input.clientId, ctx.user.id, input.profileData);
+    }),
+
+  syncPracticeToClients: protectedProcedure
+    .input(z.object({
+      changeType: z.enum(["rate_update", "product_update", "regulatory_alert", "assumption_change"]),
+      changeData: z.any(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { syncPracticeToClients } = await import("../services/planningHierarchy/alsoMyClientSync");
+      return syncPracticeToClients(ctx.user.id, input.changeType, input.changeData);
+    }),
+
+  verifyRollUpConsistency: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { verifyRollUpConsistency } = await import("../services/planningHierarchy/alsoMyClientSync");
+      return verifyRollUpConsistency(ctx.user.id);
+    }),
 });

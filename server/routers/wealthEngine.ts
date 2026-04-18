@@ -219,7 +219,76 @@ async function runAndPersist<TInput, TResult>(
     meta,
     confidence,
   });
+  // ── Calculator → Planning Hierarchy Bridge ──────────────────────────
+  // Fire-and-forget: bridge the calculator output into the planning tree.
+  // This creates/updates a planning node for the calculator domain and
+  // triggers roll-up recalculation to parent nodes.
+  // Also resolves shared assumptions to ensure consistent inputs (CFP Assessment §8.1).
+  if (runId && meta.userId) {
+    import("../services/planningHierarchy/calculatorBridge")
+      .then(({ bridgeCalculatorToPlanning }) => {
+        const domain = toolToPlanningDomain(tool);
+        if (!domain) return;
+        // Resolve hierarchy-consistent assumptions for this calculator run
+        import("../services/planningHierarchy/sharedAssumptions")
+          .then(({ resolveAssumptions }) => {
+            resolveAssumptions(
+              meta.userId as number,
+              meta.clientId ? Number(meta.clientId) : undefined,
+              meta.userId as number,
+            ).then((resolvedAssumptions) => {
+              bridgeCalculatorToPlanning({
+                domain,
+                userId: meta.userId as number,
+                clientId: meta.clientId ? Number(meta.clientId) : undefined,
+                runId,
+                calculatorOutput: result as Record<string, unknown>,
+                assumptions: {
+                  ...(resolvedAssumptions || {}),
+                  ...((input as any)?.strategy?.profile ?? (input as any)?.profile ?? {}),
+                },
+              }).catch(() => { /* best-effort bridge */ });
+            }).catch(() => {
+              // Fallback: bridge without resolved assumptions
+              bridgeCalculatorToPlanning({
+                domain,
+                userId: meta.userId as number,
+                clientId: meta.clientId ? Number(meta.clientId) : undefined,
+                runId,
+                calculatorOutput: result as Record<string, unknown>,
+                assumptions: (input as any)?.strategy?.profile ?? (input as any)?.profile ?? undefined,
+              }).catch(() => { /* best-effort bridge */ });
+            });
+          })
+          .catch(() => { /* assumptions import failed — bridge without them */ });
+      })
+      .catch(() => { /* bridge import failed — non-critical */ });
+  }
   return { data: result, durationMs, runId };
+}
+
+/** Map WealthEngineTool slugs to planning hierarchy calculator domains */
+function toolToPlanningDomain(tool: string): import("../services/planningHierarchy/calculatorBridge").CalculatorDomain | null {
+  const map: Record<string, import("../services/planningHierarchy/calculatorBridge").CalculatorDomain> = {
+    "uwe.simulate": "retirement",
+    "uwe.monteCarlo": "monte_carlo",
+    "uwe.sensitivity": "sensitivity",
+    "uwe.holistic": "holistic_comparison",
+    "uwe.quickBundle": "quick_bundle",
+    "uwe.taxProjector": "tax",
+    "uwe.estatePlanner": "estate",
+    "uwe.riskAssessment": "protection",
+    "uwe.incomeProjection": "income_projection",
+    "uwe.socialSecurity": "social_security",
+    "uwe.medicare": "medicare",
+    "uwe.insuranceAnalysis": "insurance_analysis",
+    "uwe.businessValuation": "business_valuation",
+    "uwe.businessIncome": "business_income",
+    "uwe.premiumFinance": "premium_finance",
+    "uwe.protectionScore": "protection",
+    "uwe.ownerComp": "business_income",
+  };
+  return map[tool] ?? null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

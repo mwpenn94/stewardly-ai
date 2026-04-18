@@ -579,6 +579,28 @@ The platform provides **20+ financial calculators** accessible at `/calculators`
 
 All calculators work for guest users with session-scoped data. Results can be discussed with the AI for deeper analysis.
 
+### Planning Hierarchy (CFP Assessment Layer)
+
+The Planning Hierarchy is a CFP-standard financial planning framework that organizes all calculator outputs, goals, and recommendations into a structured tree. It consists of six interconnected services:
+
+| Service | Purpose |
+|---------|--------|
+| **planningHierarchyDb** | 25 query helpers for CRUD operations on planning nodes, goals, references, PFRs, discovery, and assumptions |
+| **sharedAssumptions** | Resolves hierarchy-consistent assumptions (inflation, discount rate, growth rates) from client → advisor → platform defaults |
+| **calculatorBridge** | Automatically bridges calculator outputs into the planning tree, creating nodes and linking to goals |
+| **pfrGenerator** | LLM-powered Personal Financial Review document pipeline with section-by-section generation |
+| **recommendationGoalLinker** | Links recommendations to client goals with Reg BI reasoning chains and suitability validation |
+| **alsoMyClientSync** | Bidirectional sync between CRM client data and planning hierarchy with roll-up verification |
+
+The hierarchy uses six database tables: `planning_nodes` (tree structure), `client_goals` (goal tracking), `planning_references` (supporting documents), `personal_financial_reviews` (PFR documents), `client_discovery` (discovery questionnaire data), and `planning_assumptions` (shared assumption overrides).
+
+Key architectural decisions:
+
+- **Assumption resolution** follows a three-tier cascade: client-specific overrides take precedence over advisor defaults, which take precedence over platform-wide defaults.
+- **Calculator bridge** fires asynchronously after every calculator run via `runAndPersist`, ensuring the planning tree stays current without blocking the user.
+- **Suitability gate** enforces freshness checks before any recommendation can be linked to a goal, preventing stale suitability scores from propagating.
+- **Recursion safety** is enforced with MAX_DEPTH=20 guards on ancestor chain and descendant traversal functions.
+
 ---
 
 ## Product Marketplace

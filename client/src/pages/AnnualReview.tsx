@@ -110,7 +110,7 @@ export default function AnnualReview({ embedded = false }: { embedded?: boolean 
                       <Button variant="ghost" size="icon" onClick={() => removeGoal(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div><Label className="text-xs">Target ($)</Label><Input type="number" value={g.targetAmount} onChange={(e) => updateGoal(i, "targetAmount", +e.target.value)} /></div>
                     <div><Label className="text-xs">Current ($)</Label><Input type="number" value={g.currentAmount} onChange={(e) => updateGoal(i, "currentAmount", +e.target.value)} /></div>
                     <div><Label className="text-xs">Target Date</Label><Input type="date" value={g.targetDate} onChange={(e) => updateGoal(i, "targetDate", e.target.value)} /></div>

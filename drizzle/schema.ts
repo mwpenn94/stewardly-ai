@@ -6925,3 +6925,59 @@ export const planningAssumptions = mysqlTable("planning_assumptions", {
 }));
 export type PlanningAssumptionRecord = typeof planningAssumptions.$inferSelect;
 export type InsertPlanningAssumption = typeof planningAssumptions.$inferInsert;
+
+
+// ─── PFR DOCUMENTS (Personal Financial Review lifecycle) ────────────────────
+export const pfrDocuments = mysqlTable("pfr_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id").notNull(),
+  rootPlanningNodeId: int("root_planning_node_id"),
+  pfrVersion: int("pfr_version").notNull().default(1),
+  title: varchar("title", { length: 500 }).notNull(),
+  status: mysqlEnum("status", ["draft", "review", "approved", "delivered", "archived"]).notNull().default("draft"),
+  executiveSummary: text("executive_summary"),
+  sectionsJson: json("sections_json"),
+  assumptionsSnapshot: json("assumptions_snapshot"),
+  goalsSnapshot: json("goals_snapshot"),
+  recommendationsSnapshot: json("recommendations_snapshot"),
+  referencesSnapshot: json("references_snapshot"),
+  reasoningChainsSnapshot: json("reasoning_chains_snapshot"),
+  alternativesSnapshot: json("alternatives_snapshot"),
+  implementationSequence: json("implementation_sequence"),
+  complianceAttestation: json("compliance_attestation"),
+  pdfUrl: varchar("pdf_url", { length: 2000 }),
+  audioNarrationUrl: varchar("audio_narration_url", { length: 2000 }),
+  deliveredAt: timestamp("delivered_at"),
+  nextReviewDate: date("next_review_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  clientIdx: index("idx_pfr_client").on(table.clientId),
+  advisorIdx: index("idx_pfr_advisor").on(table.advisorId),
+  statusIdx: index("idx_pfr_status").on(table.status),
+}));
+export type PfrDocument = typeof pfrDocuments.$inferSelect;
+export type InsertPfrDocument = typeof pfrDocuments.$inferInsert;
+
+// ─── SHARED ASSUMPTIONS (consistent calculator inputs across hierarchy) ─────
+export const sharedAssumptions = mysqlTable("shared_assumptions", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("owner_id").notNull(),
+  scope: mysqlEnum("scope", ["platform", "team", "advisor", "client"]).notNull().default("advisor"),
+  scopeEntityId: int("scope_entity_id"),
+  assumptionKey: varchar("assumption_key", { length: 255 }).notNull(),
+  assumptionValue: decimal("assumption_value", { precision: 14, scale: 4 }).notNull(),
+  assumptionLabel: varchar("assumption_label", { length: 500 }),
+  source: varchar("source", { length: 500 }),
+  effectiveDate: date("effective_date"),
+  expiryDate: date("expiry_date"),
+  isLocked: mysqlBoolean("is_locked").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  ownerIdx: index("idx_shared_assumptions_owner").on(table.ownerId),
+  scopeIdx: index("idx_shared_assumptions_scope").on(table.scope, table.scopeEntityId),
+}));
+export type SharedAssumption = typeof sharedAssumptions.$inferSelect;
+export type InsertSharedAssumption = typeof sharedAssumptions.$inferInsert;

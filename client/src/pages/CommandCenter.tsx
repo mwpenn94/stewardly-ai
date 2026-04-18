@@ -612,7 +612,7 @@ function SegmentsTab() {
                   </div>
                   <Badge variant="outline" className={cn("text-[10px]", STAGE_COLORS[s.tier] || "")}>{s.tier}</Badge>
                 </div>
-                <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                   {[
                     { label: "Value", value: s.valueScore?.toFixed(1) },
                     { label: "Growth", value: s.growthScore?.toFixed(1) },

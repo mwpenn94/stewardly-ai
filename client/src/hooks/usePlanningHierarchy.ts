@@ -291,3 +291,68 @@ export function useAdvisorPlanning() {
     isLoading: advisorGoalsQuery.isLoading,
   };
 }
+
+/** Hook for hierarchy-resolved shared assumptions */
+export function useSharedAssumptions(clientId?: number) {
+  const utils = trpc.useUtils();
+
+  const resolvedQuery = trpc.planningHierarchy.resolveSharedAssumptions.useQuery(
+    clientId ? { clientId } : undefined,
+    { staleTime: 120_000 },
+  );
+
+  const defaultsQuery = trpc.planningHierarchy.getDefaultAssumptions.useQuery(undefined, {
+    staleTime: 300_000,
+  });
+
+  const setAssumptionMutation = trpc.planningHierarchy.setSharedAssumption.useMutation({
+    onSuccess: () => {
+      utils.planningHierarchy.resolveSharedAssumptions.invalidate();
+    },
+  });
+
+  return {
+    resolved: resolvedQuery.data ?? {},
+    defaults: defaultsQuery.data ?? {},
+    isLoading: resolvedQuery.isLoading,
+    setAssumption: setAssumptionMutation.mutateAsync,
+  };
+}
+
+/** Hook for suitability gate checking */
+export function useSuitabilityGate(userId: number | undefined) {
+  const gateQuery = trpc.planningHierarchy.checkSuitabilityGate.useQuery(
+    { userId: userId! },
+    { enabled: !!userId, staleTime: 60_000 },
+  );
+
+  return {
+    passed: gateQuery.data?.passed ?? false,
+    reason: gateQuery.data?.reason ?? "",
+    suitabilityData: gateQuery.data?.suitabilityData ?? null,
+    isLoading: gateQuery.isLoading,
+  };
+}
+
+/** Hook for recommendation-goal linking */
+export function useRecommendationGoalLinker() {
+  const utils = trpc.useUtils();
+
+  const linkMutation = trpc.planningHierarchy.linkRecommendationToGoals.useMutation({
+    onSuccess: () => {
+      utils.planningHierarchy.getAdvisorGoals.invalidate();
+    },
+  });
+
+  const recalcMutation = trpc.planningHierarchy.recalculateGoalProbability.useMutation({
+    onSuccess: () => {
+      utils.planningHierarchy.getAdvisorGoals.invalidate();
+    },
+  });
+
+  return {
+    linkToGoals: linkMutation.mutateAsync,
+    recalculateProbability: recalcMutation.mutateAsync,
+    isLinking: linkMutation.isPending,
+  };
+}

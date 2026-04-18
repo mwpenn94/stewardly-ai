@@ -82,7 +82,7 @@ export default function PremiumFinanceRates({ embedded = false }: { embedded?: b
                   <Card className="bg-muted/30">
                     <CardContent className="pt-4">
                       <h4 className="font-semibold text-sm mb-3">Premium Finance Spread Analysis</h4>
-                      <div className="grid grid-cols-3 gap-3 text-center text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-sm">
                         {[
                           { label: "Typical Loan Rate", spread: 2.5 },
                           { label: "Conservative Spread", spread: 3.0 },
@@ -124,7 +124,7 @@ export default function PremiumFinanceRates({ embedded = false }: { embedded?: b
                 </div>
               ) : (historyQ.data as any[])?.length ? (
                 <div className="space-y-2 max-h-96 overflow-auto">
-                  <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground border-b pb-2 sticky top-0 bg-background">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-semibold text-muted-foreground border-b pb-2 sticky top-0 bg-background">
                     <div>Date</div><div>Rate</div><div>Change</div><div>Trend</div>
                   </div>
                   {(historyQ.data as any[]).map((entry: any, i: number) => {
@@ -133,7 +133,7 @@ export default function PremiumFinanceRates({ embedded = false }: { embedded?: b
                     const prevRate = prev?.rate ?? prev?.sofrRate ?? rate;
                     const change = rate - prevRate;
                     return (
-                      <div key={i} className="grid grid-cols-4 gap-2 text-sm py-1.5 border-b border-border/30">
+                      <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm py-1.5 border-b border-border/30">
                         <div>{formatDate(entry.date)}</div>
                         <div className="font-mono">{formatRate(rate)}</div>
                         <div className={change > 0 ? "text-red-500" : change < 0 ? "text-green-500" : "text-muted-foreground"}>

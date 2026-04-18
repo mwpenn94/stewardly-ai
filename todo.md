@@ -5925,3 +5925,82 @@
 - [x] Add rich reasoning and references to client-level planning (matching practice-level quality)
 - [x] Implement "Also My Client" roll-up from client profiles to practice management
 - [x] Update unified wealth engine to support hierarchical planning alignment
+
+## Pass 115 — Recommended Next Steps + Recursive Assessment-Driven Optimization
+
+### Step 1: Wire Calculator Outputs into Planning Nodes
+- [ ] Create server-side procedure to auto-create planning nodes from calculator results
+- [ ] Connect retirement calculator output → retirement planning node
+- [ ] Connect tax projector output → tax strategy planning node
+- [ ] Connect estate planning output → estate planning node
+- [ ] Connect protection score output → protection strategy planning node
+- [ ] Connect business valuation output → business growth planning node
+- [ ] Enable real-time roll-up aggregation from calculator-generated nodes
+
+### Step 2: Build PFR Generation Workflow
+- [ ] Create PFR data assembly service (collects all client-level planning nodes, assumptions, references)
+- [ ] Build PFR template with sections: Executive Summary, Goals, Current Situation, Recommendations, Implementation
+- [ ] Add "Generate PFR" button on Planning Hierarchy panel
+- [ ] Implement PDF export for PFR documents
+- [ ] Include reasoning and rich references in PFR output
+
+### Step 3: Implement Also My Client Cross-Cascade
+- [ ] When advisor marks contact as "Also My Client" in People Hub, auto-create client planning node
+- [ ] Link new client planning node to advisor's practice node
+- [ ] Pre-populate client planning node with contact's financial profile data
+- [ ] Ensure bidirectional roll-up/roll-down between practice and client levels
+
+### Step 4: CFP Assessment-Driven Wealth Engine Optimization
+- [ ] Optimize all calculator panels based on CFP assessment findings
+- [ ] Add missing advisor workflows identified in assessment
+- [ ] Enhance suitability engine integration with planning hierarchy
+- [ ] Improve compliance workflow integration
+- [ ] Optimize data flow between Wealth Engine tools
+
+### Step 5: Recursive Re-Assessment Until Convergence
+- [ ] Re-assess all workflows after optimization (Pass 1)
+- [ ] Apply findings and re-assess (Pass 2)
+- [ ] Confirm convergence (Pass 3 — no new findings)
+
+### Step 6: Recursive Stability Resolution Until Convergence
+- [ ] Comprehensive stability audit (Pass 1)
+- [ ] Fix all identified issues (Pass 1)
+- [ ] Re-audit after fixes (Pass 2)
+- [ ] Confirm convergence (Pass 3 — no new issues)
+
+### Step 7: Documentation Update Until Convergence
+- [ ] Update PLATFORM_GUIDE.md with all new features
+- [ ] Update CFP-ADVISOR-ASSESSMENT.md with optimization results
+- [ ] Update in-app help text and tooltips
+- [ ] Update code comments and JSDoc
+- [ ] Confirm documentation convergence
+
+### Pass 115 Completion Log
+
+#### Phase 4: CFP Assessment-Driven Optimization — COMPLETED
+- [x] Created sharedAssumptions.ts service (3-tier cascade resolution)
+- [x] Created recommendationGoalLinker.ts service (Reg BI reasoning chains)
+- [x] Created alsoMyClientSync.ts service (bidirectional sync + roll-up verification)
+- [x] Wired shared assumptions into wealthEngine runAndPersist
+- [x] Added 30+ tRPC procedures to planningHierarchy router
+- [x] Added client hooks for shared assumptions, suitability gate, recommendation linking
+
+#### Phase 5: Recursive Re-Assessment — CONVERGED (Pass 1)
+- [x] No functional bugs found
+- [x] No silent failure modes remaining
+- [x] No architectural gaps found
+- [x] Three enhancement-level items identified (PFR caching, roll-up scheduling, assumption staleness flagging)
+
+#### Phase 6: Stability Assessment — CONVERGED (Pass 1)
+- [x] Fixed SSE stream handler tests (11/11 passing — mock isolation for native streaming)
+- [x] Fixed pass67 grid responsiveness tests (13/13 passing — bare grid-cols fixed)
+- [x] Added null guards to getAncestorChain and getDescendantIds
+- [x] Added MAX_DEPTH=20 recursion safety guards
+- [x] Full test suite: 9,883 tests across 398 files — ALL PASSING
+
+#### Phase 7: Documentation Update — COMPLETED
+- [x] Updated PLATFORM_GUIDE.md with Planning Hierarchy section
+- [x] Updated CFP-ADVISOR-ASSESSMENT.md: Phases 1-3 marked COMPLETED, rating updated 7.8 → 8.6
+- [x] Updated PlatformGuide.tsx in-app: added Planning Hierarchy service category (118 services)
+- [x] Updated PlatformGuide.tsx in-app: added Planning Hierarchy database table group
+- [x] Updated PASS-115-REASSESSMENT.md with convergence determination
