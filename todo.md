@@ -6311,3 +6311,19 @@
 - [x] Virtual user persona validation (10 types)
 - [x] Update in-app documentation
 - [x] Update codebase documentation
+
+## Pass 125 — Incorporate Manus-Next Capabilities into AI Chat
+- [x] Audit current chat tools vs manus-next-app capabilities (identify gaps)
+- [x] Add web_search tool to chat stream handler
+- [x] Add read_webpage / browse_web tool to chat stream handler
+- [x] Add wide_research tool (parallel multi-query) to chat stream handler
+- [x] Add execute_code tool (sandboxed JS evaluation) to chat stream handler
+- [x] Add analyze_data tool to chat stream handler
+- [x] Add generate_document tool to chat stream handler
+- [x] Add generate_image tool to chat stream handler (wire existing imageGeneration)
+- [x] Update chat UI to show tool invocations inline (tool cards with status/results)
+- [x] Add tool discovery hints in chat welcome (show available capabilities)
+- [x] Add Speed/Quality mode toggle to chat header (already exists via focus modes)
+- [x] Wire cost visibility per-message in chat (cost transparency in CostBenefitPanel)
+- [x] Stability passes and end-to-end validation
+- [x] Save checkpoint

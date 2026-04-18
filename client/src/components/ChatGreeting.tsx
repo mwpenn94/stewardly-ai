@@ -30,6 +30,12 @@ import {
   FileText,
   Database,
   Fingerprint,
+  Globe,
+  Code2,
+  Image,
+  FileOutput,
+  Search,
+  Scale,
 } from "lucide-react";
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -166,6 +172,20 @@ const GUEST_FEATURES: FeatureCard[] = [
   { icon: Brain, title: "AI-Powered Answers", description: "Ask any financial question and get an expert-level response.", prompt: "What can Stewardly help me with?" },
   { icon: Calculator, title: "Calculators", description: "Retirement, estate, tax, and insurance calculators built in.", prompt: "Show me the available calculators" },
   { icon: Shield, title: "Compliance-First", description: "Every response passes FINRA and regulatory guardrails.", prompt: "How does Stewardly handle compliance?" },
+];
+
+// ── Capability chips shown below feature cards ─────────────────────
+const CAPABILITY_CHIPS = [
+  { icon: Search, label: "Web Search", prompt: "Search the web for the latest 30-year mortgage rates" },
+  { icon: Globe, label: "Read Webpages", prompt: "Read and summarize this page: https://www.investopedia.com/terms/r/roth-ira.asp" },
+  { icon: Brain, label: "Deep Research", prompt: "Research the pros and cons of Roth conversion ladders for early retirees" },
+  { icon: Code2, label: "Run Code", prompt: "Calculate compound interest on $10,000 at 7% for 30 years with monthly contributions of $500" },
+  { icon: BarChart3, label: "Analyze Data", prompt: "Analyze this data: AAPL 5yr return 180%, MSFT 200%, GOOG 150%, AMZN 120% — which performed best risk-adjusted?" },
+  { icon: Image, label: "Generate Images", prompt: "Generate a professional infographic showing the power of compound interest over 30 years" },
+  { icon: FileOutput, label: "Create Documents", prompt: "Generate a comprehensive retirement planning guide for someone starting at age 35" },
+  { icon: Calculator, label: "Retirement Projections", prompt: "Run a retirement projection: age 35, income $120k, saving 15%, target retirement age 60" },
+  { icon: TrendingUp, label: "Stock Lookup", prompt: "Look up the current price and performance of SPY" },
+  { icon: Scale, label: "Compare Products", prompt: "Compare term life vs whole life vs IUL insurance" },
 ];
 
 const USER_FEATURES: FeatureCard[] = [
@@ -349,6 +369,24 @@ export default function ChatGreetingV2({
             </motion.button>
           );
         })}
+      </motion.div>
+
+      {/* Capability discovery chips — show all available AI tools */}
+      <motion.div className="w-full space-y-2" initial="hidden" animate="visible" variants={variant} custom={7}>
+        <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
+          <Zap className="w-3 h-3 text-accent/60" /> I can also
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {CAPABILITY_CHIPS.map((chip) => {
+            const ChipIcon = chip.icon;
+            return (
+              <button type="button" key={chip.label} onClick={() => onSuggestionClick(chip.prompt)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-accent/10 hover:border-accent/20 hover:text-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring">
+                <ChipIcon className="w-3 h-3" />{chip.label}
+              </button>
+            );
+          })}
+        </div>
       </motion.div>
     </div>
   );

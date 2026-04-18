@@ -34,7 +34,7 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Calendar, Brain, Shield,
   Copy, RefreshCw, Zap, Scale, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
-  LogIn, GitBranch, Pencil,
+  LogIn, GitBranch, Pencil, Globe, Code2, FileOutput,
 } from "lucide-react";
 import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
@@ -248,6 +248,7 @@ export default function Chat() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [useStreaming, setUseStreaming] = useState(true);
   const [streamingContent, setStreamingContent] = useState("");
+  const [activeToolCalls, setActiveToolCalls] = useState<Array<{ toolName: string; status: string; timestamp: number }>>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFocusPicker, setShowFocusPicker] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -1184,7 +1185,17 @@ export default function Chat() {
               if (!trimmedLine.startsWith("data: ")) continue;
               try {
                 const event = JSON.parse(trimmedLine.slice(6));
-                if (event.type === "token" && event.content) {
+                if (event.type === "tool_status" && event.toolName) {
+                  // Show tool activity inline — the AI is using a capability
+                  resetWatchdog();
+                  setActiveToolCalls(prev => {
+                    // Avoid duplicates
+                    if (prev.some(t => t.toolName === event.toolName)) return prev;
+                    return [...prev, { toolName: event.toolName, status: event.content || "Working...", timestamp: Date.now() }];
+                  });
+                } else if (event.type === "token" && event.content) {
+                  // Clear tool calls once tokens start flowing (tools are done)
+                  if (activeToolCalls.length > 0) setActiveToolCalls([]);
                   // Pass 8 (G62): every token resets the watchdog.
                   // 60s of complete silence = abort.
                   resetWatchdog();
@@ -1210,6 +1221,7 @@ export default function Chat() {
                     setCaptionText(emit.text);
                   }
                 } else if (event.type === "done") {
+                  setActiveToolCalls([]);
                   // Pass 5 (G3): flush any un-terminated trailing text
                   // to the aria-live region + caption panel + then mark
                   // the response complete so SR users hear the closure.
@@ -2489,7 +2501,46 @@ export default function Chat() {
                 </div>
               ))}
 
-              {isStreaming && !streamingContent && (
+              {/* Tool Activity Cards — show what the AI is doing in real-time */}
+              {isStreaming && activeToolCalls.length > 0 && (
+                <div className="space-y-2 px-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  {activeToolCalls.map((tool, idx) => {
+                    const iconMap: Record<string, React.ReactNode> = {
+                      google_search: <Search className="w-3.5 h-3.5" />,
+                      web_search: <Search className="w-3.5 h-3.5" />,
+                      read_webpage: <Globe className="w-3.5 h-3.5" />,
+                      wide_research: <Brain className="w-3.5 h-3.5" />,
+                      execute_code: <Code2 className="w-3.5 h-3.5" />,
+                      analyze_data: <BarChart3 className="w-3.5 h-3.5" />,
+                      generate_image: <Image className="w-3.5 h-3.5" />,
+                      generate_document: <FileOutput className="w-3.5 h-3.5" />,
+                      lookup_stock_data: <TrendingUp className="w-3.5 h-3.5" />,
+                      research_financial_product: <Search className="w-3.5 h-3.5" />,
+                      compare_products: <Scale className="w-3.5 h-3.5" />,
+                      run_retirement_projection: <Calculator className="w-3.5 h-3.5" />,
+                      run_tax_estimate: <Calculator className="w-3.5 h-3.5" />,
+                      run_protection_analysis: <Shield className="w-3.5 h-3.5" />,
+                      run_monte_carlo: <BarChart3 className="w-3.5 h-3.5" />,
+                      run_estate_analysis: <Briefcase className="w-3.5 h-3.5" />,
+                      run_business_entity_comparison: <Scale className="w-3.5 h-3.5" />,
+                      run_income_projection: <TrendingUp className="w-3.5 h-3.5" />,
+                    };
+                    return (
+                      <div key={tool.toolName + idx} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-accent/5 border border-accent/10 animate-pulse">
+                        <div className="w-6 h-6 rounded-md bg-accent/10 flex items-center justify-center text-accent shrink-0">
+                          {iconMap[tool.toolName] || <Zap className="w-3.5 h-3.5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-foreground/80 truncate">{tool.status}</div>
+                          <div className="text-[10px] text-muted-foreground">{tool.toolName.replace(/_/g, " ")}</div>
+                        </div>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-accent/60 shrink-0" />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              {isStreaming && !streamingContent && activeToolCalls.length === 0 && (
                 <TypingIndicator focusMode={selectedFocus?.[0] ?? "general"} />
               )}
               {/* Upgrade prompt for anonymous users */}

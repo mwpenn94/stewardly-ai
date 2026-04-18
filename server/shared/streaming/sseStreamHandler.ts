@@ -392,6 +392,32 @@ function getToolStatusMessage(toolName: string): string {
       return "Preparing explanation...";
     case "quiz_me":
       return "Generating practice questions...";
+    case "read_webpage":
+      return "Reading webpage content...";
+    case "wide_research":
+      return "Conducting deep parallel research across multiple queries...";
+    case "execute_code":
+      return "Running code in sandboxed environment...";
+    case "analyze_data":
+      return "Analyzing data and computing insights...";
+    case "generate_image":
+      return "Generating image with AI...";
+    case "generate_document":
+      return "Generating structured document...";
+    case "run_retirement_projection":
+      return "Running retirement projection model...";
+    case "run_tax_estimate":
+      return "Computing tax estimate...";
+    case "run_protection_analysis":
+      return "Analyzing financial protection coverage...";
+    case "run_monte_carlo":
+      return "Running Monte Carlo simulation...";
+    case "run_estate_analysis":
+      return "Analyzing estate plan...";
+    case "run_business_entity_comparison":
+      return "Comparing business entity structures...";
+    case "run_income_projection":
+      return "Projecting income streams...";
     default:
       if (toolName.startsWith("calc_")) return "Running financial calculations...";
       if (toolName.startsWith("model_")) return "Building financial model...";

@@ -25,6 +25,7 @@ import { createSSEStreamHandler } from "../shared/streaming";
 import { contextualLLM } from "../shared/stewardlyWiring";
 import { SEARCH_TOOLS, executeSearchTool } from "../webSearch";
 import { CALCULATOR_TOOLS, executeCalculatorTool } from "../calculatorChatTools";
+import { AGENT_TOOLS, executeAgentTool } from "../agentTools";
 import { sdk } from "./sdk";
 import { initSentry, captureException } from "./sentry";
 import { initOTel } from "../shared/telemetry/otel";
@@ -317,12 +318,16 @@ async function startServer() {
         contextType: safeContextType,
         messages,
         model: model || undefined,
-        tools: [...SEARCH_TOOLS, ...CALCULATOR_TOOLS] as Array<Record<string, unknown>>,
+        tools: [...SEARCH_TOOLS, ...CALCULATOR_TOOLS, ...AGENT_TOOLS] as Array<Record<string, unknown>>,
         executeSearchTool: async (toolName: string, args: Record<string, any>) => {
-          // Route to calculator tools if the tool name matches, otherwise use search tools
+          // Route to the correct tool executor based on tool name
           const calcToolNames = CALCULATOR_TOOLS.map(t => t.function.name);
+          const agentToolNames = AGENT_TOOLS.map(t => t.function.name);
           if (calcToolNames.includes(toolName)) {
             return executeCalculatorTool(toolName, args);
+          }
+          if (agentToolNames.includes(toolName)) {
+            return executeAgentTool(toolName, args);
           }
           return executeSearchTool(toolName, args);
         },
