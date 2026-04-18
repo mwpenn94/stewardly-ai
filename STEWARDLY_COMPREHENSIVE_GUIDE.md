@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with **435,000+ lines of code** across **1,650+ source files**, **383 database tables**, **105 tRPC API routers**, and **9,883 automated tests** across **398 test files** (all passing). The platform has undergone **119 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with **442,000+ lines of code** across **1,670+ source files**, **383 database tables**, **105 tRPC API routers**, and **9,883 automated tests** across **398 test files** (all passing). The platform has undergone **120 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -38,8 +38,8 @@ The system is built on a modern TypeScript full-stack architecture with **435,00
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 430,000+ |
-| Source files (non-test) | 1,640 |
+| Total lines of code | 442,000+ |
+| Source files (non-test) | 1,670+ |
 | Test files | 398 |
 | Total tests | 9,883 (all passing) |
 | Database tables | 378 |
@@ -54,7 +54,7 @@ The system is built on a modern TypeScript full-stack architecture with **435,00
 | Business domains | 20+ (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring, fairness, task queue, agentic execution, workflow) |
 | NPM dependencies | 95+ |
 | Dev dependencies | 30+ |
-| Recursive optimization passes | 119 |
+| Recursive optimization passes | 120 |
 
 ### 2.3 Directory Structure
 
@@ -958,6 +958,62 @@ Comprehensive diagnostic that runs 6 parallel analyses and produces a unified he
 ### 17.8 Cascading Planning Engine (Pass 118)
 
 Forward cascade (goals → strategies → actions), backward cascade (constraints → strategy adjustments → goal revisions), deep cascade preview with impact simulation, alignment health scoring across hierarchy levels, cross-hierarchy gap analysis with severity classification, goal-strategy matrix generation, and topological execution order computation. Integrates with 6 cross-service data sources.
+
+## 18. Pass 120 — Unified Client Plan, Firm Comparison, Strategy Archetypes & Leader Personas (April 18, 2026)
+
+Pass 120 introduces the **Unified Client Plan** — a holistic client planning view that mirrors the Practice Income Hub but for individual clients. It cascades across all 15 client calculator domains and 12 advanced strategy panels, providing forward planning (from current state to projected outcomes), backward planning (from goals to required inputs), practice-to-client income roll-up (percentage, fixed, or above-threshold allocation), and cross-hierarchy cascade alignment.
+
+### 18.1 Unified Client Plan Service
+
+| Capability | Description |
+|-----------|-------------|
+| Forward Planning | Projects outcomes from current financial profile across all 15 client domains |
+| Backward Planning | Derives required inputs from target goals across retirement, education, insurance, estate, tax |
+| Practice-to-Client Roll-Up | Allocates practice income to client strategies via percentage, fixed amount, or above-threshold rules |
+| Cross-Hierarchy Alignment | Validates consistency between practice nodes, client nodes, and advanced strategy nodes |
+| Domain Coverage | 15 client domains + 12 advanced strategy domains + 5 Section 7.2 domains |
+
+### 18.2 Firm & Strategy Comparison Engine
+
+Comprehensive comparison engine evaluating total benefits vs. total costs across 5 firm categories (wirehouse, independent RIA, insurance-based, hybrid RIA, WealthBridge) with 8 cost components, 6 benefit dimensions, ROI calculation, net value-add analysis, and client satisfaction scoring. Includes cross-firm strategy comparison for 12 strategy categories and WealthBridge advantage analysis.
+
+### 18.3 Strategy Archetypes & Leader Personas
+
+10 strategy archetypes with leader personas integrated across the wealth engine:
+
+| Archetype | Leader Persona | Focus |
+|-----------|---------------|-------|
+| Quantitative Alpha | Jim Simons (Renaissance) | Systematic, data-driven, algorithmic |
+| Value Compounding | Warren Buffett (Berkshire) | Long-term value, margin of safety, patience |
+| Growth Discovery | Peter Lynch (Magellan) | Growth at reasonable price, sector rotation |
+| Debt-Free Foundation | Dave Ramsey | Debt elimination, emergency fund, behavioral |
+| All-Weather Balance | Ray Dalio (Bridgewater) | Risk parity, diversification, macro-aware |
+| Game Theory Optimization | John Nash | Strategic equilibrium, multi-party optimization |
+| Estate & Legacy | HNW Estate Planners | Wealth transfer, dynasty trusts, charitable |
+| Fiduciary Excellence | CFP Board Standards | Comprehensive planning, fiduciary duty |
+| Institutional Governance | Endowment CIOs | Governance, alternative assets, long horizon |
+| Financial Independence | FIRE Movement | Savings rate, passive income, early retirement |
+
+12 strategy categories with cross-archetype comparison, client-to-archetype matching, tool mapping to wealth engine panels, and impact analysis.
+
+### 18.4 Cascade Notifications & Client-Facing Summary
+
+Real-time cascade alert scanning across 5 categories (stale data, misalignment, compliance, planning gaps, opportunities) with severity classification. Client-facing planning summary generates simplified, plain-language views with progress bars, milestones, and next steps. Bulk engagement letter generation for annual renewal workflows.
+
+### 18.5 Onboarding UX Improvement
+
+Onboarding tour and multisensory feature popups converted from auto-opening modal dialogs to notification-driven entries in the notification bell. First-time users see a "Take the Platform Tour" notification instead of being interrupted by a popup overlay.
+
+### 18.6 New UI Panels
+
+4 new panels added to the Wealth Engine Hub:
+
+| Panel | Location | Features |
+|-------|----------|----------|
+| Unified Client Plan | Client Planning section | 5 tabs: Overview, Forward Plan, Backward Plan, Income Roll-Up, Alignment |
+| Firm Comparison | References section | 3 tabs: Firms, Offerings, WealthBridge Advantage |
+| Strategy Archetypes | References section | 5 tabs: Archetypes, Categories, Compare, Match, Tools |
+| Cascade Alerts | Advanced Strategies section | 3 tabs: Alerts, Client Summary, Bulk Engagement |
 
 ---
 

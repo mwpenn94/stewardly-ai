@@ -53,7 +53,8 @@ type WETab =
   | "engine-dashboard" | "owner-comp" | "business-valuation" | "practice-to-wealth" | "financial-twin" | "workflows"
   | "configurator" | "sensitivity" | "what-if" | "references" | "team-builder" | "holistic-comparison"
   | "quick-quote-hub" | "business-income"
-  | "advanced-workflows";
+  | "advanced-workflows"
+  | "strategy-archetypes" | "unified-client-plan" | "firm-comparison" | "cascade-alerts";
 
 interface NavItem {
   id: WETab;
@@ -107,6 +108,10 @@ const NAV_SECTIONS: NavSection[] = [
   ]},
   { group: "Advisory", items: [
     { id: "advanced-workflows" as WETab, label: "Advanced Workflows", icon: Shield, slug: "advanced-workflows", badge: "New" },
+    { id: "strategy-archetypes" as WETab, label: "Strategy Archetypes", icon: Target, slug: "strategy-archetypes", badge: "New" },
+    { id: "unified-client-plan" as WETab, label: "Unified Client Plan", icon: Layers, slug: "unified-client-plan", badge: "New" },
+    { id: "firm-comparison" as WETab, label: "Firm Comparison", icon: BarChart3, slug: "firm-comparison", badge: "New" },
+    { id: "cascade-alerts" as WETab, label: "Cascade Alerts", icon: Zap, slug: "cascade-alerts" },
   ]},
 ];
 
@@ -130,6 +135,10 @@ const WeQuickQuoteHub = lazy(() => import("./QuickQuoteHub"));
 const WeHolisticComparison = lazy(() => import("./HolisticComparison"));
 const WePlanningHierarchy = lazy(() => import("./PlanningHierarchyPanel"));
 const WeAdvancedWorkflows = lazy(() => import("./AdvancedWorkflowsPanel"));
+const WeStrategyArchetypes = lazy(() => import("./StrategyArchetypesPanel"));
+const WeUnifiedClientPlan = lazy(() => import("./UnifiedClientPlanPanel"));
+const WeFirmComparison = lazy(() => import("./FirmComparisonPanel"));
+const WeCascadeAlerts = lazy(() => import("./CascadeAlertsPanel"));
 
 // ─── INLINE QUICK BUNDLE ───────────────────────────────────────────
 interface BundleForm {
@@ -435,6 +444,10 @@ export default function WealthEngineHub() {
               {activeTab === "holistic-comparison" && <WeHolisticComparison embedded />}
               {activeTab === "planning-hierarchy" && <WePlanningHierarchy />}
               {activeTab === "advanced-workflows" && <WeAdvancedWorkflows />}
+              {activeTab === "strategy-archetypes" && <WeStrategyArchetypes />}
+              {activeTab === "unified-client-plan" && <WeUnifiedClientPlan />}
+              {activeTab === "firm-comparison" && <WeFirmComparison />}
+              {activeTab === "cascade-alerts" && <WeCascadeAlerts />}
             </Suspense>
           </div>
         </main>

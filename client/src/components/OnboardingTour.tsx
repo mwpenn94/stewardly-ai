@@ -377,13 +377,10 @@ export function useOnboardingTour() {
     }
   }, []);
 
-  // Auto-start for first-time users (after a short delay)
-  useEffect(() => {
-    if (!hasCompleted) {
-      const timer = setTimeout(() => setIsOpen(true), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasCompleted]);
+  // Pass 120: Removed auto-open popup behavior. The tour is now triggered
+  // only when the user explicitly clicks "Start Tour" from the notification
+  // bell or settings. This prevents the tour from blocking the user's
+  // workflow on first visit.
 
   return { isOpen, hasCompleted, startTour, completeTour };
 }

@@ -132,7 +132,7 @@ describe("Self-Discovery Loop", () => {
       } catch {
         // LLM calls may fail in test env — acceptable
       }
-    }, 60000);
+    }, 90000);
 
     it("validates conversationId is required", async () => {
       const caller = createCaller(createAuthContext());

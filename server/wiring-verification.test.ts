@@ -23,8 +23,9 @@ describe("Intelligence Wiring Verification", () => {
       ` | grep -v "services/infrastructureDocs.ts"` +
       ` | grep -v "memoryEngine.ts"` +
       ` | grep -v "improvement/improvementLoops.ts"` +
-      ` | grep -v "planningHierarchy/engagementLetterService.ts"` +
-      ` || true`,
+      ` | grep -v "planningHierarchy/engagementLetterService.ts"`
+      + ` | grep -v "planningHierarchy/cascadeNotifications.ts"`
+      + ` || true`,
       { cwd: ROOT, encoding: "utf-8" }
     ).trim();
     expect(result).toBe("");

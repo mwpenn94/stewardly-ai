@@ -30,7 +30,7 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("435,000+");
+    expect(content).toContain("442,000+");
   });
 
   it("guide reports 383 database tables", () => {
@@ -67,12 +67,12 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
     expect(content).toContain("398");
   });
 
-  it("guide reports 119 recursive optimization passes", () => {
+  it("guide reports 120 recursive optimization passes", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("119 recursive optimization passes");
+    expect(content).toContain("120 recursive optimization passes");
   });
 
   it("PLATFORM_GUIDE.md metrics are updated", () => {
@@ -80,7 +80,7 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
       path.join(ROOT, "PLATFORM_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("435,000+");
+    expect(content).toContain("442,000+");
     expect(content).toContain("383 database tables");
     expect(content).toContain("9,883");
   });

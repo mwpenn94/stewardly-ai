@@ -1703,4 +1703,133 @@ export const planningHierarchyRouter = router({
       const { runComprehensiveDiagnostic } = await import("../services/planningHierarchy/wealthEngineOptimizer");
       return runComprehensiveDiagnostic(input.clientId, ctx.user.id);
     }),
+
+  // ── Pass 120: Unified Client Plan ──────────────────────────────
+  getUnifiedClientPlan: protectedProcedure
+    .input(z.object({ clientId: z.number(), clientName: z.string().optional() }))
+    .query(async ({ input }) => {
+      const { getUnifiedClientPlan } = await import("../services/planningHierarchy/unifiedClientPlan");
+      return getUnifiedClientPlan(input.clientId);
+    }),
+  runClientBackwardPlan: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { generateBackPlan } = await import("../services/planningHierarchy/unifiedClientPlan");
+      return generateBackPlan(input.clientId);
+    }),
+  runClientForwardPlan: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { generateForwardPlan } = await import("../services/planningHierarchy/unifiedClientPlan");
+      return generateForwardPlan(input.clientId);
+    }),
+  rollPracticeIncomeToClient: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      rollUpType: z.enum(["percentage", "fixed", "above_threshold"]),
+      rollUpValue: z.number(),
+      threshold: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { getPracticeToClientRollup } = await import("../services/planningHierarchy/unifiedClientPlan");
+      return getPracticeToClientRollup(input.clientId, input.rollUpType, input.rollUpValue, input.threshold);
+    }),
+  cascadeClientPlanAlignment: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .mutation(async ({ input }) => {
+      const { cascadeClientPlan } = await import("../services/planningHierarchy/unifiedClientPlan");
+      return cascadeClientPlan(input.clientId);
+    }),
+
+  // ── Pass 120: Firm Comparison Engine ────────────────────────────
+  generateFirmComparison: protectedProcedure
+    .input(z.object({
+      clientId: z.number(),
+      aum: z.number().optional(),
+      income: z.number().optional(),
+      netWorth: z.number().optional(),
+      age: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const { generateFirmComparison } = await import("../services/planningHierarchy/firmComparisonEngine");
+      return generateFirmComparison(input.clientId, {
+        aum: input.aum, income: input.income, netWorth: input.netWorth, age: input.age,
+      });
+    }),
+  compareStrategyAcrossFirms: protectedProcedure
+    .input(z.object({ clientId: z.number(), strategyName: z.string() }))
+    .query(async ({ input }) => {
+      const { compareStrategyAcrossFirms } = await import("../services/planningHierarchy/firmComparisonEngine");
+      return compareStrategyAcrossFirms(input.clientId, input.strategyName);
+    }),
+  getWealthBridgeAdvantage: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { getWealthBridgeAdvantage } = await import("../services/planningHierarchy/firmComparisonEngine");
+      return getWealthBridgeAdvantage(input.clientId);
+    }),
+
+  // ── Pass 120: Cascade Notifications & Client Summary ───────────
+  scanCascadeAlerts: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { scanForCascadeAlerts } = await import("../services/planningHierarchy/cascadeNotifications");
+      return scanForCascadeAlerts(ctx.user.id);
+    }),
+  generateClientFacingSummary: protectedProcedure
+    .input(z.object({ clientId: z.number(), clientName: z.string().optional() }))
+    .query(async ({ input }) => {
+      const { generateClientFacingSummary } = await import("../services/planningHierarchy/cascadeNotifications");
+      return generateClientFacingSummary(input.clientId, input.clientName ?? "Client");
+    }),
+  generateBulkEngagementLetters: protectedProcedure
+    .input(z.object({
+      clientIds: z.array(z.number()).optional(),
+      renewalOnly: z.boolean().optional(),
+      feeSchedule: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { generateBulkEngagementLetters } = await import("../services/planningHierarchy/cascadeNotifications");
+      return generateBulkEngagementLetters(ctx.user.id, input);
+    }),
+  // ── Pass 120: Strategy Archetypes & Leader Personas ─────────────
+  getAllArchetypes: protectedProcedure
+    .query(async () => {
+      const { getAllArchetypes } = await import("../services/planningHierarchy/strategyArchetypes");
+      return getAllArchetypes();
+    }),
+  getArchetype: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const { getArchetype } = await import("../services/planningHierarchy/strategyArchetypes");
+      return getArchetype(input.id);
+    }),
+  getAllStrategyCategories: protectedProcedure
+    .query(async () => {
+      const { getAllStrategyCategories } = await import("../services/planningHierarchy/strategyArchetypes");
+      return getAllStrategyCategories();
+    }),
+  matchClientToArchetypes: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { matchClientToArchetypes } = await import("../services/planningHierarchy/strategyArchetypes");
+      return matchClientToArchetypes(input.clientId);
+    }),
+  compareArchetypes: protectedProcedure
+    .input(z.object({ archetypeIds: z.array(z.string()) }))
+    .query(async ({ input }) => {
+      const { compareArchetypes } = await import("../services/planningHierarchy/strategyArchetypes");
+      return compareArchetypes(input.archetypeIds);
+    }),
+  getArchetypeToolMapping: protectedProcedure
+    .input(z.object({ archetypeId: z.string() }))
+    .query(async ({ input }) => {
+      const { getArchetypeToolMapping } = await import("../services/planningHierarchy/strategyArchetypes");
+      return getArchetypeToolMapping(input.archetypeId);
+    }),
+  getStrategiesForArchetype: protectedProcedure
+    .input(z.object({ archetypeId: z.string() }))
+    .query(async ({ input }) => {
+      const { getStrategiesForArchetype } = await import("../services/planningHierarchy/strategyArchetypes");
+      return getStrategiesForArchetype(input.archetypeId);
+    }),
 });

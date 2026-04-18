@@ -31,6 +31,7 @@ describe("Intelligence Wiring", () => {
       ` | grep -v "memoryEngine.ts"` +
       ` | grep -v "improvement/improvementLoops.ts"` +
       ` | grep -v "planningHierarchy/engagementLetterService.ts"` +
+      ` | grep -v "planningHierarchy/cascadeNotifications.ts"` +
       ` || true`,
       { cwd: ROOT, encoding: "utf-8" }
     ).trim();

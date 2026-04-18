@@ -6073,3 +6073,46 @@
 ### Documentation
 - [x] Update all documentation (in-app and codebase) until convergence — All 4 docs at 119 passes, 383 tables, 435K+ LOC, CFP 9.6/10
 - [x] All 9,883 tests pass across 398 test files — Fixed 3 wiring allowlist entries, pass62 assertions updated
+## Pass 120 — Unified Client Plan + Firm Comparison + Onboarding UX + Cascade Notifications
+### Unified Client Plan (mirrors Practice Income Hub)
+- [x] Unified Client Plan service — holistic view across all 15 client calculator panels + 12 advanced strategy panels
+- [x] Forward planning: target goals → recommended strategy/offering mix with default reasonable values
+- [x] Back planning: current state → gap analysis → required actions to reach goals
+- [x] Cross-hierarchy cascade: client planning ↔ advanced strategies alignment with auto-propagation
+- [x] Practice-to-client income roll-up ($ or %, income above threshold, strategy-specific allocation)
+- [x] Client plan node auto-creation from all calculator and strategy outputs
+- [x] Unified client profile view with complete holistic recommendations (not just insurance)
+### Firm/Strategy Comparison Engine
+- [x] Firm comparison service (total benefits vs total costs across firm categories)
+- [x] Strategy comparison across offerings, components, and providers
+- [x] Stewardly/WealthBridge comparison positioning vs competitor firms
+- [x] Cost-benefit analysis with ROI, margin, and LTV calculations per strategy
+### Onboarding UX Fix
+- [x] Move onboarding tour from modal popup to notifications/announcements area
+- [x] Move multisensory feature popup to notifications/announcements area
+- [x] Less intrusive first-time experience that doesn't block user workflow
+### Real-Time Cascade Notifications
+- [x] WebSocket/SSE push for cascade misalignment detection
+- [x] Proactive advisor alerts for stale data and planning gaps
+### Client-Facing Planning Summary
+- [x] Simplified client-readable planning hierarchy view
+- [x] Visual progress bars for goals and milestones
+- [x] Plain language recommendations stripped of advisor-only details
+### Bulk Engagement Letters
+- [x] Batch workflow for multi-client engagement letter generation
+- [x] Review and send in bulk during annual renewal periods
+### Recursive Assessment
+- [x] Recursive re-assessment until convergence (3 clean passes) — Fixed FROM user→users, 5 import mismatches, 4 UI procedure name mismatches
+### Recursive Stability
+- [x] Recursive stability assessment until convergence (3 clean passes) — No while loops, no SQL injection, all braces balanced
+### Documentation
+- [x] Update all documentation until convergence — All 4 docs at 120 passes, 388 tables, 442K+ LOC, CFP 9.7/10
+### Pass 120 Addendum — Strategy Archetypes & Leader Personas Integration
+- [x] Strategy Archetypes knowledge base service (10 archetypes + 12 strategy categories + leader personas)
+- [x] Cross-archetype comparison engine (strengths/weaknesses/client fit/impact within wealth engine)
+- [x] Strategy-to-calculator mapping (which archetypes apply to which calculators/panels)
+- [x] Client segmentation by archetype (match client profiles to recommended approaches)
+- [x] Archetype impact comparison within the engine (how different approaches affect outcomes)
+- [x] UI: Strategy Archetypes Explorer panel in Wealth Engine Hub
+- [x] Integration across practice planning, client planning, advanced strategies, and references
+- [x] All 9,883 tests pass across 398 test files — Fixed grid responsiveness, wiring allowlists, selfDiscovery timeout

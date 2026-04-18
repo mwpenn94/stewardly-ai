@@ -325,7 +325,8 @@ describe("codebase hygiene — no invokeLLM outside shared/", () => {
       !l.includes("llmFailover.ts") &&
       !l.includes("infrastructureDocs.ts") &&
       !l.includes("memoryEngine.ts") && // memoryEngine uses raw invokeLLM by design to avoid circular dep
-      !l.includes("engagementLetterService.ts") // uses rawInvokeLLM from stewardlyWiring
+      !l.includes("engagementLetterService.ts") && // uses rawInvokeLLM from stewardlyWiring
+      !l.includes("cascadeNotifications.ts") // uses rawInvokeLLM from stewardlyWiring
     );
 
     expect(lines).toEqual([]);

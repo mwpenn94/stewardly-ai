@@ -84,7 +84,7 @@ export function useOnboardingNotifications(): {
     const allDone = items.every(i => i.completed);
     if (allDone) return [];
 
-    return items
+    const notifs: Notification[] = items
       .filter(i => !i.completed)
       .map((item, idx) => ({
         id: `onboarding-${item.id}`,
@@ -101,6 +101,33 @@ export function useOnboardingNotifications(): {
         createdAt: Date.now() - (items.length - idx) * 60_000, // stagger timestamps
         readAt: null,
       }));
+
+    // Pass 120: Add a "Take the Platform Tour" notification at the top
+    // so users can start the guided tour from the notification bell
+    // instead of having it auto-popup and block their workflow.
+    const tourCompleted = (() => {
+      try { return localStorage.getItem("onboarding_tour_completed") === "true"; } catch { return false; }
+    })();
+    if (!tourCompleted) {
+      notifs.unshift({
+        id: "onboarding-platform-tour",
+        type: "system" as const,
+        priority: "high" as const,
+        title: "Take the Platform Tour",
+        body: "New here? Take a quick guided tour of Stewardly's key features — your AI financial twin, wealth engine, and more.",
+        metadata: {
+          onboardingItem: true,
+          href: "?startTour=true",
+          layer: "getting-started",
+          itemId: "platform-tour",
+          isTourTrigger: true,
+        },
+        createdAt: Date.now(),
+        readAt: null,
+      });
+    }
+
+    return notifs;
   }, [isDismissed, checklist.data]);
 
   const unreadCount = notifications.filter(n => !n.readAt).length;

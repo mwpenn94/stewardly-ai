@@ -802,19 +802,19 @@ The unified calculator orchestrator should be updated so that:
 
 ## 10. Rating
 
-**Current State: 9.6 / 10** (updated Pass 119, previously 9.5)
+**Current State: 9.7 / 10** (updated Pass 120, previously 9.6)
 
 The platform is genuinely impressive in scope and ambition. The practice management calculator suite (19 panels with forward/backward planning) is best-in-class for the insurance distribution channel. The AI integration (consensus engine, autonomous client analysis, contextual wiring) is sophisticated. The integration stack (Plaid, SnapTrade, Daily.co, Deepgram, FRED, BLS) is comprehensive.
 
 With the completion of Phases 1-7 and the Section 7.2 enhancements, the planning hierarchy is now a comprehensive CFP-standard framework with **19 interconnected services**, **580+ tRPC procedures**, and **16 database tables**. All 12 Section 7.1 workflows and all 5 Section 7.2 workflows are implemented. The wealth engine optimization layer adds institutional-grade risk management, regulatory compliance, cross-calculator gap aggregation, and a comprehensive diagnostic suite. Pass 119 completed all Section 7.2 partially-implemented workflows (engagement letters, YoY comparison, underwriting tracking, meeting management, compliance audit sampling), added privacy consent management, and built the Wealth Engine Diagnostic Suite that runs 6 parallel analyses (unified fiduciary file, assumption drift detection, orphaned recommendation finder, data staleness detection, planning health report, cross-calculator consistency validation) producing a unified health score. All 5 adversarial failure modes from Section 8.1 are now mitigated or resolved.
 
-**Justification for 9.6:** All Section 7.1 and 7.2 workflows are now complete. The Wealth Engine Diagnostic Suite addresses all 5 adversarial failure modes identified in Section 8.1: stale suitability scores (configurable staleness detection), calculator assumption drift (cross-validation of 5 key assumptions), recommendation orphaning (AI-suggested goal linkages with confidence scoring), compliance documentation gaps (unified fiduciary file with Reg BI compliance checker), and data staleness (8-source freshness monitoring). The engagement letter service provides automated drafting with LLM prose, fee tier disclosure, fiduciary acknowledgment, and full regulatory document delivery tracking. The YoY comparison service enables time-series planning analysis with snapshot capture, trend indicators, and plan adherence scoring. Privacy consent management resolves the Reg S-P regulatory risk. The remaining distance to 10.0 is in real-world production hardening through advisor feedback, live client testing, and FINRA 3-year retention automation.
+**Justification for 9.7:** Pass 120 adds the **Unified Client Plan** — a holistic client planning view that mirrors the Practice Income Hub for individual clients, cascading across all 15 client calculator domains and 12 advanced strategy panels with forward/backward planning and practice-to-client income roll-up (percentage, fixed, or above-threshold allocation). The **Firm & Strategy Comparison Engine** provides comprehensive total-benefits-vs-total-costs analysis across 5 firm categories (wirehouse, independent RIA, insurance-based, hybrid RIA, WealthBridge) with 8 cost components, 6 benefit dimensions, ROI calculation, net value-add analysis, and client satisfaction scoring. **Strategy Archetypes & Leader Personas** (Simons, Buffett, Lynch, Ramsey, Dalio, Nash, HNW estate planners, CFP fiduciaries, institutional CIOs, FIRE leaders) are integrated across the wealth engine with client-to-archetype matching, cross-archetype comparison, and tool mapping. **Cascade Notifications** provide real-time alert scanning across 5 categories (stale data, misalignment, compliance, planning gaps, opportunities). Onboarding UX improved by converting auto-opening popups to notification-driven entries. The remaining distance to 10.0 is in real-world production hardening through advisor feedback, live client testing, and FINRA 3-year retention automation.
 
 ---
 
 ## 11. Next Pass Recommendation
 
-**Phases 1-7 and Section 7.2 are complete.** The platform has reached convergence at 9.6/10. Future passes should focus on:
+**Phases 1-7 and Section 7.2 are complete.** The platform has reached convergence at 9.7/10. Future passes should focus on:
 
 1. **Real-world advisor testing** with live client scenarios and edge case discovery
 2. **Production hardening** based on advisor feedback and usage patterns

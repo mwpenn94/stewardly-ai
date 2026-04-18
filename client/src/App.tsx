@@ -20,7 +20,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { usePageTracking } from "./hooks/useExponentialTracking";
 import PageSuspenseFallback from "./components/PageSuspenseFallback";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 
 import { AudioCompanionProvider } from "./components/AudioCompanion";
 import { PILProvider } from "./components/PlatformIntelligence";
@@ -373,7 +373,21 @@ function AppContent() {
   // Global keyboard shortcut handler — must live INSIDE PILProvider so the
   // IntentRouter can handle dispatched intents with pil context available.
   useGlobalShortcuts();
-  const { isOpen: tourOpen, completeTour } = useOnboardingTour();
+  const { isOpen: tourOpen, completeTour, startTour } = useOnboardingTour();
+
+  // Pass 120: Allow tour to be triggered from notification bell via ?startTour=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("startTour") === "true") {
+      startTour();
+      // Clean up the URL
+      params.delete("startTour");
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [startTour]);
   return (
     <>
       {/* Pass 1: Live regions + intent router + global voice button.
