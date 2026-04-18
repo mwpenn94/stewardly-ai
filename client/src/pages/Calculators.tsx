@@ -1377,7 +1377,7 @@ export default function Calculators() {
             )}
             {sessionsQuery.data?.map((s: any) => (
               <div key={s.id} role="listitem" className="flex items-center justify-between p-2 rounded-lg border border-border hover:bg-card transition-colors">
-                <div className="cursor-pointer flex-1" onClick={() => handleLoad(s.id)}>
+                <div className="cursor-pointer flex-1" role="button" tabIndex={0} onClick={() => handleLoad(s.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLoad(s.id); } }}>
                   <p className="text-sm font-medium text-foreground">{s.name}</p>
                   <p className="text-xs text-muted-foreground">{new Date(s.updatedAt).toLocaleDateString()}</p>
                 </div>

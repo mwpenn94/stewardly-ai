@@ -60,7 +60,7 @@
 
 Stewardly is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
 
-The platform comprises **378 database tables** defined in the Drizzle ORM schema, **99 sub-routers** plus the main router exposing **970+ procedures**, **149 page routes**, **180+ reusable components** (plus 53 shadcn/ui primitives), and **1,640 source files** totaling approximately **424,000+ lines of TypeScript/TSX**. The automated test suite contains **9,883 tests** across **398 test files**, all passing. The platform has undergone **116 recursive optimization passes**.
+The platform comprises **378 database tables** defined in the Drizzle ORM schema, **105 sub-routers** plus the main router exposing **1,050+ procedures**, **163 page routes**, **180+ reusable components** (plus 53 shadcn/ui primitives), and **1,640+ source files** totaling approximately **430,000+ lines of TypeScript/TSX**. The automated test suite contains **9,883 tests** across **398 test files**, all passing. The platform has undergone **117 recursive optimization passes**.
 
 New in v9.0: **Model Results Dashboard** with interactive visualizations for all 8 analytical models (Recharts-based area charts, bar charts, pie charts, and gauge indicators), **PDF Report Generation Pipeline** (server-side PDFKit with branded cover pages, data tables, and S3 upload), **Notification Preferences** (per-type toggles for 6 notification categories with delivery method controls), **Business Continuity Plan (BCP) page** with dependency mapping, RTO/RPO targets, system health monitoring, and error logging, **Reasoning Transparency** with collapsible 5-step reasoning chains and confidence badges on AI messages, **branding consistency fix** (Stewardry → Stewardly across 52 occurrences in 27 files), **professionals route auth loop fix** (list/match procedures moved to publicProcedure with graceful fallbacks), and **onboarding tour fix** (localStorage key correction, page guard, element existence check, restart button in help panel).
 
@@ -94,20 +94,20 @@ Stewardly operates on a tiered access model where anonymous guests receive full 
 | Metric | Value |
 |--------|-------|
 | Total source files | 1,640 |
-| Total lines of code | 424,000+ |
+| Total lines of code | 430,000+ |
 | Page routes | 149 |
 | Reusable components | 180+ (+ 53 shadcn/ui) |
-| tRPC sub-routers | 99 |
-| tRPC procedures | 970+ |
+| tRPC sub-routers | 105 |
+| tRPC procedures | 1,050+ |
 | Database tables (schema) | 378 |
-| Router files (server/routers/) | 99 |
+| Router files (server/routers/) | 105 |
 | Custom hooks | 25+ |
 | Server services | 300+ |
 | Schema file (drizzle/schema.ts) | 10,000+ lines |
 | CSS theme file (index.css) | 300+ lines |
 | Test files | 398 |
 | Automated tests | 9,883 |
-| Recursive optimization passes | 116 |
+| Recursive optimization passes | 117 |
 
 ### Data Flow
 

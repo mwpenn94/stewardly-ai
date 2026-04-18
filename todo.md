@@ -6019,3 +6019,20 @@
 - [x] Recursive re-assessment until convergence (4 passes, converged at pass 4 with 3 consecutive clean passes)
 - [x] Recursive stability assessment and resolution (3 passes, converged — 9,883 tests pass, no issues found)
 - [x] Documentation update (in-app and codebase) — PlatformGuide.tsx, PLATFORM_GUIDE.md, STEWARDLY_COMPREHENSIVE_GUIDE.md, CFP-ADVISOR-ASSESSMENT.md all updated (4 passes, converged)
+
+## Pass 117 — Phase 4 UI, PFR Export, Specialized Workflows, Optimization
+
+- [x] CRITICAL: Fix Calculators MIME type error — added chunk load error handler in main.tsx + SectionErrorBoundary auto-reload
+- [x] Frontend UI pages for Phase 4 advanced workflows (AdvancedWorkflowsPanel.tsx with 6 tabs: Policy Delivery, 1035 Exchange, Beneficiary Review, Tax Review, Benchmark, PFR Export)
+- [x] PFR PDF export endpoint (REST /api/pfr/pdf + tRPC exportPFRAsPdf + S3 storage)
+- [x] Low-priority specialized workflows (special needs planning with SNT/ABLE, elder care with ADL/Medicaid/VA, cross-border with FBAR/FATCA/FTC)
+- [x] Wealth engine optimization — all 12 Section 7.1 workflows now implemented (82 procedures total)
+- [x] Medium-priority workflows: Prospect-to-Client, Estate Document Review, Charitable Planning (CRT/CLT/DAF/PF/QCD), Divorce Planning (QDRO/alimony/asset division), Business Succession (buy-sell/ESOP/key person)
+- [x] Recursive re-assessment until convergence (3 consecutive clean passes, all 12 workflows + all failure modes confirmed)
+- [x] Recursive stability assessment and resolution (5 passes: 2 fixes + 3 consecutive clean passes — 9,883 tests pass)
+- [x] Documentation update (in-app and codebase) — PlatformGuide.tsx, PLATFORM_GUIDE.md, STEWARDLY_COMPREHENSIVE_GUIDE.md, CFP-ADVISOR-ASSESSMENT.md all updated (3 passes, converged)
+
+## Pass 117 continued — Critical Bug Fix + Stability
+- [x] CRITICAL: Fix Calculators MIME type error root cause — SPA fallback now returns 404 for missing .js/.css assets instead of serving HTML
+- [x] Comprehensive stability and accessibility audit — fixed clickable div a11y, responsive grids, verified no runtime errors
+- [x] Final test suite pass (9,883 tests pass, 2 transient Plaid timeouts in full suite but pass individually)

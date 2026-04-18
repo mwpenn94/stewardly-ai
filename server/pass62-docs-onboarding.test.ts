@@ -25,12 +25,12 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
     expect(content).toContain("April 16, 2026");
   });
 
-  it("guide reports 424,000+ lines of code", () => {
+  it("guide reports 430,000+ lines of code", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("424,000+");
+    expect(content).toContain("430,000+");
   });
 
   it("guide reports 378 database tables", () => {
@@ -42,12 +42,12 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
     expect(content).toContain("database tables");
   });
 
-  it("guide reports 99 tRPC routers", () => {
+  it("guide reports 105 tRPC routers", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("99");
+    expect(content).toContain("105");
     expect(content).toContain("tRPC");
   });
 
@@ -67,12 +67,12 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
     expect(content).toContain("398");
   });
 
-  it("guide reports 116 recursive optimization passes", () => {
+  it("guide reports 117 recursive optimization passes", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("116 recursive optimization passes");
+    expect(content).toContain("117 recursive optimization passes");
   });
 
   it("PLATFORM_GUIDE.md metrics are updated", () => {
@@ -80,7 +80,7 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
       path.join(ROOT, "PLATFORM_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("424,000+");
+    expect(content).toContain("430,000+");
     expect(content).toContain("378 database tables");
     expect(content).toContain("9,883");
   });

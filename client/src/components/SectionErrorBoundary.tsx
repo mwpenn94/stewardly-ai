@@ -51,12 +51,34 @@ export class SectionErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
+  /** Detect stale-deployment chunk loading errors */
+  private isChunkLoadError(error: Error | null): boolean {
+    if (!error) return false;
+    const msg = error.message || "";
+    return (
+      msg.includes("is not a valid JavaScript MIME type") ||
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed") ||
+      msg.includes("Loading chunk") ||
+      msg.includes("ChunkLoadError")
+    );
+  }
+
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error(
       `[SectionErrorBoundary] ${this.props.sectionName || "Section"} crashed (retry #${this.state.retryCount}):`,
       error,
       info.componentStack
     );
+    // Auto-reload for chunk load errors (stale deployment)
+    if (this.isChunkLoadError(error)) {
+      const reloadKey = "stewardly-chunk-reload";
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, "1");
+        window.location.reload();
+        return;
+      }
+    }
     // Report to server for observability (best-effort)
     try {
       fetch("/api/trpc/clientErrors.report", {
@@ -101,9 +123,11 @@ export class SectionErrorBoundary extends Component<Props, State> {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {maxRetriesReached
-                ? "This section failed to load after multiple attempts. Try refreshing the page."
-                : "Something went wrong loading this section. This won't affect other parts of the page."}
+              {this.isChunkLoadError(this.state.error)
+                ? "A new version of the app is available. Please refresh the page to load it."
+                : maxRetriesReached
+                  ? "This section failed to load after multiple attempts. Try refreshing the page."
+                  : "Something went wrong loading this section. This won't affect other parts of the page."}
             </p>
             {this.state.error && (
               <pre className="text-xs text-destructive/80 bg-destructive/5 border border-destructive/20 rounded-md p-2 overflow-x-auto max-h-20">

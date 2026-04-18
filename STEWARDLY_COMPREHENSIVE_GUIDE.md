@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with **424,000+ lines of code** across **1,640 source files**, **378 database tables**, **99 tRPC API routers**, and **9,883 automated tests** across **398 test files** (all passing). The platform has undergone **116 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with **430,000+ lines of code** across **1,640+ source files**, **378 database tables**, **105 tRPC API routers**, and **9,883 automated tests** across **398 test files** (all passing). The platform has undergone **117 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -38,23 +38,23 @@ The system is built on a modern TypeScript full-stack architecture with **424,00
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 424,000+ |
+| Total lines of code | 430,000+ |
 | Source files (non-test) | 1,640 |
 | Test files | 398 |
 | Total tests | 9,883 (all passing) |
 | Database tables | 378 |
-| tRPC routers | 99 |
+| tRPC routers | 105 |
 | Frontend pages/routes | 149 |
 | Custom components | 180+ |
 | UI primitives (shadcn) | 53 |
 | Custom hooks | 25+ |
 | Server services | 300+ |
-| Router modules | 99 (+ main routers.ts) |
+| Router modules | 105 (+ main routers.ts) |
 | Shared modules | 15+ (intelligence, config, streaming, engine, guardrails, telemetry, events, tenant, MCP, stewardlyWiring, exponential) |
 | Business domains | 20+ (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring, fairness, task queue, agentic execution, workflow) |
 | NPM dependencies | 95+ |
 | Dev dependencies | 30+ |
-| Recursive optimization passes | 116 |
+| Recursive optimization passes | 117 |
 
 ### 2.3 Directory Structure
 

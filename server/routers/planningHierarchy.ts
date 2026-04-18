@@ -982,4 +982,240 @@ export const planningHierarchyRouter = router({
       const { checkMarketingRuleCompliance } = await import("../services/planningHierarchy/wealthEngineOptimizer");
       return checkMarketingRuleCompliance(input);
     }),
+
+  // ─── SPECIALIZED WORKFLOWS ──────────────────────────────────────────
+  generateSpecialNeedsPlan: protectedProcedure
+    .input(z.object({
+      clientAge: z.number(),
+      dependentAge: z.number(),
+      dependentName: z.string(),
+      disabilityType: z.string(),
+      currentBenefits: z.array(z.string()),
+      currentAssets: z.number(),
+      annualCareExpenses: z.number(),
+      existingTrust: z.boolean().optional(),
+      trustType: z.string().optional(),
+      stateCode: z.string(),
+      parentAge: z.number().optional(),
+      parentHealth: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateSpecialNeedsPlan } = await import("../services/planningHierarchy/specializedWorkflows");
+      return generateSpecialNeedsPlan(input);
+    }),
+
+  generateElderCarePlan: protectedProcedure
+    .input(z.object({
+      clientAge: z.number(),
+      healthStatus: z.enum(["excellent", "good", "fair", "poor"]),
+      adlLimitations: z.array(z.string()),
+      iadlLimitations: z.array(z.string()),
+      currentLivingSituation: z.string(),
+      monthlyIncome: z.number(),
+      totalAssets: z.number(),
+      ltcInsurance: z.boolean(),
+      ltcDailyBenefit: z.number().optional(),
+      ltcBenefitPeriod: z.number().optional(),
+      stateCode: z.string(),
+      spouseAge: z.number().optional(),
+      spouseHealth: z.string().optional(),
+      veteranStatus: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateElderCarePlan } = await import("../services/planningHierarchy/specializedWorkflows");
+      return generateElderCarePlan(input);
+    }),
+
+  generateCrossBorderPlan: protectedProcedure
+    .input(z.object({
+      citizenshipCountries: z.array(z.string()),
+      residenceCountry: z.string(),
+      taxResidenceCountries: z.array(z.string()),
+      foreignAccounts: z.array(z.object({
+        country: z.string(),
+        accountType: z.string(),
+        maxBalance: z.number(),
+      })),
+      foreignIncome: z.array(z.object({
+        country: z.string(),
+        type: z.string(),
+        amount: z.number(),
+        taxPaid: z.number(),
+      })),
+      foreignRealEstate: z.array(z.object({
+        country: z.string(),
+        value: z.number(),
+        rentalIncome: z.number().optional(),
+      })),
+      pficHoldings: z.array(z.object({
+        country: z.string(),
+        fundName: z.string(),
+        value: z.number(),
+      })).optional(),
+      totalWorldwideIncome: z.number(),
+      usTaxFiled: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateCrossBorderPlan } = await import("../services/planningHierarchy/specializedWorkflows");
+      return generateCrossBorderPlan(input);
+    }),
+
+  // ─── PFR PDF EXPORT (via tRPC) ──────────────────────────────────────
+  exportPFRAsPdf: protectedProcedure
+    .input(z.object({
+      pfrId: z.number().optional(),
+      clientId: z.number().optional(),
+      clientName: z.string().optional(),
+      advisorName: z.string().optional(),
+      firmName: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { exportPFR } = await import("../services/planningHierarchy/pfrExport");
+      const { generatePFRPdf } = await import("../services/planningHierarchy/pfrPdfGenerator");
+      const { storagePut } = await import("../../storage");
+      const crypto = await import("crypto");
+      const pfrResult = await exportPFR({
+        pfrId: input.pfrId,
+        clientId: input.clientId,
+        advisorId: ctx.user.id,
+        advisorName: input.advisorName || ctx.user.name || "Advisor",
+        firmName: input.firmName || "Stewardly AI",
+        format: "markdown",
+      });
+      const pdfBuffer = await generatePFRPdf({
+        clientName: input.clientName || `Client #${input.clientId || "Unknown"}`,
+        advisorName: input.advisorName || ctx.user.name || "Advisor",
+        firmName: input.firmName || "Stewardly AI",
+        generatedAt: pfrResult.generatedAt,
+        content: typeof pfrResult === "object" && "content" in pfrResult ? (pfrResult as any).content : "",
+      });
+      const suffix = crypto.randomBytes(6).toString("hex");
+      const key = `pfr-exports/${ctx.user.id}/PFR-${input.clientId || "report"}-${suffix}.pdf`;
+      const { url } = await storagePut(key, pdfBuffer, "application/pdf");
+      return { url, generatedAt: pfrResult.generatedAt, format: "pdf" };
+    }),
+
+  // ─── MEDIUM-PRIORITY WORKFLOWS ──────────────────────────────────────
+  generateProspectConversionPlan: protectedProcedure
+    .input(z.object({
+      prospectName: z.string(),
+      prospectEmail: z.string().optional(),
+      referralSource: z.string().optional(),
+      estimatedAssets: z.number(),
+      estimatedIncome: z.number(),
+      age: z.number(),
+      primaryConcerns: z.array(z.string()),
+      currentAdvisor: z.boolean().optional(),
+      meetingDate: z.string().optional(),
+      stateCode: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateProspectConversionPlan } = await import("../services/planningHierarchy/mediumPriorityWorkflows");
+      return generateProspectConversionPlan(input);
+    }),
+
+  generateEstateDocumentReview: protectedProcedure
+    .input(z.object({
+      clientAge: z.number(),
+      maritalStatus: z.string(),
+      stateCode: z.string(),
+      hasWill: z.boolean(),
+      willDate: z.string().optional(),
+      hasTrust: z.boolean(),
+      trustType: z.string().optional(),
+      trustDate: z.string().optional(),
+      hasPOA: z.boolean(),
+      hasHealthcareDirective: z.boolean(),
+      hasLivingWill: z.boolean(),
+      hasBeneficiaryDesignations: z.boolean(),
+      estimatedEstate: z.number(),
+      hasMinorChildren: z.boolean(),
+      hasBlendedFamily: z.boolean(),
+      hasBusinessInterests: z.boolean(),
+      hasCharitableIntent: z.boolean(),
+      lastReviewDate: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateEstateDocumentReview } = await import("../services/planningHierarchy/mediumPriorityWorkflows");
+      return generateEstateDocumentReview(input);
+    }),
+
+  generateCharitablePlan: protectedProcedure
+    .input(z.object({
+      clientAge: z.number(),
+      spouseAge: z.number().optional(),
+      taxBracket: z.number(),
+      stateCode: z.string(),
+      annualCharitableGiving: z.number(),
+      appreciatedAssets: z.array(z.object({
+        type: z.string(),
+        value: z.number(),
+        costBasis: z.number(),
+        holdingPeriod: z.number(),
+      })),
+      charitableGoals: z.array(z.string()),
+      desiredIncome: z.boolean(),
+      desiredTaxDeduction: z.boolean(),
+      desiredLegacy: z.boolean(),
+      estimatedEstate: z.number(),
+      totalIncome: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateCharitablePlan } = await import("../services/planningHierarchy/mediumPriorityWorkflows");
+      return generateCharitablePlan(input);
+    }),
+
+  generateDivorcePlan: protectedProcedure
+    .input(z.object({
+      clientAge: z.number(),
+      spouseAge: z.number(),
+      marriageYears: z.number(),
+      stateCode: z.string(),
+      communityPropertyState: z.boolean(),
+      totalMaritalAssets: z.number(),
+      retirementAccounts: z.array(z.object({
+        owner: z.string(),
+        type: z.string(),
+        balance: z.number(),
+      })),
+      realEstate: z.array(z.object({
+        description: z.string(),
+        value: z.number(),
+        mortgage: z.number(),
+        ownership: z.string(),
+      })),
+      businessInterests: z.array(z.object({
+        name: z.string(),
+        estimatedValue: z.number(),
+        ownership: z.string(),
+      })),
+      annualIncome: z.object({ client: z.number(), spouse: z.number() }),
+      childrenAges: z.array(z.number()),
+      existingPrenup: z.boolean(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateDivorcePlan } = await import("../services/planningHierarchy/mediumPriorityWorkflows");
+      return generateDivorcePlan(input);
+    }),
+
+  generateBusinessSuccessionPlan: protectedProcedure
+    .input(z.object({
+      businessType: z.string(),
+      businessValue: z.number(),
+      annualRevenue: z.number(),
+      annualProfit: z.number(),
+      ownerAge: z.number(),
+      ownerHealthStatus: z.string(),
+      coOwners: z.array(z.object({ name: z.string(), ownershipPct: z.number(), age: z.number() })),
+      keyEmployees: z.array(z.object({ name: z.string(), role: z.string(), critical: z.boolean() })),
+      desiredExitTimeline: z.number(),
+      preferredSuccessor: z.string(),
+      hasBuySellAgreement: z.boolean(),
+      hasKeyPersonInsurance: z.boolean(),
+      stateCode: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const { generateBusinessSuccessionPlan } = await import("../services/planningHierarchy/mediumPriorityWorkflows");
+      return generateBusinessSuccessionPlan(input);
+    }),
 });

@@ -491,6 +491,39 @@ async function startServer() {
     }
   });
 
+  // ─── PFR PDF Export ──────────────────────────────────────────────────
+  app.post("/api/pfr/pdf", generalLimiter, async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      const { generatePFRPdf } = await import("../services/planningHierarchy/pfrPdfGenerator");
+      const { exportPFR } = await import("../services/planningHierarchy/pfrExport");
+      // First generate the PFR content
+      const pfrResult = await exportPFR({
+        clientId: req.body.clientId,
+        pfrId: req.body.pfrId,
+        advisorId: user.id,
+        advisorName: req.body.advisorName || user.name || 'Advisor',
+        firmName: req.body.firmName || 'Stewardly AI',
+        format: 'markdown',
+      });
+      // Then generate the PDF
+      const pdfBuffer = await generatePFRPdf({
+        clientName: req.body.clientName || `Client #${req.body.clientId || 'Unknown'}`,
+        advisorName: req.body.advisorName || user.name || 'Advisor',
+        firmName: req.body.firmName || 'Stewardly AI',
+        generatedAt: pfrResult.generatedAt,
+        content: typeof pfrResult === 'object' && 'content' in pfrResult ? (pfrResult as any).content : '',
+      });
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="PFR-${req.body.clientId || 'report'}-${Date.now()}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (err: any) {
+      logger.error({ operation: 'pfr.pdf.generate', error: err.message }, '[PFR-PDF] Generation failed');
+      res.status(500).json({ error: 'PFR PDF generation failed' });
+    }
+  });
+
   // ─── tRPC API with sensitive route rate limiting ─────────────────────
   app.use("/api/trpc", sensitiveTrpcGuard);
   app.use(

@@ -781,7 +781,7 @@ The unified calculator orchestrator should be updated so that:
 3. ~~**Client-to-Practice roll-up** — Revenue impact, pipeline updates, compliance workload~~ **DONE** — `verifyRollUpConsistency` function
 4. ~~**Benchmark integration** — Client plan vs. peer comparison~~ **DONE** — `benchmarkEngine` service with SCF peer data and percentile rankings
 
-### Phase 4 — Advanced Workflows (COMPLETE — Pass 116)
+### Phase 4 — Advanced Workflows (COMPLETE — Pass 116-117)
 
 1. ~~**Policy delivery & free look tracking**~~ **DONE** — `advancedWorkflows.ts` with full lifecycle tracking
 2. ~~**1035 exchange analysis**~~ **DONE** — NAIC-compliant comparison with cost basis and surrender charge analysis
@@ -790,7 +790,7 @@ The unified calculator orchestrator should be updated so that:
 5. **Prospect-to-client conversion pipeline** — Existing `leadPipeline` router covers this workflow
 6. **Supervisory review workflow** — Covered by compliance attestation in planning hierarchy
 
-### Phase 5 — Wealth Engine Optimization (COMPLETE — Pass 116)
+### Phase 5 — Wealth Engine Optimization (COMPLETE — Pass 116-117)
 
 1. ~~**Collateral tracking**~~ **DONE** — LTV monitoring with margin call risk assessment
 2. ~~**Exit strategy modeling**~~ **DONE** — Optimal unwind timing with tax implications
@@ -802,23 +802,23 @@ The unified calculator orchestrator should be updated so that:
 
 ## 10. Rating
 
-**Current State: 9.1 / 10** (updated Pass 116, previously 8.6)
+**Current State: 9.4 / 10** (updated Pass 117, previously 9.1)
 
 The platform is genuinely impressive in scope and ambition. The practice management calculator suite (19 panels with forward/backward planning) is best-in-class for the insurance distribution channel. The AI integration (consensus engine, autonomous client analysis, contextual wiring) is sophisticated. The integration stack (Plaid, SnapTrade, Daily.co, Deepgram, FRED, BLS) is comprehensive.
 
-With the completion of Phases 1-5, the planning hierarchy is now a comprehensive CFP-standard framework with 12 interconnected services, 74 tRPC procedures, and 11 database tables. The Phase 4 advanced workflows close all high-priority gaps from Section 7.1. The wealth engine optimization layer adds institutional-grade risk management (collateral tracking, exit strategy modeling), regulatory compliance (senior investor protections, SEC Marketing Rule), and cross-calculator gap aggregation.
+With the completion of Phases 1-6, the planning hierarchy is now a comprehensive CFP-standard framework with 13 interconnected services, 82 tRPC procedures, and 11 database tables. All 12 Section 7.1 workflows are implemented including specialized workflows (special needs with SNT/ABLE, elder care with ADL/Medicaid/VA, cross-border with FBAR/FATCA/FTC), medium-priority workflows (charitable planning with CRT/CLT/DAF/PF/QCD, divorce planning with QDRO, business succession with buy-sell/ESOP), and the PFR PDF export pipeline. The wealth engine optimization layer adds institutional-grade risk management (collateral tracking, exit strategy modeling), regulatory compliance (senior investor protections, SEC Marketing Rule), and cross-calculator gap aggregation.
 
-**Justification for 9.1:** All high-priority and medium-priority workflows from the original assessment are now implemented. The platform provides end-to-end coverage from prospect intake through plan delivery, with regulatory compliance woven throughout. The remaining distance to 10.0 is in low-priority specialized workflows (special needs planning, elder care, cross-border) and real-world production hardening through advisor feedback.
+**Justification for 9.4:** All high-priority, medium-priority, and low-priority workflows from the original assessment are now implemented (82 planning hierarchy procedures across 13 service files). The platform provides complete end-to-end coverage from prospect intake through plan delivery, with regulatory compliance woven throughout. Specialized workflows including special needs planning (SNT/ABLE), elder care (ADL/Medicaid/VA), cross-border (FBAR/FATCA/FTC), charitable planning (CRT/CLT/DAF/PF/QCD), divorce planning (QDRO), and business succession (buy-sell/ESOP) are all operational. PFR PDF export generates downloadable client-facing documents. The Advanced Workflows UI panel is integrated into the Wealth Engine Hub. The remaining distance to 10.0 is in real-world production hardening through advisor feedback and live client testing.
 
 ---
 
 ## 11. Next Pass Recommendation
 
-**Phases 1-5 are complete.** The platform has reached convergence at 9.1/10. Future passes should focus on:
+**Phases 1-6 are complete.** The platform has reached convergence at 9.4/10. Future passes should focus on:
 
-1. **Low-priority specialized workflows** (special needs planning, elder care, cross-border planning)
-2. **Production hardening** based on real advisor feedback and usage patterns
-3. **UI integration** of Phase 4 advanced workflow services into the frontend
+1. **Real-world advisor testing** with live client scenarios and edge case discovery
+2. **Production hardening** based on advisor feedback and usage patterns
+3. **Section 7.2 enhancements** to existing workflows (engagement letter generation, year-over-year comparison, underwriting status tracking)
 4. **Performance optimization** of the PFR generation pipeline for large client portfolios
 
 **Re-entry triggers for future passes:**

@@ -17,6 +17,42 @@ import "./index.css";
 initErrorTracking();
 initPerformanceMonitor();
 
+/**
+ * Handle stale-deployment chunk loading errors.
+ * When a new deployment changes chunk hashes, users with cached index.html
+ * will request old chunk filenames that no longer exist. The server's SPA
+ * fallback serves index.html (text/html) instead, causing:
+ *   "'text/html' is not a valid JavaScript MIME type"
+ * This listener detects that and auto-reloads once to pick up the new index.html.
+ */
+window.addEventListener("vite:preloadError", (event) => {
+  // Prevent the default error from propagating
+  event.preventDefault();
+  // Only auto-reload once per session to avoid infinite loops
+  const reloadKey = "stewardly-chunk-reload";
+  if (!sessionStorage.getItem(reloadKey)) {
+    sessionStorage.setItem(reloadKey, "1");
+    window.location.reload();
+  }
+});
+
+// Also catch dynamic import() failures that bypass the Vite preload event
+window.addEventListener("unhandledrejection", (event) => {
+  const msg = String(event.reason?.message || event.reason || "");
+  if (
+    msg.includes("Failed to fetch dynamically imported module") ||
+    msg.includes("is not a valid JavaScript MIME type") ||
+    msg.includes("Importing a module script failed")
+  ) {
+    event.preventDefault();
+    const reloadKey = "stewardly-chunk-reload";
+    if (!sessionStorage.getItem(reloadKey)) {
+      sessionStorage.setItem(reloadKey, "1");
+      window.location.reload();
+    }
+  }
+});
+
 /** Detect transient "server restarting" errors where the HTML fallback is returned instead of JSON */
 const isTransientServerRestart = (error: unknown): boolean => {
   if (error instanceof TRPCClientError) {

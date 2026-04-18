@@ -52,7 +52,8 @@ type WETab =
   | "quick-bundle" | "protection-score" | "strategy-comparison" | "insurance-analysis"
   | "engine-dashboard" | "owner-comp" | "business-valuation" | "practice-to-wealth" | "financial-twin" | "workflows"
   | "configurator" | "sensitivity" | "what-if" | "references" | "team-builder" | "holistic-comparison"
-  | "quick-quote-hub" | "business-income";
+  | "quick-quote-hub" | "business-income"
+  | "advanced-workflows";
 
 interface NavItem {
   id: WETab;
@@ -104,6 +105,9 @@ const NAV_SECTIONS: NavSection[] = [
     { id: "team-builder", label: "Team Builder", icon: Users, slug: "team-builder" },
     { id: "references", label: "Reference Hub", icon: FileText, slug: "references" },
   ]},
+  { group: "Advisory", items: [
+    { id: "advanced-workflows" as WETab, label: "Advanced Workflows", icon: Shield, slug: "advanced-workflows", badge: "New" },
+  ]},
 ];
 
 const ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
@@ -125,6 +129,7 @@ const WeOwnerComp = lazy(() => import("./OwnerCompPage"));
 const WeQuickQuoteHub = lazy(() => import("./QuickQuoteHub"));
 const WeHolisticComparison = lazy(() => import("./HolisticComparison"));
 const WePlanningHierarchy = lazy(() => import("./PlanningHierarchyPanel"));
+const WeAdvancedWorkflows = lazy(() => import("./AdvancedWorkflowsPanel"));
 
 // ─── INLINE QUICK BUNDLE ───────────────────────────────────────────
 interface BundleForm {
@@ -429,6 +434,7 @@ export default function WealthEngineHub() {
               {activeTab === "quick-quote-hub" && <WeQuickQuoteHub embedded />}
               {activeTab === "holistic-comparison" && <WeHolisticComparison embedded />}
               {activeTab === "planning-hierarchy" && <WePlanningHierarchy />}
+              {activeTab === "advanced-workflows" && <WeAdvancedWorkflows />}
             </Suspense>
           </div>
         </main>
