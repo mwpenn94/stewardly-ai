@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
-  BarChart3, GitCompare, FileText, ListChecks, BookOpen, Layers, Building2
+  BarChart3, GitCompare, FileText, ListChecks, BookOpen, Layers, Building2, DollarSign, Info, TrendingDown
 } from 'lucide-react';
 import {
   STRATEGIES, CALC_METHODS, DUE_DILIGENCE, buildActionPlan,
@@ -19,6 +19,7 @@ import {
 import { fmt, fmtSm, pct } from './format';
 import { RefTip, ExportPDFButton, type PanelProps } from './shared';
 import { REFERENCE_CATEGORIES, FUNNEL_BENCHMARKS, METHODOLOGY_DISCLOSURE, REF_CATEGORY_TIPS } from './references';
+import { computeCostTransparency, COST_SCENARIOS, INDUSTRY_FEE_BENCHMARKS, type CostSummary } from './costTransparency';
 
 export interface SavedScenario {
   id: number;
@@ -149,7 +150,85 @@ export function CostBenefitPanel(p: PanelProps & { horizonData: HorizonData[] })
           </div>
         );
       })()}
+      {/* Cost Transparency — 5-Layer Fee Breakdown */}
+      <CostTransparencyCard portfolioValue={p.horizonData.length > 0 ? p.horizonData[0].benefit * 2 : 500000} />
     </section>
+  );
+}
+
+/* ─── Cost Transparency Card ─── */
+function CostTransparencyCard({ portfolioValue }: { portfolioValue: number }) {
+  const [scenario, setScenario] = useState<string>('WealthBridge Optimized');
+  const scenarioNames = Object.keys(COST_SCENARIOS) as (keyof typeof COST_SCENARIOS)[];
+  const params = COST_SCENARIOS[scenario as keyof typeof COST_SCENARIOS] || COST_SCENARIOS['WealthBridge Optimized'];
+  const summary = computeCostTransparency({ ...params, portfolioValue, expectedReturnBps: 700 });
+
+  return (
+    <Card className="mb-4">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-1">
+          <DollarSign className="h-4 w-4" /> Cost Transparency — Fee Breakdown
+          <RefTip text="5-layer fee analysis showing total cost of ownership. Sources: Morningstar 2024, Kitces Research, LIMRA, Cerulli." refId="cost-transparency" />
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Scenario Selector */}
+        <div className="flex gap-1 flex-wrap">
+          {scenarioNames.map(s => (
+            <Button key={s} variant={scenario === s ? 'default' : 'outline'} size="sm" className="text-xs" onClick={() => setScenario(s)}>{s}</Button>
+          ))}
+        </div>
+
+        {/* Fee Layers Table */}
+        <div className="overflow-x-auto -mx-1 px-1">
+          <table role="table" className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-background">
+                <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Fee Layer</th>
+                <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">BPS</th>
+                <th className="text-right py-2 px-2 text-xs font-semibold text-muted-foreground">Annual $</th>
+                <th className="text-left py-2 px-2 text-xs font-semibold text-muted-foreground">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.feeLayers.filter(l => l.bps > 0).map((layer, i) => (
+                <tr key={i} className="border-b border-border/50">
+                  <td className="py-1.5 px-2 font-medium text-foreground/80">{layer.label}</td>
+                  <td className="text-right px-2 text-primary font-mono">{layer.bps}</td>
+                  <td className="text-right px-2 text-red-400">{fmtSm(layer.annualDollar)}</td>
+                  <td className="px-2 text-xs text-muted-foreground">{layer.source}</td>
+                </tr>
+              ))}
+              <tr className="border-t-2 border-primary/30 font-bold">
+                <td className="py-2 px-2">Total Cost of Ownership</td>
+                <td className="text-right px-2 text-primary font-mono">{summary.totalBps}</td>
+                <td className="text-right px-2 text-red-400">{fmtSm(summary.totalAnnual)}/yr</td>
+                <td className="px-2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Impact Summary */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { label: '10-Year Drag', value: fmtSm(summary.dragOnReturns10yr), color: 'text-red-400' },
+            { label: '20-Year Drag', value: fmtSm(summary.dragOnReturns20yr), color: 'text-red-400' },
+            { label: 'vs. Median', value: `${summary.comparisonToMedian > 0 ? '+' : ''}${summary.comparisonToMedian.toFixed(0)}%`, color: summary.comparisonToMedian <= 0 ? 'text-green-400' : 'text-amber-400' },
+            { label: 'Break-Even Alpha', value: `${summary.breakEvenAlpha.toFixed(2)}%`, color: 'text-muted-foreground' },
+          ].map(m => (
+            <div key={m.label} className="bg-muted/50 rounded-lg p-2 text-center">
+              <div className="text-xs text-muted-foreground">{m.label}</div>
+              <div className={`text-sm font-bold font-mono ${m.color}`}>{m.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Based on {fmtSm(portfolioValue)} portfolio, 7% expected return. Fee drag compounds over time — even small BPS differences create significant long-term impact.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -132,6 +132,34 @@ const PAGE_HELP: Record<string, PageHelp> = {
       { title: "Appearance", description: "Switch between light and dark themes, and customize the interface to your preference.", category: "tip" },
     ],
   },
+  "/agent": {
+    title: "Financial Agent",
+    description: "AI-powered financial calculator agent — 7 tools wired into the chat for instant projections.",
+    tips: [
+      { title: "Calculator Tools", description: "The agent has 7 calculator tools: Retirement, Tax, Protection, Monte Carlo, Estate, Entity Comparison, and Income Projection.", category: "tip" },
+      { title: "Quick Prompts", description: "Click any tool card or quick prompt to start a conversation with pre-filled context.", category: "tip" },
+      { title: "Natural Language", description: "Ask questions in plain English — the agent automatically selects and runs the right calculator tool.", category: "tip" },
+      { title: "How accurate are the projections?", description: "Projections use industry-standard formulas and current tax brackets. Always verify with a licensed professional.", category: "faq" },
+    ],
+  },
+  "/comparables": {
+    title: "Competitive Analysis",
+    description: "Gap analysis across 8 domains comparing WealthBridge to industry competitors.",
+    tips: [
+      { title: "Parity Dashboard", description: "Scroll to the bottom to see the Parity Capability Dashboard showing live/beta/planned coverage across all domains.", category: "tip" },
+      { title: "Deep Dive", description: "Click any comparable to see detailed scoring across all axes with source notes.", category: "tip" },
+      { title: "Priority Recommendations", description: "The top section highlights areas where WealthBridge trails competitors — these are prioritized for development.", category: "tip" },
+    ],
+  },
+  "/manus-next": {
+    title: "Manus-Next Dashboard",
+    description: "Platform capability validation surface — verify all capabilities and track extraction progress.",
+    tips: [
+      { title: "Validate Capabilities", description: "Click 'Validate' on any testable capability to verify its endpoint is responsive.", category: "tip" },
+      { title: "Domain Filters", description: "Filter capabilities by domain (Calculators, Data, Platform, Manus-Next) to focus on specific areas.", category: "tip" },
+      { title: "Extraction Progress", description: "The Extraction tab shows the monolith-to-monorepo journey with phase-by-phase progress.", category: "tip" },
+    ],
+  },
 };
 
 const GLOBAL_SHORTCUTS: HelpTip[] = [

@@ -16,7 +16,7 @@ import {
   GraduationCap, Settings, HelpCircle, Search, Plus,
   PanelLeftClose, PanelLeft, ChevronDown, Pin,
   Fingerprint, Cog, Briefcase, UserCog, Building2,
-  Sparkles, Package, Star,
+  Sparkles, Package, Star, Rocket,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -74,6 +74,14 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
       { label: "Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
       { label: "Wealth Engine", icon: Calculator, path: "/wealth-engine", match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan"] },
       { label: "Products", icon: Package, path: "/products", match: ["/products"], disclosureLevel: 2 },
+    ],
+  },
+  {
+    key: "capabilities",
+    label: "Capabilities",
+    minRole: "user",
+    items: [
+      { label: "Agent Hub", icon: Rocket, path: "/manus-next", match: ["/manus-next", "/agent"] },
     ],
   },
   {

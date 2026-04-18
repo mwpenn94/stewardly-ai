@@ -85,6 +85,7 @@ const RelationshipsHub = lazy(() => import("./pages/RelationshipsHub"));
 const Help = lazy(() => import("./pages/Help"));
 const Workflows = lazy(() => import("./pages/Workflows"));
 const AgentManager = lazy(() => import("./pages/AgentManager"));
+const AgentPage = lazy(() => import("./pages/AgentPage"));
 const Changelog = lazy(() => import("./pages/Changelog"));
 const ImportData = lazy(() => import("./pages/ImportData"));
 const LeadPipeline = lazy(() => import("./pages/LeadPipeline"));
@@ -291,6 +292,7 @@ function Router() {
 
         <Route path={"/operations"}>{() => <SectionErrorBoundary sectionName="Operations"><OperationsHub /></SectionErrorBoundary>}</Route>
         <Route path={"/agents"} component={AgentManager} />
+        <Route path={"/agent"} component={AgentPage} />
         <Route path={"/intelligence-hub"}>{() => <SectionErrorBoundary sectionName="Intelligence Hub"><IntelligenceHubV2 /></SectionErrorBoundary>}</Route>
         <Route path="/intelligence-hub/:tab">{() => <SectionErrorBoundary sectionName="Intelligence Hub"><IntelligenceHubV2 /></SectionErrorBoundary>}</Route>
         <Route path={"/advisory"} component={AdvisoryHub} />

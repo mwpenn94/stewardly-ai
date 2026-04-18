@@ -55,6 +55,10 @@ const CAPABILITIES: Capability[] = [
 
   // Platform Services
   { id: "unified-ai", name: "Unified AI Surface", description: "Chat, Dev, Auto modes with real LLM streaming", domain: "Platform", icon: <Brain className="h-4 w-4" />, trpcEndpoint: "/api/chat/stream", status: "live", testable: false },
+  { id: "calculator-chat-tools", name: "Calculator Chat Tools", description: "7 financial calculator tools wired into AI chat (retirement, tax, protection, Monte Carlo, estate, entity, income)", domain: "Platform", icon: <BarChart3 className="h-4 w-4" />, trpcEndpoint: "/api/chat/stream", status: "live", testable: false },
+  { id: "cascade-engine", name: "Cascade Planning Engine", description: "Forward/backward cascade, alignment health scoring, gap analysis, goal-strategy matrix", domain: "Platform", icon: <Layers className="h-4 w-4" />, trpcEndpoint: "planningHierarchy.scanCascadeAlerts", status: "live", testable: true },
+  { id: "cost-transparency", name: "Cost Transparency Engine", description: "5-layer fee analysis (advisory, fund, platform, insurance, transaction)", domain: "Platform", icon: <DollarSign className="h-4 w-4" />, trpcEndpoint: "—", status: "live", testable: false },
+  { id: "parity-mapping", name: "Competitive Parity Mapping", description: "8-domain capability gap analysis vs. industry competitors", domain: "Platform", icon: <Activity className="h-4 w-4" />, trpcEndpoint: "—", status: "live", testable: false },
   { id: "compliance", name: "Compliance Copilot", description: "Audit trail, privacy log, severity tracking", domain: "Platform", icon: <Shield className="h-4 w-4" />, trpcEndpoint: "complianceCopilot.auditLog", status: "live", testable: true },
   { id: "tax-projector", name: "Tax Projector", description: "Federal + state tax, RMD, IRMAA tier lookup", domain: "Platform", icon: <BarChart3 className="h-4 w-4" />, trpcEndpoint: "tax.projectYear", status: "live", testable: true },
   { id: "annual-review", name: "Annual Review Generator", description: "Year-end financial review packet generation", domain: "Platform", icon: <FileText className="h-4 w-4" />, trpcEndpoint: "annualReview.generate", status: "live", testable: true },
@@ -66,9 +70,9 @@ const CAPABILITIES: Capability[] = [
   { id: "command-center", name: "Command Center", description: "7-tab hub: Overview, CRM, Campaigns, ATS, LinkedIn, Segments, Assets", domain: "Platform", icon: <Layers className="h-4 w-4" />, trpcEndpoint: "leadPipeline.list", status: "live", testable: true },
 
   // Manus-Next Planned
-  { id: "mn-wealth-engine", name: "@manus-next/wealth-engine", description: "Extracted standalone wealth calculation engine package", domain: "Manus-Next", icon: <Package className="h-4 w-4" />, trpcEndpoint: "—", status: "planned", testable: false },
-  { id: "mn-practice-engine", name: "@manus-next/practice-engine", description: "Extracted standalone practice management engine", domain: "Manus-Next", icon: <Package className="h-4 w-4" />, trpcEndpoint: "—", status: "planned", testable: false },
-  { id: "mn-references", name: "@manus-next/references", description: "Extracted citation library with auto-update framework", domain: "Manus-Next", icon: <Package className="h-4 w-4" />, trpcEndpoint: "—", status: "planned", testable: false },
+  { id: "mn-wealth-engine", name: "@manus-next/wealth-engine", description: "56-panel Unified Wealth Engine with cascade data propagation", domain: "Manus-Next", icon: <Package className="h-4 w-4" />, trpcEndpoint: "calculators.logAudit", status: "live", testable: true },
+  { id: "mn-practice-engine", name: "@manus-next/practice-engine", description: "Business Income Engine with GDC, overrides, team roll-up", domain: "Manus-Next", icon: <Package className="h-4 w-4" />, trpcEndpoint: "—", status: "live", testable: false },
+  { id: "mn-references", name: "@manus-next/references", description: "Industry benchmarks, guardrails, methodology disclosure, WORM audit", domain: "Manus-Next", icon: <Package className="h-4 w-4" />, trpcEndpoint: "—", status: "live", testable: false },
   { id: "mn-sovereign", name: "@manus-next/sovereign", description: "Sovereign study app with Calculator Lab + Concept Explorer", domain: "Manus-Next", icon: <Terminal className="h-4 w-4" />, trpcEndpoint: "—", status: "planned", testable: false },
 ];
 
@@ -153,7 +157,7 @@ export default function ManusNextDashboard() {
             Capability validation surface — verify all platform capabilities and track extraction progress.
           </p>
         </div>
-        <Badge variant="outline" className="text-xs font-mono">v107b</Badge>
+        <Badge variant="outline" className="text-xs font-mono">v124</Badge>
       </div>
 
       {/* Summary Cards */}
@@ -330,18 +334,18 @@ export default function ManusNextDashboard() {
 
           {/* Build Metrics */}
           <Card>
-            <CardHeader><CardTitle>Build Metrics (v107b)</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Build Metrics (v124)</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "Total LOC", value: "413,987" },
-                  { label: "Page Components", value: "148" },
-                  { label: "UI Components", value: "228" },
-                  { label: "Server Services", value: "363" },
-                  { label: "Server Routers", value: "99" },
-                  { label: "Database Tables", value: "365" },
-                  { label: "Tests Passing", value: "9,669" },
-                  { label: "Build Time", value: "32s" },
+                  { label: "Total LOC", value: "435,000+" },
+                  { label: "Page Components", value: "155" },
+                  { label: "UI Components", value: "235" },
+                  { label: "Server Services", value: "380" },
+                  { label: "Server Routers", value: "105" },
+                  { label: "Database Tables", value: "383" },
+                  { label: "Tests Passing", value: "9,883" },
+                  { label: "Build Time", value: "47s" },
                 ].map((m) => (
                   <div key={m.label} className="bg-muted/50 rounded-lg p-3 text-center">
                     <div className="text-xs text-muted-foreground">{m.label}</div>

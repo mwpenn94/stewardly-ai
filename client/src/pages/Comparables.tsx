@@ -55,6 +55,7 @@ import { useState, useMemo } from "react";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { DisclosureSection } from "@/components/DisclosureSection";
+import { PARITY_CAPABILITIES, type ParityCapability } from "./calculators/parityMapping";
 
 // Score badge — 0..3 on the rubric, color-coded.
 function ScoreBadge({ score }: { score: number }) {
@@ -582,6 +583,59 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
             ))}
           </div>
         )}
+        {/* ── 6. Parity Capability Dashboard ─────────────────────── */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Compass className="h-5 w-5" /> Parity Capability Dashboard
+            </CardTitle>
+            <CardDescription>
+              Platform capability coverage across {new Set(PARITY_CAPABILITIES.map(c => c.category)).size} domains — {PARITY_CAPABILITIES.filter(c => c.status === 'live').length}/{PARITY_CAPABILITIES.length} capabilities live
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {Array.from(new Set(PARITY_CAPABILITIES.map(c => c.category))).map(cat => {
+                const caps = PARITY_CAPABILITIES.filter(c => c.category === cat);
+                const liveCount = caps.filter(c => c.status === 'live').length;
+                const pct = Math.round((liveCount / caps.length) * 100);
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">{cat}</span>
+                      <span className="text-xs text-muted-foreground">{liveCount}/{caps.length} ({pct}%)</span>
+                    </div>
+                    <Progress value={pct} className="h-2 mb-2" />
+                    <div className="flex flex-wrap gap-1">
+                      {caps.map(c => (
+                        <Badge
+                          key={c.id}
+                          variant={c.status === 'live' ? 'default' : 'outline'}
+                          className={`text-[10px] ${c.status === 'live' ? 'bg-green-500/10 text-green-500 border-green-500/20' : c.status === 'beta' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : ''}`}
+                        >
+                          {c.capability}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { label: 'Live', count: PARITY_CAPABILITIES.filter(c => c.status === 'live').length, color: 'text-green-500' },
+                { label: 'Beta', count: PARITY_CAPABILITIES.filter(c => c.status === 'beta').length, color: 'text-yellow-500' },
+                { label: 'Planned', count: PARITY_CAPABILITIES.filter(c => c.status === 'planned').length, color: 'text-blue-500' },
+                { label: 'Coverage', count: `${Math.round((PARITY_CAPABILITIES.filter(c => c.status === 'live').length / PARITY_CAPABILITIES.length) * 100)}%`, color: 'text-primary' },
+              ].map(s => (
+                <div key={s.label} className="bg-muted/50 rounded-lg p-2 text-center">
+                  <div className="text-xs text-muted-foreground">{s.label}</div>
+                  <div className={`text-lg font-bold ${s.color}`}>{s.count}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </main>
 
       {/* ── Deep-dive drawer ─────────────────────────────────────── */}

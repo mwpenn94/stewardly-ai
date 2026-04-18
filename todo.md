@@ -6269,15 +6269,45 @@
 ## Pass 123 — Recommended Next Steps + Parity Spec v8.2 Integration
 - [x] LeadDetail: Add score history panel with trend visualization
 - [x] AdminLeadSources: Add connector health badges and sync status indicators
-- [ ] Real-time cascade toast notifications when panel changes trigger alerts
-- [ ] Cost transparency UI: per-task cost visibility for advisor workflows
-- [ ] Scaffold docs/parity/ directory with MANIFEST, PARITY_BACKLOG, PARITY_SCOPE, HRQ_QUEUE, HUMAN_VERIFY_LOG, DISTRACTION_BACKLOG, MANUS_SPEC_WATCH_LOG, COMPLIANCE_AUDIT_LOG
+- [x] Real-time cascade toast notifications when panel changes trigger alerts
+- [x] Cost transparency UI: per-task cost visibility for advisor workflows
+- [x] Scaffold docs/parity/ directory with MANIFEST, PARITY_BACKLOG, PARITY_SCOPE, HRQ_QUEUE, HUMAN_VERIFY_LOG, DISTRACTION_BACKLOG, MANUS_SPEC_WATCH_LOG, COMPLIANCE_AUDIT_LOG
 - [ ] Create docs/competitive/MANUS_IN_GHL.md positioning document
-- [ ] 67-capability gap mapping against existing features
+- [x] 67-capability gap mapping against existing features
 - [ ] Strengthen compliance visibility in Wealth Engine (FINRA/SEC badges, audit trail indicators)
 - [ ] Add jurisdictional awareness to advisor context
 - [x] Recursive stability passes (3 clean consecutive)
 - [x] Virtual user persona validation (10 professional types)
-- [ ] Update in-app documentation (ContextualHelp entries)
-- [ ] Update codebase documentation (READMEs, inline comments)
+- [x] Update in-app documentation (ContextualHelp entries)
+- [x] Update codebase documentation (READMEs, inline comments)
 - [x] Final convergence verification
+
+## Pass 124 — Manus-Next Feature Surfacing, AI Chat Integration, Parity v8.2
+
+### Feature Surfacing
+- [x] Add Manus-Next link to PersonaSidebar5 sidebar navigation (visible to all users)
+- [x] Update ManusNextDashboard with live status for all packages (reflect actual live state)
+- [x] Surface agent capabilities to all users (not just admin)
+- [x] Ensure guest users can explore features without gate
+
+### AI Chat Integration (from manus-next-app reference)
+- [x] Audit manus-next-app repo for AI chat patterns and agent surface architecture
+- [x] Integrate agent capabilities into existing AI chat surface
+- [x] Add advisor context wiring (compliance policy + audit log) to chat
+- [x] Add /agent route with ManusNextWeb-style consume-packages pattern
+- [x] Wire calculator + agent fusion ("run what-if for client X at 4% rate")
+
+### Parity Spec v8.2 Items
+- [x] Scaffold parity documentation (MANIFEST.json, PARITY_BACKLOG, PARITY_SCOPE, etc.)
+- [x] Create competitive positioning doc (Manus-in-GHL differentiators)
+- [x] Add compliance audit log structure
+- [x] Add cost transparency per-task visibility
+- [x] Add FINRA-safe sharing with disclaimers, audit trail, expiry policies
+
+### Stability & Validation
+- [x] Recursive stability pass 1
+- [x] Recursive stability pass 2
+- [x] Recursive stability pass 3 (convergence)
+- [x] Virtual user persona validation (10 types)
+- [x] Update in-app documentation
+- [x] Update codebase documentation
