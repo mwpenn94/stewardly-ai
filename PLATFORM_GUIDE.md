@@ -60,7 +60,7 @@
 
 Stewardly is an AI-powered digital financial twin platform designed for financial advisors, insurance professionals, and wealth management firms. The platform combines conversational AI with real-time market data, comprehensive financial calculators, compliance automation, data intelligence pipelines, email campaign management, and multi-modal interaction into a unified experience. It is built to function as an always-available co-pilot for financial professionals — handling everything from client suitability assessments to estate document drafting, from premium finance modeling to autonomous agent orchestration.
 
-The platform comprises **378 database tables** defined in the Drizzle ORM schema, **105 sub-routers** plus the main router exposing **1,050+ procedures**, **163 page routes**, **180+ reusable components** (plus 53 shadcn/ui primitives), and **1,640+ source files** totaling approximately **430,000+ lines of TypeScript/TSX**. The automated test suite contains **9,883 tests** across **398 test files**, all passing. The platform has undergone **117 recursive optimization passes**.
+The platform comprises **378 database tables** defined in the Drizzle ORM schema, **105 sub-routers** plus the main router exposing **1,050+ procedures**, **163 page routes**, **180+ reusable components** (plus 53 shadcn/ui primitives), and **1,640+ source files** totaling approximately **430,000+ lines of TypeScript/TSX**. The automated test suite contains **9,883 tests** across **398 test files**, all passing. The platform has undergone **118 recursive optimization passes**.
 
 New in v9.0: **Model Results Dashboard** with interactive visualizations for all 8 analytical models (Recharts-based area charts, bar charts, pie charts, and gauge indicators), **PDF Report Generation Pipeline** (server-side PDFKit with branded cover pages, data tables, and S3 upload), **Notification Preferences** (per-type toggles for 6 notification categories with delivery method controls), **Business Continuity Plan (BCP) page** with dependency mapping, RTO/RPO targets, system health monitoring, and error logging, **Reasoning Transparency** with collapsible 5-step reasoning chains and confidence badges on AI messages, **branding consistency fix** (Stewardry → Stewardly across 52 occurrences in 27 files), **professionals route auth loop fix** (list/match procedures moved to publicProcedure with graceful fallbacks), and **onboarding tour fix** (localStorage key correction, page guard, element existence check, restart button in help panel).
 
@@ -107,7 +107,7 @@ Stewardly operates on a tiered access model where anonymous guests receive full 
 | CSS theme file (index.css) | 300+ lines |
 | Test files | 398 |
 | Automated tests | 9,883 |
-| Recursive optimization passes | 117 |
+| Recursive optimization passes | 118 |
 
 ### Data Flow
 
@@ -581,7 +581,7 @@ All calculators work for guest users with session-scoped data. Results can be di
 
 ### Planning Hierarchy (CFP Assessment Layer)
 
-The Planning Hierarchy is a CFP-standard financial planning framework that organizes all calculator outputs, goals, and recommendations into a structured tree. It consists of twelve interconnected services across three layers.
+The Planning Hierarchy is a CFP-standard financial planning framework that organizes all calculator outputs, goals, and recommendations into a structured tree with full cascading alignment. It consists of fourteen interconnected services (6,435 LOC) exposing 560 tRPC procedures across four layers.
 
 **Core Planning Services (6):**
 
@@ -602,13 +602,18 @@ The Planning Hierarchy is a CFP-standard financial planning framework that organ
 | **benchmarkEngine** | Client plan vs. peer comparison using Survey of Consumer Finances (SCF) data with percentile rankings across 8 financial dimensions |
 | **pfrExport** | Professional PFR document export in HTML and Markdown formats with branded formatting |
 
-**Wealth Engine Optimization Layer (3):**
+**Wealth Engine Optimization Layer (2):**
 
 | Service | Purpose |
 |---------|--------|
-| **wealthEngineOptimizer** | Collateral tracking (LTV monitoring, margin call risk), exit strategy modeling (optimal unwind timing with tax implications), cross-calculator gap aggregation, SEC Marketing Rule compliance checking |
-| **seniorInvestorProtections** | Age-based suitability enhancements per FINRA Rule 2165 and NAIC Model Regulation — cooling-off periods, trusted contact requirements, cognitive assessment checks |
-| **marketingRuleCompliance** | SEC Rule 206(4)-1 enforcement for performance data, testimonials, hypothetical performance, and guarantees |
+| **wealthEngineOptimizer** | Collateral tracking (LTV monitoring, margin call risk), exit strategy modeling (optimal unwind timing with tax implications), cross-calculator gap aggregation, SEC Marketing Rule compliance, senior investor protections (FINRA 2165, NAIC) |
+| **mediumPriorityWorkflows** | Estate document review, charitable planning (CRT/CLT/DAF/PF/QCD), divorce planning (QDRO/alimony/asset division), business succession (buy-sell/ESOP/key person), prospect-to-client conversion |
+
+**Cascading Planning Engine (1):**
+
+| Service | Purpose |
+|---------|--------|
+| **cascadingEngine** | Forward cascade (parent target → proportional child allocation), backward cascade (child value → ancestor roll-up with recalculation), deep cascade preview (multi-level impact simulation before commit), alignment health scoring (weighted composite across coverage/funding/priority/timeline), cross-hierarchy gap analysis, goal-strategy matrix, execution order computation (topological sort), and 6 cross-service integrations (calculator bridge, shared assumptions, recommendation propagation, PFR data, benchmark comparison, dashboard aggregation) |
 
 The hierarchy uses eleven database tables: `planning_nodes` (tree structure), `client_goals` (goal tracking), `planning_references` (supporting documents), `personal_financial_reviews` (PFR documents), `client_discovery` (discovery questionnaire data), `planning_assumptions` (shared assumption overrides), `policy_deliveries` (insurance policy delivery and free look tracking), `exchange_analyses` (1035 exchange evaluations), `beneficiary_reviews` (beneficiary designation audits), `tax_return_reviews` (tax return analysis), and `benchmark_comparisons` (peer comparison results).
 
@@ -621,6 +626,13 @@ Key architectural decisions:
 - **Collateral tracking** monitors loan-to-value ratios across premium finance arrangements with configurable margin call thresholds.
 - **Exit strategy modeling** computes optimal unwind timing considering tax implications, cost basis, and net proceeds after loan payoff.
 - **Senior investor protections** automatically trigger enhanced suitability checks, cooling-off periods, and trusted contact requirements based on client age and product type.
+- **Forward cascade** propagates parent target changes proportionally to children based on configurable allocation strategies (proportional, equal, priority-weighted, custom).
+- **Backward cascade** rolls up child value changes to all ancestors with automatic calculator re-trigger at affected nodes.
+- **Deep cascade preview** simulates multi-level cascade impact across the full tree before committing, enabling what-if analysis.
+- **Alignment health scoring** computes weighted composite scores across coverage, funding, priority, and timeline dimensions for any subtree.
+- **Cross-hierarchy gap analysis** identifies misaligned nodes where strategy-level targets don't match implementation-level actuals.
+- **Goal-strategy matrix** maps every goal to its supporting strategies with coverage metrics and identifies orphaned goals.
+- **Execution order** uses topological sort with dependency-aware sequencing to determine optimal implementation order.
 
 ---
 

@@ -356,3 +356,90 @@ export function useRecommendationGoalLinker() {
     isLinking: linkMutation.isPending,
   };
 }
+
+/** Hook for cascading planning engine — forward/backward cascade, alignment, gap analysis */
+export function useCascadingPlanning(clientId?: number, rootNodeId?: number) {
+  const utils = trpc.useUtils();
+
+  // Queries
+  const alignmentQuery = trpc.planningHierarchy.checkCrossHierarchyAlignment.useQuery(
+    { clientId: clientId! },
+    { enabled: !!clientId, staleTime: 60_000 },
+  );
+
+  const snapshotQuery = trpc.planningHierarchy.getHierarchySnapshot.useQuery(
+    { rootNodeId: rootNodeId! },
+    { enabled: !!rootNodeId, staleTime: 30_000 },
+  );
+
+  const matrixQuery = trpc.planningHierarchy.buildGoalStrategyMatrix.useQuery(
+    { clientId: clientId! },
+    { enabled: !!clientId, staleTime: 60_000 },
+  );
+
+  const gapQuery = trpc.planningHierarchy.multiLevelGapAnalysis.useQuery(
+    { rootNodeId: rootNodeId! },
+    { enabled: !!rootNodeId, staleTime: 60_000 },
+  );
+
+  const executionOrderQuery = trpc.planningHierarchy.computeGoalExecutionOrder.useQuery(
+    { clientId: clientId! },
+    { enabled: !!clientId, staleTime: 120_000 },
+  );
+
+  // Mutations
+  const forwardCascadeMutation = trpc.planningHierarchy.forwardCascade.useMutation({
+    onSuccess: () => {
+      utils.planningHierarchy.getHierarchySnapshot.invalidate();
+      utils.planningHierarchy.multiLevelGapAnalysis.invalidate();
+      utils.planningHierarchy.checkCrossHierarchyAlignment.invalidate();
+    },
+  });
+
+  const deepForwardCascadeMutation = trpc.planningHierarchy.deepForwardCascade.useMutation({
+    onSuccess: () => {
+      utils.planningHierarchy.getHierarchySnapshot.invalidate();
+      utils.planningHierarchy.multiLevelGapAnalysis.invalidate();
+      utils.planningHierarchy.checkCrossHierarchyAlignment.invalidate();
+    },
+  });
+
+  const backwardCascadeMutation = trpc.planningHierarchy.backwardCascade.useMutation({
+    onSuccess: () => {
+      utils.planningHierarchy.getHierarchySnapshot.invalidate();
+      utils.planningHierarchy.multiLevelGapAnalysis.invalidate();
+      utils.planningHierarchy.checkCrossHierarchyAlignment.invalidate();
+    },
+  });
+
+  return {
+    // Alignment & Analysis
+    alignment: alignmentQuery.data ?? null,
+    snapshot: snapshotQuery.data ?? null,
+    goalStrategyMatrix: matrixQuery.data ?? null,
+    gapAnalysis: gapQuery.data ?? null,
+    executionOrder: executionOrderQuery.data ?? null,
+
+    // Loading states
+    isLoading: alignmentQuery.isLoading || snapshotQuery.isLoading,
+
+    // Cascade mutations
+    forwardCascade: forwardCascadeMutation.mutateAsync,
+    deepForwardCascade: deepForwardCascadeMutation.mutateAsync,
+    backwardCascade: backwardCascadeMutation.mutateAsync,
+    isCascading: forwardCascadeMutation.isPending || deepForwardCascadeMutation.isPending || backwardCascadeMutation.isPending,
+  };
+}
+
+/** Hook for cascade impact preview (read-only, no mutations) */
+export function useCascadePreview(nodeId: number | undefined, changeType: "forward" | "backward", newValue: number) {
+  const previewQuery = trpc.planningHierarchy.previewCascadeImpact.useQuery(
+    { nodeId: nodeId!, changeType, newValue },
+    { enabled: !!nodeId && newValue > 0, staleTime: 10_000 },
+  );
+
+  return {
+    preview: previewQuery.data ?? null,
+    isLoading: previewQuery.isLoading,
+  };
+}

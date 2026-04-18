@@ -19,9 +19,10 @@ import {
   ChevronRight, ChevronLeft, Home, Target, TrendingUp, TrendingDown,
   Minus, FileText, BookOpen, Settings2, Plus, ArrowUpRight, ArrowDownRight,
   Layers, Users, Building2, User, Crosshair, Lightbulb, Wrench,
-  Shield, GraduationCap, Heart, DollarSign, Briefcase,
+  Shield, GraduationCap, Heart, DollarSign, Briefcase, GitBranch,
 } from "lucide-react";
 import { toast } from "sonner";
+import CascadeAlignmentPanel from "./CascadeAlignmentPanel";
 
 const LEVEL_ICONS: Record<PlanningLevel, React.ElementType> = {
   platform: Building2,
@@ -349,6 +350,9 @@ export default function PlanningHierarchyPanel() {
           <TabsTrigger value="assumptions" className="gap-1">
             <Settings2 className="h-3.5 w-3.5" /> Assumptions
           </TabsTrigger>
+          <TabsTrigger value="cascade" className="gap-1">
+            <GitBranch className="h-3.5 w-3.5" /> Cascade
+          </TabsTrigger>
         </TabsList>
 
         {/* Tree Tab */}
@@ -528,6 +532,11 @@ export default function PlanningHierarchyPanel() {
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Cascade Alignment Tab */}
+        <TabsContent value="cascade">
+          <CascadeAlignmentPanel clientId={undefined} rootNodeId={selectedNodeId ?? undefined} />
         </TabsContent>
       </Tabs>
     </div>

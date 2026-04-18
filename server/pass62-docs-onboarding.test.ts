@@ -72,7 +72,7 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("117 recursive optimization passes");
+    expect(content).toContain("118 recursive optimization passes");
   });
 
   it("PLATFORM_GUIDE.md metrics are updated", () => {

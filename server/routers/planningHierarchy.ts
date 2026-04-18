@@ -1072,7 +1072,7 @@ export const planningHierarchyRouter = router({
     .mutation(async ({ ctx, input }) => {
       const { exportPFR } = await import("../services/planningHierarchy/pfrExport");
       const { generatePFRPdf } = await import("../services/planningHierarchy/pfrPdfGenerator");
-      const { storagePut } = await import("../../storage");
+      const { storagePut } = await import("../storage");
       const crypto = await import("crypto");
       const pfrResult = await exportPFR({
         pfrId: input.pfrId,
@@ -1217,5 +1217,133 @@ export const planningHierarchyRouter = router({
     .mutation(async ({ input }) => {
       const { generateBusinessSuccessionPlan } = await import("../services/planningHierarchy/mediumPriorityWorkflows");
       return generateBusinessSuccessionPlan(input);
+    }),
+
+  // ─── CASCADING PLANNING ENGINE ─────────────────────────────────────────
+  forwardCascade: protectedProcedure
+    .input(z.object({
+      parentNodeId: z.number(),
+      newTarget: z.number(),
+      allocationStrategy: z.enum(["proportional", "equal", "weighted", "manual"]).default("proportional"),
+      manualWeights: z.record(z.string(), z.number()).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { forwardCascade } = await import("../services/planningHierarchy/cascadingEngine");
+      const weights = input.manualWeights
+        ? Object.fromEntries(Object.entries(input.manualWeights).map(([k, v]) => [Number(k), v]))
+        : undefined;
+      return forwardCascade(input.parentNodeId, input.newTarget, input.allocationStrategy, weights);
+    }),
+
+  deepForwardCascade: protectedProcedure
+    .input(z.object({
+      rootNodeId: z.number(),
+      newTarget: z.number(),
+      allocationStrategy: z.enum(["proportional", "equal", "weighted"]).default("proportional"),
+      maxDepth: z.number().min(1).max(10).default(8),
+    }))
+    .mutation(async ({ input }) => {
+      const { deepForwardCascade } = await import("../services/planningHierarchy/cascadingEngine");
+      return deepForwardCascade(input.rootNodeId, input.newTarget, input.allocationStrategy, input.maxDepth);
+    }),
+
+  backwardCascade: protectedProcedure
+    .input(z.object({
+      changedNodeId: z.number(),
+      newValue: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const { backwardCascade } = await import("../services/planningHierarchy/cascadingEngine");
+      return backwardCascade(input.changedNodeId, input.newValue);
+    }),
+
+  checkCrossHierarchyAlignment: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { checkCrossHierarchyAlignment } = await import("../services/planningHierarchy/cascadingEngine");
+      return checkCrossHierarchyAlignment(input.clientId);
+    }),
+
+  getHierarchySnapshot: protectedProcedure
+    .input(z.object({ rootNodeId: z.number() }))
+    .query(async ({ input }) => {
+      const { getHierarchySnapshot } = await import("../services/planningHierarchy/cascadingEngine");
+      return getHierarchySnapshot(input.rootNodeId);
+    }),
+
+  buildGoalStrategyMatrix: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { buildGoalStrategyMatrix } = await import("../services/planningHierarchy/cascadingEngine");
+      return buildGoalStrategyMatrix(input.clientId);
+    }),
+
+  multiLevelGapAnalysis: protectedProcedure
+    .input(z.object({ rootNodeId: z.number() }))
+    .query(async ({ input }) => {
+      const { multiLevelGapAnalysis } = await import("../services/planningHierarchy/cascadingEngine");
+      return multiLevelGapAnalysis(input.rootNodeId);
+    }),
+
+  previewCascadeImpact: protectedProcedure
+    .input(z.object({
+      nodeId: z.number(),
+      changeType: z.enum(["forward", "backward"]),
+      newValue: z.number(),
+    }))
+    .query(async ({ input }) => {
+      const { previewCascadeImpact } = await import("../services/planningHierarchy/cascadingEngine");
+      return previewCascadeImpact(input.nodeId, input.changeType, input.newValue);
+    }),
+
+  computeGoalExecutionOrder: protectedProcedure
+    .input(z.object({ clientId: z.number() }))
+    .query(async ({ input }) => {
+      const { computeGoalExecutionOrder } = await import("../services/planningHierarchy/cascadingEngine");
+      return computeGoalExecutionOrder(input.clientId);
+    }),
+
+  // ─── CROSS-SERVICE CASCADE INTEGRATION ────────────────────────────
+
+  forwardCascadeWithAssumptions: protectedProcedure
+    .input(z.object({ parentNodeId: z.number(), newTarget: z.number(), allocationStrategy: z.enum(["proportional", "equal", "weighted", "manual"]).default("proportional"), timeHorizonYears: z.number().min(1).max(50).default(10) }))
+    .mutation(async ({ input }) => {
+      const { forwardCascadeWithAssumptions } = await import("../services/planningHierarchy/cascadingEngine");
+      return forwardCascadeWithAssumptions(input.parentNodeId, input.newTarget, input.allocationStrategy, input.timeHorizonYears);
+    }),
+
+  backwardCascadeWithRecalc: protectedProcedure
+    .input(z.object({ changedNodeId: z.number(), newValue: z.number() }))
+    .mutation(async ({ input }) => {
+      const { backwardCascadeWithRecalc } = await import("../services/planningHierarchy/cascadingEngine");
+      return backwardCascadeWithRecalc(input.changedNodeId, input.newValue);
+    }),
+
+  getCascadeDataForPFR: protectedProcedure
+    .input(z.object({ clientNodeId: z.number() }))
+    .query(async ({ input }) => {
+      const { getCascadeDataForPFR } = await import("../services/planningHierarchy/cascadingEngine");
+      return getCascadeDataForPFR(input.clientNodeId);
+    }),
+
+  cascadeBenchmarkComparison: protectedProcedure
+    .input(z.object({ clientNodeId: z.number(), peerScores: z.array(z.number()).optional() }))
+    .query(async ({ input }) => {
+      const { cascadeBenchmarkComparison } = await import("../services/planningHierarchy/cascadingEngine");
+      return cascadeBenchmarkComparison(input.clientNodeId, input.peerScores);
+    }),
+
+  propagateRecommendation: protectedProcedure
+    .input(z.object({ sourceNodeId: z.number(), recommendation: z.object({ type: z.string(), description: z.string(), impact: z.number() }), direction: z.enum(["up", "down", "both"]).default("both") }))
+    .mutation(async ({ input }) => {
+      const { propagateRecommendation } = await import("../services/planningHierarchy/cascadingEngine");
+      return propagateRecommendation(input.sourceNodeId, input.recommendation, input.direction);
+    }),
+
+  getCascadeDashboard: protectedProcedure
+    .input(z.object({ clientNodeId: z.number() }))
+    .query(async ({ input }) => {
+      const { getCascadeDashboard } = await import("../services/planningHierarchy/cascadingEngine");
+      return getCascadeDashboard(input.clientNodeId);
     }),
 });

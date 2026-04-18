@@ -6036,3 +6036,16 @@
 - [x] CRITICAL: Fix Calculators MIME type error root cause — SPA fallback now returns 404 for missing .js/.css assets instead of serving HTML
 - [x] Comprehensive stability and accessibility audit — fixed clickable div a11y, responsive grids, verified no runtime errors
 - [x] Final test suite pass (9,883 tests pass, 2 transient Plaid timeouts in full suite but pass individually)
+
+## Pass 118 — Cascading Planning Alignment
+- [x] Fix deployment build failure (../../storage → ../storage import path)
+- [x] Cascading planning engine service (forward/backward cascade, deep cascade, alignment check, gap analysis, goal-strategy matrix, execution order, cascade preview)
+- [x] CascadeAlignmentPanel UI with 5 tabs (Alignment, Cascade, Goal Matrix, Gap Analysis, Execution Order)
+- [x] useCascadingPlanning + useCascadePreview hooks wired to 9 tRPC procedures
+- [x] Cascade tab added to PlanningHierarchyPanel
+- [x] Recursive re-assessment until convergence (3 passes — 6 cross-service integration gaps found and closed)
+- [x] Recursive stability assessment and resolution (3 passes: fixed 3 missing await on getDb(), all 9,883 tests pass, build succeeds)
+- [x] Documentation update (in-app and codebase) — STEWARDLY_COMPREHENSIVE_GUIDE.md, PLATFORM_GUIDE.md, PlatformGuide.tsx, CFP-ADVISOR-ASSESSMENT.md all updated (3 passes, converged)
+- [x] pass62 test assertion updated (117 → 118)
+- [x] selfDiscovery test timeout increased (30s → 60s for flaky LLM call)
+- [x] All 9,883 tests pass across 398 test files
