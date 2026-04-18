@@ -51,21 +51,20 @@ export function VoiceOnboardingCoach() {
   const caps = useMemo(() => detectStt(), []);
   const [visible, setVisible] = useState(false);
 
+  // Pass 121: Removed auto-popup behavior. The voice coach is now only
+  // shown when explicitly triggered via the notification bell or settings.
+  // Listen for a custom event to open the coach on demand.
   useEffect(() => {
-    // Respect the suppress list + the capability probe + the
-    // user's prior dismissal.
-    if (shouldSuppress(location)) return;
-    if (caps.mode === "unsupported") return;
-    try {
-      if (localStorage.getItem(STORAGE_KEY) === "true") return;
-      // Don't overlap with the main onboarding tour — wait until it's done
-      if (localStorage.getItem("onboarding_tour_completed") !== "true") return;
-    } catch {
-      return;
-    }
-    const t = setTimeout(() => setVisible(true), SHOW_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [location, caps.mode]);
+    const handler = () => {
+      if (caps.mode === "unsupported") return;
+      try {
+        if (localStorage.getItem(STORAGE_KEY) === "true") return;
+      } catch { return; }
+      setVisible(true);
+    };
+    window.addEventListener("pil:show-voice-coach", handler);
+    return () => window.removeEventListener("pil:show-voice-coach", handler);
+  }, [caps.mode]);
 
   const dismiss = (remember: boolean) => {
     setVisible(false);

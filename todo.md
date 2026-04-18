@@ -6116,3 +6116,41 @@
 - [x] UI: Strategy Archetypes Explorer panel in Wealth Engine Hub
 - [x] Integration across practice planning, client planning, advanced strategies, and references
 - [x] All 9,883 tests pass across 398 test files — Fixed grid responsiveness, wiring allowlists, selfDiscovery timeout
+
+## Pass 121 — Build Fix, UI Reconciliation, Financial Data Integration, Onboarding UX
+### Build Fix
+- [x] Fix cascadeNotifications.ts import path (stewardlyWiring)
+- [x] Verify pnpm build succeeds locally
+### UI Reconciliation
+- [x] Audit all Pass 120 panels (Strategy Archetypes, Unified Client Plan, Firm Comparison, Cascade Alerts) for actual accessibility
+- [x] Ensure WealthEngineHub nav items render and route correctly
+- [x] Verify lazy imports resolve to actual component files
+### Onboarding UX
+- [x] Verify onboarding tour no longer auto-opens as modal
+- [x] Verify multisensory popup is non-intrusive (moved to notification bell trigger)
+### Financial Data Integration (from spec)
+- [x] Financial data adapter types and registry
+- [x] Free adapters: FRED, EDGAR, Treasury, BEA, BLS, OpenFIGI, GLEIF
+- [x] Freemium adapters: FMP, Polygon, Tiingo, CoinGecko
+- [x] Plaid banking adapter (stub)
+- [x] PFM ingestion pipeline (CSV parser, format adapters, LLM schema mapper)
+- [x] Database tables (data_access_audit, pfm_imports, data_authorizations)
+- [x] tRPC router for financial data
+- [x] Financial Data Dashboard UI
+- [x] PFM Import Wizard UI
+- [x] Data Authorization Manager UI
+- [x] Compliance layer (audit trail, data minimization)
+### Recursive Convergence
+- [x] Recursive assessment until convergence (Pass 121 re-convergence confirmed)
+- [x] Recursive stability until convergence (new subsystem stable, no regressions)
+- [x] Documentation update (STEWARDLY_COMPREHENSIVE_GUIDE §19, PLATFORM_GUIDE §Financial Data Hub)
+
+### Integration API Key Signups (Pass 121)
+- [x] FRED API key (already configured in project secrets)
+- [x] BEA API key (already configured in project secrets)
+- [x] BLS API key (already configured in project secrets)
+- [x] Census API key (already configured in project secrets)
+- [x] All API keys already configured as project secrets
+- [x] Apply DB migration for data_access_audit, pfm_imports, data_authorizations tables
+- [x] Wire financialData tRPC router
+- [x] Build financial data UI panel in WealthEngineHub

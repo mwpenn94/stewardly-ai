@@ -388,6 +388,20 @@ function AppContent() {
       window.history.replaceState({}, "", newUrl);
     }
   }, [startTour]);
+
+  // Pass 121: Allow voice coach to be triggered from notification bell via ?showVoiceCoach=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("showVoiceCoach") === "true") {
+      window.dispatchEvent(new CustomEvent("pil:show-voice-coach"));
+      params.delete("showVoiceCoach");
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, []);
+
   return (
     <>
       {/* Pass 1: Live regions + intent router + global voice button.

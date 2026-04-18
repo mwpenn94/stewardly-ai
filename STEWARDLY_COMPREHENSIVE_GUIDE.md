@@ -1018,3 +1018,72 @@ Onboarding tour and multisensory feature popups converted from auto-opening moda
 ---
 
 *This document is maintained as part of the Stewardly AI platform and should be updated whenever significant architectural changes are made.*
+
+## 19. Pass 121 — Financial Data Adapter Registry & Integration Hub (April 18, 2026)
+
+### 19.1 Financial Data Adapter Registry
+
+A unified adapter registry provides normalized access to 12+ financial data sources through a single interface. Each adapter implements a common `FinancialDataAdapter` interface with health checks, rate limiting, and audit logging.
+
+| Adapter | Tier | Key Required | Capabilities |
+|---------|------|-------------|--------------|
+| FRED (Federal Reserve) | Free | Yes (configured) | Economic series, category search, release schedules |
+| SEC EDGAR | Free | No | Company filings, CIK lookup, full-text search |
+| US Treasury | Free | No | Yield curves, exchange rates, debt data |
+| BEA (Bureau of Economic Analysis) | Free | Yes (configured) | GDP, personal income, regional data |
+| BLS (Bureau of Labor Statistics) | Free | Yes (configured) | Employment, CPI, wages, industry data |
+| OpenFIGI | Free | No | Security identifier resolution (CUSIP/ISIN/SEDOL) |
+| GLEIF | Free | No | Legal Entity Identifier (LEI) lookup |
+| FMP (Financial Modeling Prep) | Freemium | Optional | Stock quotes, financials, SEC filings |
+| Polygon.io | Freemium | Optional | Real-time/historical market data |
+| Tiingo | Freemium | Optional | EOD prices, news, crypto data |
+| Census Bureau | Free | Yes (configured) | Population, economic census data |
+| Plaid | Paid | Yes (configured) | Bank account linking, transactions |
+
+### 19.2 PFM Ingestion Pipeline
+
+CSV parser supporting 6 personal finance management formats with auto-detection:
+
+| Format | Detection Pattern | Fields Mapped |
+|--------|------------------|---------------|
+| Mint | Date,Description,Original Description,Amount... | date, description, amount, category, account |
+| Empower | Date,Account,Description,Category,Amount | date, description, amount, category, account |
+| Monarch Money | Date,Merchant,Category,Account,Amount,Notes | date, description, amount, category, account, notes |
+| YNAB | Account,Date,Payee,Category,Memo,Outflow,Inflow | date, description, amount, category, account, notes |
+| Quicken | Date,Payee,Amount,Category | date, description, amount, category |
+| Generic CSV | Heuristic column matching | Flexible mapping |
+
+### 19.3 Macro Economic Snapshot
+
+Combined real-time macro indicator dashboard pulling from FRED, Treasury, and BLS:
+- Fed Funds Rate, CPI (YoY), Unemployment Rate
+- 10-Year Treasury Yield, GDP Growth, Nonfarm Payrolls
+
+### 19.4 Data Authorization Manager
+
+Role-based data access control allowing advisors to grant/revoke client access to specific data sources with scope levels (read/write/admin). Full audit trail of all data access events.
+
+### 19.5 Financial Data Hub UI
+
+New "Data" section added to Wealth Engine Hub with 5 tabs:
+
+| Tab | Features |
+|-----|----------|
+| Dashboard | Adapter health monitoring, status indicators, tier badges, latency metrics |
+| Macro Snapshot | 6 key economic indicators with real-time refresh |
+| PFM Import | CSV upload wizard with format auto-detection, import history |
+| Authorizations | Grant/revoke data access, scope management, active authorization list |
+| Audit Trail | Chronological data access log with adapter, action, and status filtering |
+
+### 19.6 Database Schema Additions
+
+3 new tables added:
+- `data_access_audit` — Tracks all adapter queries with user, adapter, action, status, and timestamp
+- `pfm_imports` — Records PFM CSV import history with format detection, row counts, and status
+- `data_authorizations` — Client-level data source access grants with scope and expiry
+
+### 19.7 Build Fix & UI Reconciliation
+
+- Fixed `cascadeNotifications.ts` import path for `stewardlyWiring` (build failure resolved)
+- Verified all 4 Pass 120 panels (Strategy Archetypes, Unified Client Plan, Firm Comparison, Cascade Alerts) properly wired
+- VoiceOnboardingCoach converted from auto-popup to notification-bell-triggered entry

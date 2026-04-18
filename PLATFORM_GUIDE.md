@@ -1767,3 +1767,24 @@ Located at `client/src/components/ReasoningChain.tsx`, the component accepts:
 ---
 
 *This guide reflects the current state of the Stewardly platform as of March 20, 2026. Version 9.0.*
+
+## Financial Data Hub (Pass 121)
+
+### Overview
+The Financial Data Hub provides unified access to 12+ financial data sources through a normalized adapter registry. Located in the Wealth Engine Hub under the "Data" section.
+
+### Data Sources
+- **Free (No Key):** SEC EDGAR, US Treasury, OpenFIGI, GLEIF
+- **Free (Key Configured):** FRED, BEA, BLS, Census Bureau
+- **Freemium:** FMP, Polygon.io, Tiingo
+- **Paid:** Plaid (banking)
+
+### Features
+1. **Adapter Dashboard** — Real-time health monitoring for all data sources with status indicators and latency metrics
+2. **Macro Snapshot** — Key economic indicators (Fed Funds Rate, CPI, Unemployment, 10Y Treasury, GDP Growth, Nonfarm Payrolls)
+3. **PFM Import** — Upload CSV exports from Mint, Empower, Monarch Money, YNAB, Quicken, or generic format
+4. **Data Authorizations** — Grant/revoke client access to specific data sources with scope controls
+5. **Audit Trail** — Complete log of all data access events for compliance
+
+### Navigation
+Wealth Engine Hub → Data → Financial Data Hub

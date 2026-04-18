@@ -33,6 +33,7 @@ import {
   BarChart3, Loader2, ArrowRight, Users, Target, FileText,
   Briefcase, Rocket, ShieldCheck, Workflow, Zap, Gauge,
   PanelLeftClose, PanelLeftOpen, LayoutGrid, ChevronRight, Home, Layers,
+  Database,
 } from "lucide-react";
 
 // ─── FORMATTING HELPERS ────────────────────────────────────────────
@@ -54,7 +55,8 @@ type WETab =
   | "configurator" | "sensitivity" | "what-if" | "references" | "team-builder" | "holistic-comparison"
   | "quick-quote-hub" | "business-income"
   | "advanced-workflows"
-  | "strategy-archetypes" | "unified-client-plan" | "firm-comparison" | "cascade-alerts";
+  | "strategy-archetypes" | "unified-client-plan" | "firm-comparison" | "cascade-alerts"
+  | "financial-data-hub";
 
 interface NavItem {
   id: WETab;
@@ -113,6 +115,9 @@ const NAV_SECTIONS: NavSection[] = [
     { id: "firm-comparison" as WETab, label: "Firm Comparison", icon: BarChart3, slug: "firm-comparison", badge: "New" },
     { id: "cascade-alerts" as WETab, label: "Cascade Alerts", icon: Zap, slug: "cascade-alerts" },
   ]},
+  { group: "Data", items: [
+    { id: "financial-data-hub" as WETab, label: "Financial Data Hub", icon: Database, slug: "financial-data-hub", badge: "New" },
+  ]},
 ];
 
 const ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
@@ -139,6 +144,7 @@ const WeStrategyArchetypes = lazy(() => import("./StrategyArchetypesPanel"));
 const WeUnifiedClientPlan = lazy(() => import("./UnifiedClientPlanPanel"));
 const WeFirmComparison = lazy(() => import("./FirmComparisonPanel"));
 const WeCascadeAlerts = lazy(() => import("./CascadeAlertsPanel"));
+const WeFinancialDataHub = lazy(() => import("./FinancialDataHub"));
 
 // ─── INLINE QUICK BUNDLE ───────────────────────────────────────────
 interface BundleForm {
@@ -448,6 +454,7 @@ export default function WealthEngineHub() {
               {activeTab === "unified-client-plan" && <WeUnifiedClientPlan />}
               {activeTab === "firm-comparison" && <WeFirmComparison />}
               {activeTab === "cascade-alerts" && <WeCascadeAlerts />}
+              {activeTab === "financial-data-hub" && <WeFinancialDataHub />}
             </Suspense>
           </div>
         </main>

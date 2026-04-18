@@ -127,6 +127,30 @@ export function useOnboardingNotifications(): {
       });
     }
 
+    // Pass 121: Add a "Try Voice Features" notification so the voice
+    // coach is accessible from the notification bell instead of auto-popping.
+    const voiceCoachDismissed = (() => {
+      try { return localStorage.getItem("stewardly-voice-coach-dismissed") === "true"; } catch { return false; }
+    })();
+    if (!voiceCoachDismissed) {
+      notifs.push({
+        id: "onboarding-voice-coach",
+        type: "system" as const,
+        priority: "low" as const,
+        title: "Try Voice & Keyboard Shortcuts",
+        body: "Shift+V for hands-free mode, Shift+R to read any page aloud. Tap to learn more.",
+        metadata: {
+          onboardingItem: true,
+          href: "?showVoiceCoach=true",
+          layer: "getting-started",
+          itemId: "voice-coach",
+          isVoiceCoachTrigger: true,
+        },
+        createdAt: Date.now() - 120_000,
+        readAt: null,
+      });
+    }
+
     return notifs;
   }, [isDismissed, checklist.data]);
 

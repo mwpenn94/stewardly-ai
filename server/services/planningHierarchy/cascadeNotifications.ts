@@ -11,7 +11,7 @@
  */
 
 import { getDb } from "../../db";
-import { rawInvokeLLM as invokeLLM } from "../stewardlyWiring";
+import { rawInvokeLLM as invokeLLM } from "../../shared/stewardlyWiring";
 
 // ─── TYPES ────────────────────────────────────────────────────────
 

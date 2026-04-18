@@ -89,6 +89,7 @@ import { reportsFiduciaryRouter } from "./routers/reportsFiduciary";
 import { dynamicIntegrationsRouter } from "./routers/dynamicIntegrations";
 import { plaidRouter } from "./routers/plaid";
 import { sharingRouter } from "./routers/sharing";
+import { financialDataRouter } from "./routers/financialData";
 
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
@@ -2376,6 +2377,7 @@ export const appRouter = router({
   plaid: plaidRouter,
   sharing: sharingRouter,
   planningHierarchy: planningHierarchyRouter,
+  financialData: financialDataRouter,
 });
 
 export type AppRouter = typeof appRouter;

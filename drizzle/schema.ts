@@ -7277,3 +7277,64 @@ export const privacyConsentLog = mysqlTable("privacy_consent_log", {
 }));
 export type PrivacyConsentLogRow = typeof privacyConsentLog.$inferSelect;
 export type InsertPrivacyConsentLog = typeof privacyConsentLog.$inferInsert;
+
+// ── Pass 121: Financial Data Adapter Audit Trail ──────────────────
+export const dataAccessAudit = mysqlTable("data_access_audit", {
+  id: int("id").autoincrement().primaryKey(),
+  adapterId: varchar("adapter_id", { length: 50 }).notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  userId: int("user_id").notNull(),
+  clientId: int("client_id"),
+  requestParams: text("request_params"),
+  responseStatus: varchar("response_status", { length: 20 }).notNull(),
+  latencyMs: int("latency_ms"),
+  timestamp: bigint("timestamp", { mode: "number" }).notNull(),
+}, (table) => ({
+  adapterIdx: index("idx_data_access_audit_adapter").on(table.adapterId),
+  userIdx: index("idx_data_access_audit_user").on(table.userId),
+  tsIdx: index("idx_data_access_audit_ts").on(table.timestamp),
+}));
+export type DataAccessAuditRow = typeof dataAccessAudit.$inferSelect;
+export type InsertDataAccessAudit = typeof dataAccessAudit.$inferInsert;
+
+// ── Pass 121: PFM Import History ──────────────────────────────────
+export const pfmImports = mysqlTable("pfm_imports", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  source: varchar("source", { length: 30 }).notNull(),
+  filename: varchar("filename", { length: 255 }),
+  totalRows: int("total_rows").default(0),
+  importedRows: int("imported_rows").default(0),
+  skippedRows: int("skipped_rows").default(0),
+  dateRangeStart: varchar("date_range_start", { length: 10 }),
+  dateRangeEnd: varchar("date_range_end", { length: 10 }),
+  categoryBreakdown: text("category_breakdown"),
+  warnings: text("warnings"),
+  status: varchar("status", { length: 20 }).default("completed"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_pfm_imports_user").on(table.userId),
+  statusIdx: index("idx_pfm_imports_status").on(table.status),
+}));
+export type PfmImportRow = typeof pfmImports.$inferSelect;
+export type InsertPfmImport = typeof pfmImports.$inferInsert;
+
+// ── Pass 121: Data Authorization (client consent for data access) ──
+export const dataAuthorizations = mysqlTable("data_authorizations", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("client_id").notNull(),
+  advisorId: int("advisor_id").notNull(),
+  dataScope: varchar("data_scope", { length: 100 }).notNull(),
+  consentLanguage: text("consent_language"),
+  stateJurisdiction: varchar("state_jurisdiction", { length: 50 }),
+  grantedAt: bigint("granted_at", { mode: "number" }).notNull(),
+  expiresAt: bigint("expires_at", { mode: "number" }),
+  revokedAt: bigint("revoked_at", { mode: "number" }),
+  status: varchar("status", { length: 20 }).default("active"),
+}, (table) => ({
+  clientIdx: index("idx_data_auth_client").on(table.clientId),
+  advisorIdx: index("idx_data_auth_advisor").on(table.advisorId),
+  statusIdx: index("idx_data_auth_status").on(table.status),
+}));
+export type DataAuthorizationRow = typeof dataAuthorizations.$inferSelect;
+export type InsertDataAuthorization = typeof dataAuthorizations.$inferInsert;
