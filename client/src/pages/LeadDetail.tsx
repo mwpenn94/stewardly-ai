@@ -213,7 +213,7 @@ export default function LeadDetail() {
     );
   }
 
-  const name = lead.name ?? `${lead.firstName ?? ""} ${lead.lastName ?? ""}`.trim() || "Unknown";
+  const name = lead.name ?? (`${lead.firstName ?? ""} ${lead.lastName ?? ""}`.trim() || "Unknown");
   const email = lead.email ?? "";
   const phone = lead.phone ?? "";
   const source = lead.source ?? "Direct";

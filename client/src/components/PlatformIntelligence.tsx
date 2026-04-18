@@ -198,7 +198,6 @@ function friendlyName(path: string): string {
     "/compliance": "Compliance",
     "/market-data": "Market Data",
     "/wealth-engine": "Wealth Engine",
-    "/wealth-engine": "Wealth Engine",
     "/wealth-engine/strategy-comparison": "Strategy Comparison",
     "/wealth-engine/retirement": "Retirement Calculator",
     "/wealth-engine/quick-quote": "Quick Quote",
