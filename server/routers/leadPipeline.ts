@@ -79,4 +79,46 @@ export const leadPipelineRouter = router({
       await db.update(leadPipeline).set({ piiDeletionRequested: true, updatedAt: new Date() }).where(eq(leadPipeline.id, input.leadId));
       return { success: true };
     }),
+
+  getScoreHistory: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const { getScoreHistory } = await import("../services/propensity/scoringEngine");
+        return getScoreHistory(input.leadId);
+      } catch (e: any) {
+        logger.warn("[leadPipeline.getScoreHistory]", { error: e?.message?.slice(0, 120) });
+        return [];
+      }
+    }),
+
+  getLeadSources: adminProcedure.query(async () => {
+    try {
+      const { getDb } = await import("../db");
+      const db = await getDb();
+      if (!db) return [];
+      const { leadSources } = await import("../../drizzle/schema");
+      return db.select().from(leadSources);
+    } catch (e: any) {
+      logger.warn("[leadPipeline.getLeadSources]", { error: e?.message?.slice(0, 120) });
+      return [];
+    }
+  }),
+
+  getLeadDetail: protectedProcedure
+    .input(z.object({ leadId: z.number() }))
+    .query(async ({ input }) => {
+      try {
+        const { getDb } = await import("../db");
+        const db = await getDb();
+        if (!db) return null;
+        const { leadPipeline } = await import("../../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const rows = await db.select().from(leadPipeline).where(eq(leadPipeline.id, input.leadId)).limit(1);
+        return rows[0] ?? null;
+      } catch (e: any) {
+        logger.warn("[leadPipeline.getLeadDetail]", { error: e?.message?.slice(0, 120) });
+        return null;
+      }
+    }),
 });

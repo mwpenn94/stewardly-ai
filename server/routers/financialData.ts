@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getAdapterRegistry } from "../services/financialData/registry";
 import { parsePfmCsv } from "../services/financialData/pfmParser/csvParser";
 import { getDb } from "../db";
@@ -19,7 +19,7 @@ export const financialDataRouter = router({
   /**
    * Get health status of all registered adapters
    */
-  adapterHealth: protectedProcedure.query(async () => {
+  adapterHealth: publicProcedure.query(async () => {
     const registry = getAdapterRegistry();
     const results = await registry.healthCheckAll();
     return {
@@ -37,7 +37,7 @@ export const financialDataRouter = router({
   /**
    * List all registered adapters with their metadata
    */
-  listAdapters: protectedProcedure.query(() => {
+  listAdapters: publicProcedure.query(() => {
     const registry = getAdapterRegistry();
     return registry.listAdapters().map(a => ({
       id: a.id,
@@ -61,7 +61,7 @@ export const financialDataRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const registry = getAdapterRegistry();
-      const adapter = registry.getAdapter(input.adapterId);
+      const adapter = await registry.getAdapter(input.adapterId);
       if (!adapter) {
         throw new TRPCError({ code: "NOT_FOUND", message: `Adapter '${input.adapterId}' not found` });
       }
@@ -195,12 +195,12 @@ export const financialDataRouter = router({
   /**
    * Quick macro-economic data fetch (FRED + BEA + BLS combined)
    */
-  macroSnapshot: protectedProcedure.query(async ({ ctx }) => {
+  macroSnapshot: publicProcedure.query(async ({ ctx }) => {
     const registry = getAdapterRegistry();
     const results: Record<string, any> = {};
 
     // FRED: Key rates
-    const fred = registry.getAdapter("fred");
+    const fred = await registry.getAdapter("fred");
     if (fred) {
       try {
         const fedFunds = await fred.query("series", { seriesId: "FEDFUNDS" });
@@ -217,7 +217,7 @@ export const financialDataRouter = router({
     }
 
     // Treasury: Yield curve
-    const treasury = registry.getAdapter("treasury");
+    const treasury = await registry.getAdapter("treasury");
     if (treasury) {
       try {
         const yields = await treasury.query("rates", { type: "daily_treasury_yield_curve" });
@@ -226,7 +226,7 @@ export const financialDataRouter = router({
     }
 
     // BLS: Latest employment
-    const bls = registry.getAdapter("bls");
+    const bls = await registry.getAdapter("bls");
     if (bls) {
       try {
         const employment = await bls.query("series", { seriesId: "CES0000000001" });
@@ -241,7 +241,7 @@ export const financialDataRouter = router({
         await db.insert(dataAccessAudit).values({
           adapterId: "macro_snapshot",
           action: "snapshot",
-          userId: ctx.user.id,
+          userId: (ctx as any).user?.id ?? 0,
           requestParams: null,
           responseStatus: "success",
           latencyMs: 0,

@@ -1735,10 +1735,14 @@ export const planningHierarchyRouter = router({
       return getPracticeToClientRollup(input.clientId, input.rollUpType, input.rollUpValue, input.threshold);
     }),
   cascadeClientPlanAlignment: protectedProcedure
-    .input(z.object({ clientId: z.number() }))
+    .input(z.object({
+      clientId: z.number(),
+      sourceDomain: z.string(),
+      changes: z.record(z.string(), z.number()),
+    }))
     .mutation(async ({ input }) => {
       const { cascadeClientPlan } = await import("../services/planningHierarchy/unifiedClientPlan");
-      return cascadeClientPlan(input.clientId);
+      return cascadeClientPlan(input.clientId, input.sourceDomain as any, input.changes);
     }),
 
   // ── Pass 120: Firm Comparison Engine ────────────────────────────

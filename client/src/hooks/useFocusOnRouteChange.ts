@@ -30,7 +30,7 @@ const DEFAULT_PATH_NAMES: Array<{ prefix: string; name: string }> = [
   { prefix: "/compliance-audit", name: "Compliance Audit" },
   { prefix: "/market-data", name: "Market Data" },
   { prefix: "/wealth-engine", name: "Calculators" },
-  { prefix: "/calculators", name: "Calculators" },
+  { prefix: "/wealth-engine", name: "Wealth Engine" },
   { prefix: "/learning", name: "Learning Center" },
   { prefix: "/settings/audio", name: "Audio Preferences" },
   { prefix: "/settings/knowledge", name: "Knowledge & Documents" },

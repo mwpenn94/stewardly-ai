@@ -70,7 +70,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/integrations": "Integrations",
   "/settings/profile": "Settings",
   "/help": "Help & Support",
-  "/calculators": "Calculators",
+  "/wealth-engine": "Wealth Engine",
   "/products": "Products",
   "/integration-health": "Integration Health",
   "/passive-actions": "Passive Actions",

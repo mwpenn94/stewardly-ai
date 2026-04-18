@@ -2020,7 +2020,7 @@ export default function Chat() {
                           <button type="button"
                             key={item.path}
                             onClick={() => { navigate(item.path); setSidebarOpen(false); }}
-                            data-tour={item.path === "/calculators" ? "financial-tools" : item.path === "/settings/knowledge" ? "data-intelligence" : item.path === "/products" ? "products" : item.path === "/compliance-audit" ? "compliance" : item.path === "/intelligence-hub" ? "market-data" : item.path === "/campaigns" ? "email-campaigns" : undefined}
+                            data-tour={item.path === "/wealth-engine" ? "financial-tools" : item.path === "/settings/knowledge" ? "data-intelligence" : item.path === "/products" ? "products" : item.path === "/compliance-audit" ? "compliance" : item.path === "/intelligence-hub" ? "market-data" : item.path === "/campaigns" ? "email-campaigns" : undefined}
                             className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
                               active ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                             }`}
@@ -2693,7 +2693,7 @@ export default function Chat() {
                       </button>
                       <button type="button"
                         className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
-                        onClick={() => { setShowAddMenu(false); navigate("/calculators"); }}
+                        onClick={() => { setShowAddMenu(false); navigate("/wealth-engine"); }}
                       >
                         <Calculator className="w-3.5 h-3.5 text-muted-foreground" />
                         <span>Run calculator</span>

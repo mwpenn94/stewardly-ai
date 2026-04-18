@@ -40,9 +40,9 @@ export const ROUTE_MAP: Record<string, string> = {
   "insights": "/intelligence-hub",
 
   // Calculators / wealth
-  "calculators": "/calculators",
-  "calculator": "/calculators",
-  "wealth engine": "/calculators",
+  "calculators": "/wealth-engine",
+  "calculator": "/wealth-engine",
+  "wealth engine": "/wealth-engine",
   "retirement": "/wealth-engine/retirement",
   "retirement calculator": "/wealth-engine/retirement",
   "strategy comparison": "/wealth-engine/strategy-comparison",
@@ -119,7 +119,7 @@ export function friendlyRouteName(path: string): string {
     "/my-work": "My Work",
     "/compliance-audit": "Compliance",
     "/market-data": "Market Data",
-    "/calculators": "Calculators",
+    "/wealth-engine": "Wealth Engine",
     "/wealth-engine/retirement": "Retirement Calculator",
     "/wealth-engine/strategy-comparison": "Strategy Comparison",
     "/wealth-engine/practice-to-wealth": "Practice to Wealth",

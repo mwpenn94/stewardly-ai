@@ -785,6 +785,21 @@ export const AUDIT_EVENTS = {
   ROLE_CHANGE: "role_change",
   LOGIN: "login",
   SETTINGS_CHANGE: "settings_change",
+  // Wealth Engine / Calculator WORM audit events
+  CALC_PANEL_OPEN: "calc_panel_open",
+  CALC_DATA_CHANGE: "calc_data_change",
+  CALC_SAVE: "calc_save",
+  CALC_LOAD: "calc_load",
+  CALC_PDF_EXPORT: "calc_pdf_export",
+  CALC_RECOMMENDATION: "calc_recommendation",
+  CALC_COMPLIANCE_CHECK: "calc_compliance_check",
+  CALC_CASCADE_TRIGGER: "calc_cascade_trigger",
+  PFR_GENERATE: "pfr_generate",
+  PFR_EXPORT: "pfr_export",
+  PLANNING_NODE_CREATE: "planning_node_create",
+  PLANNING_NODE_UPDATE: "planning_node_update",
+  PLANNING_CASCADE_RUN: "planning_cascade_run",
+  ENGAGEMENT_LETTER_GENERATE: "engagement_letter_generate",
 } as const;
 
 // ─── REVIEW QUEUE HELPERS ─────────────────────────────────────────

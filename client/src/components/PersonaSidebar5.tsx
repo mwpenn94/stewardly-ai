@@ -72,7 +72,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     minRole: "user",
     items: [
       { label: "Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Wealth Engine", icon: Calculator, path: "/calculators", match: ["/calculators", "/wealth-engine", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan"] },
+      { label: "Wealth Engine", icon: Calculator, path: "/wealth-engine", match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan"] },
       { label: "Products", icon: Package, path: "/products", match: ["/products"], disclosureLevel: 2 },
     ],
   },

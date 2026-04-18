@@ -1,0 +1,113 @@
+/**
+ * Pass 122 — WealthEngineContext Structure Test
+ * Verifies the context shape and cascade data propagation interface.
+ */
+import { describe, it, expect } from "vitest";
+import * as fs from "fs";
+import * as path from "path";
+
+describe("WealthEngineContext", () => {
+  const contextPath = path.resolve(__dirname, "../client/src/contexts/WealthEngineContext.tsx");
+
+  it("WealthEngineContext file exists", () => {
+    expect(fs.existsSync(contextPath)).toBe(true);
+  });
+
+  it("exports useWealthEngine hook", () => {
+    const content = fs.readFileSync(contextPath, "utf-8");
+    expect(content).toContain("export function useWealthEngine");
+  });
+
+  it("exports WealthEngineProvider component", () => {
+    const content = fs.readFileSync(contextPath, "utf-8");
+    expect(content).toContain("export function WealthEngineProvider");
+  });
+
+  it("defines WealthEngineData interface with required fields", () => {
+    const content = fs.readFileSync(contextPath, "utf-8");
+    // Check for key cascade data fields
+    expect(content).toContain("scorecard");
+    expect(content).toContain("recommendations");
+    expect(content).toContain("client: ClientProfile");
+    expect(content).toContain("practiceIncome");
+  });
+
+  it("creates context with createContext", () => {
+    const content = fs.readFileSync(contextPath, "utf-8");
+    expect(content).toContain("createContext");
+  });
+});
+
+describe("Unified Wealth Engine Panel Structure", () => {
+  const calculatorsPath = path.resolve(__dirname, "../client/src/pages/Calculators.tsx");
+
+  it("Calculators.tsx exists", () => {
+    expect(fs.existsSync(calculatorsPath)).toBe(true);
+  });
+
+  it("contains all 6 navigation groups", () => {
+    const content = fs.readFileSync(calculatorsPath, "utf-8");
+    expect(content).toContain("Practice Management");
+    expect(content).toContain("Client Planning");
+    expect(content).toContain("Advanced");
+    expect(content).toContain("Advisory");
+    expect(content).toContain("Data");
+    expect(content).toContain("References & Due Diligence");
+  });
+
+  it("contains all 7 new panel IDs in PanelId type", () => {
+    const content = fs.readFileSync(calculatorsPath, "utf-8");
+    const newPanels = [
+      "planning-hierarchy",
+      "strategy-archetypes",
+      "unified-client-plan",
+      "firm-comparison",
+      "cascade-alerts",
+      "advanced-workflows",
+      "financial-data-hub",
+    ];
+    for (const panel of newPanels) {
+      expect(content).toContain(`'${panel}'`);
+    }
+  });
+
+  it("has lazy imports for all 7 new panels", () => {
+    const content = fs.readFileSync(calculatorsPath, "utf-8");
+    expect(content).toContain("WePlanningHierarchy");
+    expect(content).toContain("WeStrategyArchetypes");
+    expect(content).toContain("WeUnifiedClientPlan");
+    expect(content).toContain("WeFirmComparison");
+    expect(content).toContain("WeCascadeAlerts");
+    expect(content).toContain("WeAdvancedWorkflows");
+    expect(content).toContain("WeFinancialDataHub");
+  });
+
+  it("renders all 7 new panels conditionally", () => {
+    const content = fs.readFileSync(calculatorsPath, "utf-8");
+    expect(content).toContain("activePanel === 'planning-hierarchy'");
+    expect(content).toContain("activePanel === 'strategy-archetypes'");
+    expect(content).toContain("activePanel === 'unified-client-plan'");
+    expect(content).toContain("activePanel === 'firm-comparison'");
+    expect(content).toContain("activePanel === 'cascade-alerts'");
+    expect(content).toContain("activePanel === 'advanced-workflows'");
+    expect(content).toContain("activePanel === 'financial-data-hub'");
+  });
+
+  it("imports WealthEngineProvider", () => {
+    const content = fs.readFileSync(calculatorsPath, "utf-8");
+    expect(content).toContain("WealthEngineProvider");
+  });
+});
+
+describe("Industry Benchmarks Module", () => {
+  const benchmarksPath = path.resolve(__dirname, "../client/src/pages/calculators/industryBenchmarks.ts");
+
+  it("industryBenchmarks.ts exists", () => {
+    expect(fs.existsSync(benchmarksPath)).toBe(true);
+  });
+
+  it("exports benchmark data", () => {
+    const content = fs.readFileSync(benchmarksPath, "utf-8");
+    expect(content).toContain("export");
+  });
+});

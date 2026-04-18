@@ -42,6 +42,20 @@ const PAGE_HELP: Record<string, PageHelp> = {
       { title: "Is my data private?", description: "All conversations are encrypted and stored securely. Only you can access your data.", category: "faq" },
     ],
   },
+  "/wealth-engine": {
+    title: "Unified Wealth Engine",
+    description: "56 interactive panels across 6 groups — Practice Management, Client Planning, Advanced, Advisory, Data, and References. All panels cascade data up/down/forward/back.",
+    tips: [
+      { title: "Panel Navigation", description: "Use the sidebar groups to navigate between panels. Each group contains related tools that share data through the cascade engine.", category: "tip" },
+      { title: "Save & Load Sessions", description: "Click Save to preserve your current session state. Load previous sessions to compare scenarios. All actions are WORM audit-logged.", category: "tip" },
+      { title: "Export Options", description: "Export as PDF, CSV, or JSON. Share sessions with colleagues or import data from external sources.", category: "tip" },
+      { title: "Cascade Alerts", description: "The Advisory > Cascade Alerts panel monitors cross-panel data for misalignments, stale profiles, and suitability gaps.", category: "tip" },
+      { title: "Deep Link", description: "Append ?panel=myplan (or any panel ID) to the URL to jump directly to a specific panel.", category: "shortcut" },
+      { title: "Health Score", description: "The sidebar shows a real-time Health Score computed from your 12-dimension financial scorecard.", category: "tip" },
+      { title: "How do panels cascade?", description: "Changes in Client Profile flow to all panels. Tax results feed Cash Flow, which feeds Protection, Growth, Retirement, Estate, and Education.", category: "faq" },
+      { title: "What is the Planning Hierarchy?", description: "A tree-structured planning framework where goals, strategies, and tactics roll up into a unified plan with automated scoring.", category: "faq" },
+    ],
+  },
   "/calculators": {
     title: "Financial Calculators",
     description: "Professional-grade calculators for retirement, tax, insurance, and more.",

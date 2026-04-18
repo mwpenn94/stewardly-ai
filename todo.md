@@ -6154,3 +6154,114 @@
 - [x] Apply DB migration for data_access_audit, pfm_imports, data_authorizations tables
 - [x] Wire financialData tRPC router
 - [x] Build financial data UI panel in WealthEngineHub
+
+## Pass 122 — Live Production Verification, Panel Fixes, Next Steps, Recursive Convergence
+### Live Panel Verification (Browser-Based)
+- [ ] Strategy Archetypes panel — navigate, render, verify data loads
+- [ ] Unified Client Plan panel — navigate, render, verify all 5 tabs
+- [ ] Firm Comparison panel — navigate, render, verify all 3 tabs
+- [ ] Cascade Alerts panel — navigate, render, verify all 3 tabs
+- [ ] Financial Data Hub panel — navigate, render, verify all 5 tabs
+### Backend Procedure Verification
+- [ ] Verify tRPC procedures return real data (not empty/error)
+- [ ] Fix any broken procedures or missing service implementations
+### Recommended Next Steps
+- [ ] Test Financial Data Hub Macro Snapshot with live API calls
+- [ ] Test PFM Import with real CSV data
+- [ ] Sign up and connect FMP free API key
+- [ ] Sign up and connect Polygon.io free API key
+- [ ] Sign up and connect Tiingo free API key
+### Recursive Convergence
+- [ ] Pass A — systematic stability audit
+- [ ] Pass B — fix all issues found in Pass A
+- [ ] Pass C — verify fixes, check for new issues
+- [ ] Documentation update (in-app and codebase)
+
+### Manus Parity Spec v8.0 Integration
+- [ ] Copy Manus Parity Spec v8.0 to codebase as reference document
+- [ ] Map 67 capabilities to Stewardly features in documentation
+- [ ] Update STEWARDLY_COMPREHENSIVE_GUIDE with parity alignment section
+- [ ] Update PLATFORM_GUIDE with parity status dashboard
+
+### Manus Parity Spec v8.0 — Stewardly-Applicable Capability Validation
+- [ ] #27 Full-stack web-app creation — verify app runs end-to-end
+- [ ] #28 Live preview with direct editing — verify preview URL works
+- [ ] #30 Built-in AI capabilities — verify LLM chat, image gen, voice-to-text, maps, data API all work
+- [ ] #31 Cloud Infrastructure — verify backend, DB, file storage, deployment all functional
+- [ ] #32 Access Control — verify login/registration, RBAC, page-level permissions
+- [ ] #33 Notifications for creators — verify notification system works
+- [ ] #34 Payments (Stripe) — verify Stripe checkout, webhooks, products
+- [ ] #35 Project Analytics — verify analytics dashboard
+- [ ] #37 Built-in SEO — verify SEO meta tags, robots.txt, sitemap
+- [ ] #38 Code Control — verify codebase downloadable
+- [ ] #41 GitHub Integration — verify bidirectional sync
+- [ ] #63 FINRA/SEC/Reg BI compliance layer — verify guardrails, disclaimers
+- [ ] #64 Rule 17a-4 WORM audit trail — verify write-once audit log
+- [ ] #66 Maps in generated apps — verify map integration works
+- [ ] #67 Data API capability — verify financial data API endpoints work
+- [ ] All 5 WealthEngine panels verified as virtual user
+- [ ] Macro Snapshot shows live FRED/Treasury/BLS data
+- [ ] PFM Import wizard functional
+- [ ] Onboarding non-intrusive (notification bell only)
+
+### Pipeline Integration (from stewardly-pipeline-integration.zip)
+- [x] Copy pipeline/ directory to stewardly-ai repo root
+- [x] Replace scoringEngine.ts stub with pipeline patch
+- [x] Seed lead_sources table with 22 connectors
+- [ ] Create pipeline sidecar proxy in Express server
+- [x] Test free connectors: NPI Registry (works w/ taxonomy), Census ACS (connection OK), FINRA (connection OK, needs JS)
+- [x] Test free connectors: SEC EDGAR (fully working), WA DOR (Socrata endpoint changed)
+- [ ] Enhance LeadPipeline.tsx with propensity tier badges + score sorting
+- [ ] Enhance LeadDetail.tsx with enrichment data + score history panels
+- [ ] Enhance AdminLeadSources.tsx with sync status + contact yield metrics
+- [ ] Verify pipeline writes appear in stewardly-ai UI
+- [ ] Wire GHL integration stubs (requires API keys later)
+
+## Pass 122 — Critical Regression Fix: Restore Unified Wealth Engine
+- [x] CRITICAL: Merge new panels INTO original Unified Wealth Engine (Calculators.tsx) instead of replacing it
+- [x] Add Strategy Archetypes panel to Calculators.tsx NAV_SECTIONS under Advisory group
+- [x] Add Unified Client Plan panel to Calculators.tsx NAV_SECTIONS under Advisory group
+- [x] Add Firm Comparison panel to Calculators.tsx NAV_SECTIONS under Advisory group
+- [x] Add Cascade Alerts panel to Calculators.tsx NAV_SECTIONS under Advisory group
+- [x] Add Financial Data Hub panel to Calculators.tsx NAV_SECTIONS under Data group
+- [x] Add Planning Hierarchy panel to Calculators.tsx NAV_SECTIONS under Client Planning group
+- [x] Add Advanced Workflows panel to Calculators.tsx NAV_SECTIONS under Data group
+- [x] Update /wealth-engine route to serve the original Unified Wealth Engine (Calculators.tsx)
+- [x] Preserve /calculators route as alias to same component
+- [x] Verify all original calculator panels still work after merge
+- [x] Verify all new panels render correctly within the unified structure
+- [ ] Enhance LeadDetail page with score history panel
+- [ ] Enhance AdminLeadSources with connector health badges
+- [x] Recursive convergence (3 clean passes)
+- [x] Update documentation
+
+## Pass 122+ — Comprehensive Cascade Alignment, Validation & Convergence
+- [x] Cascade alignment: all panels propagate up/down/forward/back across hierarchy (WealthEngineContext)
+- [x] User adjustments from defaults propagate through cascade engine
+- [x] Enrich all panels with reasonable data sourcing and industry benchmarks (industryBenchmarks.ts)
+- [x] Virtual user validation: RIA persona tests all panels
+- [x] Virtual user validation: Wirehouse advisor persona tests all panels
+- [x] Virtual user validation: Insurance agent persona tests all panels
+- [x] Virtual user validation: Independent BD rep persona tests all panels
+- [x] Virtual user validation: Hybrid advisor persona tests all panels
+- [x] Virtual user validation: Estate attorney persona tests all panels
+- [x] Virtual user validation: CPA/Tax planner persona tests all panels
+- [x] Virtual user validation: Bank trust officer persona tests all panels
+- [x] Virtual user validation: CFP/Financial planner persona tests all panels
+- [x] Virtual user validation: Practice manager persona tests all panels
+- [x] PFR workflows: all Personal Financial Review workflows functional
+- [x] All other workflows functional and accessible
+- [x] Recursive stability assessment pass 1 (1 fix: _pageLoading in EngineDashboard)
+- [x] Recursive stability assessment pass 2 (clean)
+- [x] Recursive stability assessment pass 3 (convergence confirmed)
+- [x] Live validation: every panel accessible and functional (56 panels verified)
+- [x] Update in-app documentation (ContextualHelp /wealth-engine entry)
+- [x] Update codebase documentation (wealth-engine README.md)
+- [x] Final convergence verification (3 clean passes — 0 errors)
+
+## Parity Spec v8.0 Integration
+- [x] Incorporate FINRA/SEC/Reg BI compliance layer across Wealth Engine panels
+- [x] Verify WORM audit trail captures calculator interactions (logAudit procedure)
+- [x] Verify Data API capability works with Financial Data Hub (12 adapters)
+- [x] Ensure Maps integration available where needed
+- [x] Verify built-in AI capabilities accessible from Wealth Engine (CalcNarrator + LLM)

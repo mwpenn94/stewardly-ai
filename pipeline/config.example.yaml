@@ -1,0 +1,181 @@
+# WealthBridge Pipeline Configuration
+# ====================================
+# Copy to config.yaml and customize. All API keys can also be set via
+# environment variables (WB_<SOURCE_TYPE>_API_KEY).
+
+database:
+  # SQLite for standalone. Set url to postgres://... for app deployment.
+  path: "./data/wealthbridge.db"
+  # url: "postgresql://user:pass@localhost:5432/wealthbridge"
+
+# Source connectors — set enabled: true to activate
+sources:
+  # ── Free public (T0) ──
+  az_assessor_pima:
+    enabled: true
+    input_dir: "./data/raw"
+    cadence_hours: 24
+
+  az_assessor_mohave:
+    enabled: true
+    input_dir: "./data/raw"
+    cadence_hours: 24
+
+  az_assessor_santa_cruz:
+    enabled: true
+    input_dir: "./data/raw"
+    cadence_hours: 24
+
+  az_corp_commission:
+    enabled: true
+    bulk_file: ""  # path to ACC bulk CSV (request at publicrecords@azcc.gov)
+    cadence_hours: 720  # monthly
+
+  nm_sos:
+    enabled: true
+    bulk_file: ""  # path to NM SOS bulk CSV (request at sos.business.services@sos.nm.gov)
+    cadence_hours: 720
+
+  wa_dor:
+    enabled: true
+    dataset_id: "7xux-kdpf"  # Socrata dataset — verify at data.wa.gov
+    max_rows: 25000
+    cadence_hours: 168  # weekly
+
+  finra_brokercheck:
+    enabled: true
+    target_states: ["AZ", "NM", "WA"]
+    max_per_state: 2000
+    cadence_hours: 336  # biweekly
+
+  sec_edgar_form4:
+    enabled: true
+    days_back: 30
+    min_usd: 1000000
+    states: ["AZ", "NM", "WA"]
+    cadence_hours: 168  # weekly — wealth triggers
+
+  faa_aircraft:
+    enabled: true
+    master_path: "./data/reference/MASTER.txt"  # FAA bulk download
+    states: ["AZ", "NM", "WA"]
+    cadence_hours: 720
+
+  irs_bmf:
+    enabled: true
+    bmf_path: ""  # path to IRS BMF extract (download from irs.gov)
+    states: ["AZ", "NM", "WA"]
+    cadence_hours: 720
+
+  census_acs:
+    enabled: true
+    cadence_hours: 2160  # quarterly
+
+  # ── Paid enrichment (T2) ──
+  hunter_io:
+    enabled: false  # set true + API key to activate
+    # api_key: ""  # or set WB_HUNTER_IO_API_KEY env var
+    budget_usd: 100  # monthly cap
+    cadence_hours: 168
+
+  batch_skip_tracing:
+    enabled: false
+    # api_key: ""  # or set WB_BATCH_SKIP_TRACING_API_KEY
+    budget_usd: 200
+    cadence_hours: 168
+
+  # ── Premium enrichment (T3) ──
+  apollo_io:
+    enabled: false
+    # api_key: ""  # or set WB_APOLLO_IO_API_KEY
+    budget_usd: 500
+    cadence_hours: 720
+
+  # ── CRM (bidirectional) ──
+  ghl:
+    enabled: false
+    # api_key: ""  # or set WB_GHL_API_KEY
+    # location_id: ""  # or set WB_GHL_LOCATION_ID
+    cadence_hours: 24
+
+# Enrichment tiers — budget caps and which modules to run
+enrichment:
+  t0:
+    enabled: true  # always
+    modules:
+      - usps_address_normalizer
+      - census_geocoder
+      - acs_zip_income
+      - name_entity_inference
+      - naics_classifier
+      - multi_property_aggregator
+      - age_imputer
+      - revenue_imputer
+      - gdc_imputer
+      - firm_movability_classifier
+      - new_associate_signals
+      - practice_area_inferrer
+      - affiliate_signal_inferrer
+      - irs_bmf_loader
+      - engagement_signal_aggregator
+      - dmf_screener
+
+  t2:
+    enabled: false
+    budget_usd_monthly: 300
+    modules:
+      - hunter_io
+      - batch_skip_tracing
+
+  t3:
+    enabled: false
+    budget_usd_monthly: 1000
+    modules:
+      - apollo_io
+
+# Scoring
+scoring:
+  model: "phase0_heuristic"  # or "phase1_logistic" after 300+ labels
+  min_tier_for_ghl_push: "B"  # A+B get pushed to GHL
+
+# Scheduler
+scheduler:
+  check_interval_minutes: 30
+  cadence_buckets:
+    hourly: ["sec_edgar_form4"]
+    daily: ["az_assessor_pima", "az_assessor_mohave", "az_assessor_santa_cruz", "ghl"]
+    weekly: ["wa_dor", "finra_brokercheck", "hunter_io", "batch_skip_tracing"]
+    monthly: ["az_corp_commission", "nm_sos", "irs_bmf", "faa_aircraft", "census_acs", "apollo_io"]
+
+# Webhook receiver
+webhooks:
+  port: 8765
+  host: "0.0.0.0"
+  endpoints:
+    ghl: "/webhooks/ghl"
+    calendly: "/webhooks/calendly"
+    dripify: "/webhooks/dripify"
+
+# Geography
+geo_tiers:
+  production:
+    tier_1: {states: ["AZ"], counties: ["PIMA", "MOHAVE", "SANTA CRUZ"]}
+    tier_2: {states: ["AZ"], counties: ["COCHISE", "MARICOPA", "YUMA", "PINAL"]}
+    tier_3: {states: ["NM", "WA"]}
+    tier_4: {states: "OTHER_US"}
+    tier_5: {states: "NON_US"}
+  proximity:
+    tier_1: {counties: ["PIMA"]}
+    tier_2: {counties: ["COCHISE", "SANTA CRUZ", "PINAL", "GRAHAM"]}
+    tier_3: {counties: ["MARICOPA", "YUMA", "MOHAVE"]}
+
+# Segments
+segments:
+  - residential_client
+  - commercial_client
+  - experienced_pro
+  - new_associate
+  - cpa_attorney_partner
+  - affiliate
+  - hr_director
+  - nonprofit_leader

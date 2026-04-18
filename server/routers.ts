@@ -2019,6 +2019,23 @@ const calcSessionRouter = router({
       await deleteCalculatorSession(input.id, ctx.user.id);
       return { ok: true };
     }),
+  // ─── WORM Audit Trail for Calculator Interactions (SEC Rule 17a-4) ───
+  logAuditEvent: protectedProcedure
+    .input(z.object({
+      action: z.string().max(128),
+      panelId: z.string().max(64).optional(),
+      details: z.string().max(4000).optional(),
+      complianceFlags: z.any().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await addAuditEntry({
+        userId: ctx.user.id,
+        action: input.action,
+        details: input.details ?? `Panel: ${input.panelId ?? 'unknown'}`,
+        complianceFlags: input.complianceFlags,
+      });
+      return { ok: true };
+    }),
 });
 
 // ─── MARKET DATA ROUTER ──────────────────────────────────────────

@@ -46,7 +46,7 @@ export const AVAILABLE_ROUTES: { route: string; label: string }[] = [
   { route: "/integrations", label: "Integrations" },
   { route: "/settings/profile", label: "Settings" },
   { route: "/help", label: "Help & Support" },
-  { route: "/calculators", label: "Calculators" },
+  { route: "/wealth-engine", label: "Wealth Engine" },
   { route: "/products", label: "Products" },
   { route: "/integration-health", label: "Integration Health" },
   { route: "/passive-actions", label: "Passive Actions" },

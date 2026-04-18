@@ -1,0 +1,29 @@
+# Add this service to stewardly-ai's existing docker-compose.yml
+# The pipeline sidecar runs alongside the TypeScript backend,
+# writing directly to the same TiDB database.
+
+  pipeline:
+    build:
+      context: ./pipeline
+      dockerfile: Dockerfile
+    ports:
+      - "8100:8100"
+    environment:
+      - DATABASE_URL=mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+      - WB_GHL_API_KEY=${GHL_API_KEY}
+      - WB_GHL_LOCATION_ID=${GHL_LOCATION_ID}
+      - GOOGLE_PLACES_API_KEY=${GOOGLE_PLACES_API_KEY}
+      - WB_HUNTER_IO_API_KEY=${HUNTER_API_KEY}
+      - WB_BATCH_SKIP_TRACING_API_KEY=${BATCH_SKIP_API_KEY}
+      - WB_APOLLO_IO_API_KEY=${APOLLO_API_KEY}
+      - PIPELINE_URL=http://pipeline:8100
+    volumes:
+      - pipeline-data:/app/pipeline/data
+    restart: unless-stopped
+
+# Add to the TypeScript backend service's environment:
+#   - PIPELINE_URL=http://pipeline:8100
+
+# Add volume:
+# volumes:
+#   pipeline-data:

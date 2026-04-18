@@ -32,7 +32,7 @@ const ROUTE_FEATURE_MAP: Record<string, string> = {
   "/portal": "intelligence_hub",
   "/organizations": "admin_organizations",
   "/proficiency": "proficiency_dashboard",
-  "/calculators": "calculators",
+  "/wealth-engine": "wealth-engine",
   "/products": "products",
   "/improvement": "improvement_engine",
 };

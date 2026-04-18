@@ -1,6 +1,7 @@
 /* WealthBridge Unified Wealth Engine v7 — Orchestrator */
 import { authFetch } from "@/lib/sessionToken";
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import { WealthEngineProvider, type WealthEngineData } from '@/contexts/WealthEngineContext';
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,8 @@ import {
   Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt,
   Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu,
   Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info,
-  PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2
+  PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2,
+  Database, Zap, Sparkles, Gauge, Rocket, ShieldCheck, Workflow
 } from 'lucide-react';
 
 import {
@@ -48,6 +50,14 @@ import {
 } from './calculators/practiceEngine';
 import { SEOHead } from "@/components/SEOHead";
 import { ShareButton } from "@/components/sharing/ShareKit";
+/* ─── Lazy-loaded new advisory & data panels ─── */
+const WePlanningHierarchy = lazy(() => import('./wealth-engine/PlanningHierarchyPanel'));
+const WeAdvancedWorkflows = lazy(() => import('./wealth-engine/AdvancedWorkflowsPanel'));
+const WeStrategyArchetypes = lazy(() => import('./wealth-engine/StrategyArchetypesPanel'));
+const WeUnifiedClientPlan = lazy(() => import('./wealth-engine/UnifiedClientPlanPanel'));
+const WeFirmComparison = lazy(() => import('./wealth-engine/FirmComparisonPanel'));
+const WeCascadeAlerts = lazy(() => import('./wealth-engine/CascadeAlertsPanel'));
+const WeFinancialDataHub = lazy(() => import('./wealth-engine/FinancialDataHub'));
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
@@ -57,7 +67,8 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'aumoverride' | 'aumpipeline' | 'affiliatepipeline' |
   'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
-  'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence';
+  'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence' |
+  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
@@ -111,6 +122,17 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'ilitrust' as PanelId, label: 'ILIT / Trust Structuring', icon: <Gavel className="w-4 h-4" /> },
     { id: 'execcomp' as PanelId, label: 'Executive Comp', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'charitable' as PanelId, label: 'Charitable Planning', icon: <Gift className="w-4 h-4" /> },
+  ]},
+  { group: 'Advisory', items: [
+    { id: 'planning-hierarchy' as PanelId, label: 'Planning Hierarchy', icon: <Layers className="w-4 h-4" /> },
+    { id: 'advanced-workflows' as PanelId, label: 'Advanced Workflows', icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: 'strategy-archetypes' as PanelId, label: 'Strategy Archetypes', icon: <Target className="w-4 h-4" /> },
+    { id: 'unified-client-plan' as PanelId, label: 'Unified Client Plan', icon: <Layers className="w-4 h-4" /> },
+    { id: 'firm-comparison' as PanelId, label: 'Firm Comparison', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'cascade-alerts' as PanelId, label: 'Cascade Alerts', icon: <Zap className="w-4 h-4" /> },
+  ]},
+  { group: 'Data', items: [
+    { id: 'financial-data-hub' as PanelId, label: 'Financial Data Hub', icon: <Database className="w-4 h-4" /> },
   ]},
   { group: 'References & Due Diligence', items: [
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
@@ -1076,6 +1098,25 @@ export default function Calculators() {
     seasonRampMonths: ppSeasonRampMonths, setSeasonRampMonths: setPpSeasonRampMonths,
   };
 
+  /* ─── Build cascade context for new Advisory/Data panels ─── */
+  const weData = useMemo<WealthEngineData>(() => ({
+    client: {
+      clientName, age, spouseAge, dep, income, spouseIncome, totalIncome, nw, savings,
+      retirement401k, mortgage, debt, existIns, filing, stateRate, riskTolerance,
+      isBiz, bizRevenue, bizEmployees, bizEntityType,
+    },
+    scorecard, recommendations, totalAnnualPremium,
+    cfResult, prResult, grResult, rtResult, txResult, esResult, edResult,
+    horizonData, practiceIncome, scores,
+    lastUpdated: Date.now(),
+    panelVersions: {},
+  }), [clientName, age, spouseAge, dep, income, spouseIncome, totalIncome, nw, savings,
+    retirement401k, mortgage, debt, existIns, filing, stateRate, riskTolerance,
+    isBiz, bizRevenue, bizEmployees, bizEntityType,
+    scorecard, recommendations, totalAnnualPremium,
+    cfResult, prResult, grResult, rtResult, txResult, esResult, edResult,
+    horizonData, practiceIncome, scores]);
+
   /* ═══ RENDER ═══ */
   return (
       <>
@@ -1331,6 +1372,18 @@ export default function Calculators() {
           {activePanel === 'execcomp' && <ExecCompPanel income={income} />}
           {activePanel === 'charitable' && <CharitablePlanningPanel income={income} />}
           {activePanel === 'duediligence' && <DueDiligencePanel />}
+          {/* ═══ NEW ADVISORY & DATA PANELS (cascade-connected) ═══ */}
+          <WealthEngineProvider value={weData}>
+            <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="animate-spin">⏳</span></div>}>
+              {activePanel === 'planning-hierarchy' && <WePlanningHierarchy />}
+              {activePanel === 'advanced-workflows' && <WeAdvancedWorkflows />}
+              {activePanel === 'strategy-archetypes' && <WeStrategyArchetypes />}
+              {activePanel === 'unified-client-plan' && <WeUnifiedClientPlan />}
+              {activePanel === 'firm-comparison' && <WeFirmComparison />}
+              {activePanel === 'cascade-alerts' && <WeCascadeAlerts />}
+              {activePanel === 'financial-data-hub' && <WeFinancialDataHub />}
+            </Suspense>
+          </WealthEngineProvider>
 
           {/* ═══ FINRA/SIPC COMPLIANCE DISCLAIMER ═══ */}
           <div className="mt-8 rounded-lg border border-border/50 bg-card/50 p-4 text-[10px] text-muted-foreground/60 leading-relaxed space-y-2">

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 const PLANNING_PAGES = [
-  { href: "/calculators", label: "Calculators", icon: Calculator, key: null },
+  { href: "/wealth-engine", label: "Wealth Engine", icon: Calculator, key: null },
   { href: "/tax-planning", label: "Tax", icon: DollarSign, key: "annualIncome" },
   { href: "/estate", label: "Estate", icon: Scale, key: "netEstate" },
   { href: "/risk-assessment", label: "Risk", icon: BarChart3, key: null },
