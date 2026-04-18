@@ -25,20 +25,20 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
     expect(content).toContain("April 16, 2026");
   });
 
-  it("guide reports 389,000+ lines of code", () => {
+  it("guide reports 424,000+ lines of code", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("389,000+");
+    expect(content).toContain("424,000+");
   });
 
-  it("guide reports 365 database tables", () => {
+  it("guide reports 378 database tables", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("365");
+    expect(content).toContain("378");
     expect(content).toContain("database tables");
   });
 
@@ -51,28 +51,28 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
     expect(content).toContain("tRPC");
   });
 
-  it("guide reports 8,695+ tests", () => {
+  it("guide reports 9,883 tests", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("8,695+");
+    expect(content).toContain("9,883");
   });
 
-  it("guide reports 372 test files", () => {
+  it("guide reports 398 test files", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("372");
+    expect(content).toContain("398");
   });
 
-  it("guide reports 61 recursive optimization passes", () => {
+  it("guide reports 116 recursive optimization passes", () => {
     const content = fs.readFileSync(
       path.join(ROOT, "STEWARDLY_COMPREHENSIVE_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("61 recursive optimization passes");
+    expect(content).toContain("116 recursive optimization passes");
   });
 
   it("PLATFORM_GUIDE.md metrics are updated", () => {
@@ -80,9 +80,9 @@ describe("Documentation metrics accuracy (Pass 62)", () => {
       path.join(ROOT, "PLATFORM_GUIDE.md"),
       "utf-8"
     );
-    expect(content).toContain("389,000+");
-    expect(content).toContain("365 database tables");
-    expect(content).toContain("8,695+");
+    expect(content).toContain("424,000+");
+    expect(content).toContain("378 database tables");
+    expect(content).toContain("9,883");
   });
 });
 

@@ -9,7 +9,7 @@
 
 Stewardly AI is a **Digital Financial Twin** platform that provides AI-powered financial intelligence, advisory capabilities, and operational tools for financial professionals and their clients. The platform combines conversational AI, multi-model intelligence, real-time market data, compliance automation, and relationship management into a unified experience.
 
-The system is built on a modern TypeScript full-stack architecture with **389,000+ lines of code** across **1,531 source files**, **365 database tables**, **99 tRPC API routers**, and **8,695+ automated tests** across **372 test files** (all passing). The platform has undergone **61 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
+The system is built on a modern TypeScript full-stack architecture with **424,000+ lines of code** across **1,640 source files**, **378 database tables**, **99 tRPC API routers**, and **9,883 automated tests** across **398 test files** (all passing). The platform has undergone **116 recursive optimization passes** covering depth, adversarial, landscape, and convergence verification. It serves four distinct user roles (user, advisor, manager, admin) with role-based access control governing navigation, features, and data visibility.
 
 ---
 
@@ -38,11 +38,11 @@ The system is built on a modern TypeScript full-stack architecture with **389,00
 
 | Metric | Count |
 |--------|-------|
-| Total lines of code | 389,000+ |
-| Source files (non-test) | 1,531 |
-| Test files | 372 |
-| Total tests | 8,695+ (all passing) |
-| Database tables | 365 |
+| Total lines of code | 424,000+ |
+| Source files (non-test) | 1,640 |
+| Test files | 398 |
+| Total tests | 9,883 (all passing) |
+| Database tables | 378 |
 | tRPC routers | 99 |
 | Frontend pages/routes | 149 |
 | Custom components | 180+ |
@@ -54,7 +54,7 @@ The system is built on a modern TypeScript full-stack architecture with **389,00
 | Business domains | 20+ (PII, verification, CRM, propensity, lead engine, import, enrichment, scraping, reporting, planning, premium finance, SMS-iT, SEO, email, monitoring, fairness, task queue, agentic execution, workflow) |
 | NPM dependencies | 95+ |
 | Dev dependencies | 30+ |
-| Recursive optimization passes | 61 |
+| Recursive optimization passes | 116 |
 
 ### 2.3 Directory Structure
 
@@ -102,7 +102,7 @@ wealthbridge-ai/
 │   ├── db.ts                 # Query helpers (896 lines)
 │   └── storage.ts            # S3 file storage
 ├── drizzle/
-│   └── schema.ts             # 365 tables (10,000+ lines)
+│   └── schema.ts             # 378 tables (10,000+ lines)
 ├── shared/                   # Client-server shared types
 └── migrations/               # SQL migration history
 ```

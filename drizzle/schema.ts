@@ -6981,3 +6981,190 @@ export const sharedAssumptions = mysqlTable("shared_assumptions", {
 }));
 export type SharedAssumption = typeof sharedAssumptions.$inferSelect;
 export type InsertSharedAssumption = typeof sharedAssumptions.$inferInsert;
+
+// ─── Phase 4: Advanced Workflows ─────────────────────────────────────────────
+
+// Policy Delivery & Free Look Tracking
+export const policyDeliveries = mysqlTable("policy_deliveries", {
+  id: int("id").autoincrement().primaryKey(),
+  applicationId: int("applicationId").notNull(),
+  clientId: int("clientId").notNull(),
+  advisorId: int("advisorId").notNull(),
+  policyNumber: varchar("policyNumber", { length: 255 }).notNull(),
+  carrierName: varchar("carrierName", { length: 255 }).notNull(),
+  productType: varchar("productType", { length: 100 }).notNull(),
+  faceAmount: bigint("faceAmount", { mode: "number" }),
+  annualPremium: bigint("annualPremium", { mode: "number" }),
+  deliveryMethod: mysqlEnum("deliveryMethod", ["in_person", "mail", "electronic", "video_call"]).default("in_person"),
+  deliveredAt: bigint("deliveredAt", { mode: "number" }),
+  clientAcknowledgedAt: bigint("clientAcknowledgedAt", { mode: "number" }),
+  freeLookStartDate: bigint("freeLookStartDate", { mode: "number" }),
+  freeLookEndDate: bigint("freeLookEndDate", { mode: "number" }),
+  freeLookDays: int("freeLookDays").default(10),
+  freeLookStatus: mysqlEnum("freeLookStatus", ["not_started", "active", "expired", "exercised"]).default("not_started"),
+  freeLookExercisedAt: bigint("freeLookExercisedAt", { mode: "number" }),
+  deliveryReceiptUrl: text("deliveryReceiptUrl"),
+  clientSignatureUrl: text("clientSignatureUrl"),
+  notesJson: json("notesJson"),
+  status: mysqlEnum("status", ["pending_delivery", "delivered", "acknowledged", "free_look_active", "placed", "returned"]).default("pending_delivery"),
+  planningNodeId: int("planningNodeId"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+}, (table) => ({
+  clientIdx: index("idx_policy_deliveries_client").on(table.clientId),
+  advisorIdx: index("idx_policy_deliveries_advisor").on(table.advisorId),
+  applicationIdx: index("idx_policy_deliveries_application").on(table.applicationId),
+  statusIdx: index("idx_policy_deliveries_status").on(table.status),
+  freeLookIdx: index("idx_policy_deliveries_free_look").on(table.freeLookStatus, table.freeLookEndDate),
+}));
+export type PolicyDelivery = typeof policyDeliveries.$inferSelect;
+export type InsertPolicyDelivery = typeof policyDeliveries.$inferInsert;
+
+// 1035 Exchange Analysis
+export const exchangeAnalyses = mysqlTable("exchange_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  advisorId: int("advisorId").notNull(),
+  existingPolicyNumber: varchar("existingPolicyNumber", { length: 255 }),
+  existingCarrier: varchar("existingCarrier", { length: 255 }),
+  existingProductType: varchar("existingProductType", { length: 100 }),
+  existingCashValue: bigint("existingCashValue", { mode: "number" }),
+  existingSurrenderValue: bigint("existingSurrenderValue", { mode: "number" }),
+  existingSurrenderCharge: bigint("existingSurrenderCharge", { mode: "number" }),
+  existingDeathBenefit: bigint("existingDeathBenefit", { mode: "number" }),
+  existingAnnualPremium: bigint("existingAnnualPremium", { mode: "number" }),
+  existingLoanBalance: bigint("existingLoanBalance", { mode: "number" }),
+  existingCostBasis: bigint("existingCostBasis", { mode: "number" }),
+  existingFeaturesJson: json("existingFeaturesJson"),
+  proposedCarrier: varchar("proposedCarrier", { length: 255 }),
+  proposedProductType: varchar("proposedProductType", { length: 100 }),
+  proposedDeathBenefit: bigint("proposedDeathBenefit", { mode: "number" }),
+  proposedAnnualPremium: bigint("proposedAnnualPremium", { mode: "number" }),
+  proposedFeaturesJson: json("proposedFeaturesJson"),
+  proposedIllustrationUrl: text("proposedIllustrationUrl"),
+  comparisonJson: json("comparisonJson"),
+  taxImplicationsJson: json("taxImplicationsJson"),
+  surrenderChargeAnalysis: text("surrenderChargeAnalysis"),
+  suitabilityRationale: text("suitabilityRationale"),
+  replacementFormRequired: mysqlBoolean("replacementFormRequired").default(true),
+  stateReplacementRules: text("stateReplacementRules"),
+  naicComplianceJson: json("naicComplianceJson"),
+  recommendationSummary: text("recommendationSummary"),
+  recommendationAction: mysqlEnum("recommendationAction", ["exchange", "keep_existing", "supplement", "needs_further_review"]),
+  status: mysqlEnum("status", ["draft", "analysis_complete", "client_reviewed", "approved", "submitted", "completed", "cancelled"]).default("draft"),
+  planningNodeId: int("planningNodeId"),
+  goalId: int("goalId"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+}, (table) => ({
+  clientIdx: index("idx_exchange_analyses_client").on(table.clientId),
+  advisorIdx: index("idx_exchange_analyses_advisor").on(table.advisorId),
+  statusIdx: index("idx_exchange_analyses_status").on(table.status),
+}));
+export type ExchangeAnalysis = typeof exchangeAnalyses.$inferSelect;
+export type InsertExchangeAnalysis = typeof exchangeAnalyses.$inferInsert;
+
+// Beneficiary Review Workflow
+export const beneficiaryReviews = mysqlTable("beneficiary_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  advisorId: int("advisorId").notNull(),
+  policyOrAccountRef: varchar("policyOrAccountRef", { length: 255 }).notNull(),
+  accountType: mysqlEnum("accountType", ["life_insurance", "annuity", "ira", "401k", "roth_ira", "brokerage", "trust", "bank", "other"]).notNull(),
+  carrierOrCustodian: varchar("carrierOrCustodian", { length: 255 }),
+  currentBeneficiariesJson: json("currentBeneficiariesJson"),
+  proposedBeneficiariesJson: json("proposedBeneficiariesJson"),
+  reviewTrigger: mysqlEnum("reviewTrigger", ["annual_review", "life_event", "estate_plan_change", "divorce", "death", "new_policy", "client_request", "regulatory"]).default("annual_review"),
+  lifeEventDescription: text("lifeEventDescription"),
+  estateAlignmentNotes: text("estateAlignmentNotes"),
+  taxImplicationsNotes: text("taxImplicationsNotes"),
+  perStirpesVsPerCapita: mysqlEnum("perStirpesVsPerCapita", ["per_stirpes", "per_capita", "not_applicable"]).default("not_applicable"),
+  contingentBeneficiarySet: mysqlBoolean("contingentBeneficiarySet").default(false),
+  minorBeneficiaryProtection: text("minorBeneficiaryProtection"),
+  changeRequired: mysqlBoolean("changeRequired").default(false),
+  changeFormUrl: text("changeFormUrl"),
+  changeSubmittedAt: bigint("changeSubmittedAt", { mode: "number" }),
+  changeConfirmedAt: bigint("changeConfirmedAt", { mode: "number" }),
+  status: mysqlEnum("status", ["pending_review", "reviewed", "changes_needed", "changes_submitted", "confirmed", "no_changes_needed"]).default("pending_review"),
+  nextReviewDate: bigint("nextReviewDate", { mode: "number" }),
+  planningNodeId: int("planningNodeId"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+}, (table) => ({
+  clientIdx: index("idx_beneficiary_reviews_client").on(table.clientId),
+  advisorIdx: index("idx_beneficiary_reviews_advisor").on(table.advisorId),
+  statusIdx: index("idx_beneficiary_reviews_status").on(table.status),
+  nextReviewIdx: index("idx_beneficiary_reviews_next_review").on(table.nextReviewDate),
+}));
+export type BeneficiaryReview = typeof beneficiaryReviews.$inferSelect;
+export type InsertBeneficiaryReview = typeof beneficiaryReviews.$inferInsert;
+
+// Tax Return Review Workflow
+export const taxReturnReviews = mysqlTable("tax_return_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  advisorId: int("advisorId").notNull(),
+  taxYear: int("taxYear").notNull(),
+  filingStatus: mysqlEnum("filingStatus", ["single", "married_filing_jointly", "married_filing_separately", "head_of_household", "qualifying_widow"]),
+  adjustedGrossIncome: bigint("adjustedGrossIncome", { mode: "number" }),
+  taxableIncome: bigint("taxableIncome", { mode: "number" }),
+  totalTaxLiability: bigint("totalTaxLiability", { mode: "number" }),
+  effectiveTaxRate: varchar("effectiveTaxRate", { length: 20 }),
+  marginalBracket: varchar("marginalBracket", { length: 20 }),
+  capitalGainsShortTerm: bigint("capitalGainsShortTerm", { mode: "number" }),
+  capitalGainsLongTerm: bigint("capitalGainsLongTerm", { mode: "number" }),
+  dividendIncome: bigint("dividendIncome", { mode: "number" }),
+  interestIncome: bigint("interestIncome", { mode: "number" }),
+  businessIncome: bigint("businessIncome", { mode: "number" }),
+  rentalIncome: bigint("rentalIncome", { mode: "number" }),
+  retirementDistributions: bigint("retirementDistributions", { mode: "number" }),
+  charitableDeductions: bigint("charitableDeductions", { mode: "number" }),
+  mortgageInterest: bigint("mortgageInterest", { mode: "number" }),
+  saltDeductions: bigint("saltDeductions", { mode: "number" }),
+  itemizedVsStandard: mysqlEnum("itemizedVsStandard", ["itemized", "standard"]),
+  findingsJson: json("findingsJson"),
+  opportunitiesJson: json("opportunitiesJson"),
+  riskFlagsJson: json("riskFlagsJson"),
+  planningRecommendations: text("planningRecommendations"),
+  documentUrl: text("documentUrl"),
+  status: mysqlEnum("status", ["pending_upload", "uploaded", "under_review", "reviewed", "action_items_created", "completed"]).default("pending_upload"),
+  reviewedAt: bigint("reviewedAt", { mode: "number" }),
+  planningNodeId: int("planningNodeId"),
+  goalId: int("goalId"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull(),
+}, (table) => ({
+  clientIdx: index("idx_tax_return_reviews_client").on(table.clientId),
+  advisorIdx: index("idx_tax_return_reviews_advisor").on(table.advisorId),
+  taxYearIdx: index("idx_tax_return_reviews_year").on(table.taxYear),
+  statusIdx: index("idx_tax_return_reviews_status").on(table.status),
+}));
+export type TaxReturnReview = typeof taxReturnReviews.$inferSelect;
+export type InsertTaxReturnReview = typeof taxReturnReviews.$inferInsert;
+
+// Benchmark Comparisons
+export const benchmarkComparisons = mysqlTable("benchmark_comparisons", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  advisorId: int("advisorId").notNull(),
+  comparisonType: mysqlEnum("comparisonType", ["retirement_readiness", "savings_rate", "debt_ratio", "insurance_coverage", "estate_planning", "tax_efficiency", "investment_returns", "overall"]).notNull(),
+  clientValue: varchar("clientValue", { length: 100 }),
+  peerMedian: varchar("peerMedian", { length: 100 }),
+  peerP25: varchar("peerP25", { length: 100 }),
+  peerP75: varchar("peerP75", { length: 100 }),
+  percentileRank: int("percentileRank"),
+  peerGroupCriteria: json("peerGroupCriteria"),
+  peerGroupSize: int("peerGroupSize"),
+  dataSourceJson: json("dataSourceJson"),
+  insightsJson: json("insightsJson"),
+  planningNodeId: int("planningNodeId"),
+  goalId: int("goalId"),
+  snapshotDate: bigint("snapshotDate", { mode: "number" }).notNull(),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull(),
+}, (table) => ({
+  clientIdx: index("idx_benchmark_comparisons_client").on(table.clientId),
+  typeIdx: index("idx_benchmark_comparisons_type").on(table.comparisonType),
+  snapshotIdx: index("idx_benchmark_comparisons_snapshot").on(table.snapshotDate),
+}));
+export type BenchmarkComparison = typeof benchmarkComparisons.$inferSelect;
+export type InsertBenchmarkComparison = typeof benchmarkComparisons.$inferInsert;
