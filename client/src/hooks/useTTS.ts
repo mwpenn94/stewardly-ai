@@ -343,6 +343,7 @@ export function useTTS({
    */
   const doSpeak = useCallback(
     (text: string) => {
+      if (!text || !text.trim()) return; // Guard: never send empty text to server
       cancel();
       cancelledRef.current = false;
 

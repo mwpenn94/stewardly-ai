@@ -6371,3 +6371,11 @@
 - [x] Zero regressions confirmed
 - [x] All features live, accessible, functional, usable
 - [x] Save checkpoint
+
+## Pass 127 — Publishing Fix + Production Validation
+- [x] Diagnose and fix publishing stall (build compiles clean, no blocking errors)
+- [x] Deep production validation: browser-test every capability end-to-end
+- [x] Fix issues: leadPipeline unawaited query (500), TTS empty text guard (400)
+- [x] Second validation pass: zero 500/400 errors, all routes 200
+- [x] Virtual user production validation: Diana, Marcus, Priya, Henry — all PASS
+- [x] Save checkpoint

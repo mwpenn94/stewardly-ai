@@ -16,7 +16,8 @@ export const leadPipelineRouter = router({
         if (!db) return [];
         const { leadPipeline } = await import("../../drizzle/schema");
         const { desc } = await import("drizzle-orm");
-        return db.select().from(leadPipeline).orderBy(desc(leadPipeline.createdAt)).limit(input?.limit || 50);
+        const results = await db.select().from(leadPipeline).orderBy(desc(leadPipeline.createdAt)).limit(input?.limit || 50);
+        return results;
       } catch (e: any) {
         // Table may not exist yet — return empty array gracefully
         logger.warn("[leadPipeline.getPipeline]", { error: e?.message?.slice(0, 120) });
@@ -65,7 +66,9 @@ export const leadPipelineRouter = router({
     const db = await getDb();
     if (!db) return [];
     const { leadSourcePerformance } = await import("../../drizzle/schema");
-    return db.select().from(leadSourcePerformance);
+    try {
+      return await db.select().from(leadSourcePerformance);
+    } catch { return []; }
   }),
 
   deletePii: protectedProcedure
@@ -98,7 +101,7 @@ export const leadPipelineRouter = router({
       const db = await getDb();
       if (!db) return [];
       const { leadSources } = await import("../../drizzle/schema");
-      return db.select().from(leadSources);
+      return await db.select().from(leadSources);
     } catch (e: any) {
       logger.warn("[leadPipeline.getLeadSources]", { error: e?.message?.slice(0, 120) });
       return [];
