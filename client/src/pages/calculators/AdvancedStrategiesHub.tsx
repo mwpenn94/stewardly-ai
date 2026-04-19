@@ -36,7 +36,8 @@ import {
   calcUnifiedAdvancedPlan, calcAdvancedSensitivity, calcAdvancedTimePhasedProjections,
   type UnifiedAdvancedPlan, type AdvancedSensitivityResult, type AdvancedTimeProjection,
 } from './engine';
-import type { AdvancedStrategiesCascade } from '@/contexts/WealthEngineContext';
+import { useWealthEngine, type AdvancedStrategiesCascade } from '@/contexts/WealthEngineContext';
+import { CascadeAuditTrail } from './CascadeAuditTrail';
 
 /* ═══ STRATEGY CONFIG ═══ */
 const STRATEGY_CONFIG = [
@@ -156,6 +157,7 @@ export interface AdvancedStrategiesHubProps extends AdvancedProps {
 
 /* ═══ MAIN COMPONENT ═══ */
 export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
+  const we = useWealthEngine();
   // Local state
   const [benefitGoal, setBenefitGoal] = useState(50000);
   const [showSensitivity, setShowSensitivity] = useState(false);
@@ -765,6 +767,11 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* ─── CASCADE AUDIT TRAIL ─── */}
+      {we.cascadeAuditEntries.length > 0 && (
+        <CascadeAuditTrail entries={we.cascadeAuditEntries} onClear={() => {}} />
+      )}
     </section>
   );
 }

@@ -5,6 +5,8 @@
               Goal Tracker, Monthly Production
    ═══════════════════════════════════════════════════════════════ */
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -236,7 +238,46 @@ function SplitSlider({ label, value, onChange, onDrag, color, targetAmount }: {
 }
 
 export function MyPlanPanel(p: PracticeProps) {
+  const { user } = useAuth();
   const rd = ROLE_DEFAULTS[p.role] || ROLE_DEFAULTS.new;
+
+  /* ─── Practice Preset Save/Load ─── */
+  const presetsQuery = trpc.hubAllocations.list.useQuery({ hubType: 'practice' });
+  const saveMutation = trpc.hubAllocations.save.useMutation({
+    onSuccess: () => { toast.success('Practice preset saved'); setShowPresetSave(false); setPresetLabel(''); presetsQuery.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const [showPresetSave, setShowPresetSave] = useState(false);
+  const [presetLabel, setPresetLabel] = useState('');
+  const applyPracticePreset = useCallback((presetId: string) => {
+    const preset = presetsQuery.data?.find(pr => pr.id.toString() === presetId);
+    if (!preset) return;
+    const alloc = preset.allocations as Record<string, number>;
+    // Apply income splits
+    const newSplits = { ...p.incomeSplits };
+    if (alloc.gdc !== undefined) newSplits.gdc = alloc.gdc;
+    if (alloc.aum !== undefined) newSplits.aum = alloc.aum;
+    if (alloc.affiliate !== undefined) newSplits.affiliate = alloc.affiliate;
+    if (alloc.override !== undefined) newSplits.override = alloc.override;
+    if (alloc.channel !== undefined) newSplits.channel = alloc.channel;
+    p.setIncomeSplits(newSplits);
+    // Apply input overrides
+    if (preset.inputOverrides) {
+      const ov = preset.inputOverrides as Record<string, unknown>;
+      if (ov.targetIncome && typeof ov.targetIncome === 'number') p.setTargetIncome(ov.targetIncome);
+      if (ov.role && typeof ov.role === 'string') p.setRole(ov.role as RoleId);
+    }
+    toast.success(`Applied preset: ${preset.label}`);
+  }, [presetsQuery.data, p.incomeSplits]);
+  const handleSavePreset = useCallback(() => {
+    if (!presetLabel.trim()) { toast.error('Enter a name'); return; }
+    saveMutation.mutate({
+      hubType: 'practice',
+      label: presetLabel.trim(),
+      allocations: p.incomeSplits as unknown as Record<string, number>,
+      inputOverrides: { targetIncome: p.targetIncome, role: p.role } as unknown as Record<string, number>,
+    });
+  }, [presetLabel, p.incomeSplits, p.targetIncome, p.role]);
   const avgGDC = calcWeightedGDC(p.productMix, PRODUCTS);
   const funnel = calcProductionFunnel(p.targetGDC, p.wbPct, p.bracketOverride, avgGDC,
     p.funnelRates.ap, p.funnelRates.sh, p.funnelRates.cl, p.funnelRates.pl, p.months);
@@ -718,6 +759,41 @@ export function MyPlanPanel(p: PracticeProps) {
     <section aria-label="My Plan" role="region">
     <h2 className="text-lg font-bold text-foreground mb-1">My Plan — Unified Income Hub</h2>
     <p className="text-sm text-muted-foreground mb-4">Set your Target Income, then adjust channel splits. All calculations cascade forward through GDC, AUM, Affiliates, Override, and Marketing channels.</p>
+
+    {/* ─── Practice Preset Selector ─── */}
+    <Card className="bg-card/60 border-border mb-4">
+      <CardContent className="py-3 px-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap">Load Preset:</Label>
+            <Select onValueChange={applyPracticePreset}>
+              <SelectTrigger className="h-8 text-xs flex-1">
+                <SelectValue placeholder={presetsQuery.isLoading ? 'Loading…' : `${presetsQuery.data?.length ?? 0} presets available`} />
+              </SelectTrigger>
+              <SelectContent>
+                {presetsQuery.data?.map(pr => (
+                  <SelectItem key={pr.id} value={pr.id.toString()}>
+                    {pr.isDefault ? '⭐ ' : ''}{pr.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {user && (
+            showPresetSave ? (
+              <div className="flex items-center gap-2">
+                <Input className="h-8 text-xs w-40" placeholder="Preset name…" value={presetLabel} onChange={e => setPresetLabel(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSavePreset()} />
+                <Button size="sm" className="h-8 text-xs" onClick={handleSavePreset} disabled={saveMutation.isPending}>{saveMutation.isPending ? 'Saving…' : 'Save'}</Button>
+                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setShowPresetSave(false)}>Cancel</Button>
+              </div>
+            ) : (
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowPresetSave(true)}>Save Current as Preset</Button>
+            )
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">

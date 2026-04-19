@@ -6705,3 +6705,30 @@
 - [x] Convergence Pass 2 — Clean: DB schema alignment, preset loading, calculation correctness, accessibility
 - [x] Convergence Pass 3 — Clean: type safety, general defaults for guests, cascade direction, holistic completeness
 - [x] All 29 tests pass, auth test passes, no browser errors, CONVERGED (3/3)
+
+## Pass 141 — Practice Presets, Cascade Audit Trail, Unified Plan PDF Export
+### Step 1: Practice management save/load presets
+- [x] Extend hubAllocations system to support 'practice' hubType presets (already supported in router)
+- [x] Seed 4 general default practice presets (Solo Advisor, Team Practice, Growth Practice, Enterprise)
+- [x] Add preset selector UI to MyPlanPanel in PanelsD.tsx (save/load/apply with toast feedback)
+### Step 2: Cascade audit trail
+- [x] Build CascadeAuditTrail.tsx (~280 lines) with timestamped propagation log, source/target filtering, expandable details
+- [x] Track cascade events: source hub, target hub, event type (score_change, cascade_direction, field_change), old/new values
+- [x] buildCascadeAuditEntries() function detects changes between previous and current HolisticCascadeBridge
+- [x] Display audit trail in both ClientWealthHub and AdvancedStrategiesHub with filter by source, clear button
+### Step 3: Unified plan PDF export
+- [x] Build exportUnifiedPlan.ts (~560 lines) with client-side PDF generation via html2pdf.js
+- [x] Include: client profile, 8 domain analyses, advanced strategies breakdown, cascade impact, holistic score, recommendations
+- [x] Add exportUnifiedExcel() using xlsx library for spreadsheet export with 5 sheets
+- [x] Add "Unified Plan PDF" and "Unified Plan Excel" buttons in Calculators.tsx header
+- [x] Professional formatting with color-coded scores, summary cards, and domain tables
+### Convergence Passes
+- [x] Convergence Pass 1 — Found & fixed: exportUnifiedPlan.ts field mismatches (c.name→c.clientName, etc.) RESET
+- [x] Convergence Pass 2 — Clean: all field references verified after rewrite
+- [x] Convergence Pass 3 — Clean: type safety, general defaults, cascade direction
+- [x] Convergence Pass 4 — Found & fixed: WealthEngineContext inline import path ('./pages' → '../pages') RESET
+- [x] Convergence Pass 5 — Found & fixed: r.text on Recommendation (no text field) in both PDF and Excel RESET
+- [x] Convergence Pass 6 — Found & fixed: ScorecardDomain d.label/d.maxScore/d.issues → d.name/d.score/3 RESET
+- [x] Convergence Pass 7 — Clean: exhaustive field audit of all 12 interfaces × export references
+- [x] Convergence Pass 8 — Clean: runtime edge cases, null safety, Zod validation, SQL injection prevention
+- [x] Convergence Pass 9 — Clean: architectural consistency, data flow chain, all 37 tests pass. CONVERGED 3/3

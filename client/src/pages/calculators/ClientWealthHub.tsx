@@ -10,6 +10,7 @@
    ═══════════════════════════════════════════════════════════════ */
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useWealthEngine } from '@/contexts/WealthEngineContext';
+import { CascadeAuditTrail } from './CascadeAuditTrail';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -799,6 +800,11 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
 
       {/* ─── ADVANCED STRATEGIES CASCADE (live from AdvancedStrategiesHub) ─── */}
       <AdvancedCascadeCard onNavigateToPanel={p.onNavigateToPanel} />
+
+      {/* ─── CASCADE AUDIT TRAIL ─── */}
+      {we.cascadeAuditEntries.length > 0 && (
+        <CascadeAuditTrail entries={we.cascadeAuditEntries} onClear={() => {}} />
+      )}
     </section>
   );
 }

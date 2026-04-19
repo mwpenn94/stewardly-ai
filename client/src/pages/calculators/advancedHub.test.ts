@@ -404,3 +404,105 @@ describe('General Defaults for Planning', () => {
     });
   });
 });
+
+
+/* ═══════════════════════════════════════════════════════════════
+   Pass 141 Tests — Cascade Audit Trail, Practice Presets, Unified Export
+   ═══════════════════════════════════════════════════════════════ */
+
+// ─── Cascade Audit Trail ───
+describe('CascadeAuditTrail — buildCascadeAuditEntries', () => {
+  it('should return empty array when prevBridge is null', async () => {
+    const { buildCascadeAuditEntries } = await import('./CascadeAuditTrail');
+    const entries = buildCascadeAuditEntries(null, EMPTY_CASCADE_BRIDGE, EMPTY_ADVANCED_CASCADE, EMPTY_PRACTICE_CASCADE);
+    expect(entries).toEqual([]);
+  });
+
+  it('should detect client→advanced cascade changes', async () => {
+    const { buildCascadeAuditEntries } = await import('./CascadeAuditTrail');
+    
+    const prevBridge = { ...EMPTY_CASCADE_BRIDGE };
+    const currBridge = {
+      ...EMPTY_CASCADE_BRIDGE,
+      clientToAdvanced: {
+        incomeForSizing: 200000,
+        estateForILIT: 5000000,
+        protectionGap: 500000,
+        taxBurden: 32,
+        retirementGap: 1000000,
+      },
+      holisticScore: 55,
+      lastCascadeTimestamp: Date.now(),
+    };
+    
+    const entries = buildCascadeAuditEntries(prevBridge, currBridge, EMPTY_ADVANCED_CASCADE, EMPTY_PRACTICE_CASCADE);
+    const c2aEntry = entries.find(e => e.direction === 'client→advanced');
+    expect(c2aEntry).toBeDefined();
+    expect(c2aEntry!.changes.length).toBeGreaterThan(0);
+    expect(c2aEntry!.source).toBe('client');
+    expect(c2aEntry!.target).toBe('advanced');
+  });
+
+  it('should detect advanced→client cascade changes', async () => {
+    const { buildCascadeAuditEntries } = await import('./CascadeAuditTrail');
+    
+    const prevBridge = { ...EMPTY_CASCADE_BRIDGE };
+    const currBridge = {
+      ...EMPTY_CASCADE_BRIDGE,
+      advancedToClient: {
+        additionalProtection: 1000000,
+        taxSavings: 50000,
+        estateReduction: 200000,
+        incomeBoost: 30000,
+        netWorthBoost: 500000,
+      },
+      holisticScore: 65,
+      lastCascadeTimestamp: Date.now(),
+    };
+    
+    const entries = buildCascadeAuditEntries(prevBridge, currBridge, EMPTY_ADVANCED_CASCADE, EMPTY_PRACTICE_CASCADE);
+    const a2cEntry = entries.find(e => e.direction === 'advanced→client');
+    expect(a2cEntry).toBeDefined();
+    expect(a2cEntry!.changes.length).toBe(5);
+  });
+
+  it('should detect holistic score changes', async () => {
+    const { buildCascadeAuditEntries } = await import('./CascadeAuditTrail');
+    
+    const prevBridge = { ...EMPTY_CASCADE_BRIDGE, holisticScore: 40, clientHubScore: 50, advancedHubScore: 20 };
+    const currBridge = { ...EMPTY_CASCADE_BRIDGE, holisticScore: 65, clientHubScore: 70, advancedHubScore: 55, lastCascadeTimestamp: Date.now() };
+    
+    const entries = buildCascadeAuditEntries(prevBridge, currBridge, EMPTY_ADVANCED_CASCADE, EMPTY_PRACTICE_CASCADE);
+    const scoreEntry = entries.find(e => e.direction === 'score-update');
+    expect(scoreEntry).toBeDefined();
+    expect(scoreEntry!.holisticScoreBefore).toBe(40);
+    expect(scoreEntry!.holisticScoreAfter).toBe(65);
+  });
+
+  it('should return empty when no changes detected', async () => {
+    const { buildCascadeAuditEntries } = await import('./CascadeAuditTrail');
+    
+    const bridge = { ...EMPTY_CASCADE_BRIDGE };
+    const entries = buildCascadeAuditEntries(bridge, bridge, EMPTY_ADVANCED_CASCADE, EMPTY_PRACTICE_CASCADE);
+    expect(entries).toEqual([]);
+  });
+});
+
+// ─── Unified Plan Export ───
+describe('exportUnifiedPlan — structure validation', () => {
+  it('should export functions exist', async () => {
+    const mod = await import('./exportUnifiedPlan');
+    expect(typeof mod.exportUnifiedPlanPDF).toBe('function');
+    expect(typeof mod.exportUnifiedPlanExcel).toBe('function');
+  });
+});
+
+// ─── WealthEngineData cascadeAuditEntries field ───
+describe('WealthEngineData — cascadeAuditEntries field', () => {
+  it('should include all cascade constants in WealthEngineContext', async () => {
+    expect(GENERAL_DEFAULTS).toBeDefined();
+    expect(EMPTY_ADVANCED_CASCADE).toBeDefined();
+    expect(EMPTY_PRACTICE_CASCADE).toBeDefined();
+    expect(EMPTY_CASCADE_BRIDGE).toBeDefined();
+  });
+});

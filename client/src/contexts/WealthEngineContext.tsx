@@ -427,6 +427,8 @@ export interface WealthEngineData {
   /* Cascade metadata */
   lastUpdated: number;
   panelVersions: Record<string, number>;
+  /* Cascade audit trail (session-level) */
+  cascadeAuditEntries: import('../pages/calculators/CascadeAuditTrail').CascadeAuditEntry[];
 }
 
 /* ─── Default empty state ─── */
@@ -468,6 +470,7 @@ const DEFAULT_DATA: WealthEngineData = {
   holisticBridge: EMPTY_CASCADE_BRIDGE,
   lastUpdated: Date.now(),
   panelVersions: {},
+  cascadeAuditEntries: [],
 };
 
 /* ─── Context ─── */

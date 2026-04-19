@@ -1157,6 +1157,10 @@ export default function Calculators() {
     retirement401k, mortgage, debt, existIns, filing, stateRate, riskTolerance,
     isBiz, bizRevenue, bizEmployees, bizEntityType]);
 
+  /* ─── Cascade Audit Trail ─── */
+  const [cascadeAuditEntries, setCascadeAuditEntries] = useState<import('./calculators/CascadeAuditTrail').CascadeAuditEntry[]>([]);
+  const prevBridgeRef = useRef<import('../contexts/WealthEngineContext').HolisticCascadeBridge | null>(null);
+
   const holisticBridge = useMemo(() => computeHolisticBridge(
     scorecard.pctScore, // clientHubScore
     advancedCascade.totalAnnualBenefit > 0 ? Math.min(100, Math.round(advancedCascade.totalAnnualBenefit / Math.max(1, advancedCascade.totalAnnualCost) * 25)) : 0, // advancedHubScore
@@ -1167,6 +1171,19 @@ export default function Calculators() {
     advancedCascade,
     practiceCascade,
   ), [scorecard.pctScore, advancedCascade, clientProfile, prResult, txResult, rtResult, practiceCascade]);
+
+  // Track cascade changes for audit trail
+  useEffect(() => {
+    if (prevBridgeRef.current && holisticBridge.lastCascadeTimestamp > 0) {
+      import('./calculators/CascadeAuditTrail').then(({ buildCascadeAuditEntries }) => {
+        const newEntries = buildCascadeAuditEntries(prevBridgeRef.current, holisticBridge, advancedCascade, practiceCascade);
+        if (newEntries.length > 0) {
+          setCascadeAuditEntries(prev => [...newEntries, ...prev].slice(0, 100)); // Keep last 100
+        }
+      });
+    }
+    prevBridgeRef.current = holisticBridge;
+  }, [holisticBridge]);
 
   const weData = useMemo<WealthEngineData>(() => ({
     client: clientProfile,
@@ -1179,7 +1196,8 @@ export default function Calculators() {
     holisticBridge,
     lastUpdated: Date.now(),
     panelVersions: {},
-  }), [clientProfile,
+    cascadeAuditEntries,
+  }), [clientProfile, cascadeAuditEntries,
     scorecard, recommendations, totalAnnualPremium,
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult,
     horizonData, practiceIncome, scores,
@@ -1295,6 +1313,18 @@ export default function Calculators() {
               <Button variant="outline" size="sm" onClick={handleExportPdf}
                 className="text-xs gap-1 h-7">
                 <Download className="w-3 h-3" /> <span className="hidden sm:inline">PDF</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                import('./calculators/exportUnifiedPlan').then(m => m.exportUnifiedPlanPDF(weData));
+                toast.success('Unified plan report opened in new tab — use Print to save as PDF');
+              }} className="text-xs gap-1 h-7 border-primary/30 text-primary" aria-label="Export unified plan as PDF">
+                <Download className="w-3 h-3" /> <span className="hidden sm:inline">⭐ Full Plan</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => {
+                import('./calculators/exportUnifiedPlan').then(m => m.exportUnifiedPlanExcel(weData));
+                toast.success('Unified plan Excel downloaded');
+              }} className="text-xs gap-1 h-7" aria-label="Export unified plan as Excel">
+                <Download className="w-3 h-3" /> <span className="hidden sm:inline">Excel</span>
               </Button>
               <Button variant="outline" size="sm" onClick={handleExportCsv}
                 className="text-xs gap-1 h-7" aria-label="Export as CSV">
