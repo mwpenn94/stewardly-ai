@@ -157,10 +157,7 @@ optimization_pass_log.md
 
 # Scratch/debug files (development-only)
 tatus
-context-audit.txt
-debug-notes.txt
-docs-structure-notes.txt
-part-g-summary.txt
+/*.txt
 schema-issues.json
 truly-missing.json
 optimization-config.json
@@ -172,3 +169,68 @@ deployment-check-pass136.md
 
 # E2E test scripts (run manually, not part of CI)
 test-*.mjs
+
+# E2E test results and snapshots (development-only, regenerated on demand)
+test-results/
+e2e/**/*-snapshots/
+
+# Development audit/pass notes (AI session artifacts — development-only)
+recursive-pass*.md
+pass*.md
+pass*-*.md
+convergence-*.md
+*-audit.md
+*-audit-notes.md
+*-findings.md
+*-notes.md
+*-observations.md
+*-status.md
+*-analysis.md
+
+# Python scripts at root (development-only automation)
+/*.py
+
+# One-off migration scripts at root
+/*.mjs
+
+# Scripts directory migration helpers (development-only)
+scripts/*.mjs
+
+# Development-only documentation artifacts
+orphan-schemas-all.txt
+CFP-ADVISOR-ASSESSMENT.md
+PASS-*.md
+RECURSIVE_OPTIMIZATION_PROMPT*.md
+CONVERGENCE_REPORT.md
+PHASE_SCORING.md
+AUDIT_PROGRESS.md
+FINANCIAL_DATA_INTEGRATION_SPEC.md
+INTEGRATION_PIPELINE_SPEC.md
+INTEGRATION-SETUP-GUIDE.md
+PLATFORM_GUIDE_v15.md
+visual-walkthrough.md
+visual-validation-notes.md
+v*_delta_notes.md
+source-html-analysis.md
+reference-data-extracted.md
+progress.md
+task_plan.md
+remaining-todo-summary.md
+command2-notes.md
+sidebar-audit.md
+screenshot-*.md
+db-inventory.md
+footer-fix-verification.md
+diag-notes.txt
+api-notes.md
+
+# Optimization passes (development-only)
+.optimization/
+
+# JSON scratch files
+panel-test-results.json
+page-test-results.json
+
+# Sample data files (large binaries)
+pipeline/v5_sample/
+*.xlsx

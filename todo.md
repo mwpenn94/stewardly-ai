@@ -6379,3 +6379,10 @@
 - [x] Second validation pass: zero 500/400 errors, all routes 200
 - [x] Virtual user production validation: Diana, Marcus, Priya, Henry — all PASS
 - [x] Save checkpoint
+
+## Pass 128 — Fix Persistent Publishing Stall
+- [x] Deep diagnosis: 2276 tracked files / 29MB causing deployment timeout
+- [x] Removed 211 dev artifacts from tracking (audit notes, .py scripts, .mjs, test-results, snapshots, xlsx)
+- [x] Updated .gitignore with comprehensive rules for dev-only files
+- [x] Reduced to 2064 tracked files / 26MB
+- [x] Save fresh checkpoint and retry publish
