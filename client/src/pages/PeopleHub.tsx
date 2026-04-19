@@ -19,6 +19,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { hasMinRole } from "@/lib/navigation";
+import { BenchmarkGrid } from "@/components/InlineBenchmark";
+import { CascadeFlowIndicator, type CascadeStage } from "@/components/CascadeFlowIndicator";
+import { DisclosureSection } from "@/components/DisclosureSection";
 import {
   Loader2, Users, Target, RefreshCw, ShieldCheck, Mail, FolderOpen, Zap,
   LayoutGrid, UserPlus, FileText, Shield, ArrowRight, DollarSign,
@@ -159,18 +162,35 @@ export default function PeopleHub() {
       <SEOHead title="Command Center" description="Manage your pipeline, marketing, compliance, and operations" />
       <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">
 
-        {/* ─── HEADER ─── */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
-              <Users className="h-7 w-7 text-primary" />
+        {/* ─── BREADCRUMB BAR — matches Wealth Engine pattern ─── */}
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-card rounded-lg border border-border px-3 py-2">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs">
+            <button type="button" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              <Home className="w-3 h-3" />
+              <span className="hidden sm:inline">Home</span>
+            </button>
+            <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+            <span className="text-foreground font-medium flex items-center gap-1">
+              <Users className="w-3 h-3" />
               Command Center
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Pipeline · Marketing · Compliance · Operations
-            </p>
-          </div>
-        </header>
+            </span>
+            {currentTab && (
+              <>
+                <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                <span className="text-foreground font-medium">{currentTab.label}</span>
+              </>
+            )}
+            {currentPanel && currentPanel.id !== currentTab?.panels[0]?.id && (
+              <>
+                <ChevronRight className="w-3 h-3 text-muted-foreground/50 hidden sm:block" />
+                <span className="text-foreground font-medium hidden sm:inline">{currentPanel.label}</span>
+              </>
+            )}
+          </nav>
+          <span className="text-[10px] text-muted-foreground hidden sm:inline">
+            Pipeline · Marketing · Compliance · Operations
+          </span>
+        </div>
 
         {/* ─── TAB BAR ─── */}
         <div className="flex gap-1 p-1 bg-card rounded-lg border border-border overflow-x-auto" role="tablist">
@@ -199,6 +219,81 @@ export default function PeopleHub() {
             );
           })}
         </div>
+
+        {/* ─── CASCADE FLOW INDICATOR — shows pipeline data flow ─── */}
+        {activeTab === "pipeline" && (
+          <div className="rounded-lg border border-border/30 bg-card/30 p-3">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-xs font-semibold text-muted-foreground">Pipeline Flow</h4>
+              <span className="text-[9px] text-muted-foreground/50">Leads → Clients → Growth</span>
+            </div>
+            <CascadeFlowIndicator stages={[
+              { label: "Leads", icon: Target, status: "active", flowLabel: "Qualify & nurture" },
+              { label: "Onboarding", icon: UserPlus, status: "active", flowLabel: "Convert & onboard" },
+              { label: "Clients", icon: Users, status: "active", flowLabel: "Serve & grow" },
+              { label: "Review", icon: FileText, status: "pending", flowLabel: undefined },
+            ]} />
+          </div>
+        )}
+
+        {/* ─── INDUSTRY BENCHMARKS — CAC, LTV, conversion rates ─── */}
+        {activeTab === "pipeline" && (
+          <DisclosureSection minLevel={1} label="Industry Benchmarks">
+            <BenchmarkGrid
+              title="Advisory Practice Benchmarks"
+              items={[
+                {
+                  label: "Avg CAC",
+                  value: "$3,119",
+                  source: "Kitces Research 2024 — average client acquisition cost for independent advisors",
+                  status: "neutral",
+                },
+                {
+                  label: "Client LTV",
+                  value: "$31K-$94K",
+                  source: "Cerulli 2024 — based on avg revenue/client of $7.8K and 4-12yr retention",
+                  status: "positive",
+                },
+                {
+                  label: "Lead → Client",
+                  value: "15-25%",
+                  source: "Broadridge 2024 — financial advisor lead conversion benchmarks",
+                  status: "neutral",
+                },
+                {
+                  label: "Client Retention",
+                  value: "95%+",
+                  source: "Cerulli 2024 — top quartile advisory firms retain 95%+ annually",
+                  status: "positive",
+                },
+                {
+                  label: "Referral Rate",
+                  value: "2.4/yr",
+                  source: "J.D. Power 2024 — avg referrals per satisfied client per year",
+                  status: "neutral",
+                },
+                {
+                  label: "Compliance Cost",
+                  value: "$35K/advisor",
+                  source: "FINRA 2024 — average annual compliance cost per registered representative",
+                  status: "neutral",
+                },
+                {
+                  label: "Marketing Spend",
+                  value: "3% of rev",
+                  source: "FA Insight 2024 — median marketing spend as % of revenue for RIAs",
+                  status: "neutral",
+                },
+                {
+                  label: "Digital Lead Cost",
+                  value: "$150-$350",
+                  source: "SmartAsset/Zoe Financial 2024 — cost per qualified digital lead",
+                  status: "neutral",
+                },
+              ]}
+            />
+          </DisclosureSection>
+        )}
 
         {/* ─── SUB-PANEL SELECTOR (progressive disclosure within each tab) ─── */}
         {currentTab && currentTab.panels.length > 1 && (

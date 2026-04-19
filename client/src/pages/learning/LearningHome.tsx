@@ -36,6 +36,9 @@ import {
 } from "./lib/recentTracks";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { BenchmarkGrid } from "@/components/InlineBenchmark";
+import { CascadeFlowIndicator, type CascadeStage } from "@/components/CascadeFlowIndicator";
+import { DisclosureSection } from "@/components/DisclosureSection";
 
 /* ─── Tab definitions ─── */
 type LearningTab = "overview" | "study" | "reference" | "manage";
@@ -112,28 +115,43 @@ export default function LearningHome() {
       <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
       <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">
 
-        {/* ─── HEADER ─── */}
-        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
-              <GraduationCap className="h-7 w-7 text-accent" />
+        {/* ─── BREADCRUMB BAR — matches Wealth Engine pattern ─── */}
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-card rounded-lg border border-border px-3 py-2">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs">
+            <Link href="/">
+              <span className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer">
+                <Home className="w-3 h-3" />
+                <span className="hidden sm:inline">Home</span>
+              </span>
+            </Link>
+            <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+            <span className="text-foreground font-medium flex items-center gap-1">
+              <GraduationCap className="w-3 h-3" />
               Learning Engine
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
+            </span>
+            {activeTab !== "overview" && (
+              <>
+                <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
+                <span className="text-foreground font-medium">
+                  {TABS.find(t => t.id === activeTab)?.label ?? activeTab}
+                </span>
+              </>
+            )}
+          </nav>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground hidden sm:inline">
               {tracks.length} tracks · {activeLicenses} licenses · {summary?.masteryPct ?? 0}% mastery
-            </p>
-          </div>
-          <div className="flex gap-2">
+            </span>
             <Link href="/learning/search">
-              <Button variant="outline" size="sm"><Search className="h-4 w-4 mr-1.5" />Search</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs"><Search className="h-3.5 w-3.5 mr-1" />Search</Button>
             </Link>
             {isAdvisorPlus && (
               <Link href="/learning/studio">
-                <Button size="sm"><Sparkles className="h-4 w-4 mr-1.5" />Studio</Button>
+                <Button variant="ghost" size="sm" className="h-7 text-xs"><Sparkles className="h-3.5 w-3.5 mr-1" />Studio</Button>
               </Link>
             )}
           </div>
-        </header>
+        </div>
 
         {/* Error banner */}
         {hasError && (
@@ -286,6 +304,63 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
           </CardContent>
         </Card>
       )}
+
+      {/* ─── INDUSTRY BENCHMARKS — exam pass rates, CE requirements ─── */}
+      <DisclosureSection minLevel={1} label="Industry Benchmarks">
+        <BenchmarkGrid
+          title="Licensing & CE Context"
+          items={[
+            {
+              label: "SIE Pass Rate",
+              value: "74%",
+              source: "FINRA SIE Exam Statistics 2024",
+              status: "neutral",
+            },
+            {
+              label: "Series 7 Pass Rate",
+              value: "72%",
+              source: "FINRA Series 7 Exam Statistics 2024",
+              status: "neutral",
+            },
+            {
+              label: "Series 66 Pass Rate",
+              value: "73%",
+              source: "NASAA Series 66 Statistics 2024",
+              status: "neutral",
+            },
+            {
+              label: "CFP Pass Rate",
+              value: "67%",
+              source: "CFP Board Exam Statistics 2024",
+              status: "warning",
+            },
+            {
+              label: "Avg CE Hours/Year",
+              value: "25 hrs",
+              source: "FINRA Regulatory Element + State CE requirements",
+              status: "neutral",
+            },
+            {
+              label: "Ethics CE Required",
+              value: "3-6 hrs",
+              source: "Most state insurance departments require 3-6 ethics CE hours biennially",
+              status: "neutral",
+            },
+            {
+              label: "Avg Study Hours",
+              value: "80-120 hrs",
+              source: "Kaplan Financial Education 2024 — recommended study time per FINRA exam",
+              status: "neutral",
+            },
+            {
+              label: "Designation Premium",
+              value: "+15-25%",
+              source: "Kitces Research 2024 — advisors with CFP earn 15-25% more than non-credentialed peers",
+              status: "positive",
+            },
+          ]}
+        />
+      </DisclosureSection>
 
       {/* Recommendations */}
       {recs.length > 0 && (

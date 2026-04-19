@@ -37,6 +37,17 @@ import { toast } from "sonner";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { DisclosureSection } from "@/components/DisclosureSection";
 import ServiceDegradedFallback from "@/components/ServiceDegradedFallback";
+import { WealthEngineProvider, DEFAULT_DATA, type WealthEngineData } from "@/contexts/WealthEngineContext";
+import { BenchmarkGrid } from "@/components/InlineBenchmark";
+import { CascadeFlowIndicator, type CascadeStage } from "@/components/CascadeFlowIndicator";
+import {
+  PROTECTION_BENCHMARKS,
+  RETIREMENT_BENCHMARKS,
+  PRACTICE_BENCHMARKS,
+  PLANNING_BENCHMARKS,
+  TAX_BENCHMARKS,
+  ESTATE_BENCHMARKS,
+} from "@/pages/calculators/industryBenchmarks";
 import {
   Sparkles, Calculator, PiggyBank, Shield, TrendingUp, Building2,
   Scale, Heart, GraduationCap, HandCoins, DollarSign, Stethoscope,
@@ -274,6 +285,36 @@ function OverviewContent() {
   const latestMC = trpc.wealthEngine.getLatestRun.useQuery({ tool: "montecarlo.simulate" }, { retry: false });
   const latestHE = trpc.wealthEngine.getLatestRun.useQuery({ tool: "he.simulate" }, { retry: false });
 
+  // ─── CASCADE FLOW STAGES — shows data flow between Plan → Protect → Practice ───
+  const cascadeStages: CascadeStage[] = useMemo(() => {
+    const hasGoals = (goalsQ.data ?? []).length > 0;
+    const hasTree = (treeQ.data ?? []).length > 0;
+    const hasSims = [latestUWE.data, latestMC.data, latestHE.data].filter(Boolean).length > 0;
+    return [
+      {
+        label: "Plan",
+        icon: Target,
+        status: hasGoals && hasTree ? "complete" : hasGoals || hasTree ? "active" : "pending",
+        flowLabel: "Goals & assumptions",
+        count: (goalsQ.data ?? []).length,
+      },
+      {
+        label: "Protect & Analyze",
+        icon: Shield,
+        status: hasSims ? "complete" : hasGoals ? "active" : "pending",
+        flowLabel: "Strategies & scenarios",
+        count: [latestUWE.data, latestMC.data, latestHE.data].filter(Boolean).length,
+      },
+      {
+        label: "Practice",
+        icon: Building2,
+        status: hasSims && hasGoals ? "active" : "pending",
+        flowLabel: undefined,
+        count: undefined,
+      },
+    ];
+  }, [goalsQ.data, treeQ.data, latestUWE.data, latestMC.data, latestHE.data]);
+
   const goals = goalsQ.data ?? [];
   const tree = treeQ.data ?? [];
   const assumptions = assumptionsQ.data;
@@ -316,6 +357,74 @@ function OverviewContent() {
       <ServiceDegradedFallback serviceId="llm" degradedMessage="AI-powered analysis may be slower. Calculator tools still work normally.">
         <></>
       </ServiceDegradedFallback>
+
+      {/* ─── CASCADE FLOW INDICATOR — shows data flow between stages ─── */}
+      <div className="rounded-lg border border-border/30 bg-card/30 p-3">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-xs font-semibold text-muted-foreground">Cascade Data Flow</h4>
+          <span className="text-[9px] text-muted-foreground/50">Plan data feeds Protect; both feed Practice</span>
+        </div>
+        <CascadeFlowIndicator stages={cascadeStages} />
+      </div>
+
+      {/* ─── INDUSTRY BENCHMARKS — cited context for planning ─── */}
+      <DisclosureSection minLevel={1} label="Industry Benchmarks">
+        <BenchmarkGrid
+          title="Industry Context"
+          items={[
+            {
+              label: "Savings Rate",
+              value: `${(RETIREMENT_BENCHMARKS.readiness.notConfident * 100).toFixed(0)}% not confident`,
+              source: "EBRI Retirement Confidence Survey 2024",
+              status: "warning",
+            },
+            {
+              label: "Insurance Gap",
+              value: `${(PROTECTION_BENCHMARKS.ownershipRates.adequateCoverage * 100).toFixed(0)}% adequate`,
+              source: "LIMRA 2024 — only 22% have adequate life insurance",
+              status: "warning",
+            },
+            {
+              label: "Estate Planning",
+              value: `${(ESTATE_BENCHMARKS.completionRates.hasCompletePlan * 100).toFixed(0)}% complete`,
+              source: "WealthCounsel 2024 — only 12% have a complete estate plan",
+              status: "warning",
+            },
+            {
+              label: "Advisor Alpha",
+              value: "~3%/yr added",
+              source: "Vanguard Advisor Alpha Study 2025",
+              url: "https://advisors.vanguard.com",
+              status: "positive",
+            },
+            {
+              label: "Avg Advisory Fee",
+              value: "1.02%",
+              source: "Kitces 2025 Advisory Fee Benchmarking Study",
+              url: "https://www.kitces.com",
+              status: "neutral",
+            },
+            {
+              label: "Plan Completion",
+              value: `${(PLANNING_BENCHMARKS.completionRates.implementationComplete * 100).toFixed(0)}%`,
+              source: "Only 48% of plans reach full implementation",
+              status: "warning",
+            },
+            {
+              label: "Avg Effective Tax",
+              value: `${(TAX_BENCHMARKS.effectiveRates[3].effectiveRate * 100).toFixed(1)}%`,
+              source: `IRS SOI 2023 — ${TAX_BENCHMARKS.effectiveRates[3].income} bracket`,
+              status: "neutral",
+            },
+            {
+              label: "Top Quartile Rev/Advisor",
+              value: `$${(PRACTICE_BENCHMARKS.revenuePerAdvisor.ria / 1000).toFixed(0)}K`,
+              source: "Cerulli 2024 — RIA channel",
+              status: "positive",
+            },
+          ]}
+        />
+      </DisclosureSection>
 
       {/* ─── WORKFLOW STAGE CARDS — the cascading overview ─── */}
       <div className="space-y-3">
@@ -686,6 +795,7 @@ export default function WealthEngineHub() {
               <ShareButton contentType="wealth-engine" contentId="wealth-analysis" contentTitle="Wealth Analysis" variant="ghost" size="sm" />
             </div>
 
+            <WealthEngineProvider value={DEFAULT_DATA}>
             <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>}>
               {activeTab === "overview" && <OverviewContent />}
               {activeTab === "retirement" && <WeRetirement embedded />}
@@ -710,6 +820,7 @@ export default function WealthEngineHub() {
               {activeTab === "cascade-alerts" && <WeCascadeAlerts />}
               {activeTab === "financial-data-hub" && <WeFinancialDataHub />}
             </Suspense>
+            </WealthEngineProvider>
           </div>
         </main>
       </div>

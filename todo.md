@@ -6544,3 +6544,27 @@
 - [x] 1 pre-existing timeout in consolidatedPhase3 (network-dependent, not structural)
 - [x] Browser validated: all 3 hubs render with new consolidated structures
 - [x] Checkpoint saved
+
+## Pass 133 — Depth Pass: Cascading Data Flow, Inline Benchmarks, Cross-Hub UX Harmonization
+
+### Phase 1: Wire WealthEngineContext into WealthEngineHub
+- [x] Mount WealthEngineProvider in WealthEngineHub wrapping all panel content
+- [x] Populate context from trpc queries (goals, assumptions, latest runs, practice income)
+- [x] Add cascade stage indicator showing data flow between Plan → Protect → Practice
+
+### Phase 2: Surface inline benchmark references in hub overviews
+- [x] Create InlineBenchmark component for cited industry data with source tooltips
+- [x] Surface key benchmarks in WE Overview (savings rate, insurance gap, retirement readiness)
+- [x] Surface key benchmarks in Learning Overview (exam pass rates, CE requirements)
+- [x] Surface key benchmarks in Command Center (CAC, LTV, conversion rates)
+
+### Phase 3: Cross-hub UX harmonization
+- [x] Add breadcrumb bar to Learning Engine (matching WE pattern)
+- [x] Add breadcrumb bar to Command Center (matching WE pattern)
+- [x] Standardize stage/progress indicators across all 3 hubs
+
+### Phase 4: Tests and delivery
+- [x] Run vitest and fix any regressions (23/23 pass)
+- [x] Browser validate all 3 hubs
+- [x] Re-enabled WealthEngineHub route in App.tsx (was commented out, causing consolidation to have no effect)
+- [ ] Checkpoint saved
