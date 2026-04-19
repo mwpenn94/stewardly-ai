@@ -245,6 +245,48 @@ export const GENERAL_DEFAULTS: GeneralPlanningDefaults = {
   dafDeductionRate: 37,
 };
 
+/* ═══ PRACTICE MANAGEMENT CASCADE (optional third hub dimension) ═══
+   Opt-in: when practice management data is available, it feeds into
+   the holistic bridge as a third scoring dimension.
+   ═══════════════════════════════════════════════════════════════ */
+export interface PracticeManagementCascade {
+  enabled: boolean;               // opt-in toggle
+  // Revenue metrics
+  annualRevenue: number;
+  monthlyGDC: number;
+  aumRevenue: number;
+  overrideRevenue: number;
+  // Team metrics
+  teamSize: number;
+  revenuePerAdvisor: number;
+  clientsPerAdvisor: number;
+  // Client book
+  totalClients: number;
+  avgClientValue: number;
+  retentionRate: number;
+  // Production
+  annualProduction: number;
+  productionGrowthRate: number;
+  // Practice score (0-100)
+  practiceScore: number;
+  // Cascade to client planning
+  practiceToClient: {
+    incomeFromPractice: number;     // practice income feeds client cash flow
+    practiceEquity: number;         // practice value feeds client net worth
+    benefitsCostOffset: number;     // group benefits offset personal insurance
+  };
+}
+
+export const EMPTY_PRACTICE_CASCADE: PracticeManagementCascade = {
+  enabled: false,
+  annualRevenue: 0, monthlyGDC: 0, aumRevenue: 0, overrideRevenue: 0,
+  teamSize: 0, revenuePerAdvisor: 0, clientsPerAdvisor: 0,
+  totalClients: 0, avgClientValue: 0, retentionRate: 0,
+  annualProduction: 0, productionGrowthRate: 0,
+  practiceScore: 0,
+  practiceToClient: { incomeFromPractice: 0, practiceEquity: 0, benefitsCostOffset: 0 },
+};
+
 /* ═══ ADVANCED STRATEGIES CASCADE DATA ═══
    Flows from AdvancedStrategiesHub into client planning domains.
    ═══════════════════════════════════════════════════════════════ */
@@ -312,10 +354,20 @@ export interface HolisticCascadeBridge {
     incomeBoost: number;           // CRT annual income
     netWorthBoost: number;         // Combined net worth impact
   };
-  // Holistic score: weighted combination of both hubs
+  // Optional practice management dimension
+  practiceManagement?: {
+    practiceScore: number;
+    incomeFromPractice: number;
+    practiceEquity: number;
+    benefitsCostOffset: number;
+  };
+  // Holistic score: weighted combination of all hubs
   holisticScore: number;           // 0-100
   clientHubScore: number;          // 0-100
   advancedHubScore: number;        // 0-100
+  practiceHubScore: number;        // 0-100 (0 if not enabled)
+  // Weights (adjustable)
+  weights: { client: number; advanced: number; practice: number };
   // Cascade health
   lastCascadeTimestamp: number;
   cascadeDirection: 'client→advanced' | 'advanced→client' | 'bidirectional' | 'none';
@@ -339,6 +391,8 @@ const EMPTY_CASCADE_BRIDGE: HolisticCascadeBridge = {
   holisticScore: 0,
   clientHubScore: 0,
   advancedHubScore: 0,
+  practiceHubScore: 0,
+  weights: { client: 0.6, advanced: 0.4, practice: 0 },
   lastCascadeTimestamp: 0,
   cascadeDirection: 'none',
 };
@@ -366,6 +420,8 @@ export interface WealthEngineData {
   generalDefaults: GeneralPlanningDefaults;
   /* Advanced strategies cascade */
   advancedCascade: AdvancedStrategiesCascade;
+  /* Practice management cascade (optional) */
+  practiceCascade: PracticeManagementCascade;
   /* Holistic cascade bridge */
   holisticBridge: HolisticCascadeBridge;
   /* Cascade metadata */
@@ -408,6 +464,7 @@ const DEFAULT_DATA: WealthEngineData = {
   scores: {},
   generalDefaults: GENERAL_DEFAULTS,
   advancedCascade: EMPTY_ADVANCED_CASCADE,
+  practiceCascade: EMPTY_PRACTICE_CASCADE,
   holisticBridge: EMPTY_CASCADE_BRIDGE,
   lastUpdated: Date.now(),
   panelVersions: {},
@@ -443,11 +500,26 @@ export function computeHolisticBridge(
   txResult: TaxResult,
   rtResult: RetirementResult,
   advCascade: AdvancedStrategiesCascade,
+  practiceCascade?: PracticeManagementCascade,
 ): HolisticCascadeBridge {
+  const practiceEnabled = practiceCascade?.enabled ?? false;
+  const practiceScore = practiceEnabled ? practiceCascade!.practiceScore : 0;
+
+  // Dynamic weights: if practice is enabled, rebalance
+  const weights = practiceEnabled
+    ? { client: 0.45, advanced: 0.30, practice: 0.25 }
+    : { client: 0.60, advanced: 0.40, practice: 0 };
+
+  const holisticScore = Math.round(
+    clientHubScore * weights.client +
+    advancedHubScore * weights.advanced +
+    practiceScore * weights.practice
+  );
+
   return {
     clientToAdvanced: {
       incomeForSizing: client.totalIncome,
-      estateForILIT: client.nw + client.totalIncome * 10, // rough estate estimate
+      estateForILIT: client.nw + client.totalIncome * 10,
       protectionGap: prResult.gap,
       taxBurden: txResult.effectiveRate,
       retirementGap: rtResult.gap,
@@ -459,9 +531,17 @@ export function computeHolisticBridge(
       incomeBoost: advCascade.charitableAnnualIncome,
       netWorthBoost: advCascade.netWorthImpact,
     },
-    holisticScore: Math.round(clientHubScore * 0.6 + advancedHubScore * 0.4),
+    practiceManagement: practiceEnabled ? {
+      practiceScore,
+      incomeFromPractice: practiceCascade!.practiceToClient.incomeFromPractice,
+      practiceEquity: practiceCascade!.practiceToClient.practiceEquity,
+      benefitsCostOffset: practiceCascade!.practiceToClient.benefitsCostOffset,
+    } : undefined,
+    holisticScore,
     clientHubScore,
     advancedHubScore,
+    practiceHubScore: practiceScore,
+    weights,
     lastCascadeTimestamp: Date.now(),
     cascadeDirection: advCascade.totalAnnualBenefit > 0 ? 'bidirectional' : 'client→advanced',
   };

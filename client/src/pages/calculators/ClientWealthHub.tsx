@@ -8,17 +8,22 @@
    - Time-phased projections with Recharts visualization
    - On-track score with domain breakdown
    ═══════════════════════════════════════════════════════════════ */
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useWealthEngine } from '@/contexts/WealthEngineContext';
+import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Target, TrendingUp, Shield, DollarSign, PiggyBank, GraduationCap,
   Building2, Landmark, ArrowRight, RefreshCw, ChevronDown, ChevronUp,
-  AlertTriangle, CheckCircle2, Info,
+  AlertTriangle, CheckCircle2, Info, Save, Download, BookOpen,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -154,6 +159,52 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
   const [domainAllocation, setDomainAllocation] = useState({
     protection: 15, growth: 30, retirement: 25, tax: 10, estate: 10, education: 10,
   });
+  const [saveLabel, setSaveLabel] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
+
+  // Auth for save functionality
+  const { user } = useAuth();
+
+  // Load presets from DB (general defaults + user's own)
+  const presetsQuery = trpc.hubAllocations.list.useQuery({ hubType: 'client' });
+  const saveMutation = trpc.hubAllocations.save.useMutation({
+    onSuccess: () => {
+      toast.success('Allocation preset saved');
+      setShowSaveInput(false);
+      setSaveLabel('');
+      presetsQuery.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Apply a preset
+  const applyPreset = useCallback((presetId: string) => {
+    const preset = presetsQuery.data?.find(p => p.id.toString() === presetId);
+    if (!preset) return;
+    const alloc = preset.allocations as Record<string, number>;
+    setDomainAllocation(prev => {
+      const result = { ...prev };
+      Object.keys(result).forEach(k => { if (alloc[k] !== undefined) result[k as keyof typeof result] = alloc[k]; });
+      return result;
+    });
+    if (preset.inputOverrides) {
+      const ov = preset.inputOverrides as Record<string, number>;
+      if (ov.retireAge) p.setRetireAge?.(ov.retireAge);
+      if (ov.monthlyGoal) setRetirementGoal(ov.monthlyGoal * 12);
+    }
+    toast.success(`Applied preset: ${preset.label}`);
+  }, [presetsQuery.data]);
+
+  // Save current allocation as preset
+  const handleSave = useCallback(() => {
+    if (!saveLabel.trim()) { toast.error('Enter a name for this preset'); return; }
+    saveMutation.mutate({
+      hubType: 'client',
+      label: saveLabel.trim(),
+      allocations: domainAllocation,
+      inputOverrides: { retireAge: p.retireAge, monthlyGoal: Math.round(retirementGoal / 12) },
+    });
+  }, [saveLabel, domainAllocation, p.retireAge, retirementGoal]);
 
   // Unified plan calculation
   const plan = useMemo(() => calcUnifiedClientPlan(
@@ -243,6 +294,54 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
         Set your retirement income goal — all domains cascade automatically. Drag sliders to rebalance priorities.
         <RefTip text="Unified planning uses the 4% safe withdrawal rate (Trinity Study), DIME method for protection, and multi-vehicle growth projections. All domains are interconnected — changing one cascades to all others." refId="planning" />
       </p>
+
+      {/* ─── PRESET SELECTOR ─── */}
+      <Card className="mb-4 border-muted">
+        <CardContent className="py-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <BookOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="text-xs font-medium text-muted-foreground">Presets:</span>
+            <Select onValueChange={applyPreset}>
+              <SelectTrigger className="h-8 w-[200px] text-xs">
+                <SelectValue placeholder="Load a preset..." />
+              </SelectTrigger>
+              <SelectContent>
+                {presetsQuery.data?.map(preset => (
+                  <SelectItem key={preset.id} value={preset.id.toString()}>
+                    {preset.label} {preset.isDefault ? '(Default)' : ''}
+                  </SelectItem>
+                ))}
+                {(!presetsQuery.data || presetsQuery.data.length === 0) && (
+                  <SelectItem value="_none" disabled>No presets available</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {user ? (
+              showSaveInput ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    className="h-8 w-[150px] text-xs"
+                    placeholder="Preset name..."
+                    value={saveLabel}
+                    onChange={e => setSaveLabel(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSave()}
+                  />
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleSave} disabled={saveMutation.isPending}>
+                    <Save className="w-3 h-3 mr-1" /> Save
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setShowSaveInput(false)}>Cancel</Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowSaveInput(true)}>
+                  <Save className="w-3 h-3 mr-1" /> Save Current
+                </Button>
+              )
+            ) : (
+              <span className="text-[10px] text-muted-foreground italic">Sign in to save custom presets</span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* ─── TARGET INCOME GOAL ─── */}
       <Card className="mb-4 border-primary/30">
@@ -697,6 +796,104 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
           </div>
         </CardContent>
       </Card>
+
+      {/* ─── ADVANCED STRATEGIES CASCADE (live from AdvancedStrategiesHub) ─── */}
+      <AdvancedCascadeCard onNavigateToPanel={p.onNavigateToPanel} />
     </section>
+  );
+}
+
+/* ─── Sub-component: reads live cascade data from WealthEngineContext ─── */
+function AdvancedCascadeCard({ onNavigateToPanel }: { onNavigateToPanel?: (id: string) => void }) {
+  const we = useWealthEngine();
+  const ac = we.advancedCascade;
+  const hb = we.holisticBridge;
+  const hasData = ac.totalAnnualBenefit > 0 || ac.totalAnnualCost > 0;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Landmark className="w-4 h-4 text-blue-400" />
+          Advanced Strategies Cascade
+          <RefTip text="Live data from the Advanced Strategies Hub. When you adjust premium finance, ILIT, executive comp, charitable, or business strategies, their benefits cascade here in real-time — showing how advanced planning enhances your client wealth plan." refId="adv-cascade" />
+          {hasData && <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">LIVE</Badge>}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!hasData ? (
+          <div className="text-center py-4 text-muted-foreground text-xs">
+            <p className="mb-2">No advanced strategy data yet.</p>
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => onNavigateToPanel?.('advanced-strategies-hub')}>
+              Open Advanced Strategies Hub <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Holistic Score */}
+            <div className="flex items-center justify-between bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg px-4 py-2">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4 text-blue-400" />
+                <span className="text-xs font-medium">Holistic Wealth Score</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-muted-foreground">Client {hb.clientHubScore}%</span>
+                <span className="text-[10px] text-muted-foreground">Advanced {hb.advancedHubScore}%</span>
+                <Badge className={`text-xs ${hb.holisticScore >= 70 ? 'bg-green-500/20 text-green-400' : hb.holisticScore >= 40 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                  {hb.holisticScore}%
+                </Badge>
+              </div>
+            </div>
+
+            {/* Cascade benefits */}
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              {ac.protectionEnhancement > 0 && (
+                <div className="flex items-center gap-1.5 bg-green-500/5 border border-green-500/20 rounded-md px-2 py-1.5">
+                  <Shield className="w-3 h-3 text-green-400 shrink-0" />
+                  <span>+{fmtSm(ac.protectionEnhancement)} protection</span>
+                </div>
+              )}
+              {ac.taxSavingsBoost > 0 && (
+                <div className="flex items-center gap-1.5 bg-emerald-500/5 border border-emerald-500/20 rounded-md px-2 py-1.5">
+                  <DollarSign className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>+{fmtSm(ac.taxSavingsBoost)}/yr tax savings</span>
+                </div>
+              )}
+              {ac.estateTaxReduction > 0 && (
+                <div className="flex items-center gap-1.5 bg-blue-500/5 border border-blue-500/20 rounded-md px-2 py-1.5">
+                  <Building2 className="w-3 h-3 text-blue-400 shrink-0" />
+                  <span>-{fmtSm(ac.estateTaxReduction)} estate tax</span>
+                </div>
+              )}
+              {ac.retirementBoost > 0 && (
+                <div className="flex items-center gap-1.5 bg-purple-500/5 border border-purple-500/20 rounded-md px-2 py-1.5">
+                  <PiggyBank className="w-3 h-3 text-purple-400 shrink-0" />
+                  <span>+{fmtSm(ac.retirementBoost)}/yr income</span>
+                </div>
+              )}
+              {ac.netWorthImpact !== 0 && (
+                <div className={`flex items-center gap-1.5 ${ac.netWorthImpact > 0 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'} border rounded-md px-2 py-1.5 col-span-2`}>
+                  <TrendingUp className={`w-3 h-3 ${ac.netWorthImpact > 0 ? 'text-green-400' : 'text-red-400'} shrink-0`} />
+                  <span>{ac.netWorthImpact > 0 ? '+' : ''}{fmtSm(ac.netWorthImpact)} net worth impact</span>
+                </div>
+              )}
+            </div>
+
+            {/* Strategy breakdown */}
+            <div className="text-[10px] text-muted-foreground space-y-1">
+              <div className="flex justify-between"><span>Premium Finance</span><span className="text-foreground">{fmtSm(ac.pfNetBenefit)} net benefit</span></div>
+              <div className="flex justify-between"><span>ILIT</span><span className="text-foreground">{fmtSm(ac.ilitEstateTaxSaved)} estate tax saved</span></div>
+              <div className="flex justify-between"><span>Executive Comp</span><span className="text-foreground">{fmtSm(ac.execTaxBenefit)} tax benefit</span></div>
+              <div className="flex justify-between"><span>Charitable</span><span className="text-foreground">{fmtSm(ac.charitableTaxDeduction)} deduction</span></div>
+              <div className="flex justify-between"><span>Business</span><span className="text-foreground">{fmtSm(ac.businessTotalProtection)} protection</span></div>
+            </div>
+
+            <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => onNavigateToPanel?.('advanced-strategies-hub')}>
+              Edit Advanced Strategies <ArrowRight className="w-3 h-3 ml-1" />
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

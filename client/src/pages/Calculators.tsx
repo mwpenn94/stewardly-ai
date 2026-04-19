@@ -1,7 +1,7 @@
 /* WealthBridge Unified Wealth Engine v7 — Orchestrator */
 import { authFetch } from "@/lib/sessionToken";
 import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { WealthEngineProvider, type WealthEngineData, GENERAL_DEFAULTS, EMPTY_ADVANCED_CASCADE, EMPTY_CASCADE_BRIDGE } from '@/contexts/WealthEngineContext';
+import { WealthEngineProvider, type WealthEngineData, type AdvancedStrategiesCascade, type PracticeManagementCascade, GENERAL_DEFAULTS, EMPTY_ADVANCED_CASCADE, EMPTY_CASCADE_BRIDGE, EMPTY_PRACTICE_CASCADE, computeHolisticBridge } from '@/contexts/WealthEngineContext';
 import { useCascadeToast } from '@/hooks/useCascadeToast';
 
 /* Thin bridge so the hook runs inside the component tree */
@@ -1116,27 +1116,74 @@ export default function Calculators() {
     seasonRampMonths: ppSeasonRampMonths, setSeasonRampMonths: setPpSeasonRampMonths,
   };
 
+  /* ─── Live cascade state: advanced strategies push data here ─── */
+  const [advancedCascade, setAdvancedCascade] = useState<AdvancedStrategiesCascade>(EMPTY_ADVANCED_CASCADE);
+
+  /* ─── Optional practice management cascade (opt-in from Practice Mgmt panels) ─── */
+  const practiceCascade = useMemo<PracticeManagementCascade>(() => {
+    // Auto-populate from practiceIncome when available
+    if (practiceIncome.grandTotal > 0) {
+      return {
+        enabled: true,
+        annualRevenue: practiceIncome.pnlRevenue,
+        monthlyGDC: practiceIncome.monthlyGDC,
+        aumRevenue: practiceIncome.annualAUM,
+        overrideRevenue: practiceIncome.annualOverride,
+        teamSize: 1, // default single advisor
+        revenuePerAdvisor: practiceIncome.pnlRevenue,
+        clientsPerAdvisor: 0,
+        totalClients: 0,
+        avgClientValue: 0,
+        retentionRate: 90,
+        annualProduction: practiceIncome.grandTotal,
+        productionGrowthRate: 5,
+        practiceScore: Math.min(100, Math.round(practiceIncome.grandTotal / 5000)),
+        practiceToClient: {
+          incomeFromPractice: practiceIncome.pnlNetIncome,
+          practiceEquity: Math.round(practiceIncome.pnlRevenue * 2.5), // 2.5x revenue multiple
+          benefitsCostOffset: 0,
+        },
+      };
+    }
+    return EMPTY_PRACTICE_CASCADE;
+  }, [practiceIncome]);
+
   /* ─── Build cascade context for new Advisory/Data panels ─── */
+  const clientProfile = useMemo(() => ({
+    clientName, age, spouseAge, dep, income, spouseIncome, totalIncome, nw, savings,
+    retirement401k, mortgage, debt, existIns, filing, stateRate, riskTolerance,
+    isBiz, bizRevenue, bizEmployees, bizEntityType,
+  }), [clientName, age, spouseAge, dep, income, spouseIncome, totalIncome, nw, savings,
+    retirement401k, mortgage, debt, existIns, filing, stateRate, riskTolerance,
+    isBiz, bizRevenue, bizEmployees, bizEntityType]);
+
+  const holisticBridge = useMemo(() => computeHolisticBridge(
+    scorecard.pctScore, // clientHubScore
+    advancedCascade.totalAnnualBenefit > 0 ? Math.min(100, Math.round(advancedCascade.totalAnnualBenefit / Math.max(1, advancedCascade.totalAnnualCost) * 25)) : 0, // advancedHubScore
+    clientProfile,
+    prResult,
+    txResult,
+    rtResult,
+    advancedCascade,
+    practiceCascade,
+  ), [scorecard.pctScore, advancedCascade, clientProfile, prResult, txResult, rtResult, practiceCascade]);
+
   const weData = useMemo<WealthEngineData>(() => ({
-    client: {
-      clientName, age, spouseAge, dep, income, spouseIncome, totalIncome, nw, savings,
-      retirement401k, mortgage, debt, existIns, filing, stateRate, riskTolerance,
-      isBiz, bizRevenue, bizEmployees, bizEntityType,
-    },
+    client: clientProfile,
     scorecard, recommendations, totalAnnualPremium,
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult,
     horizonData, practiceIncome, scores,
     generalDefaults: GENERAL_DEFAULTS,
-    advancedCascade: EMPTY_ADVANCED_CASCADE,
-    holisticBridge: EMPTY_CASCADE_BRIDGE,
+    advancedCascade,
+    practiceCascade,
+    holisticBridge,
     lastUpdated: Date.now(),
     panelVersions: {},
-  }), [clientName, age, spouseAge, dep, income, spouseIncome, totalIncome, nw, savings,
-    retirement401k, mortgage, debt, existIns, filing, stateRate, riskTolerance,
-    isBiz, bizRevenue, bizEmployees, bizEntityType,
+  }), [clientProfile,
     scorecard, recommendations, totalAnnualPremium,
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult,
-    horizonData, practiceIncome, scores]);
+    horizonData, practiceIncome, scores,
+    advancedCascade, practiceCascade, holisticBridge]);
 
   /* ═══ RENDER ═══ */
   return (
@@ -1422,6 +1469,7 @@ export default function Calculators() {
             bcEmployees={bcEmployees} setBcEmployees={setBcEmployees}
             age={age} income={income + spouseIncome} grossEstate={grossEstate}
             onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)}
+            onCascadeUpdate={setAdvancedCascade}
           />}
           {activePanel === 'advanced' && <AdvancedStrategiesPanel
             pfFace={pfFace} setPfFace={setPfFace} pfPrem={pfPrem} setPfPrem={setPfPrem}

@@ -253,3 +253,154 @@ describe('computeHolisticBridge', () => {
     expect(bridge.lastCascadeTimestamp).toBeGreaterThanOrEqual(before);
   });
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   Pass 140 Tests — Live cascade, Practice Management cascade,
+   DB persistence (hubAllocations router), general defaults for planning
+   ═══════════════════════════════════════════════════════════════ */
+import {
+  EMPTY_PRACTICE_CASCADE,
+  type PracticeManagementCascade,
+} from '@/contexts/WealthEngineContext';
+
+/* ─── Live Cascade: AdvancedStrategiesCascade structure ─── */
+describe('Live Cascade: AdvancedStrategiesCascade', () => {
+  it('plan.benefitToClientPlanCascade has all required fields', () => {
+    const plan = calcUnifiedAdvancedPlan(advResult, bizResult, 50000, defaultAllocation, 150000, 40, 2000000);
+    const c = plan.benefitToClientPlanCascade;
+    expect(typeof c.estateTaxReduction).toBe('number');
+    expect(typeof c.taxSavingsBoost).toBe('number');
+    expect(typeof c.protectionEnhancement).toBe('number');
+    expect(typeof c.retirementBoost).toBe('number');
+    expect(typeof c.netWorthImpact).toBe('number');
+    // All should be non-negative
+    expect(c.estateTaxReduction).toBeGreaterThanOrEqual(0);
+    expect(c.protectionEnhancement).toBeGreaterThanOrEqual(0);
+  });
+
+  it('cascade values scale with strategy allocation', () => {
+    const highPF: StrategyAllocation = { premiumFinance: 60, ilit: 15, execComp: 10, charitable: 10, business: 5 };
+    const lowPF: StrategyAllocation = { premiumFinance: 5, ilit: 30, execComp: 25, charitable: 25, business: 15 };
+    const planHigh = calcUnifiedAdvancedPlan(advResult, bizResult, 50000, highPF, 150000, 40, 2000000);
+    const planLow = calcUnifiedAdvancedPlan(advResult, bizResult, 50000, lowPF, 150000, 40, 2000000);
+    // Different allocations should produce different scores
+    expect(planHigh.onTrackScore).not.toBe(planLow.onTrackScore);
+  });
+});
+
+/* ─── Practice Management Cascade (Optional) ─── */
+describe('PracticeManagementCascade', () => {
+  it('EMPTY_PRACTICE_CASCADE has all zero values', () => {
+    expect(EMPTY_PRACTICE_CASCADE.annualRevenue).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.totalClients).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.teamSize).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.avgClientValue).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.revenuePerAdvisor).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.practiceScore).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.enabled).toBe(false);
+    expect(EMPTY_PRACTICE_CASCADE.practiceToClient.incomeFromPractice).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.practiceToClient.practiceEquity).toBe(0);
+    expect(EMPTY_PRACTICE_CASCADE.practiceToClient.benefitsCostOffset).toBe(0);
+  });
+
+  it('practice cascade can be populated with real values', () => {
+    const practice: PracticeManagementCascade = {
+      enabled: true,
+      annualRevenue: 2000000, monthlyGDC: 166667, aumRevenue: 500000, overrideRevenue: 200000,
+      teamSize: 5, revenuePerAdvisor: 400000, clientsPerAdvisor: 30,
+      totalClients: 150, avgClientValue: 13333, retentionRate: 92,
+      annualProduction: 1800000, productionGrowthRate: 8,
+      practiceScore: 72,
+      practiceToClient: { incomeFromPractice: 300000, practiceEquity: 2000000, benefitsCostOffset: 15000 },
+    };
+    expect(practice.enabled).toBe(true);
+    expect(practice.avgClientValue).toBeGreaterThan(0);
+    expect(practice.practiceScore).toBeGreaterThanOrEqual(0);
+    expect(practice.practiceScore).toBeLessThanOrEqual(100);
+    expect(practice.practiceToClient.practiceEquity).toBe(2000000);
+  });
+});
+
+/* ─── computeHolisticBridge with practice cascade ─── */
+describe('computeHolisticBridge with practice cascade', () => {
+  const mockClient2: ClientProfile = {
+    clientName: 'Test2', age: 45, spouseAge: 43, dep: 1,
+    income: 200000, spouseIncome: 0, totalIncome: 200000,
+    nw: 800000, savings: 300000, retirement401k: 500000,
+    mortgage: 200000, debt: 10000, existIns: 500000,
+    filing: 'single', stateRate: 0.06, riskTolerance: 'aggressive',
+    isBiz: true, bizRevenue: 2000000, bizEmployees: 5, bizEntityType: 'scorp',
+  };
+  const mockPR2: ProtectionResult = { totalNeed: 2000000, gap: 1500000, diNeed: 120000, diPremium: 4000, ltcNeed: 150000, ltcPremium: 3000 };
+  const mockTX2: TaxResult = { effectiveRate: 28, totalTax: 56000, marginalRate: 35, strategies: [], totalSavings: 8000 };
+  const mockRT2: RetirementResult = { projectedNest: 2000000, monthlyIncome: 6667, ssOptimal: '70', gap: 0, replacementRate: 80 };
+  const mockAdvCascade2: AdvancedStrategiesCascade = {
+    pfNetBenefit: 80000, pfTaxEfficiency: 15000,
+    ilitEstateTaxSaved: 600000, ilitNetToHeirs: 5000000,
+    execTaxBenefit: 35000, execRetentionValue: 300000,
+    charitableTaxDeduction: 40000, charitableAnnualIncome: 30000,
+    businessTotalProtection: 2000000, businessContinuityScore: 90,
+    totalAnnualBenefit: 180000, totalAnnualCost: 100000,
+    estateTaxReduction: 600000, taxSavingsBoost: 90000,
+    protectionEnhancement: 2000000, retirementBoost: 30000,
+    netWorthImpact: 800000,
+  };
+
+  it('computes holistic score without practice cascade', () => {
+    const bridge = computeHolisticBridge(80, 85, mockClient2, mockPR2, mockTX2, mockRT2, mockAdvCascade2);
+    // 80 * 0.6 + 85 * 0.4 = 48 + 34 = 82
+    expect(bridge.holisticScore).toBe(82);
+  });
+
+  it('computes holistic score with practice cascade', () => {
+    const practice: PracticeManagementCascade = {
+      enabled: true,
+      annualRevenue: 2000000, monthlyGDC: 166667, aumRevenue: 500000, overrideRevenue: 200000,
+      teamSize: 5, revenuePerAdvisor: 400000, clientsPerAdvisor: 30,
+      totalClients: 150, avgClientValue: 13333, retentionRate: 92,
+      annualProduction: 1800000, productionGrowthRate: 8,
+      practiceScore: 72,
+      practiceToClient: { incomeFromPractice: 300000, practiceEquity: 2000000, benefitsCostOffset: 15000 },
+    };
+    const bridge = computeHolisticBridge(80, 85, mockClient2, mockPR2, mockTX2, mockRT2, mockAdvCascade2, practice);
+    // With practice enabled: 80*0.45 + 85*0.30 + 72*0.25 = 36 + 25.5 + 18 = 79.5 → 80
+    expect(bridge.holisticScore).toBeGreaterThanOrEqual(70);
+    expect(bridge.holisticScore).toBeLessThanOrEqual(90);
+  });
+});
+
+/* ─── General Defaults for non-authenticated planning ─── */
+describe('General Defaults for Planning', () => {
+  it('GENERAL_DEFAULTS covers all key planning parameters', () => {
+    const keys = Object.keys(GENERAL_DEFAULTS);
+    expect(keys).toContain('equityReturn');
+    expect(keys).toContain('bondReturn');
+    expect(keys).toContain('safeWithdrawalRate');
+    expect(keys).toContain('inflationRate');
+    expect(keys).toContain('topFederalRate');
+    expect(keys).toContain('estateExemption');
+    expect(keys).toContain('annualGiftExclusion');
+    expect(keys).toContain('incomeMultiplierLife');
+    expect(keys).toContain('emergencyMonths');
+    expect(keys).toContain('collegeCostAnnual');
+    expect(keys).toContain('keyPersonMultiplier');
+    expect(keys).toContain('pfLoanRateDefault');
+    expect(keys).toContain('crtPayoutMin');
+    expect(keys).toContain('estateTaxRate');
+    expect(keys).toContain('retirementReplaceRate');
+    expect(keys).toContain('ssColaRate');
+    expect(keys).toContain('medicareStartAge');
+    expect(keys).toContain('ltcgRate');
+    expect(keys).toContain('niitRate');
+    expect(keys).toContain('diReplacementPct');
+    expect(keys).toContain('ltcDailyBenefit');
+    expect(keys).toContain('collegeCostGrowth');
+  });
+
+  it('all GENERAL_DEFAULTS values are positive numbers', () => {
+    Object.entries(GENERAL_DEFAULTS).forEach(([key, value]) => {
+      expect(typeof value).toBe('number');
+      expect(value).toBeGreaterThan(0);
+    });
+  });
+});

@@ -7338,3 +7338,24 @@ export const dataAuthorizations = mysqlTable("data_authorizations", {
 }));
 export type DataAuthorizationRow = typeof dataAuthorizations.$inferSelect;
 export type InsertDataAuthorization = typeof dataAuthorizations.$inferInsert;
+
+
+// ── Pass 140: Wealth Hub Allocations (persist hub slider allocations + general defaults) ──
+export const wealthHubAllocations = mysqlTable("wealth_hub_allocations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"),
+  hubType: varchar("hub_type", { length: 30 }).notNull(),
+  label: varchar("label", { length: 100 }).notNull(),
+  allocations: json("allocations").notNull(),
+  inputOverrides: json("input_overrides"),
+  isDefault: mysqlBoolean("is_default").default(false),
+  isActive: mysqlBoolean("is_active").default(true),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  userIdx: index("idx_wha_user").on(table.userId),
+  hubTypeIdx: index("idx_wha_hub_type").on(table.hubType),
+  defaultIdx: index("idx_wha_default").on(table.isDefault),
+}));
+export type WealthHubAllocationRow = typeof wealthHubAllocations.$inferSelect;
+export type InsertWealthHubAllocation = typeof wealthHubAllocations.$inferInsert;

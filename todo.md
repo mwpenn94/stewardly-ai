@@ -6682,3 +6682,26 @@
 - [x] Run vitest — 21/21 new tests pass (calcUnifiedAdvancedPlan, calcAdvancedSensitivity, calcAdvancedTimePhasedProjections, GENERAL_DEFAULTS, EMPTY cascades, computeHolisticBridge)
 - [x] Browser validate — Vite served AdvancedStrategiesHub.tsx (200 OK), no console errors, no HMR failures
 - [x] Checkpoint saved
+
+## Pass 140+ — Live Cascade, Optional Practice Mgmt Hub, Persist Allocations + General Defaults
+### Step 1: Wire live cascade updates between hubs
+- [x] AdvancedStrategiesHub computed cascade data flows back via onCascadeUpdate → setAdvancedCascade → WealthEngineContext
+- [x] ClientWealthHub reads advancedCascade from useWealthEngine() and shows AdvancedCascadeCard with live data
+- [x] useEffect in AdvancedStrategiesHub pushes cascade on every plan recomputation
+- [x] Visual cascade indicators: Holistic Wealth Score, protection/tax/estate/retirement/net worth badges, strategy breakdown
+### Step 2: Optional Practice Management cascade (third hub dimension)
+- [x] Add PracticeManagementCascade interface (revenue, team, clients, production, practiceToClient bridge)
+- [x] Add EMPTY_PRACTICE_CASCADE constant
+- [x] Dynamic weight rebalancing in computeHolisticBridge: 60/40/0 → 45/30/25 when practice enabled
+- [x] Auto-populate from practiceIncome in Calculators.tsx when available (opt-in)
+### Step 3: Persist hub allocations to DB + general defaults for non-auth planning
+- [x] Add wealth_hub_allocations table (id, userId, hubType, label, allocations JSON, inputOverrides JSON, isDefault, isActive, timestamps)
+- [x] Add hubAllocations router with list (public), save, update, remove (protected) procedures
+- [x] 9 general default presets seeded (5 client + 4 advanced) — accessible to guests via publicProcedure
+- [x] Authenticated users can save custom presets and override defaults
+- [x] Save/load preset UI in both ClientWealthHub and AdvancedStrategiesHub (Select dropdown + save input)
+### Convergence Passes
+- [x] Convergence Pass 1 — Clean: data flow, edge cases, imports, types all verified
+- [x] Convergence Pass 2 — Clean: DB schema alignment, preset loading, calculation correctness, accessibility
+- [x] Convergence Pass 3 — Clean: type safety, general defaults for guests, cascade direction, holistic completeness
+- [x] All 29 tests pass, auth test passes, no browser errors, CONVERGED (3/3)

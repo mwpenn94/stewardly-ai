@@ -9,14 +9,19 @@
    - Time-phased projections with Recharts visualization
    - Cascade bridge: shows how advanced strategies feed into client planning
    ═══════════════════════════════════════════════════════════════ */
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Target, Shield, DollarSign, Landmark, Building2, Briefcase,
   Gift, ArrowRight, ChevronDown, ChevronUp,
-  AlertTriangle, CheckCircle2, Info, TrendingUp, Gem,
+  AlertTriangle, CheckCircle2, Info, TrendingUp, Gem, Save, BookOpen,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
@@ -31,6 +36,7 @@ import {
   calcUnifiedAdvancedPlan, calcAdvancedSensitivity, calcAdvancedTimePhasedProjections,
   type UnifiedAdvancedPlan, type AdvancedSensitivityResult, type AdvancedTimeProjection,
 } from './engine';
+import type { AdvancedStrategiesCascade } from '@/contexts/WealthEngineContext';
 
 /* ═══ STRATEGY CONFIG ═══ */
 const STRATEGY_CONFIG = [
@@ -144,6 +150,8 @@ export interface AdvancedStrategiesHubProps extends AdvancedProps {
   grossEstate: number;
   // Navigation
   onNavigateToPanel?: (panelId: string) => void;
+  // Live cascade callback — pushes computed data back to Calculators.tsx → WealthEngineContext
+  onCascadeUpdate?: (cascade: AdvancedStrategiesCascade) => void;
 }
 
 /* ═══ MAIN COMPONENT ═══ */
@@ -157,6 +165,35 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
   const [strategyAllocation, setStrategyAllocation] = useState({
     premiumFinance: 25, ilit: 25, execComp: 20, charitable: 15, business: 15,
   });
+  const [saveLabel, setSaveLabel] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const { user } = useAuth();
+
+  // Load presets from DB (general defaults + user's own)
+  const presetsQuery = trpc.hubAllocations.list.useQuery({ hubType: 'advanced' });
+  const saveMutation = trpc.hubAllocations.save.useMutation({
+    onSuccess: () => { toast.success('Strategy preset saved'); setShowSaveInput(false); setSaveLabel(''); presetsQuery.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const applyPreset = useCallback((presetId: string) => {
+    const preset = presetsQuery.data?.find(pr => pr.id.toString() === presetId);
+    if (!preset) return;
+    const alloc = preset.allocations as Record<string, number>;
+    setStrategyAllocation(prev => {
+      const result = { ...prev };
+      Object.keys(result).forEach(k => { if (alloc[k] !== undefined) result[k as keyof typeof result] = alloc[k]; });
+      return result;
+    });
+    if (preset.inputOverrides) {
+      const ov = preset.inputOverrides as Record<string, number>;
+      if (ov.benefitGoal) setBenefitGoal(ov.benefitGoal);
+    }
+    toast.success(`Applied preset: ${preset.label}`);
+  }, [presetsQuery.data]);
+  const handleSavePreset = useCallback(() => {
+    if (!saveLabel.trim()) { toast.error('Enter a name'); return; }
+    saveMutation.mutate({ hubType: 'advanced', label: saveLabel.trim(), allocations: strategyAllocation, inputOverrides: { benefitGoal } });
+  }, [saveLabel, strategyAllocation, benefitGoal]);
 
   // Compute underlying results
   const advResult = useMemo(() => calcAdvanced(
@@ -188,6 +225,32 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
   const timeline = useMemo(() => calcAdvancedTimePhasedProjections(
     advResult, bizResult, Math.max(10, p.pfYrs),
   ), [advResult, bizResult, p.pfYrs]);
+
+  /* ─── Live cascade: push computed data back to Calculators.tsx → WealthEngineContext ─── */
+  useEffect(() => {
+    if (!p.onCascadeUpdate) return;
+    const s = plan.strategies;
+    const cascade: AdvancedStrategiesCascade = {
+      pfNetBenefit: s.premiumFinance.netBenefit,
+      pfTaxEfficiency: s.premiumFinance.taxEfficiency,
+      ilitEstateTaxSaved: s.ilit.estateTaxSaved,
+      ilitNetToHeirs: s.ilit.netToHeirs,
+      execTaxBenefit: s.execComp.employerTaxBenefit,
+      execRetentionValue: s.execComp.retentionValue,
+      charitableTaxDeduction: s.charitable.taxDeduction,
+      charitableAnnualIncome: s.charitable.annualIncome,
+      businessTotalProtection: s.business.totalProtection,
+      businessContinuityScore: s.business.continuityScore,
+      totalAnnualBenefit: plan.totalProjectedBenefit,
+      totalAnnualCost: plan.totalAnnualCost,
+      estateTaxReduction: plan.benefitToClientPlanCascade.estateTaxReduction,
+      taxSavingsBoost: plan.benefitToClientPlanCascade.taxSavingsBoost,
+      protectionEnhancement: plan.benefitToClientPlanCascade.protectionEnhancement,
+      retirementBoost: plan.benefitToClientPlanCascade.retirementBoost,
+      netWorthImpact: plan.benefitToClientPlanCascade.netWorthImpact,
+    };
+    p.onCascadeUpdate(cascade);
+  }, [plan, p.onCascadeUpdate]);
 
   // Drag-to-rebalance handler
   const handleDrag = useCallback((key: string, newVal: number) => {
@@ -235,6 +298,45 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
           </p>
         </CardHeader>
         <CardContent>
+          {/* ─── PRESET SELECTOR ─── */}
+          <div className="flex items-center gap-2 flex-wrap mb-4 p-2 rounded-md bg-muted/30 border border-muted">
+            <BookOpen className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="text-xs font-medium text-muted-foreground">Presets:</span>
+            <Select onValueChange={applyPreset}>
+              <SelectTrigger className="h-8 w-[200px] text-xs">
+                <SelectValue placeholder="Load a preset..." />
+              </SelectTrigger>
+              <SelectContent>
+                {presetsQuery.data?.map(preset => (
+                  <SelectItem key={preset.id} value={preset.id.toString()}>
+                    {preset.label} {preset.isDefault ? '(Default)' : ''}
+                  </SelectItem>
+                ))}
+                {(!presetsQuery.data || presetsQuery.data.length === 0) && (
+                  <SelectItem value="_none" disabled>No presets available</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {user ? (
+              showSaveInput ? (
+                <div className="flex items-center gap-1">
+                  <Input className="h-8 w-[150px] text-xs" placeholder="Preset name..." value={saveLabel}
+                    onChange={e => setSaveLabel(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSavePreset()} />
+                  <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleSavePreset} disabled={saveMutation.isPending}>
+                    <Save className="w-3 h-3 mr-1" /> Save
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setShowSaveInput(false)}>Cancel</Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setShowSaveInput(true)}>
+                  <Save className="w-3 h-3 mr-1" /> Save Current
+                </Button>
+              )
+            ) : (
+              <span className="text-[10px] text-muted-foreground italic">Sign in to save custom presets</span>
+            )}
+          </div>
+
           {/* Goal + Score */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-4">
             <div className="flex-1">
