@@ -192,20 +192,7 @@ export default function EngineDashboard() {
     setIsRunning(true);
     toast.info("Running all engines...");
 
-    // Log every engine run into the learning recommendations ring buffer
-    // so the Learning Home can surface calculator-informed study suggestions.
-    try {
-      const { recordCalculatorUse } = await import("@/lib/recentCalculators");
-      recordCalculatorUse("heSimulate");
-      recordCalculatorUse("uweSimulate");
-      recordCalculatorUse("stressTest");
-      recordCalculatorUse("backtest");
-      if (strategies.some((s) => s.hasBizIncome)) {
-        recordCalculatorUse("bieSimulate");
-      }
-    } catch {
-      /* localStorage / SSR — ignore */
-    }
+    // recentCalculators tracking removed (dead code cleanup Pass 147)
 
     try {
       // Run HE simulate for each strategy

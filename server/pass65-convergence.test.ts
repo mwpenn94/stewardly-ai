@@ -168,7 +168,7 @@ describe("Pass 65 — Convergence Improvements", () => {
       };
       expect(
         countFiles(path.join(CLIENT, "components"))
-      ).toBeGreaterThan(200);
+      ).toBeGreaterThan(150); // adjusted after dead code removal (75 files)
     });
 
     it("has >360 database tables", () => {

@@ -115,7 +115,7 @@ describe("Pass 64 — Convergence Verification", () => {
         }
         return count;
       };
-      expect(countFiles(path.join(CLIENT, "components"))).toBeGreaterThan(200);
+      expect(countFiles(path.join(CLIENT, "components"))).toBeGreaterThan(150); // adjusted after dead code removal (75 files)
     });
 
     it("has comprehensive routing (>140 routes)", () => {

@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-19T21:07:07.316Z",
+  "timestamp": "2026-04-19T21:50:51.149Z",
   "summary": {
     "passed": 79,
     "warnings": 0,
@@ -13,7 +13,7 @@
       "route": "/",
       "name": "Landing/Chat",
       "status": "PASS",
-      "ms": 3303,
+      "ms": 2910,
       "httpStatus": 200
     },
     {
@@ -21,7 +21,7 @@
       "route": "/wealth-engine",
       "name": "Wealth Engine",
       "status": "PASS",
-      "ms": 583,
+      "ms": 2866,
       "httpStatus": 200
     },
     {
@@ -29,7 +29,7 @@
       "route": "/client-dashboard",
       "name": "Client Dashboard",
       "status": "PASS",
-      "ms": 641,
+      "ms": 824,
       "httpStatus": 200
     },
     {
@@ -37,7 +37,7 @@
       "route": "/manager",
       "name": "Manager Dashboard",
       "status": "PASS",
-      "ms": 581,
+      "ms": 595,
       "httpStatus": 200
     },
     {
@@ -45,7 +45,7 @@
       "route": "/rebalancing",
       "name": "Rebalancing",
       "status": "PASS",
-      "ms": 576,
+      "ms": 552,
       "httpStatus": 200
     },
     {
@@ -53,7 +53,7 @@
       "route": "/estate-planning",
       "name": "Estate Planning",
       "status": "PASS",
-      "ms": 563,
+      "ms": 593,
       "httpStatus": 200
     },
     {
@@ -61,7 +61,7 @@
       "route": "/sovereign-study",
       "name": "Sovereign Study",
       "status": "PASS",
-      "ms": 619,
+      "ms": 558,
       "httpStatus": 200
     },
     {
@@ -69,7 +69,7 @@
       "route": "/quick-quote",
       "name": "Quick Quote",
       "status": "PASS",
-      "ms": 490,
+      "ms": 532,
       "httpStatus": 200
     },
     {
@@ -77,7 +77,7 @@
       "route": "/compliance-audit",
       "name": "Compliance Audit",
       "status": "PASS",
-      "ms": 503,
+      "ms": 568,
       "httpStatus": 200
     },
     {
@@ -85,7 +85,7 @@
       "route": "/compliance-copilot",
       "name": "Compliance Copilot",
       "status": "PASS",
-      "ms": 511,
+      "ms": 628,
       "httpStatus": 200
     },
     {
@@ -93,7 +93,7 @@
       "route": "/client-onboarding",
       "name": "Client Onboarding",
       "status": "PASS",
-      "ms": 529,
+      "ms": 552,
       "httpStatus": 200
     },
     {
@@ -101,7 +101,7 @@
       "route": "/analytics",
       "name": "Analytics",
       "status": "PASS",
-      "ms": 535,
+      "ms": 636,
       "httpStatus": 200
     },
     {
@@ -109,7 +109,7 @@
       "route": "/settings",
       "name": "Settings",
       "status": "PASS",
-      "ms": 547,
+      "ms": 628,
       "httpStatus": 200
     },
     {
@@ -117,7 +117,7 @@
       "route": "/wealth-engine",
       "name": "wealth engine",
       "status": "PASS",
-      "ms": 671,
+      "ms": 748,
       "httpStatus": 200
     },
     {
@@ -125,7 +125,7 @@
       "route": "/client-dashboard",
       "name": "client dashboard",
       "status": "PASS",
-      "ms": 889,
+      "ms": 764,
       "httpStatus": 200
     },
     {
@@ -133,7 +133,7 @@
       "route": "/client-onboarding",
       "name": "client onboarding",
       "status": "PASS",
-      "ms": 560,
+      "ms": 539,
       "httpStatus": 200
     },
     {
@@ -141,14 +141,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 2556
+      "ms": 2562
     },
     {
       "persona": "HNW Client",
       "route": "/wealth-engine",
       "name": "wealth engine",
       "status": "PASS",
-      "ms": 895,
+      "ms": 983,
       "httpStatus": 200
     },
     {
@@ -156,7 +156,7 @@
       "route": "/client-dashboard",
       "name": "client dashboard",
       "status": "PASS",
-      "ms": 953,
+      "ms": 1018,
       "httpStatus": 200
     },
     {
@@ -164,7 +164,7 @@
       "route": "/estate-planning",
       "name": "estate planning",
       "status": "PASS",
-      "ms": 834,
+      "ms": 849,
       "httpStatus": 200
     },
     {
@@ -172,14 +172,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 2867
+      "ms": 2883
     },
     {
       "persona": "Business Owner",
       "route": "/wealth-engine",
       "name": "wealth engine",
       "status": "PASS",
-      "ms": 824,
+      "ms": 925,
       "httpStatus": 200
     },
     {
@@ -187,215 +187,215 @@
       "route": "/client-dashboard",
       "name": "client dashboard",
       "status": "PASS",
-      "ms": 958,
+      "ms": 1074,
       "httpStatus": 200
     },
     {
       "persona": "Business Owner",
+      "route": "/wealth-engine",
+      "name": "WE Deep Check",
+      "status": "PASS",
+      "ms": 2846
+    },
+    {
+      "persona": "Pre-Retiree",
+      "route": "/wealth-engine",
+      "name": "wealth engine",
+      "status": "PASS",
+      "ms": 812,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Pre-Retiree",
+      "route": "/client-dashboard",
+      "name": "client dashboard",
+      "status": "PASS",
+      "ms": 1052,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Pre-Retiree",
+      "route": "/wealth-engine",
+      "name": "WE Deep Check",
+      "status": "PASS",
+      "ms": 3050
+    },
+    {
+      "persona": "Dual-Income Family",
+      "route": "/wealth-engine",
+      "name": "wealth engine",
+      "status": "PASS",
+      "ms": 1018,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Dual-Income Family",
+      "route": "/client-dashboard",
+      "name": "client dashboard",
+      "status": "PASS",
+      "ms": 1132,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Dual-Income Family",
+      "route": "/wealth-engine",
+      "name": "WE Deep Check",
+      "status": "PASS",
+      "ms": 3009
+    },
+    {
+      "persona": "Recently Divorced",
+      "route": "/wealth-engine",
+      "name": "wealth engine",
+      "status": "PASS",
+      "ms": 853,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Recently Divorced",
+      "route": "/client-dashboard",
+      "name": "client dashboard",
+      "status": "PASS",
+      "ms": 1140,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Recently Divorced",
+      "route": "/client-onboarding",
+      "name": "client onboarding",
+      "status": "PASS",
+      "ms": 1035,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Recently Divorced",
+      "route": "/wealth-engine",
+      "name": "WE Deep Check",
+      "status": "PASS",
+      "ms": 3083
+    },
+    {
+      "persona": "New Advisor",
+      "route": "/wealth-engine",
+      "name": "wealth engine",
+      "status": "PASS",
+      "ms": 912,
+      "httpStatus": 200
+    },
+    {
+      "persona": "New Advisor",
+      "route": "/quick-quote",
+      "name": "quick quote",
+      "status": "PASS",
+      "ms": 1102,
+      "httpStatus": 200
+    },
+    {
+      "persona": "New Advisor",
+      "route": "/client-onboarding",
+      "name": "client onboarding",
+      "status": "PASS",
+      "ms": 948,
+      "httpStatus": 200
+    },
+    {
+      "persona": "New Advisor",
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
       "ms": 2950
     },
     {
-      "persona": "Pre-Retiree",
+      "persona": "Experienced Advisor",
       "route": "/wealth-engine",
       "name": "wealth engine",
       "status": "PASS",
-      "ms": 809,
+      "ms": 923,
       "httpStatus": 200
     },
     {
-      "persona": "Pre-Retiree",
-      "route": "/client-dashboard",
-      "name": "client dashboard",
+      "persona": "Experienced Advisor",
+      "route": "/analytics",
+      "name": "analytics",
       "status": "PASS",
-      "ms": 825,
+      "ms": 1055,
       "httpStatus": 200
     },
     {
-      "persona": "Pre-Retiree",
-      "route": "/wealth-engine",
-      "name": "WE Deep Check",
+      "persona": "Experienced Advisor",
+      "route": "/rebalancing",
+      "name": "rebalancing",
       "status": "PASS",
-      "ms": 2895
-    },
-    {
-      "persona": "Dual-Income Family",
-      "route": "/wealth-engine",
-      "name": "wealth engine",
-      "status": "PASS",
-      "ms": 896,
+      "ms": 877,
       "httpStatus": 200
-    },
-    {
-      "persona": "Dual-Income Family",
-      "route": "/client-dashboard",
-      "name": "client dashboard",
-      "status": "PASS",
-      "ms": 945,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Dual-Income Family",
-      "route": "/wealth-engine",
-      "name": "WE Deep Check",
-      "status": "PASS",
-      "ms": 2933
-    },
-    {
-      "persona": "Recently Divorced",
-      "route": "/wealth-engine",
-      "name": "wealth engine",
-      "status": "PASS",
-      "ms": 780,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Recently Divorced",
-      "route": "/client-dashboard",
-      "name": "client dashboard",
-      "status": "PASS",
-      "ms": 872,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Recently Divorced",
-      "route": "/client-onboarding",
-      "name": "client onboarding",
-      "status": "PASS",
-      "ms": 850,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Recently Divorced",
-      "route": "/wealth-engine",
-      "name": "WE Deep Check",
-      "status": "PASS",
-      "ms": 2827
-    },
-    {
-      "persona": "New Advisor",
-      "route": "/wealth-engine",
-      "name": "wealth engine",
-      "status": "PASS",
-      "ms": 792,
-      "httpStatus": 200
-    },
-    {
-      "persona": "New Advisor",
-      "route": "/quick-quote",
-      "name": "quick quote",
-      "status": "PASS",
-      "ms": 967,
-      "httpStatus": 200
-    },
-    {
-      "persona": "New Advisor",
-      "route": "/client-onboarding",
-      "name": "client onboarding",
-      "status": "PASS",
-      "ms": 807,
-      "httpStatus": 200
-    },
-    {
-      "persona": "New Advisor",
-      "route": "/wealth-engine",
-      "name": "WE Deep Check",
-      "status": "PASS",
-      "ms": 2863
     },
     {
       "persona": "Experienced Advisor",
       "route": "/wealth-engine",
+      "name": "WE Deep Check",
+      "status": "PASS",
+      "ms": 3022
+    },
+    {
+      "persona": "Insurance Specialist",
+      "route": "/wealth-engine",
       "name": "wealth engine",
+      "status": "PASS",
+      "ms": 875,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Insurance Specialist",
+      "route": "/quick-quote",
+      "name": "quick quote",
+      "status": "PASS",
+      "ms": 1031,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Insurance Specialist",
+      "route": "/wealth-engine",
+      "name": "WE Deep Check",
+      "status": "PASS",
+      "ms": 2886
+    },
+    {
+      "persona": "Investment Advisor",
+      "route": "/wealth-engine",
+      "name": "wealth engine",
+      "status": "PASS",
+      "ms": 980,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Investment Advisor",
+      "route": "/rebalancing",
+      "name": "rebalancing",
+      "status": "PASS",
+      "ms": 997,
+      "httpStatus": 200
+    },
+    {
+      "persona": "Investment Advisor",
+      "route": "/analytics",
+      "name": "analytics",
       "status": "PASS",
       "ms": 929,
       "httpStatus": 200
     },
     {
-      "persona": "Experienced Advisor",
-      "route": "/analytics",
-      "name": "analytics",
-      "status": "PASS",
-      "ms": 978,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Experienced Advisor",
-      "route": "/rebalancing",
-      "name": "rebalancing",
-      "status": "PASS",
-      "ms": 891,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Experienced Advisor",
-      "route": "/wealth-engine",
-      "name": "WE Deep Check",
-      "status": "PASS",
-      "ms": 2931
-    },
-    {
-      "persona": "Insurance Specialist",
-      "route": "/wealth-engine",
-      "name": "wealth engine",
-      "status": "PASS",
-      "ms": 961,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Insurance Specialist",
-      "route": "/quick-quote",
-      "name": "quick quote",
-      "status": "PASS",
-      "ms": 1009,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Insurance Specialist",
-      "route": "/wealth-engine",
-      "name": "WE Deep Check",
-      "status": "PASS",
-      "ms": 2867
-    },
-    {
-      "persona": "Investment Advisor",
-      "route": "/wealth-engine",
-      "name": "wealth engine",
-      "status": "PASS",
-      "ms": 959,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Investment Advisor",
-      "route": "/rebalancing",
-      "name": "rebalancing",
-      "status": "PASS",
-      "ms": 1032,
-      "httpStatus": 200
-    },
-    {
-      "persona": "Investment Advisor",
-      "route": "/analytics",
-      "name": "analytics",
-      "status": "PASS",
-      "ms": 851,
-      "httpStatus": 200
-    },
-    {
       "persona": "Investment Advisor",
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 2926
+      "ms": 2940
     },
     {
       "persona": "Estate Planning Specialist",
       "route": "/wealth-engine",
       "name": "wealth engine",
       "status": "PASS",
-      "ms": 900,
+      "ms": 877,
       "httpStatus": 200
     },
     {
@@ -403,7 +403,7 @@
       "route": "/estate-planning",
       "name": "estate planning",
       "status": "PASS",
-      "ms": 998,
+      "ms": 1136,
       "httpStatus": 200
     },
     {
@@ -411,14 +411,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 2920
+      "ms": 3048
     },
     {
       "persona": "Affiliate/Recruiter",
       "route": "/wealth-engine",
       "name": "wealth engine",
       "status": "PASS",
-      "ms": 886,
+      "ms": 945,
       "httpStatus": 200
     },
     {
@@ -426,7 +426,7 @@
       "route": "/analytics",
       "name": "analytics",
       "status": "PASS",
-      "ms": 956,
+      "ms": 1144,
       "httpStatus": 200
     },
     {
@@ -434,14 +434,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 2882
+      "ms": 2924
     },
     {
       "persona": "Team Lead",
       "route": "/manager",
       "name": "manager",
       "status": "PASS",
-      "ms": 907,
+      "ms": 952,
       "httpStatus": 200
     },
     {
@@ -449,7 +449,7 @@
       "route": "/analytics",
       "name": "analytics",
       "status": "PASS",
-      "ms": 894,
+      "ms": 925,
       "httpStatus": 200
     },
     {
@@ -457,7 +457,7 @@
       "route": "/wealth-engine",
       "name": "wealth engine",
       "status": "PASS",
-      "ms": 902,
+      "ms": 930,
       "httpStatus": 200
     },
     {
@@ -465,14 +465,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 2967
+      "ms": 3071
     },
     {
       "persona": "Branch Manager",
       "route": "/manager",
       "name": "manager",
       "status": "PASS",
-      "ms": 898,
+      "ms": 908,
       "httpStatus": 200
     },
     {
@@ -480,7 +480,7 @@
       "route": "/analytics",
       "name": "analytics",
       "status": "PASS",
-      "ms": 1046,
+      "ms": 1006,
       "httpStatus": 200
     },
     {
@@ -488,7 +488,7 @@
       "route": "/compliance-audit",
       "name": "compliance audit",
       "status": "PASS",
-      "ms": 902,
+      "ms": 1058,
       "httpStatus": 200
     },
     {
@@ -496,14 +496,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 3042
+      "ms": 3083
     },
     {
       "persona": "Regional Director",
       "route": "/manager",
       "name": "manager",
       "status": "PASS",
-      "ms": 1029,
+      "ms": 872,
       "httpStatus": 200
     },
     {
@@ -511,7 +511,7 @@
       "route": "/analytics",
       "name": "analytics",
       "status": "PASS",
-      "ms": 1026,
+      "ms": 989,
       "httpStatus": 200
     },
     {
@@ -519,14 +519,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 2984
+      "ms": 2969
     },
     {
       "persona": "Compliance Officer",
       "route": "/compliance-audit",
       "name": "compliance audit",
       "status": "PASS",
-      "ms": 910,
+      "ms": 960,
       "httpStatus": 200
     },
     {
@@ -534,7 +534,7 @@
       "route": "/compliance-copilot",
       "name": "compliance copilot",
       "status": "PASS",
-      "ms": 1027,
+      "ms": 1017,
       "httpStatus": 200
     },
     {
@@ -542,7 +542,7 @@
       "route": "/analytics",
       "name": "analytics",
       "status": "PASS",
-      "ms": 988,
+      "ms": 1081,
       "httpStatus": 200
     },
     {
@@ -550,14 +550,14 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 3067
+      "ms": 2961
     },
     {
       "persona": "Platform Admin",
       "route": "/manager",
       "name": "manager",
       "status": "PASS",
-      "ms": 962,
+      "ms": 957,
       "httpStatus": 200
     },
     {
@@ -565,7 +565,7 @@
       "route": "/analytics",
       "name": "analytics",
       "status": "PASS",
-      "ms": 935,
+      "ms": 948,
       "httpStatus": 200
     },
     {
@@ -573,7 +573,7 @@
       "route": "/settings",
       "name": "settings",
       "status": "PASS",
-      "ms": 993,
+      "ms": 919,
       "httpStatus": 200
     },
     {
@@ -581,7 +581,7 @@
       "route": "/compliance-audit",
       "name": "compliance audit",
       "status": "PASS",
-      "ms": 1142,
+      "ms": 1119,
       "httpStatus": 200
     },
     {
@@ -589,7 +589,7 @@
       "route": "/wealth-engine",
       "name": "WE Deep Check",
       "status": "PASS",
-      "ms": 3089
+      "ms": 3010
     },
     {
       "persona": "Global",
@@ -603,21 +603,21 @@
       "route": "/wealth-engine",
       "name": "Mobile (iPhone)",
       "status": "PASS",
-      "ms": 2036
+      "ms": 2103
     },
     {
       "persona": "Responsive",
       "route": "/wealth-engine",
       "name": "Tablet (iPad)",
       "status": "PASS",
-      "ms": 1991
+      "ms": 2063
     },
     {
       "persona": "Responsive",
       "route": "/wealth-engine",
       "name": "Desktop",
       "status": "PASS",
-      "ms": 2002
+      "ms": 1980
     }
   ]
 }

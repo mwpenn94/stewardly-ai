@@ -109,7 +109,7 @@ describe("Accessibility: keyboard support", () => {
       }
     };
     walk(path.join(ROOT, "client/src"));
-    expect(count).toBeGreaterThan(500);
+    expect(count).toBeGreaterThan(450); // adjusted after dead code removal (75 files)
   });
 });
 

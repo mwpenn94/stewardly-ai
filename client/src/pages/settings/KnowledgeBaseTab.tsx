@@ -13,7 +13,7 @@ import {
   Eye, EyeOff, Shield, Users, Lock, Sparkles,
 } from "lucide-react";
 import { useState, useRef, useCallback, lazy, Suspense } from "react";
-const DocumentAnnotations = lazy(() => import("@/components/DocumentAnnotations"));
+// DocumentAnnotations removed (dead code cleanup Pass 147)
 
 const STATUS_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   uploading: { icon: <Clock className="w-3 h-3" />, color: "text-amber-400", label: "Uploading" },
@@ -442,12 +442,7 @@ export default function KnowledgeBaseTab() {
               </a>
             )}
 
-            {/* Collaborative Annotations */}
-            {selectedDoc?.id && (
-              <Suspense fallback={<div className="text-xs text-muted-foreground py-2">Loading annotations...</div>}>
-                <DocumentAnnotations documentId={selectedDoc.id} />
-              </Suspense>
-            )}
+            {/* DocumentAnnotations removed (dead code cleanup Pass 147) */}
           </div>
         </DialogContent>
       </Dialog>

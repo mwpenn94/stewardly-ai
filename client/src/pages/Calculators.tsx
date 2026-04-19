@@ -1583,7 +1583,7 @@ export default function Calculators() {
 
           {/* ═══ CASCADE FLOW DIAGRAM (Gap 7) ═══ */}
           <DisclosureSection minLevel={1} label="Cascade Flow Diagram">
-            <CascadeFlowDiagram weData={weData} />
+            <CascadeFlowDiagram weData={weData} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} />
           </DisclosureSection>
 
           {/* ═══ PANEL RENDERING ═══ */}

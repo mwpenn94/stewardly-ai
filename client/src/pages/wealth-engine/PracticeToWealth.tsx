@@ -68,16 +68,7 @@ export default function PracticeToWealthPage({ embedded = false }: { embedded?: 
   const holisticSim = trpc.wealthEngine.holisticSimulate.useMutation({ onError: (e) => toast.error(e.message) });
 
   const onRun = async () => {
-    // Log the calculator use so the Learning Home's agent recommendations
-    // can surface calculator-informed study suggestions (e.g. "you recently
-    // used projectBizIncome, brush up on the life_health track").
-    try {
-      const { recordCalculatorUse } = await import("@/lib/recentCalculators");
-      recordCalculatorUse("projectBizIncome");
-      recordCalculatorUse("holisticSimulate");
-    } catch {
-      // Dynamic import failed — localStorage disabled or SSR context; ignore.
-    }
+    // recentCalculators tracking removed (dead code cleanup Pass 147)
 
     // 1. Run BIE projection for the selected role
     bizProject.mutate({

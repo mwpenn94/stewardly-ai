@@ -11,7 +11,6 @@ import { GuestBanner } from "./components/GuestBanner";
 import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
-import { VoiceOnboardingCoach } from "./components/VoiceOnboardingCoach";
 import { ScrollToTop } from "./components/ScrollToTop";
 import ServiceStatusBanner from "./components/ServiceStatusBanner";
 import { OnboardingTour, useOnboardingTour } from "./components/OnboardingTour";
@@ -25,9 +24,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { AudioCompanionProvider } from "./components/AudioCompanion";
 import { PILProvider } from "./components/PlatformIntelligence";
 import { LiveAnnouncer } from "./lib/multisensory/LiveAnnouncer";
-import { VisualAnnouncer } from "./lib/multisensory/VisualAnnouncer";
-import { IntentRouter } from "./lib/multisensory/IntentRouter";
-import { GlobalVoiceButton } from "./lib/multisensory/GlobalVoiceButton";
+// VisualAnnouncer, IntentRouter, GlobalVoiceButton removed (dead code cleanup Pass 147)
 import { useGlobalShortcuts } from "./lib/multisensory/useGlobalShortcuts";
 
 // ── Eagerly loaded (critical path — instant navigation) ──────────────
@@ -418,9 +415,6 @@ function AppContent() {
           subtle centered toast so sighted users see the same feedback
           screen-reader users hear. */}
       <LiveAnnouncer />
-      <VisualAnnouncer />
-      <IntentRouter />
-      <GlobalVoiceButton />
       <OfflineBanner />
       <GuestBanner />
       <ServiceStatusBanner />
@@ -445,7 +439,6 @@ function App() {
                   <Toaster />
                   <KeyboardShortcuts />
                   <CommandPalette />
-                  <VoiceOnboardingCoach />
                   <AppContent />
                 </PILProvider>
               </AudioCompanionProvider>
