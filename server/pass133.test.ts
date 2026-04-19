@@ -124,12 +124,14 @@ describe("Pass 133 — Depth Pass Components", () => {
       expect(content).toContain("PRACTICE_BENCHMARKS");
     });
 
-    it("is routed in App.tsx (not commented out)", () => {
+    it("Calculators (Unified Wealth Engine) is routed at /wealth-engine in App.tsx", () => {
       const appContent = readFileSync(resolve(ROOT, "client/src/App.tsx"), "utf-8");
-      // Should have an uncommented import
-      expect(appContent).toMatch(/^const WealthEngineHub = lazy/m);
-      // Should have an active route
-      expect(appContent).toContain('<WealthEngineHub />');
+      // Calculators should be imported (not WealthEngineHub)
+      expect(appContent).toMatch(/const Calculators = lazy/);
+      // Should have an active route at /wealth-engine rendering Calculators
+      expect(appContent).toContain('<Calculators />');
+      // WealthEngineHub should be commented out (it's a shallow shell)
+      expect(appContent).toMatch(/\/\/\s*const WealthEngineHub/);
     });
   });
 

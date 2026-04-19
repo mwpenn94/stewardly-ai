@@ -6567,4 +6567,11 @@
 - [x] Run vitest and fix any regressions (23/23 pass)
 - [x] Browser validate all 3 hubs
 - [x] Re-enabled WealthEngineHub route in App.tsx (was commented out, causing consolidation to have no effect)
+- [x] Checkpoint saved
+
+## Pass 133 FIX — Revert WealthEngineHub Regression
+
+- [x] Revert App.tsx: restore Calculators (Unified Wealth Engine) at /wealth-engine — WealthEngineHub was a shallow shell that replaced the comprehensive calculator
+- [x] Apply Pass 133 depth improvements (benchmarks, cascade flow) INTO the Calculators component instead (already had WealthEngineContext wired)
+- [x] Validate that all existing Calculators functionality is preserved (24/24 tests pass)
 - [ ] Checkpoint saved

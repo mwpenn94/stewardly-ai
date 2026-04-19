@@ -42,8 +42,8 @@ import Welcome from "./pages/Welcome";
 const Calculators = lazy(() => import("./pages/Calculators"));
 const EmbedCalculator = lazy(() => import("./pages/EmbedCalculator"));
 // Wealth-engine hub (Phase 4 — single hub with internal sidebar navigation)
-// Pass 133: Re-enabled WealthEngineHub — the consolidated 3-stage hub (Plan → Protect → Practice)
-const WealthEngineHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
+// Legacy shallow hub — replaced by Calculators (Unified Wealth Engine) at /wealth-engine
+// const WealthEngineHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 const UnifiedAI = lazy(() => import("./pages/UnifiedAI"));
@@ -183,9 +183,8 @@ function Router() {
         <Route path="/chat/:id?">{() => <SectionErrorBoundary sectionName="Chat"><Chat /></SectionErrorBoundary>}</Route>
         <Route path={"/calculators"}>{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path="/my-plan">{() => { window.location.replace('/wealth-engine?panel=myplan'); return null; }}</Route>
-        {/* ── Wealth Engine Hub — Consolidated 3-stage hub (Plan → Protect → Practice) ─── */}
-        <Route path="/wealth-engine">{() => <SectionErrorBoundary sectionName="Wealth Engine"><WealthEngineHub /></SectionErrorBoundary>}</Route>
-        <Route path="/wealth-engine/:panel">{() => <SectionErrorBoundary sectionName="Wealth Engine"><WealthEngineHub /></SectionErrorBoundary>}</Route>
+        {/* ── Wealth Engine — Unified Wealth Engine (comprehensive calculator + advisory + data hub) ─── */}
+        <Route path="/wealth-engine">{() => <SectionErrorBoundary sectionName="Wealth Engine"><Calculators /></SectionErrorBoundary>}</Route>
         {/* Unified AI Surface (Chat + Code + Agent) */}
         <Route path={"/ai"} component={UnifiedAI} />
         {/* Code Chat (admin foundation — also accessible standalone) */}
