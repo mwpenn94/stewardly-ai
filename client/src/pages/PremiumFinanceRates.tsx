@@ -31,6 +31,7 @@ export default function PremiumFinanceRates({ embedded = false }: { embedded?: b
         <p className="text-muted-foreground mt-1">
           Live SOFR rates and historical trends for premium financing analysis.
         </p>
+        <p className="text-xs text-muted-foreground mt-1">For full premium financing modeling with projections, see <a href="/wealth-engine" className="text-primary hover:underline">Wealth Engine → ③ Protect → Premium Financing</a></p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>

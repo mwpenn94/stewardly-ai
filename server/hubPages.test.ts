@@ -262,8 +262,8 @@ describe("Pass 111: Hub pages structure", () => {
       expect(peopleHub).toContain("embedded");
     });
 
-    it("has a mobile nav toggle", () => {
-      expect(peopleHub).toContain("sidebarOpen");
+    it("has tab-based navigation", () => {
+      expect(peopleHub).toContain("activeTab");
     });
   });
 

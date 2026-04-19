@@ -104,6 +104,7 @@ export function PremiumFinancingPanel() {
               <TooltipContent className="max-w-xs">Premium financing uses borrowed funds to pay life insurance premiums. The policy's cash value serves as collateral. Suitable for high-net-worth clients who want large death benefits without liquidating assets.</TooltipContent>
             </Tooltip>
           </CardTitle>
+          <p className="text-[10px] text-muted-foreground">For live rate data and history, see <a href="/people/premium-finance" className="text-primary hover:underline">Command Center → Operations → Premium Finance</a></p>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">

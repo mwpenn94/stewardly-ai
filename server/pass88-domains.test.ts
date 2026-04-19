@@ -217,12 +217,12 @@ describe('Pass 88 — Wealth Engine Domain A-D Panels', () => {
     it('stock ticker is removed', () => {
       expect(content).not.toContain('MarketTicker');
     });
-    it('Client Profile is under Client Planning group', () => {
-      // Client Profile should appear after "Client Planning" group header
-      const clientPlanningIdx = content.indexOf("group: 'Client Planning'");
-      const profileIdx = content.indexOf("'profile'", clientPlanningIdx);
-      expect(clientPlanningIdx).toBeGreaterThan(-1);
-      expect(profileIdx).toBeGreaterThan(clientPlanningIdx);
+    it('Client Profile is under Foundation group', () => {
+      // Client Profile should appear after "Foundation" group header
+      const foundationIdx = content.indexOf("group: '① Foundation'");
+      const profileIdx = content.indexOf("'profile'", foundationIdx);
+      expect(foundationIdx).toBeGreaterThan(-1);
+      expect(profileIdx).toBeGreaterThan(foundationIdx);
     });
   });
 });

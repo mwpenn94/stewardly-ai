@@ -235,8 +235,43 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
   tracks: any[];
   recentTracks: RecentTrack[];
 }) {
+  /* Compute today's priority action */
+  const todayAction = (() => {
+    if ((summary?.dueNow ?? 0) > 0) return { label: `Review ${summary.dueNow} due items`, href: "/learning/review", icon: RotateCcw, urgency: "high" as const };
+    if (expiringSoon > 0) return { label: `${expiringSoon} license(s) expiring soon`, href: "/learning/licenses", icon: AlertTriangle, urgency: "high" as const };
+    if (streak.status === "at-risk") return { label: "Study today to keep your streak", href: "/learning/review", icon: Flame, urgency: "medium" as const };
+    if (recentTracks.length > 0) return { label: `Continue: ${recentTracks[0].name}`, href: `/learning/tracks/${recentTracks[0].slug}`, icon: BookOpen, urgency: "low" as const };
+    if (tracks.length > 0) return { label: "Start your first exam track", href: `/learning/tracks/${tracks[0]?.slug ?? ""}`, icon: GraduationCap, urgency: "low" as const };
+    return { label: "Explore available tracks", href: "/learning/search", icon: Search, urgency: "low" as const };
+  })();
+
   return (
     <div className="space-y-4">
+      {/* ─── TODAY'S PRIORITY ACTION ─── */}
+      <Card className={`border-l-4 ${
+        todayAction.urgency === "high" ? "border-l-red-500 bg-red-500/5" :
+        todayAction.urgency === "medium" ? "border-l-amber-500 bg-amber-500/5" :
+        "border-l-primary bg-primary/5"
+      }`}>
+        <CardContent className="py-3 flex items-center gap-3">
+          <todayAction.icon className={`w-5 h-5 shrink-0 ${
+            todayAction.urgency === "high" ? "text-red-500" :
+            todayAction.urgency === "medium" ? "text-amber-500" :
+            "text-primary"
+          }`} />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Today's Priority</p>
+            <p className="text-sm font-medium text-foreground">{todayAction.label}</p>
+          </div>
+          <Link href={todayAction.href}>
+            <Button size="sm" className="gap-1.5 shrink-0">
+              <ChevronRight className="w-3.5 h-3.5" />
+              Go
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KPICard
@@ -260,6 +295,22 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
           action={{ label: "View tracker", href: "/learning/licenses" }}
         />
       </div>
+
+      {/* Weekly Progress Bar */}
+      <Card>
+        <CardContent className="py-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-muted-foreground">Weekly Study Goal</span>
+            <span className="text-xs text-muted-foreground">{Math.min(streak.current, 7)}/7 days</span>
+          </div>
+          <Progress value={Math.min((streak.current / 7) * 100, 100)} className="h-2" />
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {streak.current >= 7 ? "Goal met! Keep the momentum going." :
+             streak.current > 0 ? `${7 - Math.min(streak.current, 7)} more days to hit your weekly goal` :
+             "Start studying to build your weekly streak"}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Learning Plan */}
       <Card>
@@ -405,21 +456,47 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary }: {
 }) {
   return (
     <div className="space-y-4">
-      {/* Quick actions bar */}
-      <div className="flex flex-wrap gap-2">
+      {/* ─── PROMINENT QUICK ACTIONS ─── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {summary?.dueNow > 0 && (
           <Link href="/learning/review">
-            <Button size="sm" className="gap-1.5">
-              <RotateCcw className="h-3.5 w-3.5" />
-              Review {summary.dueNow} due items
-            </Button>
+            <Card className="card-lift cursor-pointer border-primary/30 bg-primary/5 h-full">
+              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+                <RotateCcw className="h-5 w-5 text-primary" />
+                <div className="text-sm font-bold text-primary">{summary.dueNow}</div>
+                <div className="text-[10px] text-muted-foreground">Items due for review</div>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+        {recentTracks.length > 0 && (
+          <Link href={`/learning/tracks/${recentTracks[0].slug}`}>
+            <Card className="card-lift cursor-pointer h-full">
+              <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+                <BookOpen className="h-5 w-5 text-primary" />
+                <div className="text-xs font-medium">Continue</div>
+                <div className="text-[10px] text-muted-foreground line-clamp-1">{recentTracks[0].name}</div>
+              </CardContent>
+            </Card>
           </Link>
         )}
         <Link href="/learning/search">
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Search className="h-3.5 w-3.5" />
-            Find tracks
-          </Button>
+          <Card className="card-lift cursor-pointer h-full">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+              <Search className="h-5 w-5 text-primary" />
+              <div className="text-xs font-medium">Find Tracks</div>
+              <div className="text-[10px] text-muted-foreground">Browse all content</div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/learning/review">
+          <Card className="card-lift cursor-pointer h-full">
+            <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+              <Brain className="h-5 w-5 text-primary" />
+              <div className="text-xs font-medium">Review</div>
+              <div className="text-[10px] text-muted-foreground">Spaced repetition</div>
+            </CardContent>
+          </Card>
         </Link>
       </div>
 

@@ -220,20 +220,101 @@ export default function PeopleHub() {
           })}
         </div>
 
-        {/* ─── CASCADE FLOW INDICATOR — shows pipeline data flow ─── */}
+        {/* ─── UNIFIED PIPELINE HEALTH + QUICK ACTIONS ─── */}
         {activeTab === "pipeline" && (
-          <div className="rounded-lg border border-border/30 bg-card/30 p-3">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-semibold text-muted-foreground">Pipeline Flow</h4>
-              <span className="text-[9px] text-muted-foreground/50">Leads → Clients → Growth</span>
+          <div className="space-y-3">
+            {/* Pipeline Health Metrics Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <Card className="border-l-4 border-l-blue-500">
+                <CardContent className="p-3 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active Leads</p>
+                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-[9px] text-muted-foreground">Connect CRM to populate</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-amber-500">
+                <CardContent className="p-3 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">In Onboarding</p>
+                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-[9px] text-muted-foreground">Pending conversions</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-emerald-500">
+                <CardContent className="p-3 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active Clients</p>
+                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-[9px] text-muted-foreground">Under management</p>
+                </CardContent>
+              </Card>
+              <Card className="border-l-4 border-l-purple-500">
+                <CardContent className="p-3 text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Due for Review</p>
+                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-[9px] text-muted-foreground">Annual reviews pending</p>
+                </CardContent>
+              </Card>
             </div>
-            <CascadeFlowIndicator stages={[
-              { label: "Leads", icon: Target, status: "active", flowLabel: "Qualify & nurture" },
-              { label: "Onboarding", icon: UserPlus, status: "active", flowLabel: "Convert & onboard" },
-              { label: "Clients", icon: Users, status: "active", flowLabel: "Serve & grow" },
-              { label: "Review", icon: FileText, status: "pending", flowLabel: undefined },
-            ]} />
+
+            {/* Quick Action Buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setActivePanel("leads")}>
+                <Target className="w-3.5 h-3.5" /> Add Lead
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setActivePanel("client-onboarding")}>
+                <UserPlus className="w-3.5 h-3.5" /> Start Onboarding
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setActivePanel("email-campaigns")}>
+                <Mail className="w-3.5 h-3.5" /> New Campaign
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setActivePanel("annual-review")}>
+                <FileText className="w-3.5 h-3.5" /> Schedule Review
+              </Button>
+            </div>
+
+            {/* Pipeline Flow Indicator */}
+            <div className="rounded-lg border border-border/30 bg-card/30 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-semibold text-muted-foreground">Pipeline Flow</h4>
+                <span className="text-[9px] text-muted-foreground/50">Leads → Clients → Growth</span>
+              </div>
+              <CascadeFlowIndicator stages={[
+                { label: "Leads", icon: Target, status: "active", flowLabel: "Qualify & nurture" },
+                { label: "Onboarding", icon: UserPlus, status: "active", flowLabel: "Convert & onboard" },
+                { label: "Clients", icon: Users, status: "active", flowLabel: "Serve & grow" },
+                { label: "Review", icon: FileText, status: "pending", flowLabel: undefined },
+              ]} />
+            </div>
           </div>
+        )}
+
+        {/* ─── MARKETING TAB QUICK METRICS ─── */}
+        {activeTab === "marketing" && (
+          <DisclosureSection minLevel={1} label="Marketing Benchmarks">
+            <BenchmarkGrid
+              title="Marketing Benchmarks"
+              items={[
+                { label: "Email Open Rate", value: "21.5%", source: "Mailchimp 2024 — financial services industry average", status: "neutral" },
+                { label: "Click-Through", value: "2.7%", source: "Mailchimp 2024 — financial services CTR", status: "neutral" },
+                { label: "Cost per Lead", value: "$150-350", source: "SmartAsset 2024 — qualified digital lead cost", status: "neutral" },
+                { label: "Seminar ROI", value: "3-5x", source: "FMG Suite 2024 — avg seminar marketing ROI for advisors", status: "positive" },
+              ]}
+            />
+          </DisclosureSection>
+        )}
+
+        {/* ─── COMPLIANCE TAB BENCHMARKS ─── */}
+        {activeTab === "compliance" && (
+          <DisclosureSection minLevel={1} label="Compliance Benchmarks">
+            <BenchmarkGrid
+              title="Compliance Benchmarks"
+              items={[
+                { label: "Avg Fine", value: "$1.2M", source: "FINRA 2024 — average disciplinary fine amount", status: "warning" },
+                { label: "Exam Frequency", value: "Every 4 yrs", source: "SEC 2024 — average RIA examination cycle", status: "neutral" },
+                { label: "Compliance Cost", value: "$35K/rep", source: "FINRA 2024 — avg annual compliance cost per registered rep", status: "neutral" },
+                { label: "Deficiency Rate", value: "40%", source: "SEC 2024 — % of exams resulting in deficiency letters", status: "warning" },
+              ]}
+            />
+          </DisclosureSection>
         )}
 
         {/* ─── INDUSTRY BENCHMARKS — CAC, LTV, conversion rates ─── */}
