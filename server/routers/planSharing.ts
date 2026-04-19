@@ -126,13 +126,35 @@ export const planSharingRouter = router({
     }));
   }),
 
+  /** Update expiration on an existing shared link */
+  updateExpiration: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      expiresInDays: z.number().min(1).max(365),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const newExpiry = new Date(Date.now() + input.expiresInDays * 86_400_000);
+      await db
+        .update(sharedLinks)
+        .set({ expiresAt: newExpiry })
+        .where(
+          and(
+            eq(sharedLinks.id, input.id),
+            eq(sharedLinks.userId, ctx.user.id),
+            eq(sharedLinks.contentType, "plan_summary"),
+          ),
+        );
+      return { success: true, expiresAt: newExpiry.toISOString() };
+    }),
+
   /** Revoke a shared link */
   revokeShare: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       // Set maxViews to 0 to effectively revoke
-      const result = await db
+      await db
         .update(sharedLinks)
         .set({ maxViews: 0 })
         .where(

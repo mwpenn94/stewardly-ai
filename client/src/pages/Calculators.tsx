@@ -70,6 +70,7 @@ const WeFirmComparison = lazy(() => import('./wealth-engine/FirmComparisonPanel'
 const WeCascadeAlerts = lazy(() => import('./wealth-engine/CascadeAlertsPanel'));
 const WeFinancialDataHub = lazy(() => import('./wealth-engine/FinancialDataHub'));
 const ScenarioComparisonLazy = lazy(() => import('./calculators/ScenarioComparison'));
+const PFRWizardLazy = lazy(() => import('./calculators/PFRWizard'));
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
@@ -80,7 +81,7 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
   'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence' |
-  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub' | 'scenario-comparison';
+  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub' | 'scenario-comparison' | 'pfr-wizard';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
@@ -106,6 +107,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
   ]},
   /* ─── Holistic Planning: merged Client Planning + Advanced + Advisory ─── */
   { group: '① Foundation', items: [
+    { id: 'pfr-wizard' as PanelId, label: '📋 PFR Wizard', icon: <Sparkles className="w-4 h-4" /> },
     { id: 'client-wealth-hub' as PanelId, label: '⭐ Unified Wealth Plan', icon: <Target className="w-4 h-4" /> },
     { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
     { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
@@ -168,6 +170,10 @@ function ScenarioComparisonPanel({ weData, gatherInputs, restoreInputs }: {
   weData: any; gatherInputs: () => Record<string, any>; restoreInputs: (d: Record<string, any>) => void;
 }) {
   return <ScenarioComparisonLazy currentWeData={weData} currentInputs={gatherInputs()} onRestoreScenario={restoreInputs} />;
+}
+
+function PFRWizardPanel({ onNavigateToPanel }: { onNavigateToPanel: (panelId: string) => void }) {
+  return <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading PFR Wizard...</div>}><PFRWizardLazy onNavigateToPanel={onNavigateToPanel} /></Suspense>;
 }
 
 export default function Calculators() {
@@ -665,6 +671,7 @@ export default function Calculators() {
 
   /* ─── PLAN SHARING ─── */
   const sharePlanMutation = trpc.planSharing.createShare.useMutation();
+  const [shareExpiry, setShareExpiry] = useState<7 | 30 | 90 | 365>(30);
 
   /* ─── ALSO MY CLIENT → PLANNING HIERARCHY BRIDGE ─── */
   const bridgeMut = trpc.planningHierarchy.bridgeContactToClient.useMutation();
@@ -1383,20 +1390,33 @@ export default function Calculators() {
               </Button>
               <ShareButton contentType="calculator" contentId={activeSessionId || 'unsaved'} contentTitle={`WealthBridge Calculator — ${clientName || 'Session'}`} variant="outline" size="sm" className="text-xs gap-1 h-7" />
               {user && (
-                <Button variant="outline" size="sm" onClick={async () => {
-                  try {
-                    const result = await sharePlanMutation.mutateAsync({
-                      planSnapshot: weData,
-                      label: `${clientName || 'Client'} Financial Plan`,
-                      expiresInDays: 30,
-                    });
-                    const url = `${window.location.origin}/plan/${result.token}`;
-                    await navigator.clipboard.writeText(url);
-                    toast.success('Share link copied to clipboard!', { description: `Expires ${new Date(result.expiresAt).toLocaleDateString()}` });
-                  } catch (e: any) { toast.error(e.message || 'Failed to create share link'); }
-                }} className="text-xs gap-1 h-7 border-emerald-500/30 text-emerald-500" disabled={sharePlanMutation.isPending}>
-                  <Share2 className="w-3 h-3" /> <span className="hidden sm:inline">{sharePlanMutation.isPending ? 'Sharing...' : 'Share Plan'}</span>
-                </Button>
+                <div className="flex items-center gap-1">
+                  <select
+                    value={shareExpiry}
+                    onChange={e => setShareExpiry(Number(e.target.value) as 7 | 30 | 90 | 365)}
+                    className="h-7 text-[10px] rounded border border-border bg-background px-1.5 text-muted-foreground"
+                    aria-label="Share link expiration"
+                  >
+                    <option value={7}>7 days</option>
+                    <option value={30}>30 days</option>
+                    <option value={90}>90 days</option>
+                    <option value={365}>1 year</option>
+                  </select>
+                  <Button variant="outline" size="sm" onClick={async () => {
+                    try {
+                      const result = await sharePlanMutation.mutateAsync({
+                        planSnapshot: weData,
+                        label: `${clientName || 'Client'} Financial Plan`,
+                        expiresInDays: shareExpiry,
+                      });
+                      const url = `${window.location.origin}/plan/${result.token}`;
+                      await navigator.clipboard.writeText(url);
+                      toast.success('Share link copied to clipboard!', { description: `Expires in ${shareExpiry} days (${new Date(result.expiresAt).toLocaleDateString()})` });
+                    } catch (e: any) { toast.error(e.message || 'Failed to create share link'); }
+                  }} className="text-xs gap-1 h-7 border-emerald-500/30 text-emerald-500" disabled={sharePlanMutation.isPending}>
+                    <Share2 className="w-3 h-3" /> <span className="hidden sm:inline">{sharePlanMutation.isPending ? 'Sharing...' : 'Share Plan'}</span>
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -1610,6 +1630,7 @@ export default function Calculators() {
               {activePanel === 'cascade-alerts' && <WeCascadeAlerts />}
               {activePanel === 'financial-data-hub' && <WeFinancialDataHub />}
               {activePanel === 'scenario-comparison' && <ScenarioComparisonPanel weData={weData} gatherInputs={gatherInputs} restoreInputs={restoreInputs} />}
+              {activePanel === 'pfr-wizard' && <PFRWizardPanel onNavigateToPanel={(id) => setActivePanel(id as PanelId)} />}
             </Suspense>
           </WealthEngineProvider>
 

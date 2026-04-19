@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import {
-  GitCompare, Save, Trash2, ArrowUpRight, ArrowDownRight, Minus, Plus,
+  GitCompare, Save, Trash2, ArrowUpRight, ArrowDownRight, Minus, Plus, Download, FileSpreadsheet, FileText,
 } from 'lucide-react';
 import type { WealthEngineData } from '@/contexts/WealthEngineContext';
 
@@ -218,6 +218,15 @@ export function ScenarioComparison({ currentWeData, currentInputs, onRestoreScen
           </div>
         )}
 
+        {/* Export buttons — visible when comparing */}
+        {compareResults && metrics.length > 0 && (
+          <ExportButtons
+            currentWeData={currentWeData}
+            compareScenario={compareScenario}
+            compareResults={compareResults}
+          />
+        )}
+
         {scenarios.length === 0 && !showSave && (
           <p className="text-xs text-muted-foreground text-center py-4">
             No saved scenarios yet. Click "Save Current" to create your first scenario for comparison.
@@ -225,6 +234,55 @@ export function ScenarioComparison({ currentWeData, currentInputs, onRestoreScen
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Export buttons for PDF and Excel download */
+function ExportButtons({ currentWeData, compareScenario, compareResults }: {
+  currentWeData: WealthEngineData;
+  compareScenario: any;
+  compareResults: WealthEngineData;
+}) {
+  const exportMutation = trpc.scenarioExport.export.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, '_blank');
+      toast.success(`Export downloaded as ${data.filename}`);
+    },
+    onError: (e) => toast.error(`Export failed: ${e.message}`),
+  });
+
+  const handleExport = (format: 'pdf' | 'excel') => {
+    exportMutation.mutate({
+      format,
+      title: `Scenario Comparison: Current vs ${compareScenario?.name || 'Baseline'}`,
+      scenarios: [
+        { name: 'Current Plan', data: currentWeData as any },
+        { name: compareScenario?.name || 'Baseline', data: compareResults as any },
+      ],
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+      <span className="text-[10px] text-muted-foreground">Export:</span>
+      <Button
+        variant="outline" size="sm" className="h-7 text-xs gap-1"
+        disabled={exportMutation.isPending}
+        onClick={() => handleExport('pdf')}
+      >
+        <FileText className="w-3 h-3" /> PDF
+      </Button>
+      <Button
+        variant="outline" size="sm" className="h-7 text-xs gap-1"
+        disabled={exportMutation.isPending}
+        onClick={() => handleExport('excel')}
+      >
+        <FileSpreadsheet className="w-3 h-3" /> Excel
+      </Button>
+      {exportMutation.isPending && (
+        <span className="text-[10px] text-muted-foreground animate-pulse">Generating...</span>
+      )}
+    </div>
   );
 }
 

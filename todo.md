@@ -6816,3 +6816,31 @@
 - [x] All 3 key feature files present
 - [x] Comprehensive assessment report written (convergence-assessment-report.md)
 - [x] All 11 tests pass
+
+## Recommended Next Steps — Implementation
+
+### Feature A: PFR Template Wizard
+- [x] Create PFRWizard component with 10-step guided flow (Foundation → Plan → Protect → Grow → Analyze)
+- [x] Add progress indicator with step counter, category badges, and completion tracking
+- [x] Wire wizard steps to existing panels via onNavigateToPanel → setActivePanel
+- [x] Add PFR nav item (first in Foundation section) and lazy-loaded panel rendering
+- [x] Add edge-state handler for undefined currentStep (found in Pass 1)
+
+### Feature B: Scenario Export to PDF/Excel
+- [x] Create scenarioExport tRPC router with recursive data flattening and delta computation
+- [x] Create CSV export (Excel-compatible) with humanized labels and delta columns
+- [x] Add export buttons (PDF/Excel) to ScenarioComparison header
+- [x] Include delta highlighting via computed diff values in exported data
+
+### Feature C: Shared Plan Expiration Controls
+- [x] Add expiration dropdown (7/30/90/365 days) to share dialog in Calculators.tsx
+- [x] Update planSharing router with expiresInDays input and updateExpiration mutation
+- [x] Expiration enforced via expiresAt column in sharedLinks table
+- [x] SharedPlanView checks expiration and shows "expired" message for stale links
+
+### Proper Recursive Convergence (3 consecutive clean passes required)
+- [x] Convergence Pass 1: 1 issue found (PFRWizard edge-state handler) — COUNTER RESET to 0
+- [x] Convergence Pass 2: CLEAN (16 structural checks) — counter = 1
+- [x] Convergence Pass 3: CLEAN (PFR panel IDs, NaN protection, weights) — counter = 2
+- [x] Convergence Pass 4: CLEAN (58/58 panels, cross-feature, regression) — counter = 3 CONFIRMED
+- [x] Comprehensive assessment report delivered (convergence-assessment-report.md)
