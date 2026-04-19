@@ -2187,6 +2187,8 @@ import { autonomousProcessingRouter } from "./routers/autonomousProcessing";
 import { openClawRouter } from "./routers/openClaw";
 import { wealthEngineRouter } from "./routers/wealthEngine";
 import { hubAllocationsRouter } from "./routers/hubAllocations";
+import { planSharingRouter } from "./routers/planSharing";
+import { scenariosRouter } from "./routers/scenarios";
 import { codeChatRouter } from "./routers/codeChat";
 import { calculatorEngineRouter } from "./routers/calculatorEngine";
 import { financialProfileRouter } from "./routers/financialProfile";
@@ -2397,6 +2399,8 @@ export const appRouter = router({
   planningHierarchy: planningHierarchyRouter,
   financialData: financialDataRouter,
   hubAllocations: hubAllocationsRouter,
+  planSharing: planSharingRouter,
+  scenarios: scenariosRouter,
 });
 
 export type AppRouter = typeof appRouter;

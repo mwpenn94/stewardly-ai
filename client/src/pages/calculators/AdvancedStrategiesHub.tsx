@@ -38,6 +38,7 @@ import {
 } from './engine';
 import { useWealthEngine, type AdvancedStrategiesCascade } from '@/contexts/WealthEngineContext';
 import { CascadeAuditTrail } from './CascadeAuditTrail';
+import { CascadeSankey } from './CascadeSankey';
 
 /* ═══ STRATEGY CONFIG ═══ */
 const STRATEGY_CONFIG = [
@@ -164,6 +165,7 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showBackSolve, setShowBackSolve] = useState(false);
   const [showCascade, setShowCascade] = useState(true);
+  const [hubComplexity, setHubComplexity] = useState<'simple' | 'detailed' | 'expert'>('detailed');
   const [strategyAllocation, setStrategyAllocation] = useState({
     premiumFinance: 25, ilit: 25, execComp: 20, charitable: 15, business: 15,
   });
@@ -290,10 +292,22 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
       {/* ─── HEADER ─── */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Gem className="w-5 h-5 text-primary" />
-            Advanced Strategies Hub
-            <RefTip text="Unified view of all advanced planning strategies. Premium financing, ILIT, executive compensation, charitable vehicles, and business planning — with cross-strategy cascade showing how each feeds into your client's holistic financial plan. Sources: AALU (2024), Estate Planning Council, IRC §7702, §2042, §162, §170." refId="advanced-hub" />
+          <CardTitle className="text-lg flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <Gem className="w-5 h-5 text-primary" />
+              Advanced Strategies Hub
+              <RefTip text="Unified view of all advanced planning strategies. Premium financing, ILIT, executive compensation, charitable vehicles, and business planning — with cross-strategy cascade showing how each feeds into your client's holistic financial plan. Sources: AALU (2024), Estate Planning Council, IRC §7702, §2042, §162, §170." refId="advanced-hub" />
+            </span>
+            <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5">
+              {(['simple', 'detailed', 'expert'] as const).map(lvl => (
+                <button key={lvl} onClick={() => setHubComplexity(lvl)}
+                  className={`px-2 py-0.5 text-[10px] rounded transition-all ${
+                    hubComplexity === lvl ? 'bg-primary text-primary-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
+                  }`}>
+                  {lvl === 'simple' ? 'Quick' : lvl === 'detailed' ? 'Standard' : 'Expert'}
+                </button>
+              ))}
+            </div>
           </CardTitle>
           <p className="text-xs text-muted-foreground">
             Set your total strategy benefit goal, allocate across strategies, and see how advanced planning cascades into client wealth planning.
@@ -576,7 +590,7 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
       </Card>
 
       {/* ─── BACK-SOLVE SECTION ─── */}
-      <Card>
+      {hubComplexity !== 'simple' && <Card>
         <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowBackSolve(!showBackSolve)}>
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -614,10 +628,10 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
             )}
           </CardContent>
         )}
-      </Card>
+      </Card>}
 
       {/* ─── SENSITIVITY ANALYSIS ─── */}
-      <Card>
+      {hubComplexity === 'expert' && <Card>
         <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowSensitivity(!showSensitivity)}>
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -676,10 +690,10 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
             </div>
           </CardContent>
         )}
-      </Card>
+      </Card>}
 
       {/* ─── TIME-PHASED PROJECTIONS ─── */}
-      <Card>
+      {hubComplexity !== 'simple' && <Card>
         <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowTimeline(!showTimeline)}>
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -766,10 +780,13 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
             </ResponsiveContainer>
           </div>
         </CardContent>
-      </Card>
+      </Card>}
+
+      {/* ─── CASCADE FLOW DIAGRAM ─── */}
+      {hubComplexity === 'expert' && <CascadeSankey compact />}
 
       {/* ─── CASCADE AUDIT TRAIL ─── */}
-      {we.cascadeAuditEntries.length > 0 && (
+      {hubComplexity === 'expert' && we.cascadeAuditEntries.length > 0 && (
         <CascadeAuditTrail entries={we.cascadeAuditEntries} onClear={() => {}} />
       )}
     </section>

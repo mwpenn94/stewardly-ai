@@ -161,6 +161,7 @@ const WorkflowAutomation = lazy(() => import("./pages/WorkflowAutomation"));
 const EnrichmentAdmin = lazy(() => import("./pages/EnrichmentAdmin"));
 const PortalAnalytics = lazy(() => import("./pages/PortalAnalytics"));
 const SovereignStudy = lazy(() => import("./pages/SovereignStudy"));
+const SharedPlanView = lazy(() => import("./pages/SharedPlanView"));
 // Hub pages with internal sidebars (Phase 3 — sidebar simplification)
 const PeopleHub = lazy(() => import("./pages/PeopleHub"));
 const IntelligenceHubV2 = lazy(() => import("./pages/IntelligenceHubV2"));
@@ -176,8 +177,9 @@ function Router() {
         <Route path={"/signin"} component={SignIn} />
         <Route path={"/org/:slug"} component={OrgLanding} />
         <Route path={"/welcome"} component={Welcome} />
-        <Route path={"/terms"} component={Terms} />
+        <Route path={"terms"} component={Terms} />
         <Route path={"/privacy"} component={Privacy} />
+        <Route path="/plan/:token">{() => <SharedPlanView />}</Route>
 
         {/* Core app routes */}
         <Route path="/chat/:id?">{() => <SectionErrorBoundary sectionName="Chat"><Chat /></SectionErrorBoundary>}</Route>

@@ -5923,6 +5923,7 @@ export const sharedLinks = mysqlTable("shared_links", {
   expiresAt: timestamp("expires_at"),
   viewCount: int("view_count").default(0),
   maxViews: int("max_views").default(100),
+  metadata: json("metadata"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

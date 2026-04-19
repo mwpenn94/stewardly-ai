@@ -6737,3 +6737,39 @@
 - [x] Fix PanelsD.tsx import: `@/hooks/useAuth` → `@/_core/hooks/useAuth` (ENOENT build failure)
 - [x] Check all modified files for similar missing-extension imports (none found)
 - [x] Verify production build passes locally (built in 1m 24s, no errors)
+
+## Pass 142+ — Sankey Viz, Plan Sharing, Scenario Comparison, Code Splitting, Persona Audit
+
+### Feature 1: Sankey cascade visualization
+- [x] Build CascadeSankey component showing dollar flows between Client → Advanced → Practice hubs
+- [x] Real-time updates as cascade data changes
+- [x] Color-coded flow paths with hover tooltips showing amounts
+- [x] Add to both ClientWealthHub and AdvancedStrategiesHub
+
+### Feature 2: Collaborative plan sharing
+- [x] Add metadata column to sharedLinks table + planSharing tRPC router
+- [x] Add tRPC procedures: createShareLink, getSharedPlan (public), myShares, revokeShareLink
+- [x] Build SharedPlanView page — read-only unified plan with holistic score and recommendations
+- [x] Add "Share Plan" button in Calculators.tsx header
+
+### Feature 3: Scenario comparison mode
+- [x] Scenarios tRPC router (list, save, delete) using calculatorScenarios table
+- [x] Add tRPC procedures: saveScenario, listScenarios, deleteScenario
+- [x] Build ScenarioComparison component — side-by-side with delta highlighting
+- [x] Add "Scenarios" nav item in Analyze & Act section + panel rendering
+
+### Feature 4: Code splitting for Calculators
+- [x] Lazy-load wealth-engine panels + ScenarioComparison with React.lazy + Suspense
+- [x] Panel groups (PanelsA-J) kept as named imports (no default exports available)
+
+### Feature 5: Persona audit — complexity toggle across all hubs
+- [x] Audit all panels for 5 user layers (general user, client, professional, org management, admin)
+- [x] Expand complexity toggle (Quick/Standard/Expert) to ClientWealthHub and AdvancedStrategiesHub
+- [x] Gate sections by complexity: Quick=core KPIs, Standard=+back-solve/timeline/cascade, Expert=+sensitivity/Sankey/audit
+- [x] Persona-appropriate depth verified across all 5 layers
+
+### Convergence Passes
+- [x] Convergence Pass 1 — All wiring verified (CascadeSankey, sharing, scenarios, complexity)
+- [x] Convergence Pass 2 — All imports resolve, no duplicate registrations, DB migration applied
+- [x] Convergence Pass 3 — 5-layer persona assessment confirms optimal coverage
+- [x] All 11 tests pass (pass142-features.test.ts), checkpoint saved

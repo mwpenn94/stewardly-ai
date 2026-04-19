@@ -11,6 +11,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useWealthEngine } from '@/contexts/WealthEngineContext';
 import { CascadeAuditTrail } from './CascadeAuditTrail';
+import { CascadeSankey } from './CascadeSankey';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -157,6 +158,7 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
   const [showSensitivity, setShowSensitivity] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showBackSolve, setShowBackSolve] = useState(false);
+  const [hubComplexity, setHubComplexity] = useState<'simple' | 'detailed' | 'expert'>('detailed');
   const [domainAllocation, setDomainAllocation] = useState({
     protection: 15, growth: 30, retirement: 25, tax: 10, estate: 10, education: 10,
   });
@@ -286,6 +288,17 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
           <Target className="w-5 h-5 text-primary" /> Unified Wealth Plan
         </h2>
         <div className="flex items-center gap-2">
+          {/* Complexity Toggle */}
+          <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5">
+            {(['simple', 'detailed', 'expert'] as const).map(lvl => (
+              <button key={lvl} onClick={() => setHubComplexity(lvl)}
+                className={`px-2 py-0.5 text-[10px] rounded transition-all ${
+                  hubComplexity === lvl ? 'bg-primary text-primary-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
+                }`}>
+                {lvl === 'simple' ? 'Quick' : lvl === 'detailed' ? 'Standard' : 'Expert'}
+              </button>
+            ))}
+          </div>
           <Badge variant="outline" className="text-[10px]">
             {p.retireAge - p.age} years to retirement
           </Badge>
@@ -546,7 +559,7 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
       </Card>
 
       {/* ─── BACK-SOLVE SECTION ─── */}
-      <Card className="mb-4">
+      {hubComplexity !== 'simple' && <Card className="mb-4">
         <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowBackSolve(!showBackSolve)}>
           <CardTitle className="text-base flex items-center justify-between">
             <span className="flex items-center gap-2">
@@ -587,9 +600,10 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
             )}
           </CardContent>
         )}
-      </Card>
+      </Card>}
 
       {/* ─── SENSITIVITY ANALYSIS ─── */}
+      {hubComplexity === 'expert' &&
       <Card className="mb-4">
         <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowSensitivity(!showSensitivity)}>
           <CardTitle className="text-base flex items-center justify-between">
@@ -651,7 +665,9 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
         )}
       </Card>
 
+      }
       {/* ─── TIME-PHASED PROJECTIONS ─── */}
+      {hubComplexity !== 'simple' &&
       <Card className="mb-4">
         <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowTimeline(!showTimeline)}>
           <CardTitle className="text-base flex items-center justify-between">
@@ -712,7 +728,7 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
             </div>
           </CardContent>
         )}
-      </Card>
+      </Card>}
 
       {/* ─── DOMAIN PIE CHART ─── */}
       <Card className="mb-4">
@@ -745,7 +761,7 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
       </Card>
 
       {/* ─── CROSS-DOMAIN CASCADE SUMMARY ─── */}
-      <Card>
+      {hubComplexity !== 'simple' && <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             Cross-Domain Cascade
@@ -796,13 +812,16 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* ─── ADVANCED STRATEGIES CASCADE (live from AdvancedStrategiesHub) ─── */}
-      <AdvancedCascadeCard onNavigateToPanel={p.onNavigateToPanel} />
+      {hubComplexity !== 'simple' && <AdvancedCascadeCard onNavigateToPanel={p.onNavigateToPanel} />}
+
+      {/* ─── CASCADE FLOW DIAGRAM ─── */}
+      {hubComplexity === 'expert' && <CascadeSankey compact />}
 
       {/* ─── CASCADE AUDIT TRAIL ─── */}
-      {we.cascadeAuditEntries.length > 0 && (
+      {hubComplexity === 'expert' && we.cascadeAuditEntries.length > 0 && (
         <CascadeAuditTrail entries={we.cascadeAuditEntries} onClear={() => {}} />
       )}
     </section>

@@ -69,6 +69,7 @@ const WeUnifiedClientPlan = lazy(() => import('./wealth-engine/UnifiedClientPlan
 const WeFirmComparison = lazy(() => import('./wealth-engine/FirmComparisonPanel'));
 const WeCascadeAlerts = lazy(() => import('./wealth-engine/CascadeAlertsPanel'));
 const WeFinancialDataHub = lazy(() => import('./wealth-engine/FinancialDataHub'));
+const ScenarioComparisonLazy = lazy(() => import('./calculators/ScenarioComparison'));
 
 /* ═══ PANEL TYPE DEFINITIONS ═══ */
 type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'estate' | 'edu' |
@@ -79,7 +80,7 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
   'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence' |
-  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub';
+  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub' | 'scenario-comparison';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
@@ -147,6 +148,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'impl_timeline', label: 'Timeline', icon: <CalendarRange className="w-4 h-4" /> },
     { id: 'cascade-alerts' as PanelId, label: 'Cascade Alerts', icon: <Zap className="w-4 h-4" /> },
     { id: 'firm-comparison' as PanelId, label: 'Firm Comparison', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'scenario-comparison' as PanelId, label: 'Scenarios', icon: <GitCompare className="w-4 h-4" /> },
     { id: 'partner', label: 'Partner Earnings', icon: <Handshake className="w-4 h-4" /> },
   ]},
   { group: 'Data', items: [
@@ -161,6 +163,13 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
+/* Wrapper for ScenarioComparison that passes weData + input helpers */
+function ScenarioComparisonPanel({ weData, gatherInputs, restoreInputs }: {
+  weData: any; gatherInputs: () => Record<string, any>; restoreInputs: (d: Record<string, any>) => void;
+}) {
+  return <ScenarioComparisonLazy currentWeData={weData} currentInputs={gatherInputs()} onRestoreScenario={restoreInputs} />;
+}
+
 export default function Calculators() {
   const { user } = useAuth();
   // Pass 110: Support ?panel= query param for deep-linking (e.g. /calculators?panel=myplan)
@@ -653,6 +662,9 @@ export default function Calculators() {
     } catch { /* corrupt data — ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* ─── PLAN SHARING ─── */
+  const sharePlanMutation = trpc.planSharing.createShare.useMutation();
 
   /* ─── ALSO MY CLIENT → PLANNING HIERARCHY BRIDGE ─── */
   const bridgeMut = trpc.planningHierarchy.bridgeContactToClient.useMutation();
@@ -1370,6 +1382,22 @@ export default function Calculators() {
                 <RotateCcw className="w-3 h-3" /> <span className="hidden sm:inline">Reset</span>
               </Button>
               <ShareButton contentType="calculator" contentId={activeSessionId || 'unsaved'} contentTitle={`WealthBridge Calculator — ${clientName || 'Session'}`} variant="outline" size="sm" className="text-xs gap-1 h-7" />
+              {user && (
+                <Button variant="outline" size="sm" onClick={async () => {
+                  try {
+                    const result = await sharePlanMutation.mutateAsync({
+                      planSnapshot: weData,
+                      label: `${clientName || 'Client'} Financial Plan`,
+                      expiresInDays: 30,
+                    });
+                    const url = `${window.location.origin}/plan/${result.token}`;
+                    await navigator.clipboard.writeText(url);
+                    toast.success('Share link copied to clipboard!', { description: `Expires ${new Date(result.expiresAt).toLocaleDateString()}` });
+                  } catch (e: any) { toast.error(e.message || 'Failed to create share link'); }
+                }} className="text-xs gap-1 h-7 border-emerald-500/30 text-emerald-500" disabled={sharePlanMutation.isPending}>
+                  <Share2 className="w-3 h-3" /> <span className="hidden sm:inline">{sharePlanMutation.isPending ? 'Sharing...' : 'Share Plan'}</span>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -1581,6 +1609,7 @@ export default function Calculators() {
               {activePanel === 'firm-comparison' && <WeFirmComparison />}
               {activePanel === 'cascade-alerts' && <WeCascadeAlerts />}
               {activePanel === 'financial-data-hub' && <WeFinancialDataHub />}
+              {activePanel === 'scenario-comparison' && <ScenarioComparisonPanel weData={weData} gatherInputs={gatherInputs} restoreInputs={restoreInputs} />}
             </Suspense>
           </WealthEngineProvider>
 
