@@ -6601,7 +6601,7 @@
 ### 134E: Validate and checkpoint
 - [x] Run vitest and fix regressions (117/117 pass, 9960/9965 full suite — 5 pre-existing network failures)
 - [x] Browser validate all 3 hubs
-- [ ] Checkpoint saved
+- [x] Checkpoint saved
 
 ## Pass 135 — Depth: Practice Management Benchmarks
 - [x] Added Practice Management benchmarks (8 cited metrics: Revenue/Advisor, Avg GDC, Recruiting CAC, 1st/4th-Year Retention, Profit Margin, Client/Advisor, Close Rate)
@@ -6648,4 +6648,37 @@
 ### Phase 3: Validate
 - [x] Run tests — 134/134 pass (17 new tests for ClientWealthHub)
 - [x] Browser validate — Vite loaded ClientWealthHub.tsx (200 OK), no console errors
-- [ ] Checkpoint saved
+- [x] Checkpoint saved
+
+## Pass 139 — Holistic Unification: Wire Sliders, Build AdvancedStrategiesHub, Connect Context, Unify Cascade
+
+### 139A: Wire ClientWealthHub sliders to individual panels
+- [x] Add onNavigate callback to DomainSlider that navigates to the corresponding panel
+- [x] Wire onNavigateToPanel prop through Calculators.tsx → ClientWealthHub → DomainSlider
+- [x] Each domain slider "Go" button navigates to the matching individual panel
+
+### 139B: Build AdvancedStrategiesHub
+- [x] Create AdvancedStrategiesHub.tsx (~500 lines) matching ClientWealthHub depth
+- [x] Include: Premium Finance, ILIT, Exec Comp, Charitable, Business strategies
+- [x] Add strategy allocation sliders, sensitivity analysis, time-phased projections, back-solve
+- [x] Wire into Calculators.tsx nav (③ Protect group) and panel switch
+- [x] Add engine functions: calcUnifiedAdvancedPlan, calcAdvancedSensitivity, calcAdvancedTimePhasedProjections
+
+### 139C: Connect to WealthEngineContext with general defaults
+- [x] Add GENERAL_DEFAULTS constant with 20+ industry-standard planning defaults (rates, exemptions, multipliers)
+- [x] Add AdvancedStrategiesCascade interface and EMPTY_ADVANCED_CASCADE
+- [x] Add HolisticCascadeBridge interface and EMPTY_CASCADE_BRIDGE
+- [x] Wire generalDefaults, advancedCascade, holisticBridge into WealthEngineData
+- [x] Add computeHolisticBridge() function for bidirectional cascade scoring
+
+### 139D: Unify ClientWealthHub + AdvancedStrategiesHub into cascading holistic system
+- [x] Create cross-hub cascade via HolisticCascadeBridge (client→advanced, advanced→client, bidirectional)
+- [x] Add unified "Holistic Wealth Score" (weighted 60% client + 40% advanced)
+- [x] Add cascade data flow: clientToAdvanced (income, protection gap, tax burden, retirement gap)
+- [x] Add cascade data flow: advancedToClient (additional protection, tax savings, estate reduction, income boost, net worth boost)
+- [x] AdvancedStrategiesHub shows Cascade to Client Planning section with navigation links
+
+### Validate
+- [x] Run vitest — 21/21 new tests pass (calcUnifiedAdvancedPlan, calcAdvancedSensitivity, calcAdvancedTimePhasedProjections, GENERAL_DEFAULTS, EMPTY cascades, computeHolisticBridge)
+- [x] Browser validate — Vite served AdvancedStrategiesHub.tsx (200 OK), no console errors, no HMR failures
+- [x] Checkpoint saved

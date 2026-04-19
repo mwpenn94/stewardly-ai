@@ -45,6 +45,8 @@ export default defineConfig({
       "client/src/pages/learning/lib/**/*.test.ts",
       // v7 structural match: Calculators page integration tests
       "client/src/pages/Calculators.test.ts",
+      // Pass 139: AdvancedStrategiesHub engine + cascade tests
+      "client/src/pages/calculators/advancedHub.test.ts",
     ],
   },
 });

@@ -47,9 +47,9 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   return <div className="text-[10px] font-bold uppercase tracking-wider text-primary/80 bg-primary/5 px-3 py-1.5 rounded-md border border-primary/10 mb-2">{children}</div>;
 }
 
-function DomainSlider({ label, value, color, icon: Icon, desc, amount, onDrag }: {
+function DomainSlider({ label, value, color, icon: Icon, desc, amount, onDrag, onNavigate }: {
   label: string; value: number; color: string; icon: React.ElementType; desc: string;
-  amount: string; onDrag: (v: number) => void;
+  amount: string; onDrag: (v: number) => void; onNavigate?: () => void;
 }) {
   const [dragging, setDragging] = useState(false);
 
@@ -78,6 +78,11 @@ function DomainSlider({ label, value, color, icon: Icon, desc, amount, onDrag }:
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{value}%</span>
           <span className="font-semibold text-foreground">{amount}</span>
+          {onNavigate && (
+            <button onClick={onNavigate} className="text-[9px] text-primary hover:underline flex items-center gap-0.5">
+              Go <ArrowRight className="w-2.5 h-2.5" />
+            </button>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -127,7 +132,17 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
 }
 
 /* ═══ MAIN COMPONENT ═══ */
-export function ClientWealthHub(p: PanelProps) {
+/* Domain → panel navigation map */
+const DOMAIN_PANEL_MAP: Record<string, string> = {
+  protection: 'protect',
+  growth: 'grow',
+  retirement: 'retire',
+  tax: 'tax',
+  estate: 'estate',
+  education: 'edu',
+};
+
+export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: string) => void }) {
   // Local state for the hub
   const [retirementGoal, setRetirementGoal] = useState(() => {
     // Default: 80% of current income
@@ -337,6 +352,7 @@ export function ClientWealthHub(p: PanelProps) {
                 desc={d.desc}
                 amount={fmtSm(Math.round(Math.max(0, plan.domains.cashFlow.monthlyAvailable) * 12 * domainAllocation[d.key as keyof typeof domainAllocation] / 100))}
                 onDrag={(v) => handleDomainDrag(d.key, v)}
+                onNavigate={p.onNavigateToPanel ? () => p.onNavigateToPanel!(DOMAIN_PANEL_MAP[d.key] || d.key) : undefined}
               />
             ))}
           </div>

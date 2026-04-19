@@ -1233,3 +1233,374 @@ export function calcClientTimePhasedProjections(
 
   return projections;
 }
+
+
+/* ═══ UNIFIED ADVANCED STRATEGIES PLANNING ENGINE ═══
+   Mirrors ClientWealthHub pattern but for advanced strategies:
+   - Target-driven: set a total strategy benefit goal, cascade to all strategies
+   - Strategy allocation sliders: Premium Finance, ILIT, ExecComp, Charitable, Business
+   - Cross-strategy cascade: ILIT estate savings → reduces estate burden → improves net to heirs
+   - Back-solve: given a tax savings target, what strategy mix achieves it
+   - Sensitivity: what-if on interest rates, tax rates, business value
+   - Time-phased: strategy benefit over time
+   ═══════════════════════════════════════════════════════════════ */
+
+export interface StrategyAllocation {
+  premiumFinance: number;  // % of total strategy effort
+  ilit: number;
+  execComp: number;
+  charitable: number;
+  business: number;
+}
+
+export interface UnifiedAdvancedPlan {
+  // Targets
+  totalBenefitGoal: number;
+  // Strategy roll-ups
+  strategies: {
+    premiumFinance: {
+      netBenefit: number;
+      leverage: string;
+      totalOutlay: number;
+      cashValue: number;
+      loanBalance: number;
+      taxEfficiency: number;
+    };
+    ilit: {
+      estateTaxSaved: number;
+      netToHeirs: number;
+      withoutILIT: number;
+      annualGiftUsed: number;
+      leverageRatio: number;
+    };
+    execComp: {
+      totalComp: number;
+      employerTaxBenefit: number;
+      retentionValue: number;
+      goldenHandcuffs: number;
+    };
+    charitable: {
+      taxDeduction: number;
+      annualIncome: number;
+      totalCharitable: number;
+      netBenefit20yr: number;
+      effectiveGivingRate: number;
+    };
+    business: {
+      keyPersonCoverage: number;
+      buySellFunding: number;
+      groupBenefitsCost: number;
+      totalProtection: number;
+      continuityScore: number;
+    };
+  };
+  // Aggregate metrics
+  totalProjectedBenefit: number;
+  totalAnnualCost: number;
+  benefitToClientPlanCascade: {
+    estateTaxReduction: number;
+    taxSavingsBoost: number;
+    protectionEnhancement: number;
+    retirementBoost: number;
+    netWorthImpact: number;
+  };
+  onTrackScore: number;  // 0-100
+  goalMet: boolean;
+  // Back-solve
+  backSolve: {
+    requiredPFAllocation: number;
+    requiredILITAllocation: number;
+    requiredExecAllocation: number;
+    requiredCharitableAllocation: number;
+    requiredBusinessAllocation: number;
+    gapToGoal: number;
+    achievable: boolean;
+  };
+}
+
+export function calcUnifiedAdvancedPlan(
+  advResult: AdvResult,
+  bizResult: BizClientResult,
+  totalBenefitGoal: number,
+  allocation: StrategyAllocation,
+  income: number,
+  age: number,
+  grossEstate: number,
+): UnifiedAdvancedPlan {
+  // Strategy roll-ups from existing calcAdvanced and calcBizClient results
+  const pfBenefit = advResult.pf.netBenefit;
+  const pfTaxEff = pfBenefit > 0 ? pfBenefit * 0.15 : 0;
+  const ilitSaved = advResult.ilit.estateTaxSaved;
+  const execTaxBen = advResult.exec.taxBenefit;
+  const charDeduction = advResult.cv.taxDeduction;
+  const charIncome = advResult.cv.annualIncome;
+  const charNetBenefit = advResult.cv.netBenefit;
+  const bizTotalCost = bizResult.totalAnnualCost;
+
+  const strategies: UnifiedAdvancedPlan['strategies'] = {
+    premiumFinance: {
+      netBenefit: pfBenefit,
+      leverage: advResult.pf.leverage,
+      totalOutlay: advResult.pf.totalCashOutlay,
+      cashValue: advResult.pf.totalCashValue,
+      loanBalance: advResult.pf.yearByYear.length > 0
+        ? advResult.pf.yearByYear[advResult.pf.yearByYear.length - 1].loanBal
+        : 0,
+      taxEfficiency: Math.round(pfTaxEff),
+    },
+    ilit: {
+      estateTaxSaved: ilitSaved,
+      netToHeirs: advResult.ilit.netToHeirs,
+      withoutILIT: advResult.ilit.withoutILIT,
+      annualGiftUsed: advResult.ilit.annualGiftExclusion,
+      leverageRatio: advResult.ilit.premium > 0
+        ? Math.round(advResult.ilit.netToHeirs / (advResult.ilit.premium * 20))
+        : 0,
+    },
+    execComp: {
+      totalComp: advResult.exec.totalComp,
+      employerTaxBenefit: execTaxBen,
+      retentionValue: advResult.exec.retentionValue,
+      goldenHandcuffs: Math.round(advResult.exec.retentionValue * 0.6),
+    },
+    charitable: {
+      taxDeduction: charDeduction,
+      annualIncome: charIncome,
+      totalCharitable: advResult.cv.totalCharitable,
+      netBenefit20yr: charNetBenefit,
+      effectiveGivingRate: income > 0
+        ? advResult.cv.totalCharitable / income
+        : 0,
+    },
+    business: {
+      keyPersonCoverage: bizResult.keyPersonNeed,
+      buySellFunding: bizResult.buySellNeed,
+      groupBenefitsCost: bizResult.groupBenefitsCost,
+      totalProtection: bizResult.keyPersonNeed + bizResult.buySellNeed,
+      continuityScore: Math.min(100, Math.round(
+        (bizResult.keyPersonNeed > 0 ? 30 : 0) +
+        (bizResult.buySellNeed > 0 ? 40 : 0) +
+        (bizResult.groupBenefitsCost > 0 ? 30 : 0)
+      )),
+    },
+  };
+
+  // Total projected benefit (annual)
+  const totalProjectedBenefit = Math.round(
+    pfTaxEff +
+    ilitSaved * 0.04 + // annualized estate tax savings
+    execTaxBen +
+    charDeduction +
+    charIncome
+  );
+
+  const totalAnnualCost = Math.round(
+    advResult.pf.totalCashOutlay / Math.max(1, advResult.pf.years) +
+    advResult.ilit.premium +
+    bizTotalCost
+  );
+
+  // Cascade to client planning domains
+  const benefitToClientPlanCascade = {
+    estateTaxReduction: ilitSaved,
+    taxSavingsBoost: Math.round(pfTaxEff + execTaxBen + charDeduction),
+    protectionEnhancement: bizResult.keyPersonNeed + bizResult.buySellNeed,
+    retirementBoost: Math.round(charIncome * 20), // 20yr CRT income
+    netWorthImpact: Math.round(pfBenefit + ilitSaved + charNetBenefit),
+  };
+
+  // On-track score
+  const pfScore = pfBenefit > 0 ? Math.min(100, 50 + Math.round(pfBenefit / 50000)) : 0;
+  const ilitScore = ilitSaved > 0 ? Math.min(100, 50 + Math.round(ilitSaved / 100000)) : 0;
+  const execScore = execTaxBen > 0 ? Math.min(100, 50 + Math.round(execTaxBen / 20000)) : 0;
+  const charScore = charDeduction > 0 ? Math.min(100, 50 + Math.round(charDeduction / 30000)) : 0;
+  const bizScore = strategies.business.continuityScore;
+
+  const onTrackScore = Math.round(
+    pfScore * (allocation.premiumFinance / 100) +
+    ilitScore * (allocation.ilit / 100) +
+    execScore * (allocation.execComp / 100) +
+    charScore * (allocation.charitable / 100) +
+    bizScore * (allocation.business / 100)
+  );
+
+  const goalMet = totalBenefitGoal > 0 ? totalProjectedBenefit >= totalBenefitGoal : true;
+
+  // Back-solve: what allocation would meet the goal?
+  const gapToGoal = Math.max(0, totalBenefitGoal - totalProjectedBenefit);
+  const totalPossible = pfTaxEff + ilitSaved * 0.04 + execTaxBen + charDeduction + charIncome;
+  const scaleFactor = totalPossible > 0 && gapToGoal > 0
+    ? Math.min(3, totalBenefitGoal / totalPossible)
+    : 1;
+
+  return {
+    totalBenefitGoal,
+    strategies,
+    totalProjectedBenefit,
+    totalAnnualCost,
+    benefitToClientPlanCascade,
+    onTrackScore,
+    goalMet,
+    backSolve: {
+      requiredPFAllocation: Math.round(allocation.premiumFinance * scaleFactor),
+      requiredILITAllocation: Math.round(allocation.ilit * scaleFactor),
+      requiredExecAllocation: Math.round(allocation.execComp * scaleFactor),
+      requiredCharitableAllocation: Math.round(allocation.charitable * scaleFactor),
+      requiredBusinessAllocation: Math.round(allocation.business * scaleFactor),
+      gapToGoal,
+      achievable: scaleFactor <= 2,
+    },
+  };
+}
+
+export interface AdvancedSensitivityResult {
+  scenarios: {
+    label: string;
+    variable: string;
+    baseValue: number;
+    adjustedValue: number;
+    impactOnBenefit: number;
+    impactOnCost: number;
+    impactPct: number;
+  }[];
+}
+
+export function calcAdvancedSensitivity(
+  advResult: AdvResult,
+  bizResult: BizClientResult,
+  pfLoanRate: number,
+  pfCredRate: number,
+  estateTaxRate: number,
+  bizValue: number,
+  income: number,
+): AdvancedSensitivityResult {
+  const baseBenefit = advResult.totalTaxSavings;
+  const baseCost = advResult.pf.totalCashOutlay / Math.max(1, advResult.pf.years) +
+    advResult.ilit.premium + bizResult.totalAnnualCost;
+
+  const scenarios = [
+    {
+      label: 'Loan Rate +1%',
+      variable: 'PF Loan Rate',
+      baseValue: pfLoanRate,
+      adjustedValue: pfLoanRate + 1,
+      impactOnBenefit: Math.round(-advResult.pf.totalCashOutlay * 0.01 * 0.15),
+      impactOnCost: Math.round(advResult.pf.totalCashOutlay * 0.01),
+    },
+    {
+      label: 'Loan Rate -1%',
+      variable: 'PF Loan Rate',
+      baseValue: pfLoanRate,
+      adjustedValue: Math.max(1, pfLoanRate - 1),
+      impactOnBenefit: Math.round(advResult.pf.totalCashOutlay * 0.01 * 0.15),
+      impactOnCost: Math.round(-advResult.pf.totalCashOutlay * 0.01),
+    },
+    {
+      label: 'Crediting Rate +1%',
+      variable: 'PF Crediting Rate',
+      baseValue: pfCredRate,
+      adjustedValue: pfCredRate + 1,
+      impactOnBenefit: Math.round(advResult.pf.totalCashValue * 0.01 * 0.15),
+      impactOnCost: 0,
+    },
+    {
+      label: 'Estate Tax Rate +5%',
+      variable: 'Estate Tax Rate',
+      baseValue: estateTaxRate,
+      adjustedValue: Math.min(55, estateTaxRate + 5),
+      impactOnBenefit: Math.round(advResult.ilit.deathBenefit * 0.05 * 0.04),
+      impactOnCost: 0,
+    },
+    {
+      label: 'Estate Tax Rate -5%',
+      variable: 'Estate Tax Rate',
+      baseValue: estateTaxRate,
+      adjustedValue: Math.max(0, estateTaxRate - 5),
+      impactOnBenefit: Math.round(-advResult.ilit.deathBenefit * 0.05 * 0.04),
+      impactOnCost: 0,
+    },
+    {
+      label: 'Business Value +20%',
+      variable: 'Business Value',
+      baseValue: bizValue,
+      adjustedValue: Math.round(bizValue * 1.2),
+      impactOnBenefit: Math.round(bizResult.keyPersonNeed * 0.2 * 0.01),
+      impactOnCost: Math.round(bizResult.totalAnnualCost * 0.15),
+    },
+    {
+      label: 'Income +$50K',
+      variable: 'Income',
+      baseValue: income,
+      adjustedValue: income + 50000,
+      impactOnBenefit: Math.round(50000 * 0.37 * 0.3), // higher bracket → more tax savings
+      impactOnCost: Math.round(50000 * 0.05), // slightly higher premiums
+    },
+    {
+      label: 'Income -$50K',
+      variable: 'Income',
+      baseValue: income,
+      adjustedValue: Math.max(50000, income - 50000),
+      impactOnBenefit: Math.round(-50000 * 0.37 * 0.3),
+      impactOnCost: Math.round(-50000 * 0.05),
+    },
+  ];
+
+  return {
+    scenarios: scenarios.map(s => ({
+      ...s,
+      impactPct: baseBenefit > 0 ? s.impactOnBenefit / baseBenefit : 0,
+    })),
+  };
+}
+
+export interface AdvancedTimeProjection {
+  year: number;
+  pfCashValue: number;
+  pfLoanBalance: number;
+  pfNetBenefit: number;
+  ilitEstateSavings: number;
+  execRetentionValue: number;
+  charitableIncome: number;
+  totalBenefit: number;
+  cumulativeCost: number;
+}
+
+export function calcAdvancedTimePhasedProjections(
+  advResult: AdvResult,
+  bizResult: BizClientResult,
+  years: number,
+): AdvancedTimeProjection[] {
+  const projections: AdvancedTimeProjection[] = [];
+  const pfYBY = advResult.pf.yearByYear;
+  let cumCost = 0;
+  const annualBizCost = bizResult.totalAnnualCost;
+  const annualILITPrem = advResult.ilit.premium;
+  const annualCharIncome = advResult.cv.annualIncome;
+  const annualExecRetention = advResult.exec.retentionValue / 5; // 5yr vesting
+
+  for (let yr = 1; yr <= Math.min(years, 30); yr++) {
+    const pfData = yr <= pfYBY.length ? pfYBY[yr - 1] : pfYBY[pfYBY.length - 1] || { cashValue: 0, loanBal: 0, net: 0, cashOutlay: 0 };
+    cumCost += (advResult.pf.cashOutlay || 0) + annualILITPrem + annualBizCost;
+
+    const ilitCumSavings = Math.round(advResult.ilit.estateTaxSaved * (yr / 20)); // amortized
+    const execCumRetention = Math.round(annualExecRetention * Math.min(yr, 5));
+    const charCumIncome = annualCharIncome * yr;
+
+    projections.push({
+      year: yr,
+      pfCashValue: pfData.cashValue,
+      pfLoanBalance: pfData.loanBal,
+      pfNetBenefit: pfData.net || pfData.cashValue - pfData.loanBal,
+      ilitEstateSavings: ilitCumSavings,
+      execRetentionValue: execCumRetention,
+      charitableIncome: charCumIncome,
+      totalBenefit: Math.round(
+        (pfData.net || pfData.cashValue - pfData.loanBal) +
+        ilitCumSavings + execCumRetention + charCumIncome
+      ),
+      cumulativeCost: Math.round(cumCost),
+    });
+  }
+
+  return projections;
+}

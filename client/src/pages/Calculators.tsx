@@ -1,7 +1,7 @@
 /* WealthBridge Unified Wealth Engine v7 — Orchestrator */
 import { authFetch } from "@/lib/sessionToken";
 import { useState, useMemo, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
-import { WealthEngineProvider, type WealthEngineData } from '@/contexts/WealthEngineContext';
+import { WealthEngineProvider, type WealthEngineData, GENERAL_DEFAULTS, EMPTY_ADVANCED_CASCADE, EMPTY_CASCADE_BRIDGE } from '@/contexts/WealthEngineContext';
 import { useCascadeToast } from '@/hooks/useCascadeToast';
 
 /* Thin bridge so the hook runs inside the component tree */
@@ -50,6 +50,7 @@ import { ProductionOptPanel, ChannelDiversPanel, MarketingROIPanel, RecruitingFu
 import { BalanceSheetPanel, DebtManagementPanel, TrustEngineeringPanel, GovernanceIPSPanel, MonteCarloPanel, StockCompPanel } from './calculators/PanelsI';
 import { PremiumFinancingPanel, ILITTrustPanel, ExecCompPanel, CharitablePlanningPanel, DueDiligencePanel } from './calculators/PanelsJ';
 import { ClientWealthHub } from './calculators/ClientWealthHub';
+import { AdvancedStrategiesHub } from './calculators/AdvancedStrategiesHub';
 import {
   ROLE_DEFAULTS, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
@@ -78,7 +79,7 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
   'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence' |
-  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub';
+  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
@@ -128,6 +129,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'ilitrust' as PanelId, label: 'ILIT / Trust Structuring', icon: <Gavel className="w-4 h-4" /> },
     { id: 'execcomp' as PanelId, label: 'Executive Comp', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'charitable' as PanelId, label: 'Charitable Planning', icon: <Gift className="w-4 h-4" /> },
+    { id: 'advanced-strategies-hub' as PanelId, label: '⭐ Advanced Strategies Hub', icon: <Gem className="w-4 h-4" /> },
     { id: 'advanced', label: 'Advanced Strategies', icon: <Gem className="w-4 h-4" /> },
     { id: 'advanced-workflows' as PanelId, label: 'Advanced Workflows', icon: <ShieldCheck className="w-4 h-4" /> },
   ]},
@@ -1124,6 +1126,9 @@ export default function Calculators() {
     scorecard, recommendations, totalAnnualPremium,
     cfResult, prResult, grResult, rtResult, txResult, esResult, edResult,
     horizonData, practiceIncome, scores,
+    generalDefaults: GENERAL_DEFAULTS,
+    advancedCascade: EMPTY_ADVANCED_CASCADE,
+    holisticBridge: EMPTY_CASCADE_BRIDGE,
     lastUpdated: Date.now(),
     panelVersions: {},
   }), [clientName, age, spouseAge, dep, income, spouseIncome, totalIncome, nw, savings,
@@ -1390,7 +1395,7 @@ export default function Calculators() {
           </DisclosureSection>
 
           {/* ═══ PANEL RENDERING ═══ */}
-          {activePanel === 'client-wealth-hub' && <ClientWealthHub {...pp} />}
+          {activePanel === 'client-wealth-hub' && <ClientWealthHub {...pp} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} />}
           {activePanel === 'profile' && <ProfilePanel {...pp} />}
           {activePanel === 'cash' && <CashFlowPanel {...pp} />}
           {activePanel === 'protect' && <ProtectionPanel {...pp} />}
@@ -1399,6 +1404,25 @@ export default function Calculators() {
           {activePanel === 'tax' && <TaxPanel {...pp} />}
           {activePanel === 'estate' && <EstatePanel {...pp} />}
           {activePanel === 'edu' && <EducationPanel {...pp} />}
+          {activePanel === 'advanced-strategies-hub' && <AdvancedStrategiesHub
+            pfFace={pfFace} setPfFace={setPfFace} pfPrem={pfPrem} setPfPrem={setPfPrem}
+            pfCash={pfCash} setPfCash={setPfCash} pfLoan={pfLoan} setPfLoan={setPfLoan}
+            pfCred={pfCred} setPfCred={setPfCred} pfYrs={pfYrs} setPfYrs={setPfYrs}
+            ilDB={ilDB} setIlDB={setIlDB} ilPr={ilPr} setIlPr={setIlPr}
+            ilCr={ilCr} setIlCr={setIlCr} ilTx={ilTx} setIlTx={setIlTx}
+            exSal={exSal} setExSal={setExSal} ex162={ex162} setEx162={setEx162}
+            exSERP={exSERP} setExSERP={setExSERP} exSD={exSD} setExSD={setExSD}
+            cvCRT={cvCRT} setCvCRT={setCvCRT} cvPO={cvPO} setCvPO={setCvPO}
+            cvDAF={cvDAF} setCvDAF={setCvDAF} cvLI={cvLI} setCvLI={setCvLI}
+            advGoal={advGoal} setAdvGoal={setAdvGoal}
+            bcBizValue={bcBizValue} setBcBizValue={setBcBizValue}
+            bcKeyPersonSalary={bcKeyPersonSalary} setBcKeyPersonSalary={setBcKeyPersonSalary}
+            bcKeyPersonMult={bcKeyPersonMult} setBcKeyPersonMult={setBcKeyPersonMult}
+            bcOwners={bcOwners} setBcOwners={setBcOwners}
+            bcEmployees={bcEmployees} setBcEmployees={setBcEmployees}
+            age={age} income={income + spouseIncome} grossEstate={grossEstate}
+            onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)}
+          />}
           {activePanel === 'advanced' && <AdvancedStrategiesPanel
             pfFace={pfFace} setPfFace={setPfFace} pfPrem={pfPrem} setPfPrem={setPfPrem}
             pfCash={pfCash} setPfCash={setPfCash} pfLoan={pfLoan} setPfLoan={setPfLoan}

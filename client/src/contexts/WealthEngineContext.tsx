@@ -2,6 +2,11 @@
    WealthEngineContext — Cascade Data Propagation Layer
    Provides computed engine results to all Wealth Engine panels
    so they can react to changes in any upstream panel.
+
+   Pass 139: Enhanced with:
+   - General defaults for planning (industry-standard assumptions)
+   - Advanced strategies cascade data
+   - Holistic cascade bridge (ClientWealthHub ↔ AdvancedStrategiesHub)
    ═══════════════════════════════════════════════════════════════ */
 import { createContext, useContext, type ReactNode } from 'react';
 
@@ -134,6 +139,210 @@ export interface ClientProfile {
   bizEntityType: string;
 }
 
+/* ═══ GENERAL PLANNING DEFAULTS ═══
+   Industry-standard assumptions used across all planning domains.
+   These serve as reasonable starting points for any client scenario
+   and can be overridden by specific panel inputs.
+   Sources: Trinity Study, Morningstar, IRS, BLS, AALU, LIMRA
+   ═══════════════════════════════════════════════════════════════ */
+export interface GeneralPlanningDefaults {
+  // Growth & Investment
+  equityReturn: number;          // 7% nominal long-term S&P 500 avg
+  bondReturn: number;            // 4% nominal long-term bond avg
+  blendedReturn: number;         // 6% moderate portfolio
+  iulCreditingRate: number;      // 6.5% indexed universal life avg
+  fiaCreditingRate: number;      // 4.5% fixed indexed annuity avg
+  inflationRate: number;         // 3% long-term CPI avg
+
+  // Retirement
+  safeWithdrawalRate: number;    // 4% Trinity Study
+  ssColaRate: number;            // 2.5% Social Security COLA avg
+  retirementReplaceRate: number; // 80% income replacement target
+  medicareStartAge: number;      // 65
+
+  // Tax
+  topFederalRate: number;        // 37% (2024)
+  ltcgRate: number;              // 20% top LTCG rate
+  niitRate: number;              // 3.8% Net Investment Income Tax
+  estateExemption: number;       // $13,610,000 (2024)
+  annualGiftExclusion: number;   // $18,000 (2024)
+  estateTaxRate: number;         // 40%
+
+  // Protection
+  incomeMultiplierLife: number;  // 10x income for life insurance
+  diReplacementPct: number;      // 60% income for disability
+  ltcDailyBenefit: number;       // $300/day LTC benefit
+  emergencyMonths: number;       // 6 months expenses
+
+  // Education
+  collegeCostAnnual: number;     // $35,000 avg annual (2024)
+  collegeCostGrowth: number;     // 5% annual tuition inflation
+  plan529Return: number;         // 6% avg 529 return
+
+  // Business
+  keyPersonMultiplier: number;   // 5x salary
+  buySellDiscount: number;       // 15% minority discount
+  groupBenefitPerEmp: number;    // $8,400/yr per employee
+
+  // Premium Finance
+  pfLoanRateDefault: number;     // 5% SOFR + spread
+  pfCreditRateDefault: number;   // 6.5% IUL crediting
+  pfLeverageTarget: number;      // 10x leverage target
+
+  // Charitable
+  crtPayoutMin: number;          // 5% minimum CRT payout
+  crtPayoutMax: number;          // 50% maximum CRT payout
+  dafDeductionRate: number;      // 37% top rate deduction
+}
+
+export const GENERAL_DEFAULTS: GeneralPlanningDefaults = {
+  // Growth & Investment
+  equityReturn: 7,
+  bondReturn: 4,
+  blendedReturn: 6,
+  iulCreditingRate: 6.5,
+  fiaCreditingRate: 4.5,
+  inflationRate: 3,
+
+  // Retirement
+  safeWithdrawalRate: 4,
+  ssColaRate: 2.5,
+  retirementReplaceRate: 80,
+  medicareStartAge: 65,
+
+  // Tax
+  topFederalRate: 37,
+  ltcgRate: 20,
+  niitRate: 3.8,
+  estateExemption: 13610000,
+  annualGiftExclusion: 18000,
+  estateTaxRate: 40,
+
+  // Protection
+  incomeMultiplierLife: 10,
+  diReplacementPct: 60,
+  ltcDailyBenefit: 300,
+  emergencyMonths: 6,
+
+  // Education
+  collegeCostAnnual: 35000,
+  collegeCostGrowth: 5,
+  plan529Return: 6,
+
+  // Business
+  keyPersonMultiplier: 5,
+  buySellDiscount: 15,
+  groupBenefitPerEmp: 8400,
+
+  // Premium Finance
+  pfLoanRateDefault: 5,
+  pfCreditRateDefault: 6.5,
+  pfLeverageTarget: 10,
+
+  // Charitable
+  crtPayoutMin: 5,
+  crtPayoutMax: 50,
+  dafDeductionRate: 37,
+};
+
+/* ═══ ADVANCED STRATEGIES CASCADE DATA ═══
+   Flows from AdvancedStrategiesHub into client planning domains.
+   ═══════════════════════════════════════════════════════════════ */
+export interface AdvancedStrategiesCascade {
+  // Strategy-level benefits
+  pfNetBenefit: number;
+  pfTaxEfficiency: number;
+  ilitEstateTaxSaved: number;
+  ilitNetToHeirs: number;
+  execTaxBenefit: number;
+  execRetentionValue: number;
+  charitableTaxDeduction: number;
+  charitableAnnualIncome: number;
+  businessTotalProtection: number;
+  businessContinuityScore: number;
+
+  // Aggregate cascade to client planning
+  totalAnnualBenefit: number;
+  totalAnnualCost: number;
+  estateTaxReduction: number;
+  taxSavingsBoost: number;
+  protectionEnhancement: number;
+  retirementBoost: number;
+  netWorthImpact: number;
+}
+
+const EMPTY_ADVANCED_CASCADE: AdvancedStrategiesCascade = {
+  pfNetBenefit: 0,
+  pfTaxEfficiency: 0,
+  ilitEstateTaxSaved: 0,
+  ilitNetToHeirs: 0,
+  execTaxBenefit: 0,
+  execRetentionValue: 0,
+  charitableTaxDeduction: 0,
+  charitableAnnualIncome: 0,
+  businessTotalProtection: 0,
+  businessContinuityScore: 0,
+  totalAnnualBenefit: 0,
+  totalAnnualCost: 0,
+  estateTaxReduction: 0,
+  taxSavingsBoost: 0,
+  protectionEnhancement: 0,
+  retirementBoost: 0,
+  netWorthImpact: 0,
+};
+
+/* ═══ HOLISTIC CASCADE BRIDGE ═══
+   Unifies ClientWealthHub and AdvancedStrategiesHub into a single
+   cascading system. Changes in one hub propagate to the other.
+   ═══════════════════════════════════════════════════════════════ */
+export interface HolisticCascadeBridge {
+  // Client → Advanced: client profile drives strategy sizing
+  clientToAdvanced: {
+    incomeForSizing: number;       // Total income → sizes PF, exec comp
+    estateForILIT: number;         // Gross estate → sizes ILIT
+    protectionGap: number;         // Protection gap → business planning
+    taxBurden: number;             // Effective tax → charitable strategy
+    retirementGap: number;         // Retirement gap → CRT income
+  };
+  // Advanced → Client: strategy benefits cascade back
+  advancedToClient: {
+    additionalProtection: number;  // Business + ILIT coverage
+    taxSavings: number;            // PF + exec + charitable deductions
+    estateReduction: number;       // ILIT estate tax savings
+    incomeBoost: number;           // CRT annual income
+    netWorthBoost: number;         // Combined net worth impact
+  };
+  // Holistic score: weighted combination of both hubs
+  holisticScore: number;           // 0-100
+  clientHubScore: number;          // 0-100
+  advancedHubScore: number;        // 0-100
+  // Cascade health
+  lastCascadeTimestamp: number;
+  cascadeDirection: 'client→advanced' | 'advanced→client' | 'bidirectional' | 'none';
+}
+
+const EMPTY_CASCADE_BRIDGE: HolisticCascadeBridge = {
+  clientToAdvanced: {
+    incomeForSizing: 0,
+    estateForILIT: 0,
+    protectionGap: 0,
+    taxBurden: 0,
+    retirementGap: 0,
+  },
+  advancedToClient: {
+    additionalProtection: 0,
+    taxSavings: 0,
+    estateReduction: 0,
+    incomeBoost: 0,
+    netWorthBoost: 0,
+  },
+  holisticScore: 0,
+  clientHubScore: 0,
+  advancedHubScore: 0,
+  lastCascadeTimestamp: 0,
+  cascadeDirection: 'none',
+};
+
 /* ─── Full Cascade Context Shape ─── */
 export interface WealthEngineData {
   /* Client profile */
@@ -153,6 +362,12 @@ export interface WealthEngineData {
   practiceIncome: PracticeIncomeResult;
   /* Scores map */
   scores: Record<string, number>;
+  /* General planning defaults */
+  generalDefaults: GeneralPlanningDefaults;
+  /* Advanced strategies cascade */
+  advancedCascade: AdvancedStrategiesCascade;
+  /* Holistic cascade bridge */
+  holisticBridge: HolisticCascadeBridge;
   /* Cascade metadata */
   lastUpdated: number;
   panelVersions: Record<string, number>;
@@ -191,6 +406,9 @@ const DEFAULT_DATA: WealthEngineData = {
   horizonData: [],
   practiceIncome: EMPTY_PI,
   scores: {},
+  generalDefaults: GENERAL_DEFAULTS,
+  advancedCascade: EMPTY_ADVANCED_CASCADE,
+  holisticBridge: EMPTY_CASCADE_BRIDGE,
   lastUpdated: Date.now(),
   panelVersions: {},
 };
@@ -216,4 +434,37 @@ export function WealthEngineProvider({ value, children }: WealthEngineProviderPr
   );
 }
 
-export { DEFAULT_DATA, DEFAULT_CLIENT };
+/* ─── Helper: compute holistic cascade bridge from current state ─── */
+export function computeHolisticBridge(
+  clientHubScore: number,
+  advancedHubScore: number,
+  client: ClientProfile,
+  prResult: ProtectionResult,
+  txResult: TaxResult,
+  rtResult: RetirementResult,
+  advCascade: AdvancedStrategiesCascade,
+): HolisticCascadeBridge {
+  return {
+    clientToAdvanced: {
+      incomeForSizing: client.totalIncome,
+      estateForILIT: client.nw + client.totalIncome * 10, // rough estate estimate
+      protectionGap: prResult.gap,
+      taxBurden: txResult.effectiveRate,
+      retirementGap: rtResult.gap,
+    },
+    advancedToClient: {
+      additionalProtection: advCascade.protectionEnhancement,
+      taxSavings: advCascade.taxSavingsBoost,
+      estateReduction: advCascade.estateTaxReduction,
+      incomeBoost: advCascade.charitableAnnualIncome,
+      netWorthBoost: advCascade.netWorthImpact,
+    },
+    holisticScore: Math.round(clientHubScore * 0.6 + advancedHubScore * 0.4),
+    clientHubScore,
+    advancedHubScore,
+    lastCascadeTimestamp: Date.now(),
+    cascadeDirection: advCascade.totalAnnualBenefit > 0 ? 'bidirectional' : 'client→advanced',
+  };
+}
+
+export { DEFAULT_DATA, DEFAULT_CLIENT, EMPTY_ADVANCED_CASCADE, EMPTY_CASCADE_BRIDGE };
