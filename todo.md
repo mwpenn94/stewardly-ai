@@ -6732,3 +6732,8 @@
 - [x] Convergence Pass 7 — Clean: exhaustive field audit of all 12 interfaces × export references
 - [x] Convergence Pass 8 — Clean: runtime edge cases, null safety, Zod validation, SQL injection prevention
 - [x] Convergence Pass 9 — Clean: architectural consistency, data flow chain, all 37 tests pass. CONVERGED 3/3
+
+## Bug Fix — Publishing Error
+- [x] Fix PanelsD.tsx import: `@/hooks/useAuth` → `@/_core/hooks/useAuth` (ENOENT build failure)
+- [x] Check all modified files for similar missing-extension imports (none found)
+- [x] Verify production build passes locally (built in 1m 24s, no errors)

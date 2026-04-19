@@ -6,7 +6,7 @@
    ═══════════════════════════════════════════════════════════════ */
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
