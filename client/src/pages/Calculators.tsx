@@ -59,6 +59,11 @@ import {
 } from './calculators/practiceEngine';
 import { SEOHead } from "@/components/SEOHead";
 import { ShareButton } from "@/components/sharing/ShareKit";
+import { WealthEngineOnboarding, type OnboardingResult } from './calculators/WealthEngineOnboarding';
+import { ComplianceChecklist } from './calculators/ComplianceChecklist';
+import { PersonaReportGenerator } from './calculators/PersonaReportGenerator';
+import { MultiClientComparison } from './calculators/MultiClientComparison';
+import { CascadeFlowDiagram } from './calculators/CascadeFlowDiagram';
 import { BenchmarkGrid } from "@/components/InlineBenchmark";
 import { DisclosureSection } from "@/components/DisclosureSection";
 /* ─── Lazy-loaded new advisory & data panels ─── */
@@ -340,6 +345,26 @@ export default function Calculators() {
   const [showWelcome, setShowWelcome] = useState(() => {
     try { return localStorage.getItem('wb-welcome-dismissed') !== 'true'; } catch { return true; }
   });
+
+  /* ─── ONBOARDING (Gap 1 + Gap 5) ─── */
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try { return localStorage.getItem('wb-onboarding-complete') !== 'true'; } catch { return true; }
+  });
+  const handleOnboardingComplete = useCallback((result: OnboardingResult) => {
+    setShowOnboarding(false);
+    setShowWelcome(false);
+    try { localStorage.setItem('wb-welcome-dismissed', 'true'); } catch {}
+    // Apply suggested complexity to all hubs
+    handlePpComplexityChange(result.suggestedComplexity);
+    // Navigate to suggested panel
+    if (result.suggestedPanel) {
+      setActivePanel(result.suggestedPanel as PanelId);
+    }
+    toast.success(`Welcome! Set to ${result.suggestedComplexity === 'simple' ? 'Quick' : result.suggestedComplexity === 'detailed' ? 'Standard' : 'Expert'} mode. You can change this anytime.`);
+  }, []);
+  const handleOnboardingSkip = useCallback(() => {
+    setShowOnboarding(false);
+  }, []);
 
   /* ─── PRACTICE PLANNING STATE ─── */
   const [ppRole, setPpRole] = useState<RoleId>('new');
@@ -1227,6 +1252,17 @@ export default function Calculators() {
     advancedCascade, practiceCascade, holisticBridge]);
 
   /* ═══ RENDER ═══ */
+  if (showOnboarding) {
+    return (
+      <>
+        <SEOHead title="Welcome to the Wealth Engine" description="Personalize your financial planning experience." />
+        <AppShell title="Wealth Engine">
+          <WealthEngineOnboarding onComplete={handleOnboardingComplete} onSkip={handleOnboardingSkip} />
+        </AppShell>
+      </>
+    );
+  }
+
   return (
       <>
         <SEOHead title="Financial Calculators" description="Comprehensive financial planning calculators including retirement, insurance, and investment tools." />
@@ -1521,6 +1557,33 @@ export default function Calculators() {
                 ]}
               />
             )}
+          </DisclosureSection>
+
+          {/* ═══ COMPLIANCE CHECKLIST (Gap 2) ═══ */}
+          <DisclosureSection minLevel={2} label="Compliance Checklist">
+            <ComplianceChecklist clientName={clientName} />
+          </DisclosureSection>
+
+          {/* ═══ PERSONA REPORT GENERATOR (Gap 3) ═══ */}
+          <DisclosureSection minLevel={2} label="Generate Report">
+            <PersonaReportGenerator
+              clientName={clientName}
+              age={age}
+              totalIncome={totalIncome}
+              scorecard={scorecard}
+              recommendations={recommendations}
+              weData={weData}
+            />
+          </DisclosureSection>
+
+          {/* ═══ MULTI-CLIENT COMPARISON (Gap 6) ═══ */}
+          <DisclosureSection minLevel={2} label="Multi-Client Comparison">
+            <MultiClientComparison />
+          </DisclosureSection>
+
+          {/* ═══ CASCADE FLOW DIAGRAM (Gap 7) ═══ */}
+          <DisclosureSection minLevel={1} label="Cascade Flow Diagram">
+            <CascadeFlowDiagram weData={weData} />
           </DisclosureSection>
 
           {/* ═══ PANEL RENDERING ═══ */}

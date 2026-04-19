@@ -37,6 +37,7 @@ import {
 import { useLocation } from "wouter";
 import { PremiumEstimator } from "@/components/wealth-engine/PremiumEstimator";
 import { SEOHead } from "@/components/SEOHead";
+import { QuoteScoreRing } from "@/pages/calculators/shared-ui";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -204,7 +205,7 @@ export default function QuickQuoteFlowPage({ embedded = false }: { embedded?: bo
               <CardTitle className="text-base">Your scorecard</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <ScoreRing total={total} max={max} />
+              <QuoteScoreRing total={total} max={max} colors={chartTokens.colors} />
               <div className="grid md:grid-cols-2 gap-2">
                 {DOMAINS.map((d) => (
                   <DomainRow key={d.key} label={d.label} score={scores[d.key]} />
@@ -348,41 +349,7 @@ function ToggleField({
   );
 }
 
-function ScoreRing({ total, max }: { total: number; max: number }) {
-  const pct = total / max;
-  const color =
-    pct >= 0.75
-      ? chartTokens.colors.positive
-      : pct >= 0.5
-        ? chartTokens.colors.warning
-        : chartTokens.colors.danger;
-  const radius = 60;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - pct);
-  return (
-    <div className="flex items-center justify-center py-2">
-      <svg width={160} height={160} viewBox="0 0 160 160">
-        <circle cx={80} cy={80} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth={12} />
-        <circle
-          cx={80}
-          cy={80}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={12}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          transform="rotate(-90 80 80)"
-          style={{ transition: "stroke-dashoffset 800ms ease-out" }}
-        />
-        <text x={80} y={84} textAnchor="middle" fontSize={32} fontWeight={800} fill={color} style={{ fontVariantNumeric: "tabular-nums" }}>
-          {total}/{max}
-        </text>
-      </svg>
-    </div>
-  );
-}
+/* ScoreRing consolidated → QuoteScoreRing from shared-ui.tsx */
 
 // ─── Score-based contextual insights with product references ────
 const SCORE_INSIGHTS: Record<DomainKey, { lowMsg: string; ref: string }> = {

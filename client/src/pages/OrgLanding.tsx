@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import DOMPurify from "dompurify";
 import { SEOHead } from "@/components/SEOHead";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export default function OrgLanding() {
   const [, navigate] = useLocation();
@@ -92,15 +93,15 @@ export default function OrgLanding() {
   if (isAuthenticated) return null;
 
   const handleGetStarted = () => {
-    localStorage.setItem("organizationId", orgId.toString());
-    localStorage.setItem("affiliateSlug", slug || "");
+    safeSetItem("organizationId", orgId.toString());
+    safeSetItem("affiliateSlug", slug || "");
     navigate("/signin");
   };
 
   const handleGuestAccess = () => {
-    localStorage.setItem("anonymousMode", "true");
-    localStorage.setItem("organizationId", orgId.toString());
-    localStorage.setItem("affiliateSlug", slug || "");
+    safeSetItem("anonymousMode", "true");
+    safeSetItem("organizationId", orgId.toString());
+    safeSetItem("affiliateSlug", slug || "");
     navigate("/chat");
   };
 

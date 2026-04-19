@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { authFetch } from "@/lib/sessionToken";
+import { safeGetItem, safeRemoveItem } from "@/lib/safeStorage";
 import { PERSONA_LAYERS as SIDEBAR_PERSONA_LAYERS, ROLE_LEVEL as SIDEBAR_ROLE_LEVEL } from "@/components/PersonaSidebar5";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadCalculatorContext, buildContextOverlay } from "@/lib/calculatorContext";
@@ -288,7 +289,7 @@ export default function Chat() {
   const [liveAnnouncement, setLiveAnnouncement] = useState<string>("");
   const [captionText, setCaptionText] = useState<string>("");
   const [ttsEnabled, setTtsEnabled] = useState(() => {
-    const stored = localStorage.getItem("tts-enabled");
+    const stored = safeGetItem("tts-enabled");
     return stored !== "false"; // Default ON
   });
 
@@ -320,9 +321,9 @@ export default function Chat() {
 
   // ─── ENHANCED TTS ─────────────────────────────────────────────
   // Read voice preference from localStorage (set in Settings > Voice tab)
-  const [ttsVoice] = useState(() => localStorage.getItem("tts-voice") || "aria");
+  const [ttsVoice] = useState(() => safeGetItem("tts-voice", "aria")!);
   const [ttsRate] = useState(() => {
-    const stored = localStorage.getItem("tts-speech-rate");
+    const stored = safeGetItem("tts-speech-rate");
     return stored ? parseFloat(stored) : 1.0;
   });
   const tts = useTTS({
@@ -378,11 +379,11 @@ export default function Chat() {
 
   // ─── ANONYMOUS MODE ──────────────────────────────────────────
   // Clear anonymousMode flag once user authenticates to prevent stale anonymous state
-  const isAnonymous = !isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true';
+  const isAnonymous = !isAuthenticated && typeof window !== 'undefined' && safeGetItem('anonymousMode') === 'true';
   // If user is authenticated but anonymousMode is still set, clean it up
   useEffect(() => {
-    if (isAuthenticated && typeof window !== 'undefined' && localStorage.getItem('anonymousMode') === 'true') {
-      localStorage.removeItem('anonymousMode');
+    if (isAuthenticated && typeof window !== 'undefined' && safeGetItem('anonymousMode') === 'true') {
+      safeRemoveItem('anonymousMode');
     }
   }, [isAuthenticated]);
   const allowQueries = isAuthenticated || isAnonymous;

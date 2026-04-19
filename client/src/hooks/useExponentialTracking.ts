@@ -17,6 +17,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { safeRemoveItem } from "@/lib/safeStorage";
 
 // Map route paths to feature keys
 const ROUTE_FEATURE_MAP: Record<string, string> = {
@@ -120,7 +121,7 @@ export function usePageTracking() {
         }));
         batchMutation.mutate({ events: batch });
         // Clear guest events after flush
-        localStorage.removeItem(GUEST_EVENTS_KEY);
+        safeRemoveItem(GUEST_EVENTS_KEY);
       }
     }
   }, [isGuest]); // eslint-disable-line react-hooks/exhaustive-deps

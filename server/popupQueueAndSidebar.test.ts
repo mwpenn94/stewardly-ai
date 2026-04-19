@@ -211,7 +211,7 @@ describe("Mobile Interaction Safety", () => {
     );
     // Must have dismiss/close functionality
     expect(source).toMatch(/dismiss|close|accept/i);
-    expect(source).toContain("localStorage");
+    expect(source).toMatch(/localStorage|safeStorage|safeGetItem|safeSetItem/);
   });
 
   it("no popup stacking on mobile — only consent banner auto-shows", () => {

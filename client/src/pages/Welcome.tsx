@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
 import { SEOHead } from "@/components/SEOHead";
+import { safeSetItem } from "@/lib/safeStorage";
 
 /**
  * Welcome page — the full marketing landing page.
@@ -29,7 +30,7 @@ export default function Welcome() {
   };
 
   const handleGuestAccess = () => {
-    localStorage.setItem("anonymousMode", "true");
+    safeSetItem("anonymousMode", "true");
     navigate("/chat");
   };
 

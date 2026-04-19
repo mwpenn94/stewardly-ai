@@ -14,6 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import type { Notification } from "@/hooks/useWebSocket";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 /** Read guest session events from localStorage */
 function getGuestSessionEvents(): { featureKey: string; eventType: string; count: number; durationMs: number; lastUsed: number }[] {
@@ -56,20 +57,20 @@ export function useOnboardingNotifications(): {
 
   const dismissMutation = trpc.exponentialEngine.dismissOnboarding.useMutation({
     onSuccess: () => {
-      localStorage.setItem("ai_onboarding_dismissed", "true");
+      safeSetItem("ai_onboarding_dismissed", "true");
       setIsDismissed(true);
     },
   });
 
   // Check localStorage for dismissal on mount
   useEffect(() => {
-    const dismissed = localStorage.getItem("ai_onboarding_dismissed");
+    const dismissed = safeGetItem("ai_onboarding_dismissed");
     if (dismissed === "true") setIsDismissed(true);
   }, []);
 
   const dismiss = () => {
     if (isGuest) {
-      localStorage.setItem("ai_onboarding_dismissed", "true");
+      safeSetItem("ai_onboarding_dismissed", "true");
       setIsDismissed(true);
     } else {
       dismissMutation.mutate();

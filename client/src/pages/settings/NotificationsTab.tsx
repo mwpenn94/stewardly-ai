@@ -10,6 +10,7 @@ import {
   Zap, BarChart3, RefreshCw, Brain, Volume2, VolumeX, Smartphone, Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { safeSetItem } from "@/lib/safeStorage";
 
 // ─── REAL-TIME NOTIFICATION TYPES ──────────────────────────────────
 const REALTIME_TYPES = [
@@ -93,7 +94,7 @@ export default function NotificationsTab() {
   };
 
   const save = () => {
-    localStorage.setItem("wb_notification_prefs", JSON.stringify(prefs));
+    safeSetItem("wb_notification_prefs", JSON.stringify(prefs));
     toast.success("Notification preferences saved");
   };
 

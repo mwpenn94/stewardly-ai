@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { usePopupSlot, registerPopup, dismissPopup } from "@/hooks/usePopupQueue";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 /**
  * Browse-wrap consent banner — non-blocking, subtle.
@@ -15,7 +16,7 @@ export default function ConsentBanner() {
   const canShow = usePopupSlot("consent");
 
   useEffect(() => {
-    const dismissed = localStorage.getItem("consentBannerDismissed");
+    const dismissed = safeGetItem("consentBannerDismissed");
     if (!dismissed) {
       // Register with the queue after a brief delay
       const timer = setTimeout(() => {
@@ -28,7 +29,7 @@ export default function ConsentBanner() {
 
   const dismiss = () => {
     setWantsToShow(false);
-    localStorage.setItem("consentBannerDismissed", "true");
+    safeSetItem("consentBannerDismissed", "true");
     dismissPopup("consent");
   };
 

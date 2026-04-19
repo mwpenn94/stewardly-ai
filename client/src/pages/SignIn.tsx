@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { Chrome, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { setSessionToken } from "@/lib/sessionToken";
 import { SEOHead } from "@/components/SEOHead";
+import { safeSetItem } from "@/lib/safeStorage";
 
 export default function SignIn() {
   const [, navigate] = useLocation();
@@ -79,7 +80,7 @@ export default function SignIn() {
   };
 
   const handleGuestAccess = () => {
-    localStorage.setItem("anonymousMode", "true");
+    safeSetItem("anonymousMode", "true");
     navigate("/chat");
   };
 

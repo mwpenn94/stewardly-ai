@@ -55,6 +55,15 @@ export const scenariosRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      // Per-user scenario count limit
+      const MAX_SCENARIOS_PER_USER = 50;
+      const existing = await db
+        .select({ id: calculatorScenarios.id })
+        .from(calculatorScenarios)
+        .where(eq(calculatorScenarios.userId, ctx.user.id));
+      if (existing.length >= MAX_SCENARIOS_PER_USER) {
+        throw new Error(`You have reached the maximum of ${MAX_SCENARIOS_PER_USER} saved scenarios. Please delete some before saving new ones.`);
+      }
       const [result] = await db.insert(calculatorScenarios).values({
         userId: ctx.user.id,
         calculatorType: input.calculatorType,

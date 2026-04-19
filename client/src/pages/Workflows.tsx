@@ -17,6 +17,7 @@ import {
 import { useState, useMemo, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { safeSetItem } from "@/lib/safeStorage";
 
 const WORKFLOW_TEMPLATES = [
   {
@@ -171,12 +172,12 @@ export default function Workflows() {
       };
     });
     setSavedWorkflows(reconciled);
-    localStorage.setItem("wb_workflows", JSON.stringify(reconciled));
+    safeSetItem("wb_workflows", JSON.stringify(reconciled));
   }, [instancesQ.data]);
 
   const saveWorkflows = (workflows: WorkflowInstance[]) => {
     setSavedWorkflows(workflows);
-    localStorage.setItem("wb_workflows", JSON.stringify(workflows));
+    safeSetItem("wb_workflows", JSON.stringify(workflows));
   };
 
   // Persist a single workflow to the server (fire-and-forget; the UI
@@ -215,7 +216,7 @@ export default function Workflows() {
                 ? { ...w, id: res.id }
                 : w,
             );
-            localStorage.setItem("wb_workflows", JSON.stringify(updated));
+            safeSetItem("wb_workflows", JSON.stringify(updated));
             return updated;
           });
         }

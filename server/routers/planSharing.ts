@@ -26,6 +26,20 @@ export const planSharingRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
+      // Per-user shared link count limit
+      const MAX_SHARED_LINKS_PER_USER = 20;
+      const existing = await db
+        .select({ id: sharedLinks.id })
+        .from(sharedLinks)
+        .where(
+          and(
+            eq(sharedLinks.userId, ctx.user.id),
+            eq(sharedLinks.contentType, "plan_summary"),
+          ),
+        );
+      if (existing.length >= MAX_SHARED_LINKS_PER_USER) {
+        throw new Error(`You have reached the maximum of ${MAX_SHARED_LINKS_PER_USER} shared links. Please delete some before creating new ones.`);
+      }
       const token = generateToken();
       const expiresAt = new Date(Date.now() + input.expiresInDays * 86_400_000);
 

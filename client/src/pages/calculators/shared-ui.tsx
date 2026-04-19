@@ -53,7 +53,18 @@ interface ScoreRingProps {
   labels?: { high: string; mid: string; low: string; critical: string };
 }
 
-/** Animated circular score indicator with color-coded badge. */
+/** Props for QuoteScoreRing — displays total/max as a ring (used in QuickQuoteFlow). */
+export interface QuoteScoreRingProps {
+  total: number;
+  max: number;
+  /** SVG size in px (default 160) */
+  size?: number;
+  /** Color thresholds from chartTokens or custom hex values */
+  colors?: { positive: string; warning: string; danger: string };
+}
+
+/** Animated circular score indicator with color-coded badge.
+ *  Used for 0–100 percentage scores with label badges. */
 export function ScoreRing({ score, size = 120, labels }: ScoreRingProps) {
   const r = (size - 12) / 2;
   const circ = 2 * Math.PI * r;
@@ -86,6 +97,38 @@ export function ScoreRing({ score, size = 120, labels }: ScoreRingProps) {
       >
         {label}
       </Badge>
+    </div>
+  );
+}
+
+/** Ring showing total/max score (e.g. 14/18). Used in QuickQuoteFlow scorecard.
+ *  Separate from ScoreRing because the display format (N/M vs percentage) and
+ *  color logic (chartTokens vs fixed hex) differ fundamentally. */
+export function QuoteScoreRing({ total, max, size = 160, colors }: QuoteScoreRingProps) {
+  const pctVal = max > 0 ? total / max : 0;
+  const defaultColors = { positive: "#22c55e", warning: "#f59e0b", danger: "#ef4444" };
+  const c = colors ?? defaultColors;
+  const color = pctVal >= 0.75 ? c.positive : pctVal >= 0.5 ? c.warning : c.danger;
+  const radius = (size - 40) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - pctVal);
+  const cx = size / 2;
+  const cy = size / 2;
+  return (
+    <div className="flex items-center justify-center py-2">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={cx} cy={cy} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth={12} />
+        <circle
+          cx={cx} cy={cy} r={radius} fill="none" stroke={color} strokeWidth={12}
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}
+          style={{ transition: "stroke-dashoffset 800ms ease-out" }}
+        />
+        <text x={cx} y={cy + 4} textAnchor="middle" fontSize={size >= 140 ? 32 : 24} fontWeight={800}
+          fill={color} style={{ fontVariantNumeric: "tabular-nums" }}>
+          {total}/{max}
+        </text>
+      </svg>
     </div>
   );
 }

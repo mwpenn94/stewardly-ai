@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 // ─── LOCAL STORAGE KEYS ──────────────────────────────────────────
 const LS_VOICE = "tts-voice";
@@ -41,7 +42,7 @@ export default function VoiceTab() {
 
   // ─── Voice selection state ─────────────────────────────────────
   const [selectedVoice, setSelectedVoice] = useState<string>(() =>
-    localStorage.getItem(LS_VOICE) || "aria"
+    safeGetItem(LS_VOICE) || "aria"
   );
   const [previewPlaying, setPreviewPlaying] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -49,25 +50,25 @@ export default function VoiceTab() {
 
   // ─── Voice behavior settings ───────────────────────────────────
   const [ttsEnabled, setTtsEnabled] = useState<boolean>(() =>
-    localStorage.getItem(LS_TTS_ENABLED) !== "false"
+    safeGetItem(LS_TTS_ENABLED) !== "false"
   );
   const [autoPlay, setAutoPlay] = useState<boolean>(() =>
-    localStorage.getItem(LS_AUTO_PLAY) === "true"
+    safeGetItem(LS_AUTO_PLAY) === "true"
   );
   const [handsFreeDefault, setHandsFreeDefault] = useState<boolean>(() =>
-    localStorage.getItem(LS_HANDS_FREE) === "true"
+    safeGetItem(LS_HANDS_FREE) === "true"
   );
   const [speechRate, setSpeechRate] = useState<number>(() => {
-    const stored = localStorage.getItem(LS_SPEECH_RATE);
+    const stored = safeGetItem(LS_SPEECH_RATE);
     return stored ? parseFloat(stored) : 1.0;
   });
 
   // ─── Persist to localStorage ───────────────────────────────────
-  useEffect(() => { localStorage.setItem(LS_VOICE, selectedVoice); }, [selectedVoice]);
-  useEffect(() => { localStorage.setItem(LS_TTS_ENABLED, String(ttsEnabled)); }, [ttsEnabled]);
-  useEffect(() => { localStorage.setItem(LS_AUTO_PLAY, String(autoPlay)); }, [autoPlay]);
-  useEffect(() => { localStorage.setItem(LS_HANDS_FREE, String(handsFreeDefault)); }, [handsFreeDefault]);
-  useEffect(() => { localStorage.setItem(LS_SPEECH_RATE, String(speechRate)); }, [speechRate]);
+  useEffect(() => { safeSetItem(LS_VOICE, selectedVoice); }, [selectedVoice]);
+  useEffect(() => { safeSetItem(LS_TTS_ENABLED, String(ttsEnabled)); }, [ttsEnabled]);
+  useEffect(() => { safeSetItem(LS_AUTO_PLAY, String(autoPlay)); }, [autoPlay]);
+  useEffect(() => { safeSetItem(LS_HANDS_FREE, String(handsFreeDefault)); }, [handsFreeDefault]);
+  useEffect(() => { safeSetItem(LS_SPEECH_RATE, String(speechRate)); }, [speechRate]);
 
   // ─── Sync to server for authenticated users ────────────────────
   const updatePrefs = trpc.aiLayers.updateUserPreferences.useMutation({ onError: (e) => toast.error(e.message) });

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { safeRemoveItem } from "@/lib/safeStorage";
 
 const STORAGE_KEY = "steward_anon_conversations";
 const MAX_CONVERSATIONS = 5;
@@ -141,7 +142,7 @@ export function useAnonymousChat(): UseAnonymousChatReturn {
 
   const clearAll = useCallback(() => {
     setState({ conversations: [], activeConversationId: null });
-    localStorage.removeItem(STORAGE_KEY);
+    safeRemoveItem(STORAGE_KEY);
   }, []);
 
   return {

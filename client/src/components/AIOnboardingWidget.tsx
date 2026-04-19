@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { safeGetItem, safeSetItem } from "@/lib/safeStorage";
 
 const LAYER_COLORS: Record<string, string> = {
   platform: "text-violet-400",
@@ -61,14 +62,14 @@ export default function AIOnboardingWidget() {
 
   const dismissMutation = trpc.exponentialEngine.dismissOnboarding.useMutation({
     onSuccess: () => {
-      localStorage.setItem("ai_onboarding_dismissed", "true");
+      safeSetItem("ai_onboarding_dismissed", "true");
       setIsDismissed(true);
     },
   });
 
   // Check localStorage for dismissal
   useEffect(() => {
-    const dismissed = localStorage.getItem("ai_onboarding_dismissed");
+    const dismissed = safeGetItem("ai_onboarding_dismissed");
     if (dismissed === "true") setIsDismissed(true);
   }, []);
 
@@ -94,7 +95,7 @@ export default function AIOnboardingWidget() {
           size="sm"
           className="mt-2 text-xs text-muted-foreground"
           onClick={() => {
-            localStorage.setItem("ai_onboarding_dismissed", "true");
+            safeSetItem("ai_onboarding_dismissed", "true");
             setIsDismissed(true);
           }}
         >
@@ -109,7 +110,7 @@ export default function AIOnboardingWidget() {
   const handleDismiss = () => {
     if (isGuest) {
       // Guest: just dismiss locally
-      localStorage.setItem("ai_onboarding_dismissed", "true");
+      safeSetItem("ai_onboarding_dismissed", "true");
       setIsDismissed(true);
     } else {
       // Authenticated: persist dismissal

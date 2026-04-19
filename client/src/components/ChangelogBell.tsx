@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { safeSetItem } from "@/lib/safeStorage";
 
 const CHANGE_TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   new_feature: { icon: <Sparkles className="w-3.5 h-3.5" />, color: "text-violet-400", label: "New" },
@@ -102,7 +103,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
     setGuestReadIds(prev => {
       const next = new Set(prev);
       next.add(id);
-      localStorage.setItem("stewardly_guest_changelog_read", JSON.stringify(Array.from(next)));
+      safeSetItem("stewardly_guest_changelog_read", JSON.stringify(Array.from(next)));
       return next;
     });
   };
@@ -111,7 +112,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
     if (feedQuery.data?.entries) {
       const allIds = feedQuery.data.entries.map(e => e.id);
       setGuestReadIds(new Set(allIds));
-      localStorage.setItem("stewardly_guest_changelog_read", JSON.stringify(allIds));
+      safeSetItem("stewardly_guest_changelog_read", JSON.stringify(allIds));
     }
   };
 
