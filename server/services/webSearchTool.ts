@@ -99,7 +99,7 @@ async function searchManusDataApi(query: string, options: SearchOptions): Promis
     const data: any = await callDataApi("GoogleSearch/search", {
       query: {
         q: query,
-        num: options.maxResults ?? 5,
+        num: String(options.maxResults ?? 5),
       },
     });
 

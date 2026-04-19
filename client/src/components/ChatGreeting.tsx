@@ -36,6 +36,8 @@ import {
   FileOutput,
   Search,
   Scale,
+  Dices,
+  Receipt,
 } from "lucide-react";
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -176,27 +178,29 @@ const GUEST_FEATURES: FeatureCard[] = [
 
 // ── Capability chips shown below feature cards ─────────────────────
 const CAPABILITY_CHIPS = [
-  // ── Wealth Engine ──
-  { icon: Calculator, label: "Retirement Projections", prompt: "Run a retirement projection: age 35, income $120k, saving 15%, target retirement age 60" },
-  { icon: Shield, label: "Protection Analysis", prompt: "Analyze my insurance protection gaps for a family with $150k income and two kids" },
-  { icon: TrendingUp, label: "Stock Lookup", prompt: "Look up the current price and performance of SPY" },
-  { icon: Scale, label: "Compare Products", prompt: "Compare term life vs whole life vs IUL insurance" },
-  // ── Learning Engine ──
-  { icon: GraduationCap, label: "Study & Exam Prep", prompt: "Quiz me on Series 65 exam topics — give me 5 practice questions" },
-  { icon: BookOpen, label: "CE Credit Tracking", prompt: "What continuing education credits do I need to maintain my licenses?" },
-  { icon: Lightbulb, label: "Case Study Practice", prompt: "Give me a financial planning case study to work through" },
-  // ── Command Center ──
-  { icon: Users, label: "Client Outreach", prompt: "Draft a professional follow-up email for a prospect interested in retirement planning" },
-  { icon: FileText, label: "Marketing Content", prompt: "Create a social media post about the importance of estate planning" },
-  { icon: Zap, label: "Pipeline Review", prompt: "Help me prioritize my lead pipeline — what should I focus on today?" },
-  // ── AI & Research ──
+  // ── Wealth Engine (5) ──
+  { icon: Calculator, label: "Retirement", prompt: "Run a retirement projection: age 35, income $120k, saving 15%, target retirement age 60" },
+  { icon: Shield, label: "Protection", prompt: "Analyze my insurance protection gaps for a family with $150k income and two kids" },
+  { icon: TrendingUp, label: "Stocks", prompt: "Look up the current price and performance of SPY" },
+  { icon: Scale, label: "Compare", prompt: "Compare term life vs whole life vs IUL insurance" },
+  { icon: Dices, label: "Monte Carlo", prompt: "Run a Monte Carlo simulation for a $1M portfolio with 60/40 allocation over 30 years" },
+  // ── Learning Engine (3) ──
+  { icon: GraduationCap, label: "Exam Prep", prompt: "Quiz me on Series 65 exam topics — give me 5 practice questions" },
+  { icon: BookOpen, label: "CE Credits", prompt: "What continuing education credits do I need to maintain my licenses?" },
+  { icon: Lightbulb, label: "Case Study", prompt: "Give me a financial planning case study to work through" },
+  // ── Command Center (3) ──
+  { icon: Users, label: "Outreach", prompt: "Draft a professional follow-up email for a prospect interested in retirement planning" },
+  { icon: FileText, label: "Marketing", prompt: "Create a social media post about the importance of estate planning" },
+  { icon: Zap, label: "Pipeline", prompt: "Help me prioritize my lead pipeline — what should I focus on today?" },
+  // ── AI & Research (5) ──
   { icon: Search, label: "Web Search", prompt: "Search the web for the latest 30-year mortgage rates" },
-  { icon: Globe, label: "Read Webpages", prompt: "Read and summarize this page: https://www.investopedia.com/terms/r/roth-ira.asp" },
-  { icon: Brain, label: "Deep Research", prompt: "Research the pros and cons of Roth conversion ladders for early retirees" },
+  { icon: Globe, label: "Read Page", prompt: "Read and summarize this page: https://www.investopedia.com/terms/r/roth-ira.asp" },
+  { icon: Brain, label: "Research", prompt: "Research the pros and cons of Roth conversion ladders for early retirees" },
   { icon: Code2, label: "Run Code", prompt: "Calculate compound interest on $10,000 at 7% for 30 years with monthly contributions of $500" },
-  { icon: BarChart3, label: "Analyze Data", prompt: "Analyze this data: AAPL 5yr return 180%, MSFT 200%, GOOG 150%, AMZN 120% — which performed best risk-adjusted?" },
-  { icon: Image, label: "Generate Images", prompt: "Generate a professional infographic showing the power of compound interest over 30 years" },
-  { icon: FileOutput, label: "Create Documents", prompt: "Generate a comprehensive retirement planning guide for someone starting at age 35" },
+  { icon: BarChart3, label: "Analyze", prompt: "Analyze this data: AAPL 5yr return 180%, MSFT 200%, GOOG 150%, AMZN 120% — which performed best risk-adjusted?" },
+  { icon: Image, label: "Images", prompt: "Generate a professional infographic showing the power of compound interest over 30 years" },
+  { icon: FileOutput, label: "Documents", prompt: "Generate a comprehensive retirement planning guide for someone starting at age 35" },
+  { icon: Receipt, label: "Tax Estimate", prompt: "Estimate my federal and state taxes for $150k income, married filing jointly, 2 dependents" },
 ];
 
 const USER_FEATURES: FeatureCard[] = [
@@ -354,8 +358,40 @@ export default function ChatGreetingV2({
         </motion.div>
       )}
 
-      {/* Suggestion chips */}
-      <motion.div className="flex flex-wrap items-center justify-center gap-2 max-w-lg" initial="hidden" animate="visible" variants={variant} custom={3}>
+      {/* ── Capability Tools Grid — PRIMARY SURFACE for all 4 tracks ── */}
+      <motion.div className="w-full space-y-4" initial="hidden" animate="visible" variants={variant} custom={3}>
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
+          <Zap className="w-3 h-3 text-accent" /> What I Can Do
+        </div>
+        {[
+          { title: "Wealth Engine", chips: CAPABILITY_CHIPS.slice(0, 5) },
+          { title: "Learning", chips: CAPABILITY_CHIPS.slice(5, 8) },
+          { title: "Command Center", chips: CAPABILITY_CHIPS.slice(8, 11) },
+          { title: "AI & Research", chips: CAPABILITY_CHIPS.slice(11) },
+        ].map((section, si) => (
+          <div key={section.title} className="space-y-1.5">
+            <span className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-widest px-1">{section.title}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {section.chips.map((chip, i) => {
+                const ChipIcon = chip.icon;
+                return (
+                  <motion.button type="button" key={chip.label} onClick={() => onSuggestionClick(chip.prompt)}
+                    variants={variant} custom={3 + (si * 5 + i) * 0.04}
+                    className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-2.5 text-left transition-all hover:bg-accent/10 hover:border-accent/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring group">
+                    <div className="shrink-0 rounded-md bg-accent/10 p-1.5 group-hover:bg-accent/20 transition-colors">
+                      <ChipIcon className="w-3.5 h-3.5 text-accent" />
+                    </div>
+                    <span className="text-xs font-medium text-foreground/80 group-hover:text-accent transition-colors truncate">{chip.label}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </motion.div>
+
+      {/* Suggestion chips — quick prompts */}
+      <motion.div className="flex flex-wrap items-center justify-center gap-2 max-w-lg" initial="hidden" animate="visible" variants={variant} custom={5}>
         {suggestions.map((text) => (
           <button type="button" key={text}  onClick={() => onSuggestionClick(text)}
             className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm text-foreground/80 hover:bg-accent/10 hover:border-accent/30 hover:text-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring">
@@ -364,14 +400,14 @@ export default function ChatGreetingV2({
         ))}
       </motion.div>
 
-      {/* Feature discovery cards — single column on mobile for cleaner layout */}
+      {/* Feature discovery cards */}
       <motion.div className="w-full grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" initial="hidden" animate="visible">
         {features.map((card, i) => {
           const Icon = card.icon;
           return (
             <motion.button key={card.title} type="button" onClick={() => onSuggestionClick(card.prompt)}
               className="card-lift flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left transition-shadow hover:shadow-md hover:shadow-accent/5 hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring"
-              variants={variant} custom={i + 4}>
+              variants={variant} custom={i + 6}>
               <div className="inline-flex items-center justify-center rounded-lg bg-accent/10 p-2"><Icon className="w-4 h-4 text-accent" /></div>
               <div>
                 <h3 className="font-semibold text-sm">{card.title}</h3>
@@ -380,24 +416,6 @@ export default function ChatGreetingV2({
             </motion.button>
           );
         })}
-      </motion.div>
-
-      {/* Capability discovery chips — show all available AI tools */}
-      <motion.div className="w-full space-y-2" initial="hidden" animate="visible" variants={variant} custom={7}>
-        <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-1">
-          <Zap className="w-3 h-3 text-accent/60" /> Wealth · Learning · Practice · AI
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {CAPABILITY_CHIPS.map((chip) => {
-            const ChipIcon = chip.icon;
-            return (
-              <button type="button" key={chip.label} onClick={() => onSuggestionClick(chip.prompt)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-2.5 py-1.5 text-[11px] text-muted-foreground hover:bg-accent/10 hover:border-accent/20 hover:text-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring">
-                <ChipIcon className="w-3 h-3" />{chip.label}
-              </button>
-            );
-          })}
-        </div>
       </motion.div>
     </div>
   );

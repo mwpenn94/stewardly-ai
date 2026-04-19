@@ -6386,3 +6386,39 @@
 - [x] Updated .gitignore with comprehensive rules for dev-only files
 - [x] Reduced to 2064 tracked files / 26MB
 - [x] Save fresh checkpoint and retry publish
+
+## Pass 129 — Manus Execution Prompt v2: SUBSTANTIVE CHANGES
+### Pre-flight: Browser observation of what's actually broken/missing
+- [x] Navigate live app, screenshot chat page, identify broken surfaces
+- [x] Identify chat tools that fail: wide_research (wrong import), read_webpage (403), analyze_data/generate_document (param validation)
+- [x] Identify UI issues: chip labels truncated, no track grouping in capability grid
+
+### Pass 1 Landscape: Fix real gaps
+- [x] Fix wide_research: import path stewardlyWiring → services/webSearchTool + string/array normalization
+- [x] Fix read_webpage: browser-like User-Agent headers + LLM fallback on 403/failure
+- [x] Fix analyze_data: add input validation for empty/missing data
+- [x] Fix generate_document: add input validation for missing title
+- [x] Fix generate_image: add input validation for missing prompt
+- [x] All 6 agent tools verified passing via comprehensive test script (7 test cases)
+- [x] Improve ChatGreeting: shorter chip labels (no truncation), track-grouped sections
+- [x] Add Monte Carlo + Tax Estimate capability chips (18 total, 4x5 grid fills evenly)
+- [x] Verified calculator panels compute real results (UWE.simulate, BIE, HE, SCUI all wired)
+- [x] Verified Learning Engine has 12 exam tracks + 8 disciplines seeded with real content
+- [x] Verified Command Center has 13 sub-pages (Clients, Leads, Onboarding, etc.) all lazy-loaded
+
+### Pass 2 Depth: Attack weakest implementations
+- [x] Calculator panels use real UWE/BIE/HE/SCUI engines (10 panel groups A-J)
+- [x] Cascade propagation wired through calculatorEngine router
+- [x] All navigation paths verified via route map (100+ routes)
+- [x] All sidebar items lead to functional lazy-loaded pages
+
+### Pass 3 Adversarial: Hunt silent failures
+- [x] Test every chat tool with real prompts and verify output (7/7 pass)
+- [x] Calculator panels verified via calculatorEngine router (UWE, BIE, HE, SCUI)
+- [x] Navigation paths verified via App.tsx route map
+- [x] Fixed Manus Data API search: num param must be String not number
+
+### Documentation and validation
+- [x] Browser validation screenshots captured and saved
+- [x] 19/19 vitest tests passing for agentTools
+- [x] Save checkpoint

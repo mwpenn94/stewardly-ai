@@ -226,23 +226,52 @@ async function readWebpage(url: string, focus?: string): Promise<string> {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
+    const fetchTimeout = setTimeout(() => controller.abort(), 15_000);
 
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Stewardly/1.0; +https://stewardly.manus.space)",
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-    });
-    clearTimeout(timeout);
+    let html: string | null = null;
+    let fetchError: string | null = null;
 
-    if (!response.ok) {
-      return JSON.stringify({ error: `Failed to fetch: HTTP ${response.status}` });
+    // Try with realistic browser User-Agent headers
+    const userAgents = [
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    ];
+
+    for (const ua of userAgents) {
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": ua,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+          },
+          redirect: "follow",
+        });
+        if (response.ok) {
+          html = await response.text();
+          break;
+        } else {
+          fetchError = `HTTP ${response.status}`;
+        }
+      } catch (err: any) {
+        fetchError = err.message;
+      }
+    }
+    clearTimeout(fetchTimeout);
+
+    // If direct fetch failed, fall back to LLM knowledge about the URL
+    if (!html) {
+      return await readWebpageLLMFallback(url, focus, fetchError || "Unknown error");
     }
 
-    const html = await response.text();
-    // Basic HTML to text extraction
+    // Successfully fetched — extract text from HTML
     const text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
@@ -259,11 +288,8 @@ async function readWebpage(url: string, focus?: string): Promise<string> {
       .replace(/\s+/g, " ")
       .trim();
 
-    // Extract title
     const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : "Untitled";
-
-    // Truncate to reasonable size
     const maxChars = 6000;
     const truncated = text.length > maxChars ? text.slice(0, maxChars) + "..." : text;
 
@@ -272,26 +298,74 @@ async function readWebpage(url: string, focus?: string): Promise<string> {
       title,
       content: truncated,
       charCount: text.length,
+      source: "direct_fetch",
       ...(focus ? { focus } : {}),
     });
   } catch (err: any) {
-    return JSON.stringify({ error: `Failed to read webpage: ${err.message}` });
+    // Final fallback: use LLM if everything else fails
+    return await readWebpageLLMFallback(url, focus, err.message);
+  }
+}
+
+/** LLM fallback for read_webpage when direct fetch fails */
+async function readWebpageLLMFallback(url: string, focus: string | undefined, fetchError: string): Promise<string> {
+  try {
+    const { invokeLLM } = await import("./_core/llm");
+    const llmResult = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: `The user wants to know about the content at URL: ${url}. The direct fetch failed (${fetchError}). Based on your training knowledge, provide what you know about this URL/page. If you recognize the URL, summarize its typical content. Be helpful and specific.`,
+        },
+        {
+          role: "user",
+          content: `Summarize what you know about ${url}${focus ? ` focusing on: ${focus}` : ""}`,
+        },
+      ],
+    });
+    const content = llmResult.choices?.[0]?.message?.content || "";
+    return JSON.stringify({
+      url,
+      title: "Page content (from AI knowledge)",
+      content: content.slice(0, 6000),
+      source: "llm_knowledge",
+      note: `Direct fetch failed (${fetchError}). Content provided from AI knowledge base.`,
+      ...(focus ? { focus } : {}),
+    });
+  } catch {
+    return JSON.stringify({ error: `Failed to read webpage: ${fetchError}` });
   }
 }
 
 // ── wide_research ───────────────────────────────────────────────────────
 
-async function wideResearch(queries: string[], topic: string): Promise<string> {
+async function wideResearch(queries: string | string[], topic: string): Promise<string> {
   try {
-    if (!queries || !Array.isArray(queries) || queries.length === 0) {
-      return JSON.stringify({ error: "queries must be a non-empty array of strings" });
+    // Normalize queries — the LLM may pass a string instead of an array
+    let queryArray: string[];
+    if (typeof queries === "string") {
+      try {
+        const parsed = JSON.parse(queries);
+        queryArray = Array.isArray(parsed) ? parsed : [queries];
+      } catch {
+        queryArray = queries.split(/[,;]/).map(q => q.trim()).filter(Boolean);
+        if (queryArray.length === 0) queryArray = [queries];
+      }
+    } else if (Array.isArray(queries)) {
+      queryArray = queries.filter(q => typeof q === "string" && q.trim().length > 0);
+    } else {
+      return JSON.stringify({ error: "queries must be an array of search strings" });
     }
 
-    // Import web search utility
-    const { executeWebSearch } = await import("./shared/stewardlyWiring");
+    if (queryArray.length === 0) {
+      return JSON.stringify({ error: "queries must contain at least one search query" });
+    }
+
+    // Import the CORRECT web search function from webSearchTool.ts
+    const { executeWebSearch } = await import("./services/webSearchTool");
 
     // Run all queries in parallel (max 5)
-    const limitedQueries = queries.slice(0, 5);
+    const limitedQueries = queryArray.slice(0, 5);
     const results = await Promise.allSettled(
       limitedQueries.map(async (query) => {
         try {
@@ -392,6 +466,11 @@ async function analyzeData(
   question?: string,
 ): Promise<string> {
   try {
+    if (!data || typeof data !== "string" || data.trim().length === 0) {
+      return JSON.stringify({
+        error: "No data provided. Please provide data to analyze (JSON, CSV, or text format).",
+      });
+    }
     const { invokeLLM } = await import("./_core/llm");
 
     const result = await invokeLLM({
@@ -458,6 +537,9 @@ Return a JSON object with:
 
 async function generateImageTool(prompt: string): Promise<string> {
   try {
+    if (!prompt || typeof prompt !== "string") {
+      return JSON.stringify({ error: "prompt must be a non-empty string" });
+    }
     const { generateImage } = await import("./_core/imageGeneration");
     const { url } = await generateImage({ prompt });
     return JSON.stringify({
@@ -480,6 +562,9 @@ async function generateDocumentTool(
   context?: string,
 ): Promise<string> {
   try {
+    if (!title || typeof title !== "string") {
+      return JSON.stringify({ error: "title is required for document generation" });
+    }
     const { invokeLLM } = await import("./_core/llm");
 
     const result = await invokeLLM({
