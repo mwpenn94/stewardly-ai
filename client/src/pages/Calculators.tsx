@@ -49,6 +49,7 @@ import { AUMOverrideCascadePanel, AUMPipelinePanel, AffiliatePipelinePanel } fro
 import { ProductionOptPanel, ChannelDiversPanel, MarketingROIPanel, RecruitingFunnelPanel, PnLBusinessEconomicsPanel, GDCOverrideOptPanel } from './calculators/PanelsH';
 import { BalanceSheetPanel, DebtManagementPanel, TrustEngineeringPanel, GovernanceIPSPanel, MonteCarloPanel, StockCompPanel } from './calculators/PanelsI';
 import { PremiumFinancingPanel, ILITTrustPanel, ExecCompPanel, CharitablePlanningPanel, DueDiligencePanel } from './calculators/PanelsJ';
+import { ClientWealthHub } from './calculators/ClientWealthHub';
 import {
   ROLE_DEFAULTS, calcWeightedGDC, calcProductionFunnel, calcTeamOverride,
   calcChannelMetrics, calcPnL, calcRollUp, calcDashboard, calcAllTracksSummary,
@@ -77,7 +78,7 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
   'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence' |
-  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub';
+  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
@@ -103,6 +104,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
   ]},
   /* ─── Holistic Planning: merged Client Planning + Advanced + Advisory ─── */
   { group: '① Foundation', items: [
+    { id: 'client-wealth-hub' as PanelId, label: '⭐ Unified Wealth Plan', icon: <Target className="w-4 h-4" /> },
     { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
     { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
     { id: 'balancesheet' as PanelId, label: 'Balance Sheet', icon: <Wallet className="w-4 h-4" /> },
@@ -1388,6 +1390,7 @@ export default function Calculators() {
           </DisclosureSection>
 
           {/* ═══ PANEL RENDERING ═══ */}
+          {activePanel === 'client-wealth-hub' && <ClientWealthHub {...pp} />}
           {activePanel === 'profile' && <ProfilePanel {...pp} />}
           {activePanel === 'cash' && <CashFlowPanel {...pp} />}
           {activePanel === 'protect' && <ProtectionPanel {...pp} />}

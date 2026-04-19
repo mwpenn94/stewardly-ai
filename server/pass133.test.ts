@@ -135,6 +135,118 @@ describe("Pass 133 — Depth Pass Components", () => {
     });
   });
 
+  describe("ClientWealthHub — Unified Client Wealth Planning Hub", () => {
+    const filePath = resolve(ROOT, "client/src/pages/calculators/ClientWealthHub.tsx");
+
+    it("exists", () => {
+      expect(existsSync(filePath)).toBe(true);
+    });
+
+    it("exports ClientWealthHub with PanelProps signature", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("export function ClientWealthHub");
+      expect(content).toContain("PanelProps");
+    });
+
+    it("has target-driven retirement goal with forward cascade", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("retirementGoal");
+      expect(content).toContain("setRetirementGoal");
+    });
+
+    it("has domain allocation sliders with drag-to-rebalance", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("domainAllocation");
+      expect(content).toContain("setDomainAllocation");
+      expect(content).toContain("DomainSlider");
+      expect(content).toContain("cursor-grab");
+    });
+
+    it("has back-solve section", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("Back-Solve");
+      expect(content).toContain("requiredSaveRate");
+      expect(content).toContain("requiredMonthly");
+    });
+
+    it("has sensitivity analysis with Recharts bar chart", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("Sensitivity Analysis");
+      expect(content).toContain("BarChart");
+      expect(content).toContain("impactOnWealth");
+    });
+
+    it("has time-phased projections with Recharts area chart", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("Wealth Timeline");
+      expect(content).toContain("AreaChart");
+      expect(content).toContain("totalWealth");
+    });
+
+    it("has cross-domain cascade summary", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("Cross-Domain Cascade");
+      expect(content).toContain("ArrowRight");
+    });
+
+    it("has allocation pie chart", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("PieChart");
+      expect(content).toContain("Allocation Breakdown");
+    });
+
+    it("uses engine functions for calculations", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("calcUnifiedClientPlan");
+      expect(content).toContain("calcClientSensitivity");
+      expect(content).toContain("calcClientTimePhasedProjections");
+    });
+
+    it("is wired into Calculators.tsx nav and panel switch", () => {
+      const calcContent = readFileSync(resolve(ROOT, "client/src/pages/Calculators.tsx"), "utf-8");
+      expect(calcContent).toContain("client-wealth-hub");
+      expect(calcContent).toContain("ClientWealthHub");
+      // Should appear in the nav section under Foundation group
+      expect(calcContent).toContain("Unified Wealth Plan");
+      // Should be rendered in the panel switch
+      expect(calcContent).toContain("activePanel === 'client-wealth-hub'");
+    });
+  });
+
+  describe("Engine functions for ClientWealthHub", () => {
+    const filePath = resolve(ROOT, "client/src/pages/calculators/engine.ts");
+
+    it("exports calcUnifiedClientPlan", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("export function calcUnifiedClientPlan");
+    });
+
+    it("exports calcClientSensitivity", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("export function calcClientSensitivity");
+    });
+
+    it("exports calcClientTimePhasedProjections", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("export function calcClientTimePhasedProjections");
+    });
+
+    it("exports UnifiedClientPlan interface", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("export interface UnifiedClientPlan");
+    });
+
+    it("exports ClientSensitivityResult interface", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("export interface ClientSensitivityResult");
+    });
+
+    it("exports ClientTimeProjection interface", () => {
+      const content = readFileSync(filePath, "utf-8");
+      expect(content).toContain("export interface ClientTimeProjection");
+    });
+  });
+
   describe("Industry benchmarks data", () => {
     const filePath = resolve(ROOT, "client/src/pages/calculators/industryBenchmarks.ts");
 

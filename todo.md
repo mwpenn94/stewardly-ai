@@ -6621,4 +6621,31 @@
 - [x] Convergence counter: 3 consecutive passes with no required actions
 - [x] Rating: 8.7/10 (up from 8.5 at Pass 121)
 - [x] Re-entry triggers documented
-- [ ] Final checkpoint saved
+- [x] Final checkpoint saved
+
+## Pass 138 — REAL Consolidation: Apply Practice Management structural depth to Client Planning + Advanced
+
+### Phase 1: Deep-read and understand the model
+- [x] Read entire Calculators.tsx (1459 lines) — nav structure, state management, panel rendering
+- [x] Read PanelsD (3959 lines, 10 panels) — MyPlanPanel as depth standard
+- [x] Read PanelsA (669 lines, 4 panels), PanelsB (719 lines, 4 panels), PanelsE (454 lines, 4 panels)
+- [x] Documented gap analysis: Practice Mgmt ~396 lines/panel vs Client Planning ~167 lines/panel
+
+### Phase 2: Implement structural improvements
+- [x] Built ClientWealthHub (687 lines) — unified client planning hub matching MyPlanPanel pattern
+  - Target-driven retirement goal with forward cascade
+  - Domain allocation sliders with drag-to-rebalance (DomainSlider component)
+  - On-Track Score (weighted composite across 7 domains) with score ring
+  - Domain Roll-Up table (Current vs Target vs Gap vs Status)
+  - Back-Solve section (required save rate, monthly contribution, return, years)
+  - Sensitivity Analysis (8 what-if scenarios with Recharts bar chart)
+  - Time-Phased Projections (Recharts stacked area chart + milestone table)
+  - Allocation Pie Chart (Recharts)
+  - Cross-Domain Cascade Summary
+- [x] Added engine functions (calcUnifiedClientPlan, calcClientSensitivity, calcClientTimePhasedProjections)
+- [x] Wired ClientWealthHub into Calculators.tsx as first panel in Foundation group
+
+### Phase 3: Validate
+- [x] Run tests — 134/134 pass (17 new tests for ClientWealthHub)
+- [x] Browser validate — Vite loaded ClientWealthHub.tsx (200 OK), no console errors
+- [ ] Checkpoint saved

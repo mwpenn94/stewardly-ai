@@ -995,3 +995,241 @@ export function getConfig<K extends keyof ConfigurableDefaults>(
   if (userOverrides && key in userOverrides) return userOverrides[key] as ConfigurableDefaults[K];
   return CONFIGURABLE_DEFAULTS[key];
 }
+
+
+/* ═══ UNIFIED CLIENT WEALTH PLANNING ENGINE ═══
+   Mirrors the Practice Management's calcUnifiedIncomePlan pattern:
+   - Target-driven: set a retirement income goal, cascade to all domains
+   - Back-solve: given a goal, what inputs are needed?
+   - Sensitivity: what-if on key variables
+   - Time-phased: multi-year forward projection
+   ═══════════════════════════════════════════════ */
+
+export interface ClientDomainAllocation {
+  protection: number;  // % of total premium budget
+  growth: number;      // % of savings allocated to growth
+  retirement: number;  // % of savings allocated to retirement
+  tax: number;         // % effort on tax optimization
+  estate: number;      // % effort on estate planning
+  education: number;   // % of savings allocated to education
+}
+
+export interface UnifiedClientPlan {
+  // Targets
+  retirementIncomeGoal: number;
+  totalWealthTarget: number;
+  // Domain roll-ups
+  domains: {
+    cashFlow: { surplus: number; saveRate: number; monthlyAvailable: number };
+    protection: { gap: number; totalPremium: number; coverageRatio: number };
+    growth: { projectedWealth: number; yearsToGoal: number; monthlyNeeded: number };
+    retirement: { portfolioAtRetire: number; withdrawalIncome: number; ssIncome: number; totalRetireIncome: number; incomeGap: number };
+    tax: { totalSavings: number; effectiveRate: number; optimizedRate: number };
+    estate: { netToHeirs: number; estateTax: number; withPlanning: number };
+    education: { totalGap: number; monthlyNeeded: number };
+  };
+  // Aggregate metrics
+  totalProjectedWealth: number;
+  totalAnnualCost: number;  // premiums + savings + contributions
+  costAsPercentOfIncome: number;
+  wealthGapToGoal: number;
+  onTrackScore: number;  // 0-100
+  // Back-solve results
+  backSolve: {
+    requiredSaveRate: number;
+    requiredMonthly: number;
+    requiredReturn: number;
+    yearsToGoal: number;
+  };
+}
+
+export function calcUnifiedClientPlan(
+  income: number, age: number, retireAge: number,
+  retirementIncomeGoal: number,
+  cf: CFResult, pr: PRResult, gr: GRResult, rt: RTResult, tx: TXResult, es: ESResult, ed: EDResult,
+  monthlySav: number, savings: number, retirement401k: number,
+  allocation: ClientDomainAllocation,
+): UnifiedClientPlan {
+  const yrs = Math.max(1, retireAge - age);
+  const totalWealth = gr.vehicles.reduce((max, v) => Math.max(max, v.value), 0);
+  const totalWealthTarget = Math.round(retirementIncomeGoal / 0.04); // 4% rule
+  const wealthGap = Math.max(0, totalWealthTarget - totalWealth);
+
+  // Back-solve: what monthly savings needed to hit goal?
+  const requiredReturn = 0.07;
+  const rm = requiredReturn / 12;
+  const n = yrs * 12;
+  const existingFV = savings * Math.pow(1 + rm, n) + retirement401k * Math.pow(1 + rm, n);
+  const remainingNeeded = Math.max(0, totalWealthTarget - existingFV);
+  const requiredMonthly = rm > 0 && n > 0
+    ? Math.round(remainingNeeded / ((Math.pow(1 + rm, n) - 1) / rm))
+    : Math.round(remainingNeeded / Math.max(1, n));
+  const requiredSaveRate = income > 0 ? (requiredMonthly * 12) / income : 0;
+
+  // Years to goal at current savings rate
+  let yearsToGoal = yrs;
+  if (monthlySav > 0 && rm > 0) {
+    const currentMonthly = monthlySav;
+    let bal = savings + retirement401k;
+    for (let y = 1; y <= 60; y++) {
+      bal = bal * (1 + requiredReturn) + currentMonthly * 12;
+      if (bal >= totalWealthTarget) { yearsToGoal = y; break; }
+    }
+  }
+
+  // On-track score (0-100)
+  const protectionScore = pr.gap === 0 ? 100 : Math.max(0, 100 - Math.round(pr.gap / (pr.dimeNeed || 1) * 100));
+  const growthScore = totalWealthTarget > 0 ? Math.min(100, Math.round(totalWealth / totalWealthTarget * 100)) : 50;
+  const cashFlowScore = cf.saveRate >= 0.20 ? 100 : cf.saveRate >= 0.10 ? 70 : cf.saveRate >= 0 ? 40 : 0;
+  const retireScore = rt.incomeGap === 0 ? 100 : Math.max(0, 100 - Math.round(rt.incomeGap / Math.max(1, retirementIncomeGoal / 12) * 100));
+  const taxScore = tx.totalSaving > 0 ? Math.min(100, 50 + Math.round(tx.totalSaving / Math.max(1, income) * 200)) : 30;
+  const estateScore = es.estateTax === 0 ? 100 : Math.max(0, 100 - Math.round(es.estateTax / Math.max(1, es.grossEstate) * 100));
+  const eduScore = ed.totalGap === 0 ? 100 : Math.max(0, 100 - Math.round(ed.totalGap / Math.max(1, ed.totalFutureCost) * 100));
+  const onTrackScore = Math.round(
+    (protectionScore * 0.20 + growthScore * 0.25 + cashFlowScore * 0.15 +
+     retireScore * 0.20 + taxScore * 0.08 + estateScore * 0.07 + eduScore * 0.05)
+  );
+
+  const totalAnnualCost = pr.totalPremium + monthlySav * 12;
+
+  return {
+    retirementIncomeGoal,
+    totalWealthTarget,
+    domains: {
+      cashFlow: { surplus: cf.surplus, saveRate: cf.saveRate, monthlyAvailable: Math.max(0, cf.surplus) },
+      protection: { gap: pr.gap, totalPremium: pr.totalPremium, coverageRatio: pr.dimeNeed > 0 ? (pr.dimeNeed - pr.gap) / pr.dimeNeed : 1 },
+      growth: { projectedWealth: totalWealth, yearsToGoal, monthlyNeeded: requiredMonthly },
+      retirement: {
+        portfolioAtRetire: rt.portfolioAtRetire, withdrawalIncome: rt.withdrawal,
+        ssIncome: rt.ssComparison.find(s => s.age === rt.bestAge)?.annual || 0,
+        totalRetireIncome: rt.monthlyIncome * 12, incomeGap: rt.incomeGap * 12,
+      },
+      tax: { totalSavings: tx.totalSaving, effectiveRate: tx.effectiveRate, optimizedRate: Math.max(0, tx.effectiveRate - tx.totalSaving / Math.max(1, income)) },
+      estate: { netToHeirs: es.netToHeirs, estateTax: es.estateTax, withPlanning: es.withPlanning },
+      education: { totalGap: ed.totalGap, monthlyNeeded: ed.additionalMonthlyNeeded },
+    },
+    totalProjectedWealth: totalWealth,
+    totalAnnualCost,
+    costAsPercentOfIncome: income > 0 ? totalAnnualCost / income : 0,
+    wealthGapToGoal: wealthGap,
+    onTrackScore,
+    backSolve: { requiredSaveRate, requiredMonthly, requiredReturn, yearsToGoal },
+  };
+}
+
+export interface ClientSensitivityResult {
+  scenarios: {
+    label: string;
+    variable: string;
+    baseValue: number;
+    adjustedValue: number;
+    impactOnWealth: number;
+    impactOnRetireIncome: number;
+    impactPct: number;
+  }[];
+}
+
+export function calcClientSensitivity(
+  income: number, age: number, retireAge: number,
+  monthlySav: number, savings: number, retirement401k: number,
+  baseReturn: number, inflationRate: number, taxRate: number,
+): ClientSensitivityResult {
+  const yrs = Math.max(1, retireAge - age);
+  const baseWealth = fv(savings + retirement401k, monthlySav, baseReturn, yrs);
+
+  const scenarios = [
+    { label: 'Return +2%', variable: 'Investment Return', baseValue: baseReturn, adjustedValue: baseReturn + 0.02 },
+    { label: 'Return -2%', variable: 'Investment Return', baseValue: baseReturn, adjustedValue: Math.max(0.01, baseReturn - 0.02) },
+    { label: 'Savings +$500/mo', variable: 'Monthly Savings', baseValue: monthlySav, adjustedValue: monthlySav + 500 },
+    { label: 'Savings -$500/mo', variable: 'Monthly Savings', baseValue: monthlySav, adjustedValue: Math.max(0, monthlySav - 500) },
+    { label: 'Retire 3yr earlier', variable: 'Retirement Age', baseValue: retireAge, adjustedValue: Math.max(age + 5, retireAge - 3) },
+    { label: 'Retire 3yr later', variable: 'Retirement Age', baseValue: retireAge, adjustedValue: Math.min(80, retireAge + 3) },
+    { label: 'Inflation +1%', variable: 'Inflation Rate', baseValue: inflationRate, adjustedValue: inflationRate + 0.01 },
+    { label: 'Tax rate -5%', variable: 'Effective Tax Rate', baseValue: taxRate, adjustedValue: Math.max(0, taxRate - 0.05) },
+  ];
+
+  return {
+    scenarios: scenarios.map(s => {
+      let adjustedWealth: number;
+      if (s.variable === 'Investment Return') {
+        adjustedWealth = fv(savings + retirement401k, monthlySav, s.adjustedValue, yrs);
+      } else if (s.variable === 'Monthly Savings') {
+        adjustedWealth = fv(savings + retirement401k, s.adjustedValue, baseReturn, yrs);
+      } else if (s.variable === 'Retirement Age') {
+        const adjYrs = Math.max(1, s.adjustedValue - age);
+        adjustedWealth = fv(savings + retirement401k, monthlySav, baseReturn, adjYrs);
+      } else if (s.variable === 'Inflation Rate') {
+        // Higher inflation reduces real returns
+        const realReturn = Math.max(0.005, baseReturn - s.adjustedValue + inflationRate);
+        adjustedWealth = fv(savings + retirement401k, monthlySav, realReturn, yrs);
+      } else if (s.variable === 'Effective Tax Rate') {
+        // Lower tax = more savings available
+        const extraMonthly = Math.round(income * (taxRate - s.adjustedValue) / 12);
+        adjustedWealth = fv(savings + retirement401k, monthlySav + extraMonthly, baseReturn, yrs);
+      } else {
+        adjustedWealth = baseWealth;
+      }
+      const impact = adjustedWealth - baseWealth;
+      return {
+        label: s.label,
+        variable: s.variable,
+        baseValue: s.baseValue,
+        adjustedValue: s.adjustedValue,
+        impactOnWealth: Math.round(impact),
+        impactOnRetireIncome: Math.round(impact * 0.04), // 4% rule
+        impactPct: baseWealth > 0 ? impact / baseWealth : 0,
+      };
+    }),
+  };
+}
+
+export interface ClientTimeProjection {
+  year: number;
+  age: number;
+  savings: number;
+  retirement: number;
+  protection: number;
+  totalWealth: number;
+  annualIncome: number;
+  cumulativeCost: number;
+}
+
+export function calcClientTimePhasedProjections(
+  age: number, retireAge: number, income: number,
+  monthlySav: number, savings: number, retirement401k: number,
+  baseReturn: number, inflationRate: number,
+  prTotalPremium: number,
+): ClientTimeProjection[] {
+  const projections: ClientTimeProjection[] = [];
+  let savBal = savings;
+  let retBal = retirement401k;
+  let cumCost = 0;
+
+  for (let y = 0; y <= Math.min(40, retireAge - age + 10); y++) {
+    const currentAge = age + y;
+    const isRetired = currentAge >= retireAge;
+    const annualSav = isRetired ? 0 : monthlySav * 12;
+    const withdrawal = isRetired ? Math.round((savBal + retBal) * 0.04) : 0;
+
+    if (y > 0) {
+      savBal = Math.round(savBal * (1 + baseReturn) + (isRetired ? -withdrawal * 0.4 : annualSav * 0.4));
+      retBal = Math.round(retBal * (1 + baseReturn) + (isRetired ? -withdrawal * 0.6 : annualSav * 0.6));
+    }
+
+    cumCost += prTotalPremium + annualSav;
+    const realIncome = isRetired ? withdrawal : income;
+
+    projections.push({
+      year: y,
+      age: currentAge,
+      savings: Math.max(0, savBal),
+      retirement: Math.max(0, retBal),
+      protection: Math.round(prTotalPremium * Math.max(0, Math.min(retireAge - age, 30) - y)),
+      totalWealth: Math.max(0, savBal + retBal),
+      annualIncome: realIncome,
+      cumulativeCost: cumCost,
+    });
+  }
+
+  return projections;
+}
