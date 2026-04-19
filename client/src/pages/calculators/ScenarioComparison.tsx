@@ -12,11 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import {
-  GitCompare, Save, Trash2, ArrowUpRight, ArrowDownRight, Minus, Plus, Download, FileSpreadsheet, FileText,
+  GitCompare, Save, Trash2, ArrowUpRight, ArrowDownRight, Minus, Plus, Download, FileSpreadsheet, FileText, History, RefreshCw, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import type { WealthEngineData } from '@/contexts/WealthEngineContext';
-
-const fmt = (v: number) => !isFinite(v) ? '—' : v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v / 1_000).toFixed(0)}K` : `$${Math.round(v)}`;
+import { fmtSm as fmt } from './format';
 
 function DeltaBadge({ current, baseline, label, format = 'dollar' }: {
   current: number; baseline: number; label: string; format?: 'dollar' | 'pct' | 'score';
@@ -74,9 +73,23 @@ export function ScenarioComparison({ currentWeData, currentInputs, onRestoreScen
     },
   });
 
+  const updateMutation = trpc.scenarios.update.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Scenario updated (${data.versionsCount} versions saved)`);
+      scenariosQuery.refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const scenarios = scenariosQuery.data || [];
   const compareScenario = scenarios.find(s => s.id.toString() === compareId);
   const compareResults = compareScenario?.resultsJson as WealthEngineData | null;
+
+  const [showHistory, setShowHistory] = useState(false);
+  const historyQuery = trpc.scenarios.history.useQuery(
+    { id: compareScenario?.id ?? 0 },
+    { enabled: !!compareScenario && showHistory },
+  );
 
   // Metric rows for comparison
   const metrics = useMemo(() => {
@@ -171,6 +184,19 @@ export function ScenarioComparison({ currentWeData, currentInputs, onRestoreScen
             </Select>
             {compareScenario && (
               <div className="flex gap-1">
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                  disabled={updateMutation.isPending}
+                  onClick={() => updateMutation.mutate({
+                    id: compareScenario.id,
+                    inputsJson: currentInputs,
+                    resultsJson: currentWeData as any,
+                  })}>
+                  <RefreshCw className="w-3 h-3" /> Update
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1"
+                  onClick={() => setShowHistory(!showHistory)}>
+                  <History className="w-3 h-3" /> {compareScenario.versionCount || 0}v
+                </Button>
                 {onRestoreScenario && (
                   <Button variant="outline" size="sm" className="h-7 text-xs"
                     onClick={() => onRestoreScenario(compareScenario.inputsJson)}>
@@ -224,6 +250,19 @@ export function ScenarioComparison({ currentWeData, currentInputs, onRestoreScen
             currentWeData={currentWeData}
             compareScenario={compareScenario}
             compareResults={compareResults}
+          />
+        )}
+
+        {/* Version History Timeline */}
+        {showHistory && compareScenario && (
+          <VersionTimeline
+            historyData={historyQuery.data}
+            isLoading={historyQuery.isLoading}
+            scenarioName={compareScenario.name}
+            onRestoreVersion={onRestoreScenario ? (inputs: Record<string, any>) => {
+              onRestoreScenario(inputs);
+              toast.success('Restored from version history');
+            } : undefined}
           />
         )}
 
@@ -287,3 +326,83 @@ function ExportButtons({ currentWeData, compareScenario, compareResults }: {
 }
 
 export default ScenarioComparison;
+
+
+/** Version History Timeline — shows previous versions with restore capability */
+function VersionTimeline({ historyData, isLoading, scenarioName, onRestoreVersion }: {
+  historyData?: { current: any; versions: any[] } | null;
+  isLoading: boolean;
+  scenarioName: string;
+  onRestoreVersion?: (inputs: Record<string, any>) => void;
+}) {
+  const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
+
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-border/30 p-4 text-center">
+        <div className="animate-pulse text-xs text-muted-foreground">Loading version history...</div>
+      </div>
+    );
+  }
+
+  if (!historyData || historyData.versions.length === 0) {
+    return (
+      <div className="rounded-lg border border-border/30 p-4 text-center">
+        <History className="w-5 h-5 mx-auto mb-2 text-muted-foreground/50" />
+        <p className="text-xs text-muted-foreground">No version history yet.</p>
+        <p className="text-[10px] text-muted-foreground/60 mt-1">
+          Click "Update" to save changes — previous versions are automatically archived.
+        </p>
+      </div>
+    );
+  }
+
+  const allVersions = [
+    ...(historyData.current ? [{ ...historyData.current, version: historyData.versions.length + 1, isCurrent: true }] : []),
+    ...historyData.versions.map(v => ({ ...v, isCurrent: false })).reverse(),
+  ];
+
+  return (
+    <div className="rounded-lg border border-border/30 overflow-hidden">
+      <div className="bg-muted/20 px-3 py-2 flex items-center gap-2 border-b border-border/20">
+        <History className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium">Version History — {scenarioName}</span>
+        <Badge variant="outline" className="text-[10px] ml-auto">{allVersions.length} versions</Badge>
+      </div>
+      <div className="max-h-48 overflow-y-auto">
+        {allVersions.map((v, i) => (
+          <div key={i} className={`flex items-center gap-3 px-3 py-2 text-xs border-b border-border/10 last:border-0 ${v.isCurrent ? 'bg-primary/5' : 'hover:bg-muted/10'}`}>
+            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-muted/30 flex items-center justify-center text-[10px] font-bold">
+              {v.version}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-medium truncate">
+                  {v.isCurrent ? 'Current' : `Version ${v.version}`}
+                </span>
+                {v.isCurrent && <Badge className="text-[9px] h-4 px-1.5">Latest</Badge>}
+              </div>
+              <span className="text-[10px] text-muted-foreground">
+                {new Date(v.timestamp).toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost" size="sm" className="h-6 w-6 p-0"
+                onClick={() => setExpandedVersion(expandedVersion === v.version ? null : v.version)}
+              >
+                {expandedVersion === v.version ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </Button>
+              {!v.isCurrent && onRestoreVersion && v.inputsJson && (
+                <Button variant="outline" size="sm" className="h-6 text-[10px] px-2"
+                  onClick={() => onRestoreVersion(v.inputsJson)}>
+                  Restore
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -36,7 +36,7 @@ import {
   type CascadeAuditEntry, type CascadeInputSnapshot, type CascadeDirection, type ScenarioDiffResult,
 } from './practiceEngine';
 import { fmt, fmtSm, pct } from './format';
-import { KPI, RefTip } from './shared';
+import { KPI, RefTip, ComplexityToggle } from './shared';
 import { exportToExcel, exportToPDF, type ExportPlanData } from './exportPlan';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -902,19 +902,7 @@ export function MyPlanPanel(p: PracticeProps) {
         </div>
 
         {/* ─── Complexity Level Selector ─── */}
-        <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1" role="tablist" aria-label="Complexity level">
-          {(['simple', 'detailed', 'expert'] as const).map(lvl => (
-            <button key={lvl} onClick={() => p.setComplexity(lvl)}
-              role="tab" aria-selected={p.complexity === lvl}
-              className={`flex-1 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
-                p.complexity === lvl
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-muted/50'
-              }`}>
-              {lvl === 'simple' ? 'Quick' : lvl === 'detailed' ? 'Standard' : 'Expert'}
-            </button>
-          ))}
-        </div>
+        <ComplexityToggle value={p.complexity} onChange={p.setComplexity} className="w-full justify-center" />
         <p className="text-[9px] text-muted-foreground/60 text-center -mt-1">
           {p.complexity === 'simple' ? 'Core targets and summary KPIs only' : p.complexity === 'detailed' ? 'All channels, splits, and economics' : 'Full cascade, sensitivity, scenarios, and export'}
         </p>

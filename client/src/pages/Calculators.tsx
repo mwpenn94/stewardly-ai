@@ -172,8 +172,8 @@ function ScenarioComparisonPanel({ weData, gatherInputs, restoreInputs }: {
   return <ScenarioComparisonLazy currentWeData={weData} currentInputs={gatherInputs()} onRestoreScenario={restoreInputs} />;
 }
 
-function PFRWizardPanel({ onNavigateToPanel }: { onNavigateToPanel: (panelId: string) => void }) {
-  return <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading PFR Wizard...</div>}><PFRWizardLazy onNavigateToPanel={onNavigateToPanel} /></Suspense>;
+function PFRWizardPanel({ onNavigateToPanel, weData }: { onNavigateToPanel: (panelId: string) => void; weData?: any }) {
+  return <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading PFR Wizard...</div>}><PFRWizardLazy onNavigateToPanel={onNavigateToPanel} weData={weData} /></Suspense>;
 }
 
 export default function Calculators() {
@@ -381,7 +381,11 @@ export default function Calculators() {
   const [ppAumOverrideRate, setPpAumOverrideRate] = useState(90);
   const [ppAffiliateMode, setPpAffiliateMode] = useState<'recruiter' | 'producer'>('recruiter');
   const [ppProducerInputs, setPpProducerInputs] = useState({ dealsPerMonth: 2, avgCommissionPerDeal: 3000, splitPct: 50, fixedBonusPerDeal: 500, monthlyRetainer: 0 });
-  const [ppComplexity, setPpComplexity] = useState<'simple' | 'detailed' | 'expert'>('detailed');
+  const [ppComplexity, setPpComplexity] = useState<'simple' | 'detailed' | 'expert'>(() => {
+    try { const saved = localStorage.getItem('we-practice-complexity');
+    return (saved === 'simple' || saved === 'detailed' || saved === 'expert') ? saved : 'detailed'; } catch { return 'detailed'; }
+  });
+  const handlePpComplexityChange = (v: 'simple' | 'detailed' | 'expert') => { setPpComplexity(v); try { localStorage.setItem('we-practice-complexity', v); } catch {} };
   const [ppAlsoMyClient, setPpAlsoMyClient] = useState(false);
   /* CAC & COGS Overrides */
   const [ppCacOverrides, setPpCacOverrides] = useState<Partial<Record<string, number>>>({});
@@ -1091,7 +1095,7 @@ export default function Calculators() {
     aumOverrideRate: ppAumOverrideRate, setAumOverrideRate: setPpAumOverrideRate,
     affiliateMode: ppAffiliateMode, setAffiliateMode: setPpAffiliateMode,
     producerInputs: ppProducerInputs, setProducerInputs: setPpProducerInputs,
-    complexity: ppComplexity, setComplexity: setPpComplexity,
+    complexity: ppComplexity, setComplexity: handlePpComplexityChange,
     alsoMyClient: ppAlsoMyClient, setAlsoMyClient: setPpAlsoMyClient,
     /* Client data for cross-cascade */
     clientIncome: income, clientNetWorth: nw, clientSavings: savings,
@@ -1630,7 +1634,15 @@ export default function Calculators() {
               {activePanel === 'cascade-alerts' && <WeCascadeAlerts />}
               {activePanel === 'financial-data-hub' && <WeFinancialDataHub />}
               {activePanel === 'scenario-comparison' && <ScenarioComparisonPanel weData={weData} gatherInputs={gatherInputs} restoreInputs={restoreInputs} />}
-              {activePanel === 'pfr-wizard' && <PFRWizardPanel onNavigateToPanel={(id) => setActivePanel(id as PanelId)} />}
+              {activePanel === 'pfr-wizard' && <PFRWizardPanel onNavigateToPanel={(id) => setActivePanel(id as PanelId)} weData={{
+                holisticScore: holisticBridge.holisticScore,
+                clientHubScore: holisticBridge.clientHubScore,
+                advancedHubScore: holisticBridge.advancedHubScore,
+                practiceHubScore: holisticBridge.practiceHubScore,
+                domainScores: scores.map((s: any) => ({ domain: s.domain, score: s.score, allocation: s.allocation, gap: s.gap })),
+                recommendations: recommendations.map((r: any) => ({ product: r.product, coverage: r.coverage, premium: r.premium, carrier: r.carrier, priority: r.priority, category: r.category })),
+                keyMetrics: { totalIncome, netWorth: nw, totalSavings: savings, retirementGap: rtResult.gap ?? 0, protectionCoverage: prResult.dimeNeed - prResult.gap, taxEfficiency: txResult.effectiveRate ?? 0 },
+              }} />}
             </Suspense>
           </WealthEngineProvider>
 

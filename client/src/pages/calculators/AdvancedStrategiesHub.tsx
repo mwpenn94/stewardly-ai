@@ -29,7 +29,7 @@ import {
   PieChart, Pie, Legend, CartesianGrid, Area, AreaChart,
 } from 'recharts';
 import { fmt, fmtSm, pct } from './format';
-import { KPI, RefTip, FormInput, type PanelProps } from './shared';
+import { KPI, RefTip, FormInput, ComplexityToggle, type ComplexityLevel, type PanelProps } from './shared';
 import type { AdvancedProps } from './PanelsE';
 import {
   calcAdvanced, calcBizClient,
@@ -165,7 +165,11 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
   const [showTimeline, setShowTimeline] = useState(false);
   const [showBackSolve, setShowBackSolve] = useState(false);
   const [showCascade, setShowCascade] = useState(true);
-  const [hubComplexity, setHubComplexity] = useState<'simple' | 'detailed' | 'expert'>('detailed');
+  const [hubComplexity, setHubComplexity] = useState<ComplexityLevel>(() => {
+    try { const saved = localStorage.getItem('we-advanced-complexity');
+    return (saved === 'simple' || saved === 'detailed' || saved === 'expert') ? saved : 'detailed'; } catch { return 'detailed'; }
+  });
+  const handleComplexityChange = (v: ComplexityLevel) => { setHubComplexity(v); try { localStorage.setItem('we-advanced-complexity', v); } catch {} };
   const [strategyAllocation, setStrategyAllocation] = useState({
     premiumFinance: 25, ilit: 25, execComp: 20, charitable: 15, business: 15,
   });
@@ -298,17 +302,7 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
               Advanced Strategies Hub
               <RefTip text="Unified view of all advanced planning strategies. Premium financing, ILIT, executive compensation, charitable vehicles, and business planning — with cross-strategy cascade showing how each feeds into your client's holistic financial plan. Sources: AALU (2024), Estate Planning Council, IRC §7702, §2042, §162, §170." refId="advanced-hub" />
             </span>
-            <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5" role="tablist" aria-label="Complexity level">
-              {(['simple', 'detailed', 'expert'] as const).map(lvl => (
-                <button key={lvl} onClick={() => setHubComplexity(lvl)}
-                  role="tab" aria-selected={hubComplexity === lvl}
-                  className={`px-2 py-0.5 text-[10px] rounded transition-all ${
-                    hubComplexity === lvl ? 'bg-primary text-primary-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
-                  }`}>
-                  {lvl === 'simple' ? 'Quick' : lvl === 'detailed' ? 'Standard' : 'Expert'}
-                </button>
-              ))}
-            </div>
+            <ComplexityToggle value={hubComplexity} onChange={handleComplexityChange} />
           </CardTitle>
           <p className="text-xs text-muted-foreground">
             Set your total strategy benefit goal, allocate across strategies, and see how advanced planning cascades into client wealth planning.

@@ -9,8 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Shield, TrendingUp, PiggyBank, Landmark, Building2, GraduationCap, DollarSign, Clock, Eye, AlertTriangle } from 'lucide-react';
-
-const fmt = (v: number) => !isFinite(v) ? '—' : v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v / 1_000).toFixed(0)}K` : `$${Math.round(v)}`;
+import { fmtSm as fmt } from './calculators/format';
 
 const DOMAIN_ICONS: Record<string, React.ElementType> = {
   Protection: Shield, Growth: TrendingUp, Retirement: PiggyBank,

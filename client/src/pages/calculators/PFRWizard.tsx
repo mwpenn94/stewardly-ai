@@ -7,7 +7,7 @@
  * Each step navigates to the appropriate calculator panel and provides
  * contextual guidance on what to review and why.
  */
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,11 @@ import {
   CheckCircle2, Circle, ChevronRight, ChevronLeft, Info, User,
   DollarSign, Shield, TrendingUp, BarChart3, Target, Clock,
   Scale, GraduationCap, Building2, FileText, ArrowRight, Sparkles,
+  Download, Loader2,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 /** PFR step definition */
 interface PFRStep {
@@ -221,12 +225,60 @@ const CATEGORY_META: Record<string, { label: string; color: string; bgColor: str
 
 interface PFRWizardProps {
   onNavigateToPanel: (panelId: string) => void;
+  weData?: {
+    holisticScore: number;
+    clientHubScore: number;
+    advancedHubScore: number;
+    practiceHubScore: number;
+    domainScores: { domain: string; score: number; allocation: number; gap?: number }[];
+    recommendations: { product: string; coverage: string; premium: number; carrier: string; priority: string; category?: string }[];
+    keyMetrics?: {
+      totalIncome: number;
+      netWorth: number;
+      totalSavings: number;
+      retirementGap: number;
+      protectionCoverage: number;
+      taxEfficiency: number;
+    };
+  };
 }
 
-export default function PFRWizard({ onNavigateToPanel }: PFRWizardProps) {
+export default function PFRWizard({ onNavigateToPanel, weData }: PFRWizardProps) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
   const [mode, setMode] = useState<"overview" | "guided">("overview");
+  const { user } = useAuth();
+  const generatePdf = trpc.pfrReport.generate.useMutation();
+
+  const handleGeneratePdf = useCallback(async () => {
+    if (!weData) {
+      toast.error("Complete at least one step to generate a report.");
+      return;
+    }
+    try {
+      const result = await generatePdf.mutateAsync({
+        clientName: user?.name || "Client",
+        advisorName: "Financial Advisor",
+        holisticScore: weData.holisticScore,
+        clientHubScore: weData.clientHubScore,
+        advancedHubScore: weData.advancedHubScore,
+        practiceHubScore: weData.practiceHubScore,
+        domainScores: weData.domainScores,
+        recommendations: weData.recommendations,
+        steps: PFR_STEPS.map(s => ({
+          id: s.id,
+          label: s.label,
+          category: s.category,
+          completed: completedSteps.has(s.id),
+        })),
+        keyMetrics: weData.keyMetrics,
+      });
+      window.open(result.url, "_blank");
+      toast.success("PFR Report generated successfully.");
+    } catch {
+      toast.error("Failed to generate PFR report.");
+    }
+  }, [weData, user, completedSteps, generatePdf]);
 
   const currentStep = PFR_STEPS[currentStepIdx];
   const totalRequired = PFR_STEPS.filter(s => s.required).length;
@@ -304,9 +356,17 @@ export default function PFRWizard({ onNavigateToPanel }: PFRWizardProps) {
                   Structured {PFR_STEPS.length}-step review covering Foundation, Plan, Protect, Grow, and Analyze
                 </CardDescription>
               </div>
-              <Button onClick={() => { setMode("guided"); goToStepAndPanel(0); }}>
-                Start Guided Review <ArrowRight className="w-4 h-4 ml-1" />
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => { setMode("guided"); goToStepAndPanel(0); }}>
+                  Start Guided Review <ArrowRight className="w-4 h-4 ml-1" />
+                </Button>
+                {user && completedSteps.size > 0 && (
+                  <Button variant="outline" onClick={handleGeneratePdf} disabled={generatePdf.isPending}>
+                    {generatePdf.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <FileText className="w-4 h-4 mr-1" />}
+                    Generate PDF Report
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
               <span>Est. {totalMinutes} min total</span>

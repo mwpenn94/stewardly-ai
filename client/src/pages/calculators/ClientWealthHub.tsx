@@ -33,7 +33,7 @@ import {
   PieChart, Pie, Legend, LineChart, Line, CartesianGrid, Area, AreaChart,
 } from 'recharts';
 import { fmt, fmtSm, pct } from './format';
-import { KPI, RefTip, type PanelProps } from './shared';
+import { KPI, RefTip, ComplexityToggle, type ComplexityLevel, type PanelProps } from './shared';
 import {
   calcUnifiedClientPlan, calcClientSensitivity, calcClientTimePhasedProjections,
   type UnifiedClientPlan, type ClientSensitivityResult, type ClientTimeProjection,
@@ -158,7 +158,11 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
   const [showSensitivity, setShowSensitivity] = useState(false);
   const [showTimeline, setShowTimeline] = useState(false);
   const [showBackSolve, setShowBackSolve] = useState(false);
-  const [hubComplexity, setHubComplexity] = useState<'simple' | 'detailed' | 'expert'>('detailed');
+  const [hubComplexity, setHubComplexity] = useState<ComplexityLevel>(() => {
+    try { const saved = localStorage.getItem('we-client-complexity');
+    return (saved === 'simple' || saved === 'detailed' || saved === 'expert') ? saved : 'detailed'; } catch { return 'detailed'; }
+  });
+  const handleComplexityChange = (v: ComplexityLevel) => { setHubComplexity(v); try { localStorage.setItem('we-client-complexity', v); } catch {} };
   const [domainAllocation, setDomainAllocation] = useState({
     protection: 15, growth: 30, retirement: 25, tax: 10, estate: 10, education: 10,
   });
@@ -288,18 +292,7 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
           <Target className="w-5 h-5 text-primary" /> Unified Wealth Plan
         </h2>
         <div className="flex items-center gap-2">
-          {/* Complexity Toggle */}
-          <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5" role="tablist" aria-label="Complexity level">
-            {(['simple', 'detailed', 'expert'] as const).map(lvl => (
-              <button key={lvl} onClick={() => setHubComplexity(lvl)}
-                role="tab" aria-selected={hubComplexity === lvl}
-                className={`px-2 py-0.5 text-[10px] rounded transition-all ${
-                  hubComplexity === lvl ? 'bg-primary text-primary-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
-                }`}>
-                {lvl === 'simple' ? 'Quick' : lvl === 'detailed' ? 'Standard' : 'Expert'}
-              </button>
-            ))}
-          </div>
+          <ComplexityToggle value={hubComplexity} onChange={handleComplexityChange} />
           <Badge variant="outline" className="text-[10px]">
             {p.retireAge - p.age} years to retirement
           </Badge>

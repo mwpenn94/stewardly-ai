@@ -375,4 +375,28 @@ export function ExportPDFButton({ title, subtitle, clientName }: { title: string
   );
 }
 
+/* ═══ COMPLEXITY TOGGLE — unified across all hubs ═══ */
+export type ComplexityLevel = 'simple' | 'detailed' | 'expert';
+const COMPLEXITY_LABELS: Record<ComplexityLevel, string> = { simple: 'Quick', detailed: 'Standard', expert: 'Expert' };
+const COMPLEXITY_LEVELS: ComplexityLevel[] = ['simple', 'detailed', 'expert'];
+
+export function ComplexityToggle({ value, onChange, className }: {
+  value: ComplexityLevel; onChange: (v: ComplexityLevel) => void; className?: string;
+}) {
+  return (
+    <div className={`flex bg-muted/40 rounded-md p-0.5 gap-0.5 ${className ?? ''}`} role="tablist" aria-label="Complexity level">
+      {COMPLEXITY_LEVELS.map(lvl => (
+        <button key={lvl} role="tab" aria-selected={value === lvl}
+          className={`px-2.5 py-1 text-xs rounded-sm transition-all font-medium ${
+            value === lvl ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          }`}
+          onClick={() => onChange(lvl)}
+        >
+          {COMPLEXITY_LABELS[lvl]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export type { Recommendation, CFResult, PRResult, GRResult, RTResult, TXResult, ESResult, EDResult, HorizonData };

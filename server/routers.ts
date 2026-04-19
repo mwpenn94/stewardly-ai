@@ -2190,6 +2190,7 @@ import { hubAllocationsRouter } from "./routers/hubAllocations";
 import { planSharingRouter } from "./routers/planSharing";
 import { scenariosRouter } from "./routers/scenarios";
 import { scenarioExportRouter } from "./routers/scenarioExport";
+import { pfrReportRouter } from "./routers/pfrReport";
 import { codeChatRouter } from "./routers/codeChat";
 import { calculatorEngineRouter } from "./routers/calculatorEngine";
 import { financialProfileRouter } from "./routers/financialProfile";
@@ -2403,6 +2404,7 @@ export const appRouter = router({
   planSharing: planSharingRouter,
   scenarios: scenariosRouter,
   scenarioExport: scenarioExportRouter,
+  pfrReport: pfrReportRouter,
 });
 
 export type AppRouter = typeof appRouter;

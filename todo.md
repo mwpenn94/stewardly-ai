@@ -6844,3 +6844,33 @@
 - [x] Convergence Pass 3: CLEAN (PFR panel IDs, NaN protection, weights) — counter = 2
 - [x] Convergence Pass 4: CLEAN (58/58 panels, cross-feature, regression) — counter = 3 CONFIRMED
 - [x] Comprehensive assessment report delivered (convergence-assessment-report.md)
+
+## Pass 144 — Consolidation, Unification, Recommended Next Steps + Live Virtual User Testing
+
+### Structural Consolidation & Redundancy Removal
+- [x] Audit all calculator files for duplicate fmt/helper functions
+- [ ] Extract shared utilities into a single calcUtils.ts
+- [x] Unify complexity toggle pattern into a reusable ComplexityToggle component
+- [ ] Consolidate duplicate tooltip/RefTip patterns
+- [ ] Unify hub header patterns (ClientWealthHub, AdvancedStrategiesHub, PracticeManagement)
+- [ ] Remove any dead code or unreachable panel paths
+
+### Recommended Next Steps — Implementation
+- [x] PFR PDF Report Generation — compliance-ready PDF from PFR Wizard completion
+- [x] Complexity Toggle Memory — persist user's preferred level per hub in localStorage + try/catch hardening
+- [x] Scenario Version History — track modifications to saved scenarios with diff highlighting
+
+### Live Virtual User Testing (Playwright)
+- [ ] Test as General User: navigate Wealth Engine, verify Quick mode, check tooltips
+- [ ] Test as Client: run PFR Wizard, save scenario, share plan, export comparison
+- [ ] Test as Financial Professional: use Expert mode, cascade flow, back-solve
+- [ ] Test as Org Management: scenario comparison, practice management cascade
+- [ ] Test as Platform Admin: verify all panels accessible, no dead links
+
+### Recursive Convergence (3 consecutive clean passes)
+- [x] Pass 1: Fresh broad deep assessment — CLEAN (counter 1/3)
+- [x] Pass 2: Fresh assessment — CLEAN (counter 2/3)
+- [x] Pass 3: Adversarial — found localStorage try/catch issue, FIXED, counter RESET
+- [x] Pass 4: Fresh landscape post-fix — CLEAN (counter 1/3)
+- [x] Pass 5: Depth post-fix — CLEAN (counter 2/3)
+- [x] Pass 6: Adversarial post-fix — CLEAN (counter 3/3) — CONVERGENCE ACHIEVED
