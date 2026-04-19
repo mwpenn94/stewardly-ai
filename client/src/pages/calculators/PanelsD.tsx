@@ -37,6 +37,7 @@ import {
 } from './practiceEngine';
 import { fmt, fmtSm, pct } from './format';
 import { KPI, RefTip, ComplexityToggle } from './shared';
+import { SectionHeader, PInput } from './shared-ui';
 import { exportToExcel, exportToPDF, type ExportPlanData } from './exportPlan';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -116,26 +117,9 @@ export interface PracticeProps {
 }
 
 /* ═══ SMALL HELPERS ═══ */
-function PInput({ label, value, onChange, prefix, suffix, className = '' }: {
-  label: string; value: number | string; onChange: (v: string) => void;
-  prefix?: string; suffix?: string; className?: string;
-}) {
-  return (
-    <div className={`space-y-0.5 ${className}`}>
-      <Label className="text-[10px] font-medium text-muted-foreground">{label}</Label>
-      <div className="relative">
-        {prefix && <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/50">{prefix}</span>}
-        <Input type="number" value={value} onChange={e => onChange(e.target.value)}
-          className={`h-7 text-xs ${prefix ? 'pl-5' : ''} ${suffix ? 'pr-6' : ''}`} />
-        {suffix && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/50">{suffix}</span>}
-      </div>
-    </div>
-  );
-}
+/* PInput → imported from shared-ui */
 
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return <div className="text-[10px] font-bold uppercase tracking-wider text-primary/80 bg-primary/5 px-3 py-1.5 rounded-md border border-primary/10 mb-2">{children}</div>;
-}
+/* SectionHeader → imported from shared-ui */
 
 function DataTable({ headers, rows, className = '' }: {
   headers: string[]; rows: (string | number | React.ReactNode)[][]; className?: string;

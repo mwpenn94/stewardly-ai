@@ -21,14 +21,7 @@ import {
   Loader2, Layers, ArrowRight, ArrowLeft, TrendingUp, Target,
   AlertTriangle, CheckCircle2, DollarSign, BarChart3, Shield, Zap
 } from "lucide-react";
-
-const fmt = (n: number) => {
-  if (!Number.isFinite(n)) return "—";
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${Math.round(n).toLocaleString()}`;
-};
-
+import { fmt } from '@/lib/format';
 export default function UnifiedClientPlanPanel() {
   const { user } = useAuth();
   const we = useWealthEngine();

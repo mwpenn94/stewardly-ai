@@ -21,14 +21,7 @@ import {
   Loader2, BarChart3, DollarSign, TrendingUp, CheckCircle2, XCircle,
   Building2, Zap, AlertTriangle
 } from "lucide-react";
-
-const fmt = (n: number) => {
-  if (!Number.isFinite(n)) return "—";
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${Math.round(n).toLocaleString()}`;
-};
-
+import { fmt } from '@/lib/format';
 export default function FirmComparisonPanel() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("firms");

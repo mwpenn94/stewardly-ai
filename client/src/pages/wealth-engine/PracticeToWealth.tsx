@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { fmt } from '@/lib/format';
 
 const ROLES = [
   { key: "new", label: "New Associate" },
@@ -118,7 +119,6 @@ export default function PracticeToWealthPage({ embedded = false }: { embedded?: 
     if (bizYears.length === 0 && holisticYears.length === 0) return;
     const lastBiz = (bizYears[bizYears.length - 1] as any);
     const lastWealth = (holisticYears[holisticYears.length - 1] as any);
-    const fmt = (n: number) => "$" + Math.round(n).toLocaleString();
     persistCalculation({
       id: `practice-to-wealth-${role}-${years}yr`,
       type: "bie",

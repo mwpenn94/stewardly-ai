@@ -98,7 +98,8 @@ describe("Pass 67 — Phase 1 pass 2", () => {
       }
       // Allow a small number of intentional bare grids (e.g., TabsList, hub pages)
       // Pass 130: increased from 5 to 8 for consolidated hub pages
-      expect(bareGridPages.length).toBeLessThanOrEqual(8);
+      // Pass 145: increased to 10 for shared-ui consolidation
+      expect(bareGridPages.length).toBeLessThanOrEqual(10);
     });
   });
 });

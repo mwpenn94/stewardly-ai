@@ -23,10 +23,9 @@ import { useState, useMemo, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
+import { fmt } from '@/lib/format';
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-}
+
 
 function SliderInput({
   label, value, onChange, min, max, step = 1, prefix = "$",

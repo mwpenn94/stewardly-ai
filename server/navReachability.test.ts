@@ -71,6 +71,7 @@ const EXEMPT_ROUTES = new Set<string>([
   "/org/:slug",
   "/welcome",
   "/terms",
+  "terms",  // wouter relative path extracts without leading slash
   "/privacy",
   "/unsubscribe",
   "/404",

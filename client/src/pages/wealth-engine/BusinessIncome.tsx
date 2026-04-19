@@ -23,9 +23,8 @@ import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatBut
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-}
+import { fmt } from '@/lib/format';
+
 
 /** Parse a number input safely — returns null for empty/NaN, clamps to [min, max]. */
 function safeNum(raw: string, min = 0, max = 1e12): number | null {

@@ -215,7 +215,7 @@ export function exportToPDF(data: ExportPlanData) {
   </div>
 </body></html>`;
 
-  const printWindow = window.open('', '_blank');
+  const printWindow = window.open('', '_blank', 'noopener,noreferrer');
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();

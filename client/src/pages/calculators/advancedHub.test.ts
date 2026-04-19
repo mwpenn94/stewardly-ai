@@ -15,12 +15,14 @@ import {
   GENERAL_DEFAULTS,
   EMPTY_ADVANCED_CASCADE,
   EMPTY_CASCADE_BRIDGE,
+  EMPTY_PRACTICE_CASCADE,
   computeHolisticBridge,
   type ClientProfile,
   type ProtectionResult,
   type TaxResult,
   type RetirementResult,
   type AdvancedStrategiesCascade,
+  type PracticeManagementCascade,
 } from '@/contexts/WealthEngineContext';
 
 /* ─── Shared test fixtures ─── */
@@ -258,10 +260,6 @@ describe('computeHolisticBridge', () => {
    Pass 140 Tests — Live cascade, Practice Management cascade,
    DB persistence (hubAllocations router), general defaults for planning
    ═══════════════════════════════════════════════════════════════ */
-import {
-  EMPTY_PRACTICE_CASCADE,
-  type PracticeManagementCascade,
-} from '@/contexts/WealthEngineContext';
 
 /* ─── Live Cascade: AdvancedStrategiesCascade structure ─── */
 describe('Live Cascade: AdvancedStrategiesCascade', () => {

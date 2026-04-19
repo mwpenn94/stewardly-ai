@@ -273,7 +273,7 @@ export default function PFRWizard({ onNavigateToPanel, weData }: PFRWizardProps)
         })),
         keyMetrics: weData.keyMetrics,
       });
-      window.open(result.url, "_blank");
+      window.open(result.url, "_blank", "noopener,noreferrer");
       toast.success("PFR Report generated successfully.");
     } catch {
       toast.error("Failed to generate PFR report.");

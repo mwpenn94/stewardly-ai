@@ -26,6 +26,7 @@ import { SEOHead } from "@/components/SEOHead";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { fmtSm as fmt } from '@/lib/format';
 // ─── PARAMETER DEFINITIONS ───────────────────────────────────────────
 
 const PARAMS = {
@@ -49,11 +50,7 @@ const METRICS = {
 
 type MetricKey = keyof typeof METRICS;
 
-function fmt(n: number) {
-  if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(n) >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
+/* fmt → imported from @/lib/format (fmtSm alias) */
 
 // ─── HEAT MAP COLOR INTERPOLATION ──────────────────────────────────
 

@@ -30,6 +30,7 @@ import {
 } from 'recharts';
 import { fmt, fmtSm, pct } from './format';
 import { KPI, RefTip, FormInput, ComplexityToggle, type ComplexityLevel, type PanelProps } from './shared';
+import { SectionHeader, ScoreRing, AllocationSlider } from './shared-ui';
 import type { AdvancedProps } from './PanelsE';
 import {
   calcAdvanced, calcBizClient,
@@ -49,94 +50,15 @@ const STRATEGY_CONFIG = [
   { key: 'business', label: 'Business', icon: Building2, color: '#ef4444', desc: 'Key person, buy-sell, group benefits' },
 ] as const;
 
-/* ═══ SMALL HELPERS ═══ */
-function SectionHeader({ children }: { children: React.ReactNode }) {
-  return <div className="text-[10px] font-bold uppercase tracking-wider text-primary/80 bg-primary/5 px-3 py-1.5 rounded-md border border-primary/10 mb-2">{children}</div>;
-}
+/* ═══ SMALL HELPERS (shared-ui imports above) ═══ */
 
-function StrategySlider({ label, value, color, icon: Icon, desc, amount, onDrag, onNavigate }: {
-  label: string; value: number; color: string; icon: React.ElementType; desc: string;
-  amount: string; onDrag: (v: number) => void; onNavigate?: () => void;
-}) {
-  const [dragging, setDragging] = useState(false);
+/* StrategySlider → AllocationSlider from shared-ui */
+const StrategySlider = AllocationSlider;
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const bar = e.currentTarget;
-    bar.setPointerCapture(e.pointerId);
-    setDragging(true);
-    const rect = bar.getBoundingClientRect();
-    const p = Math.max(0, Math.min(100, Math.round((e.clientX - rect.left) / rect.width * 100)));
-    onDrag(p);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const p = Math.max(0, Math.min(100, Math.round((e.clientX - rect.left) / rect.width * 100)));
-    onDrag(p);
-  };
-
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-[11px]">
-        <span className="font-medium flex items-center gap-1" style={{ color }}>
-          <Icon className="w-3 h-3" /> {label}
-        </span>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">{value}%</span>
-          <span className="font-semibold text-foreground">{amount}</span>
-          {onNavigate && (
-            <button onClick={onNavigate} className="text-[9px] text-primary hover:underline flex items-center gap-0.5">
-              Go <ArrowRight className="w-2.5 h-2.5" />
-            </button>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <div
-          className="flex-1 h-3 bg-muted/30 rounded-full overflow-hidden relative cursor-grab active:cursor-grabbing"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={() => setDragging(false)}
-          onPointerCancel={() => setDragging(false)}
-          title="Drag to rebalance — other strategies adjust proportionally"
-        >
-          <div className="h-full rounded-full transition-all" style={{ width: `${value}%`, backgroundColor: color }} />
-          <div
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-5 rounded-sm border-2 bg-background shadow-md"
-            style={{ left: `calc(${value}% - 6px)`, borderColor: color }}
-          />
-        </div>
-      </div>
-      <p className="text-[9px] text-muted-foreground/60">{desc}</p>
-    </div>
-  );
-}
-
-function ScoreRing({ score, size = 100 }: { score: number; size?: number }) {
-  const r = (size - 12) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - score / 100);
-  const color = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : score >= 40 ? '#f97316' : '#ef4444';
-  const label = score >= 80 ? 'Optimized' : score >= 60 ? 'Good' : score >= 40 ? 'Partial' : 'Minimal';
-
-  return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeOpacity={0.1} strokeWidth={7} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={7}
-          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-700" />
-      </svg>
-      <div className="absolute flex flex-col items-center justify-center" style={{ width: size, height: size }}>
-        <span className="text-xl font-bold" style={{ color }}>{score}</span>
-        <span className="text-[9px] text-muted-foreground">/100</span>
-      </div>
-      <Badge variant={score >= 80 ? 'default' : score >= 60 ? 'secondary' : 'destructive'} className="mt-1 text-[9px]">
-        {label}
-      </Badge>
-    </div>
-  );
-}
+/* ScoreRing → imported from shared-ui (with custom labels: Optimized / Good / Partial / Minimal) */
+const AdvancedScoreRing = (props: { score: number; size?: number }) => (
+  <ScoreRing {...props} size={props.size ?? 100} labels={{ high: 'Optimized', mid: 'Good', low: 'Partial', critical: 'Minimal' }} />
+);
 
 /* ═══ COMBINED PROPS ═══ */
 export interface AdvancedStrategiesHubProps extends AdvancedProps {
@@ -365,7 +287,7 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
               </p>
             </div>
             <div className="relative">
-              <ScoreRing score={plan.onTrackScore} />
+              <AdvancedScoreRing score={plan.onTrackScore} />
             </div>
           </div>
 

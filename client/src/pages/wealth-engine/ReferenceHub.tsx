@@ -25,15 +25,8 @@ import { SEOHead } from "@/components/SEOHead";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { fmt, pct } from '@/lib/format';
 /* ── helpers ──────────────────────────────────────────────────── */
-
-const fmt = (n: number) => {
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-};
-
-const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 
 type SortKey = "year" | "return";
 type SortDir = "asc" | "desc";

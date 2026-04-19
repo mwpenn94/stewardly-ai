@@ -28,6 +28,7 @@ import {
   ArrowRight, Sparkles, Brain, Layers,
 } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
+import { fmt } from '@/lib/format';
 
 /* ═══════════════════════════════════════════════════════════════════════
    Inline domain data (from engine.ts CALC_METHODS + references.ts)
@@ -96,7 +97,6 @@ function CalculatorLab() {
     return grossEstate > exemption ? (grossEstate - exemption) * 0.40 : 0;
   }, [fv, savings]);
 
-  const fmt = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   return (
     <div className="space-y-6">

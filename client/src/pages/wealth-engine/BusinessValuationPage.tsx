@@ -24,15 +24,7 @@ import { SEOHead } from "@/components/SEOHead";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-const fmt = (n: number) => {
-  if (!Number.isFinite(n)) return "—";
-  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${Math.round(n).toLocaleString()}`;
-};
-const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
-
+import { fmt, pct } from '@/lib/format';
 export default function BusinessValuationPage({ embedded = false }: { embedded?: boolean } = {}) {
   const Shell = embedded ? ((({ children }: any) => <>{children}</>) as any) : AppShell;
 

@@ -94,7 +94,7 @@ export function CaptureModal({ open, onClose, onCapture, mode }: CaptureModalPro
                     variant="outline"
                     size="sm"
                     className="gap-1.5 mt-1"
-                    onClick={() => window.open(window.location.href, "_blank")}
+                    onClick={() => window.open(window.location.href, "_blank", "noopener,noreferrer")}
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     Open in new tab

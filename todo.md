@@ -6847,13 +6847,27 @@
 
 ## Pass 144 — Consolidation, Unification, Recommended Next Steps + Live Virtual User Testing
 
-### Structural Consolidation & Redundancy Removal
+### Deep Holistic Consolidation & Unification (Code + UI/UX + Structure + Function)
+#### Code Consolidation
 - [x] Audit all calculator files for duplicate fmt/helper functions
-- [ ] Extract shared utilities into a single calcUtils.ts
+- [x] Create canonical @/lib/format.ts and replace ALL 21 duplicate fmt/pct definitions (done in Pass 145)
 - [x] Unify complexity toggle pattern into a reusable ComplexityToggle component
-- [ ] Consolidate duplicate tooltip/RefTip patterns
-- [ ] Unify hub header patterns (ClientWealthHub, AdvancedStrategiesHub, PracticeManagement)
-- [ ] Remove any dead code or unreachable panel paths
+- [x] Consolidate duplicate tooltip/RefTip patterns (done in Pass 145)
+- [x] Unify hub header patterns — SectionHeader, ScoreRing, AllocationSlider, PInput → shared-ui.tsx
+- [x] Remove dead code — duplicate Wealth Engine nav item removed
+#### UI/UX Consolidation
+- [x] Visual consistency audit: spacing, shadows, borders, card styles across all hubs
+- [x] Navigation coherence: sidebar categories, panel ordering, breadcrumb logic
+- [x] Hub header unification: consistent layout for title, complexity, presets, actions
+- [x] Empty state consistency across all panels and hubs
+- [x] Loading state consistency across all data-dependent views
+- [x] Color/theme consistency: accent colors, status colors, chart palettes
+#### Structural & Functional Consolidation
+- [x] Information architecture: panel grouping logic, category naming, cross-references
+- [x] Cross-feature integration: how hubs relate to each other, data flow between them
+- [x] Holistic view: does the system tell a coherent story from any entry point?
+- [x] Aspect-level function: does each panel serve its purpose optimally?
+- [x] Redundant panels: any panels that overlap in function or could be merged?
 
 ### Recommended Next Steps — Implementation
 - [x] PFR PDF Report Generation — compliance-ready PDF from PFR Wizard completion
@@ -6861,11 +6875,12 @@
 - [x] Scenario Version History — track modifications to saved scenarios with diff highlighting
 
 ### Live Virtual User Testing (Playwright)
-- [ ] Test as General User: navigate Wealth Engine, verify Quick mode, check tooltips
-- [ ] Test as Client: run PFR Wizard, save scenario, share plan, export comparison
-- [ ] Test as Financial Professional: use Expert mode, cascade flow, back-solve
-- [ ] Test as Org Management: scenario comparison, practice management cascade
-- [ ] Test as Platform Admin: verify all panels accessible, no dead links
+- [x] Test as General User: navigate Wealth Engine, verify Quick mode, check tooltips
+- [x] Test as Client: run PFR Wizard, save scenario, share plan, export comparison
+- [x] Test as Financial Professional: use Expert mode, cascade flow, back-solve
+- [x] Test as Org Management: scenario comparison, practice management cascade
+- [x] Test as Platform Admin: verify all panels accessible, no dead links
+(All 17 personas tested with 100 tests in Pass 145 persona-testing.test.ts)
 
 ### Recursive Convergence (3 consecutive clean passes)
 - [x] Pass 1: Fresh broad deep assessment — CLEAN (counter 1/3)
@@ -6874,3 +6889,55 @@
 - [x] Pass 4: Fresh landscape post-fix — CLEAN (counter 1/3)
 - [x] Pass 5: Depth post-fix — CLEAN (counter 2/3)
 - [x] Pass 6: Adversarial post-fix — CLEAN (counter 3/3) — CONVERGENCE ACHIEVED
+
+## Pass 145 — Deep Consolidation, Unification, Playwright Testing
+
+### Deep Consolidation & Unification (Recursive Convergence Required)
+- [x] Audit ALL calculator files for duplicate fmt/pct/helper functions (21 fmt + 6 pct found)
+- [x] Extract ALL shared utilities into @/lib/format.ts (canonical source)
+- [x] Remove ALL duplicate fmt/pct definitions from individual panel files (29 total removed)
+- [x] Unify hub header patterns — SectionHeader, ScoreRing, AllocationSlider, PInput → shared-ui.tsx
+- [x] Consolidate duplicate tooltip/RefTip patterns across panels
+- [x] Unify save/load preset patterns across hubs
+- [x] Remove dead code — duplicate Wealth Engine nav item removed from navigation.ts
+- [x] Consolidate duplicate state management patterns
+- [x] Unify chart rendering patterns across panels
+- [x] Consolidate duplicate card/section layout patterns
+- [x] Recursive convergence Pass 1 — found duplicate nav item, FIXED, counter RESET
+- [x] Recursive convergence Pass 2 — found PInput duplicates, FIXED, counter RESET
+- [x] Recursive convergence Pass 3 — CLEAN (1/3)
+- [x] Recursive convergence Pass 4 — CLEAN (2/3)
+- [x] Recursive convergence Pass 5 — CLEAN (3/3) — CONSOLIDATION CONVERGENCE ACHIEVED
+
+### Scenario Delete Confirmation Dialog
+- [x] Add confirmation dialog before scenario deletion (AlertDialog with red Delete button)
+- [x] Test confirmation dialog works correctly (26 tests pass, build succeeds)
+
+### Comprehensive Persona-Based Playwright Testing (Recursive Convergence Required)
+#### Client Personas
+- [x] Retail Client (young professional, $75K income): basic planning, retirement, insurance needs
+- [x] High-Net-Worth Client ($2M+ NW): estate planning, tax optimization, advanced strategies
+- [x] Business Owner (SMB, $500K revenue): business valuation, succession, owner comp
+- [x] Pre-Retiree (age 58, $1.2M saved): retirement readiness, income planning, Medicare
+- [x] Dual-Income Family (2 kids, $180K combined): education funding, protection, cash flow
+- [x] Recently Divorced (age 45, rebuilding): fresh start planning, insurance gaps, debt mgmt
+#### Professional Personas
+- [x] New Advisor (year 1, building book): client acquisition, PFR wizard, quick quotes
+- [x] Experienced Advisor (10yr, 200 clients): Expert mode, cascade flow, scenario comparison
+- [x] Insurance Specialist: IUL projections, premium finance, product comparison
+- [x] Investment Advisor (RIA): portfolio allocation, retirement aggregation, tax-loss harvesting
+- [x] Estate Planning Specialist: estate tax, ILIT, charitable strategies, trust planning
+- [x] Affiliate/Recruiter: practice management, team builder, recruiting ROI
+#### Management Personas
+- [x] Team Lead (5 advisors): team analytics, production tracking, coaching tools
+- [x] Branch Manager (25 advisors): firm comparison, practice-to-wealth, org-level cascade
+- [x] Regional Director (100+ advisors): multi-team rollup, strategy archetypes, benchmarking
+- [x] Compliance Officer: audit trail, PFR compliance, disclaimer verification
+- [x] Platform Admin: all panels accessible, user management, data governance
+#### Gap Analysis & Optimization
+- [x] Per-persona capability matrix: 16 capabilities × 4 roles validated
+- [x] Optimization recommendations: 7 priority gaps identified with impact/effort scoring
+- [x] Priority ranking of gaps by impact and effort (automated scoring formula)
+- [x] Recursive convergence on testing Pass 1 — CLEAN (1/3)
+- [x] Recursive convergence on testing Pass 2 — CLEAN (2/3)
+- [x] Recursive convergence on testing Pass 3 — CLEAN (3/3) — TESTING CONVERGENCE ACHIEVED

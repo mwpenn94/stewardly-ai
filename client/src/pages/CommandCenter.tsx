@@ -27,6 +27,7 @@ import {
   CheckCircle2, AlertTriangle, ArrowRight, Zap, Calendar, Image,
   Linkedin, Copy, Edit, Loader2, Sparkles,
 } from "lucide-react";
+import { fmt } from '@/lib/format';
 
 type CommandTab = "overview" | "crm" | "campaigns" | "ats" | "linkedin" | "segments" | "assets";
 
@@ -56,7 +57,6 @@ const STAGE_COLORS: Record<string, string> = {
   bronze: "bg-orange-500/10 text-orange-600 border-orange-500/20",
 };
 
-const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 
 const DRIP_CATEGORIES = [
   { id: "onboarding", name: "Client Onboarding", count: 12, desc: "Welcome series, document collection, first-meeting prep" },

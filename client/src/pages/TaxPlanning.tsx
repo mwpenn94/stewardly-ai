@@ -25,14 +25,10 @@ import { toast } from "sonner";
 import { useState, useCallback, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { persistCalculation } from "@/lib/calculatorContext";
+import { fmt, pct } from '@/lib/format';
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-}
 
-function pct(n: number) {
-  return `${(n * 100).toFixed(1)}%`;
-}
+
 
 function SliderInput({
   label, value, onChange, min, max, step = 1, prefix = "$", suffix = "",

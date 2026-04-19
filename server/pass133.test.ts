@@ -10,7 +10,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "fs";
-import { resolve } from "path";
+import { resolve, dirname, join } from "path";
 
 const ROOT = resolve(__dirname, "..");
 
@@ -159,7 +159,9 @@ describe("Pass 133 — Depth Pass Components", () => {
       expect(content).toContain("domainAllocation");
       expect(content).toContain("setDomainAllocation");
       expect(content).toContain("DomainSlider");
-      expect(content).toContain("cursor-grab");
+      // cursor-grab is now in shared-ui.tsx AllocationSlider (Pass 145 consolidation)
+      const sharedUi = readFileSync(join(dirname(filePath), "shared-ui.tsx"), "utf-8");
+      expect(sharedUi).toContain("cursor-grab");
     });
 
     it("has back-solve section", () => {

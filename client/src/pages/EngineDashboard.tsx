@@ -30,6 +30,7 @@ import MonteCarloFan from "@/components/MonteCarloFan";
 import BackPlanFunnel from "@/components/BackPlanFunnel";
 import ProductReferencePanel from "@/components/ProductReferencePanel";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
+import { fmt } from '@/lib/format';
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────
 const COMPANY_OPTIONS = [
@@ -58,14 +59,6 @@ const ROLE_OPTIONS = [
 ];
 
 const STRATEGY_COLORS = ["#C9A84C", "#2563EB", "#7C3AED", "#06B6D4", "#F59E0B", "#EC4899"];
-
-const fmt = (n: number) => {
-  if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-};
-
 // ─── SLIDER INPUT COMPONENT ───────────────────────────────────────
 function SliderInput({ label, value, onChange, min, max, step = 1, suffix = "", format }: {
   label: string; value: number; onChange: (v: number) => void;

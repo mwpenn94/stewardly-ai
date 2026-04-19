@@ -24,6 +24,7 @@ import { SEOHead } from "@/components/SEOHead";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { fmt } from '@/lib/format';
 /* ── parameter definitions ──────────────────────────────────── */
 
 interface ParamDef {
@@ -90,13 +91,6 @@ function heatColor(value: number, min: number, max: number): string {
   const t = pct * 2; // 0 → 1
   return `oklch(${0.55 + t * 0.10} ${0.15 - t * 0.03} ${30 + t * 50})`;
 }
-
-const fmt = (n: number) => {
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-};
-
 /* ── component ─────────────────────────────────────────────── */
 
 export default function WhatIfSensitivity({ embedded = false }: { embedded?: boolean } = {}) {
@@ -214,7 +208,6 @@ export default function WhatIfSensitivity({ embedded = false }: { embedded?: boo
     const min = Math.min(...values);
     const max = Math.max(...values);
     const avg = Math.round(values.reduce((s, v) => s + v, 0) / values.length);
-    const fmt = (n: number) => "$" + Math.round(n).toLocaleString();
     persistCalculation({
       id: `whatif-${rowParam}-${colParam}-${gridSize}`,
       type: "custom",

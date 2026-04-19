@@ -20,6 +20,7 @@ import type { FinancialProfile } from "@/stores/financialProfile";
 import { SEOHead } from "@/components/SEOHead";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { useDisclosureGate } from "@/components/DisclosureSection";
+import { fmt } from '@/lib/format';
 
 // ─── Monte Carlo Simulation ────────────────────────────────────────────
 function runMonteCarlo(params: {
@@ -96,7 +97,6 @@ function cumulativeBenefit(monthly: number, startAge: number, endAge: number) {
 }
 
 // ─── Format helpers ────────────────────────────────────────────────────
-const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
 const fmtPct = (n: number) => `${n.toFixed(1)}%`;
 
 // ─── Main Component ────────────────────────────────────────────────────

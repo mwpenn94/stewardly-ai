@@ -6,6 +6,7 @@ import React, { useState, useMemo } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -203,10 +204,30 @@ export function ScenarioComparison({ currentWeData, currentInputs, onRestoreScen
                     Restore
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400"
-                  onClick={() => deleteMutation.mutate({ id: compareScenario.id })}>
-                  <Trash2 className="w-3 h-3" />
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-red-400">
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Scenario</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete "{compareScenario.name}"? This action cannot be undone and all version history will be lost.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => deleteMutation.mutate({ id: compareScenario.id })}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
           </div>
@@ -284,7 +305,7 @@ function ExportButtons({ currentWeData, compareScenario, compareResults }: {
 }) {
   const exportMutation = trpc.scenarioExport.export.useMutation({
     onSuccess: (data) => {
-      window.open(data.url, '_blank');
+      window.open(data.url, '_blank', 'noopener,noreferrer');
       toast.success(`Export downloaded as ${data.filename}`);
     },
     onError: (e) => toast.error(`Export failed: ${e.message}`),

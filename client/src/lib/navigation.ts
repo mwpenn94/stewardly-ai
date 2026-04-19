@@ -111,7 +111,6 @@ export const TOOLS_NAV: NavItemDef[] = [
   // ── INTELLIGENCE — multi-model AI + analysis tools + calculators
   { iconName: "Brain", label: "Intelligence", href: "/intelligence-hub", minRole: "user", section: "intelligence" },
   { iconName: "Sparkles", label: "Wealth Engine", href: "/wealth-engine", minRole: "user", section: "intelligence" },
-  { iconName: "Calculator", label: "Wealth Engine", href: "/wealth-engine", minRole: "user", section: "intelligence" },
   { iconName: "Calculator", label: "Engine Dashboard", href: "/engine-dashboard", minRole: "user", section: "intelligence" },
   { iconName: "Target", label: "Retirement", href: "/wealth-engine/retirement", minRole: "user", section: "intelligence" },
   { iconName: "BarChart3", label: "Strategy Compare", href: "/wealth-engine/strategy-comparison", minRole: "user", section: "intelligence" },

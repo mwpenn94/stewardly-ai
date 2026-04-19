@@ -42,6 +42,7 @@ import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { DisclosureSection } from "@/components/DisclosureSection";
+import { fmt as fmtUSD } from '@/lib/format';
 
 interface HoldingRow {
   id: string;
@@ -70,13 +71,7 @@ const DEFAULT_TARGETS: TargetRow[] = [
   { id: "CASH", targetPct: "5" },
 ];
 
-function fmtUSD(n: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
+/* fmtUSD → imported as fmt from @/lib/format */
 
 function fmtPct(n: number): string {
   const sign = n >= 0 ? "+" : "";

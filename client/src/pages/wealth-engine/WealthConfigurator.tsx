@@ -30,13 +30,9 @@ import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { fmt, pct } from '@/lib/format';
+
 // ─── UTILITIES ──────────────────────────────────────────────────────
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-}
-function pct(n: number) {
-  return `${(n * 100).toFixed(1)}%`;
-}
 
 // ─── COMPANY DEFINITIONS (mirrors server/shared/calculators/uwe.ts) ─
 const COMPANIES = [

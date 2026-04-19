@@ -27,16 +27,7 @@ import {
   FileSignature, LineChart, Stethoscope, ClipboardCheck, Lock,
   Archive, Activity, MessageSquare, Briefcase, HeartPulse,
 } from "lucide-react";
-
-// ─── FORMATTING ────────────────────────────────────────────────────
-const fmt = (n: number) => {
-  if (!Number.isFinite(n)) return "—";
-  if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (Math.abs(n) >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${Math.round(n).toLocaleString()}`;
-};
-const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
-
+import { fmt, pct } from '@/lib/format';
 // ─── STATUS BADGE ──────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, { class: string; icon: React.ElementType }> = {
