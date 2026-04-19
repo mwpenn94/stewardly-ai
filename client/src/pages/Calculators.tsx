@@ -25,7 +25,8 @@ import {
   Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu,
   Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info,
   PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2,
-  Database, Zap, Sparkles, Gauge, Rocket, ShieldCheck, Workflow
+  Database, Zap, Sparkles, Gauge, Rocket, ShieldCheck, Workflow,
+  ClipboardList, FileBarChart, UsersRound, Network
 } from 'lucide-react';
 
 import {
@@ -43,7 +44,7 @@ import { RetirementPanel, TaxPanel, EstatePanel, EducationPanel } from './calcul
 import { CostBenefitPanel, StrategyComparePanel, SummaryPanel, ActionPlanPanel, ReferencesPanel } from './calculators/PanelsC';
 import { AdvancedStrategiesPanel, BusinessClientPanel, TimelinePanel, PartnerPanel } from './calculators/PanelsE';
 import { IncomeStreamsPanel } from './calculators/PanelsF';
-import { CalcNarrator } from './calculators/CalcNarrator';
+// CalcNarrator removed from global rendering — available as contextual helper
 import { MyPlanPanel, GDCBracketsPanel, ProductsPanel, SalesFunnelPanel, RecruitingPanel, ChannelsPanel, DashboardPanel, PnLPanel, GoalTrackerPanel, MonthlyProductionPanel, type PracticeProps } from './calculators/PanelsD';
 import { AUMOverrideCascadePanel, AUMPipelinePanel, AffiliatePipelinePanel } from './calculators/PanelsG';
 import { ProductionOptPanel, ChannelDiversPanel, MarketingROIPanel, RecruitingFunnelPanel, PnLBusinessEconomicsPanel, GDCOverrideOptPanel } from './calculators/PanelsH';
@@ -64,8 +65,7 @@ import { ComplianceChecklist } from './calculators/ComplianceChecklist';
 import { PersonaReportGenerator } from './calculators/PersonaReportGenerator';
 import { MultiClientComparison } from './calculators/MultiClientComparison';
 import { CascadeFlowDiagram } from './calculators/CascadeFlowDiagram';
-import { BenchmarkGrid } from "@/components/InlineBenchmark";
-import { DisclosureSection } from "@/components/DisclosureSection";
+// BenchmarkGrid and DisclosureSection moved to individual panel components
 /* ─── Lazy-loaded new advisory & data panels ─── */
 const WePlanningHierarchy = lazy(() => import('./wealth-engine/PlanningHierarchyPanel'));
 const WeAdvancedWorkflows = lazy(() => import('./wealth-engine/AdvancedWorkflowsPanel'));
@@ -86,7 +86,8 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
   'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence' |
-  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub' | 'scenario-comparison' | 'pfr-wizard';
+  'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub' | 'scenario-comparison' | 'pfr-wizard' |
+  'compliance-checklist' | 'generate-report' | 'multi-compare' | 'cascade-flow';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
@@ -160,6 +161,12 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
   ]},
   { group: 'Data', items: [
     { id: 'financial-data-hub' as PanelId, label: 'Financial Data Hub', icon: <Database className="w-4 h-4" /> },
+  ]},
+  { group: 'Tools & Reports', items: [
+    { id: 'compliance-checklist' as PanelId, label: 'Compliance Checklist', icon: <ClipboardList className="w-4 h-4" /> },
+    { id: 'generate-report' as PanelId, label: 'Generate Report', icon: <FileBarChart className="w-4 h-4" /> },
+    { id: 'multi-compare' as PanelId, label: 'Multi-Client Compare', icon: <UsersRound className="w-4 h-4" /> },
+    { id: 'cascade-flow' as PanelId, label: 'Cascade Flow', icon: <Network className="w-4 h-4" /> },
   ]},
   { group: 'References & Due Diligence', items: [
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
@@ -1461,11 +1468,6 @@ export default function Calculators() {
             </div>
           </div>
 
-          {/* ─── CALC NARRATOR ─── */}
-          <div className="mb-4">
-            <CalcNarrator activePanel={activePanel} onNavigate={(id) => setActivePanel(id as PanelId)} />
-          </div>
-
           {/* ─── WELCOME TIP ─── */}
           {showWelcome && (
             <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-start gap-3">
@@ -1480,111 +1482,6 @@ export default function Calculators() {
               </button>
             </div>
           )}
-
-          {/* ═══ CONTEXTUAL BENCHMARKS — shown based on active panel group ═══ */}
-          <DisclosureSection minLevel={1} label="Industry Benchmarks">
-            {['myplan','gdcbrackets','products','salesfunnel','recruiting','channels','dashboard','pnl','goaltracker','monthlyproduction','prodopt','channeldiv','mktgroi','recruitfunnel','pnlbizecon','gdcoverride'].includes(activePanel) && (
-              <BenchmarkGrid
-                title="Practice Management Benchmarks"
-                items={[
-                  { label: "Revenue/Advisor", value: "$1.1M", source: "InvestmentNews 2024 — top-quartile advisor revenue", status: "positive" },
-                  { label: "Avg GDC", value: "$180K", source: "LIMRA 2024 — median GDC for career agents with 5+ years", status: "neutral" },
-                  { label: "Recruiting CAC", value: "$18K", source: "Cerulli 2024 — avg cost to recruit an experienced advisor", status: "neutral" },
-                  { label: "1st-Year Retention", value: "62%", source: "LIMRA 2024 — 1st-year agent retention rate industry avg", status: "warning" },
-                  { label: "4th-Year Retention", value: "15%", source: "LIMRA 2024 — 4th-year agent retention rate industry avg", status: "warning" },
-                  { label: "Profit Margin", value: "25-35%", source: "InvestmentNews 2024 — top-quartile advisory firm margins", status: "positive" },
-                  { label: "Client/Advisor", value: "100-150", source: "Kitces 2024 — optimal client-to-advisor ratio", status: "neutral" },
-                  { label: "Close Rate", value: "30-40%", source: "LIMRA 2024 — industry avg close rate for qualified leads", status: "neutral" },
-                ]}
-              />
-            )}
-            {['profile','cash','balancesheet','debtmgmt','income'].includes(activePanel) && (
-              <BenchmarkGrid
-                title="Foundation Benchmarks"
-                items={[
-                  { label: "Savings Rate", value: "6.2%", source: "BEA Personal Saving Rate 2024 — national average", status: "neutral" },
-                  { label: "Emergency Fund", value: "3-6 mo", source: "FINRA Foundation 2024 — recommended emergency reserve", status: "neutral" },
-                  { label: "Debt-to-Income", value: "<36%", source: "CFPB 2024 — qualified mortgage threshold", status: "neutral" },
-                  { label: "Net Worth by 40", value: "2× income", source: "Fidelity 2024 — retirement savings milestones", status: "neutral" },
-                ]}
-              />
-            )}
-            {['retire','tax','estate','edu','trusteng','governance','planning-hierarchy','unified-client-plan'].includes(activePanel) && (
-              <BenchmarkGrid
-                title="Planning Benchmarks"
-                items={[
-                  { label: "Replacement Ratio", value: "70-80%", source: "Aon 2024 — retirement income replacement target", status: "neutral" },
-                  { label: "Effective Tax Rate", value: "22.6%", source: "Tax Foundation 2024 — avg effective federal rate for $150K income", status: "neutral" },
-                  { label: "Estate Exemption", value: "$13.61M", source: "IRS 2024 — federal estate tax exemption per individual", status: "positive" },
-                  { label: "529 Avg Balance", value: "$30.9K", source: "College Savings Plans Network 2024 — avg 529 account balance", status: "neutral" },
-                  { label: "Social Security Max", value: "$4,873/mo", source: "SSA 2024 — maximum monthly benefit at age 70", status: "positive" },
-                  { label: "Medicare Start", value: "Age 65", source: "CMS 2024 — Medicare Part A eligibility", status: "neutral" },
-                ]}
-              />
-            )}
-            {['protect','bizclient','premfin','ilitrust','execcomp','charitable','advanced','advanced-workflows'].includes(activePanel) && (
-              <BenchmarkGrid
-                title="Protection Benchmarks"
-                items={[
-                  { label: "Coverage Gap", value: "$200K avg", source: "LIMRA 2024 — avg American life insurance gap", status: "warning" },
-                  { label: "Disability Rate", value: "25%", source: "SSA 2024 — probability of disability before age 67", status: "warning" },
-                  { label: "LTC Need", value: "70%", source: "ACL 2024 — % of 65+ who will need long-term care", status: "warning" },
-                  { label: "Key Person Loss", value: "$1.2M", source: "Hartford 2024 — avg business loss from key person death", status: "warning" },
-                  { label: "Buy-Sell Funded", value: "Only 38%", source: "LIMRA 2024 — % of buy-sell agreements properly funded", status: "warning" },
-                  { label: "ILIT Savings", value: "40%", source: "AALU 2024 — potential estate tax savings via ILIT", status: "positive" },
-                ]}
-              />
-            )}
-            {['grow','montecarlo','stockcomp','strategy-archetypes'].includes(activePanel) && (
-              <BenchmarkGrid
-                title="Growth Benchmarks"
-                items={[
-                  { label: "S&P 500 Avg", value: "10.3%", source: "Vanguard 2024 — long-term avg annual return (nominal)", status: "neutral" },
-                  { label: "Bond Avg", value: "5.3%", source: "Vanguard 2024 — long-term avg bond return", status: "neutral" },
-                  { label: "Inflation Avg", value: "3.1%", source: "BLS CPI 2024 — long-term average inflation", status: "neutral" },
-                  { label: "IUL Cap Rate", value: "10-12%", source: "Industry avg IUL cap rates 2024", status: "neutral" },
-                ]}
-              />
-            )}
-            {['costben','compare','summary','timeline','impl_timeline','cascade-alerts','firm-comparison','partner'].includes(activePanel) && (
-              <BenchmarkGrid
-                title="Advisory Practice Benchmarks"
-                items={[
-                  { label: "Revenue/Advisor", value: "$1.1M", source: "InvestmentNews 2024 — top-quartile advisor revenue", status: "positive" },
-                  { label: "Client Retention", value: "95%+", source: "Cerulli 2024 — top quartile advisory firms", status: "positive" },
-                  { label: "Avg AUM/Client", value: "$1.2M", source: "Cerulli 2024 — average AUM per client for RIAs", status: "neutral" },
-                  { label: "Planning Fee", value: "$2,500", source: "Kitces 2024 — median financial planning fee", status: "neutral" },
-                ]}
-              />
-            )}
-          </DisclosureSection>
-
-          {/* ═══ COMPLIANCE CHECKLIST (Gap 2) ═══ */}
-          <DisclosureSection minLevel={2} label="Compliance Checklist">
-            <ComplianceChecklist clientName={clientName} />
-          </DisclosureSection>
-
-          {/* ═══ PERSONA REPORT GENERATOR (Gap 3) ═══ */}
-          <DisclosureSection minLevel={2} label="Generate Report">
-            <PersonaReportGenerator
-              clientName={clientName}
-              age={age}
-              totalIncome={totalIncome}
-              scorecard={scorecard}
-              recommendations={recommendations}
-              weData={weData}
-            />
-          </DisclosureSection>
-
-          {/* ═══ MULTI-CLIENT COMPARISON (Gap 6) ═══ */}
-          <DisclosureSection minLevel={2} label="Multi-Client Comparison">
-            <MultiClientComparison />
-          </DisclosureSection>
-
-          {/* ═══ CASCADE FLOW DIAGRAM (Gap 7) ═══ */}
-          <DisclosureSection minLevel={1} label="Cascade Flow Diagram">
-            <CascadeFlowDiagram weData={weData} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} />
-          </DisclosureSection>
 
           {/* ═══ PANEL RENDERING ═══ */}
           {activePanel === 'client-wealth-hub' && <ClientWealthHub {...pp} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} />}
@@ -1708,6 +1605,19 @@ export default function Calculators() {
               }} />}
             </Suspense>
           </WealthEngineProvider>
+
+          {/* ═══ TOOLS & REPORTS PANELS ═══ */}
+          {activePanel === 'compliance-checklist' && <ComplianceChecklist clientName={clientName} />}
+          {activePanel === 'generate-report' && <PersonaReportGenerator
+            clientName={clientName}
+            age={age}
+            totalIncome={totalIncome}
+            scorecard={scorecard}
+            recommendations={recommendations}
+            weData={weData}
+          />}
+          {activePanel === 'multi-compare' && <MultiClientComparison />}
+          {activePanel === 'cascade-flow' && <CascadeFlowDiagram weData={weData} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} />}
 
           {/* ═══ FINRA/SIPC COMPLIANCE DISCLAIMER ═══ */}
           <div className="mt-8 rounded-lg border border-border/50 bg-card/50 p-4 text-[10px] text-muted-foreground/60 leading-relaxed space-y-2">

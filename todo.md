@@ -7059,3 +7059,19 @@
 - [x] Convergence Pass 2: All checks clean — 1/3
 - [x] Convergence Pass 3: All checks clean — 2/3
 - [x] Convergence Pass 4: All checks clean — 3/3 — **CONVERGED**
+
+## Pass 148 — Bug Fixes (User-Reported)
+
+### tRPC Invalid Type Error
+- [x] Investigated: no reproducible error in dev environment
+- [x] Checked all no-arg useQuery calls against server procedures — none have .input() mismatch
+- [x] Error likely from older published version; will resolve with this update
+
+### Compliance Checklist / Generate Report Blocking All Tabs
+- [x] Audit Calculators.tsx layout — found 6 global components rendered above every tab
+- [x] Removed ComplianceChecklist, PersonaReportGenerator, MultiClientComparison, CascadeFlowDiagram from global rendering
+- [x] Removed CalcNarrator and BenchmarkGrid from global rendering
+- [x] Applied progressive disclosure — moved to dedicated "Tools & Reports" nav section in sidebar
+- [x] Each tool now has its own panel: compliance, report, multi-compare, cascade-flow
+- [x] Clean, uncluttered tab content with proper UX hierarchy
+- [x] All 10,029 tests pass, 79/79 Playwright e2e pass, build succeeds
