@@ -46,21 +46,23 @@ interface NavSection { group: string; items: NavItem[]; }
  * - Operations: Compliance, CRM sync, business exit, premium finance
  */
 const NAV_SECTIONS: NavSection[] = [
-  { group: "Clients", items: [
-    { id: "relationships", label: "Clients", icon: Users, minRole: "user", slug: "clients" },
+  { group: "Overview", items: [
+    { id: "command-center", label: "Dashboard", icon: LayoutGrid, minRole: "user", slug: "command-center" },
+  ]},
+  { group: "Pipeline", items: [
     { id: "leads", label: "Lead Pipeline", icon: Target, minRole: "advisor", slug: "leads" },
+    { id: "relationships", label: "Clients", icon: Users, minRole: "user", slug: "clients" },
     { id: "client-onboarding", label: "Onboarding", icon: UserPlus, minRole: "user", slug: "onboarding" },
     { id: "annual-review", label: "Annual Review", icon: FileText, minRole: "advisor", slug: "annual-review" },
   ]},
-  { group: "Marketing & Outreach", items: [
-    { id: "command-center", label: "Command Center", icon: LayoutGrid, minRole: "advisor", slug: "command-center" },
-    { id: "email-campaigns", label: "Email Campaigns", icon: Mail, minRole: "advisor", slug: "email-campaigns" },
-    { id: "marketing-assets", label: "Marketing Assets", icon: FolderOpen, minRole: "advisor", slug: "marketing-assets" },
+  { group: "Marketing", items: [
+    { id: "email-campaigns", label: "Campaigns", icon: Mail, minRole: "advisor", slug: "email-campaigns" },
+    { id: "marketing-assets", label: "Assets", icon: FolderOpen, minRole: "advisor", slug: "marketing-assets" },
     { id: "outreach", label: "Automation", icon: Zap, minRole: "advisor", slug: "outreach" },
   ]},
   { group: "Operations", items: [
     { id: "compliance", label: "Compliance", icon: ShieldCheck, minRole: "advisor", slug: "compliance" },
-    { id: "compliance-copilot", label: "Compliance Copilot", icon: Shield, minRole: "advisor", slug: "compliance-copilot" },
+    { id: "compliance-copilot", label: "Compliance AI", icon: Shield, minRole: "advisor", slug: "compliance-copilot" },
     { id: "crm-sync", label: "CRM Sync", icon: RefreshCw, minRole: "advisor", slug: "crm-sync" },
     { id: "business-exit", label: "Business Exit", icon: ArrowRight, minRole: "advisor", slug: "business-exit" },
     { id: "premium-finance", label: "Premium Finance", icon: DollarSign, minRole: "advisor", slug: "premium-finance" },
@@ -83,9 +85,11 @@ export default function PeopleHub() {
   );
   const visibleItems = visibleSections.flatMap(s => s.items);
 
+  // Default to command-center (pipeline overview) for advisors, relationships for users
+  const defaultTab: PeopleTab = visibleItems.find(t => t.id === "command-center") ? "command-center" : visibleItems[0]?.id ?? "relationships";
   const initialTab = (matchTab && paramsTab?.tab && visibleItems.find(t => t.slug === paramsTab.tab))
     ? visibleItems.find(t => t.slug === paramsTab.tab)!.id
-    : visibleItems[0]?.id ?? "relationships";
+    : defaultTab;
 
   const [activeTab, setActiveTab] = useState<PeopleTab>(initialTab);
 
@@ -124,7 +128,7 @@ export default function PeopleHub() {
                 <Users className="w-5 h-5 text-primary" />
                 <span className="text-sm font-bold text-foreground">People</span>
               </div>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Clients · Marketing · Operations</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Pipeline · Marketing · Operations</p>
             </div>
             <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
               <PanelLeftClose className="w-4 h-4" />

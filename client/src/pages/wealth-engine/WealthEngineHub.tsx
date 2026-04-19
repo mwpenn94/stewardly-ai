@@ -26,7 +26,6 @@ import { toast } from "sonner";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { DisclosureSection } from "@/components/DisclosureSection";
 import ServiceDegradedFallback from "@/components/ServiceDegradedFallback";
-import Tier0InstantCard from "@/components/wealth-engine/Tier0InstantCard";
 import {
   Sparkles, Calculator, PiggyBank, Shield, TrendingUp, Building2,
   Scale, Heart, GraduationCap, HandCoins, DollarSign, Stethoscope,
@@ -217,66 +216,306 @@ function InlineQuickBundle() {
 }
 
 // ─── HERO + SCORE STRIP (Overview tab) ─────────────────────────────
-function HubHero({ role }: { role?: string }) {
-  const [, navigate] = useLocation();
-  return (
-    <Card className="bg-gradient-to-br from-card via-card to-accent/5 border-accent/20">
-      <CardContent className="p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold flex items-center gap-2">
-              <Gauge className="w-5 h-5 text-accent" /> Wealth Engine
-            </h1>
-            <p className="text-xs text-muted-foreground mt-1">
-              Holistic planning across personal and practice wealth — plan, protect, and grow.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <ShareButton contentType="wealth-engine" contentId="wealth-analysis" contentTitle="Wealth Analysis" variant="ghost" size="sm" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function Tier0ScoreStrip() {
-  const scoreQ = trpc.wealthEngine.getGuardrails.useQuery(undefined, { retry: 1 });
-  if (!scoreQ.data) return null;
-  const g = scoreQ.data;
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      {[
-        { label: "Protection", value: g.protectionScore ?? "—", color: "text-emerald-400" },
-        { label: "Growth", value: g.growthScore ?? "—", color: "text-blue-400" },
-        { label: "Tax Efficiency", value: g.taxScore ?? "—", color: "text-violet-400" },
-        { label: "Overall", value: g.overallScore ?? "—", color: "text-accent" },
-      ].map(s => (
-        <Card key={s.label} className="bg-card/40 border-border/30">
-          <CardContent className="p-3 text-center">
-            <p className="text-[10px] text-muted-foreground">{s.label}</p>
-            <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
+// ─── GOAL CATEGORY ICONS ───────────────────────────────────────────
+const GOAL_ICONS: Record<string, React.ElementType> = {
+  protection: Shield, retirement: PiggyBank, estate: Briefcase, tax: DollarSign,
+  education: GraduationCap, debt: Scale, growth: TrendingUp, business: Building2,
+  cash_flow: HandCoins, premium_finance: Rocket, ilit: ShieldCheck,
+  exec_comp: Briefcase, charitable: Heart, legacy: Layers, healthcare: Stethoscope,
+};
 
 // ─── OVERVIEW CONTENT ──────────────────────────────────────────────
 function OverviewContent() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
+
+  // Real data from planning hierarchy
+  const goalsQ = trpc.planningHierarchy.getAdvisorGoals.useQuery(undefined, { retry: 1 });
+  const treeQ = trpc.planningHierarchy.getFullTree.useQuery(undefined, { retry: 1 });
+  const assumptionsQ = trpc.planningHierarchy.getAssumptions.useQuery(
+    { scope: "advisor" },
+    { retry: 1 },
+  );
+  // Latest simulation runs
+  const latestUWE = trpc.wealthEngine.getLatestRun.useQuery({ tool: "uwe.simulate" }, { retry: false });
+  const latestMC = trpc.wealthEngine.getLatestRun.useQuery({ tool: "montecarlo.simulate" }, { retry: false });
+  const latestHE = trpc.wealthEngine.getLatestRun.useQuery({ tool: "he.simulate" }, { retry: false });
+
+  const goals = goalsQ.data ?? [];
+  const tree = treeQ.data ?? [];
+  const assumptions = assumptionsQ.data;
+
+  // Compute goal summary by category
+  const goalsByCategory = useMemo(() => {
+    const map: Record<string, { total: number; onTrack: number; atRisk: number; totalTarget: number; totalCurrent: number }> = {};
+    for (const g of goals) {
+      const cat = (g as any).goalCategory ?? "other";
+      if (!map[cat]) map[cat] = { total: 0, onTrack: 0, atRisk: 0, totalTarget: 0, totalCurrent: 0 };
+      map[cat].total++;
+      const status = (g as any).goalStatus ?? "identified";
+      if (["on_track", "achieved"].includes(status)) map[cat].onTrack++;
+      if (["at_risk"].includes(status)) map[cat].atRisk++;
+      map[cat].totalTarget += parseFloat((g as any).targetAmount ?? "0") || 0;
+      map[cat].totalCurrent += parseFloat((g as any).currentAmount ?? "0") || 0;
+    }
+    return map;
+  }, [goals]);
+
+  // Compute planning tree summary
+  const treeSummary = useMemo(() => {
+    let totalNodes = 0, activeNodes = 0;
+    function walk(nodes: any[]) {
+      for (const n of nodes) {
+        totalNodes++;
+        if (n.nodeStatus === "active") activeNodes++;
+        if (n.children?.length) walk(n.children);
+      }
+    }
+    walk(tree);
+    return { totalNodes, activeNodes };
+  }, [tree]);
+
+  const totalGoals = goals.length;
+  const onTrackGoals = goals.filter((g: any) => ["on_track", "achieved"].includes(g.goalStatus)).length;
+  const atRiskGoals = goals.filter((g: any) => g.goalStatus === "at_risk").length;
+  const categoriesUsed = Object.keys(goalsByCategory).length;
+  const isLoading = goalsQ.isLoading || treeQ.isLoading;
+
   return (
     <div className="space-y-5">
       <ServiceDegradedFallback serviceId="llm" degradedMessage="AI-powered analysis may be slower or unavailable. Calculator tools still work normally.">
         <></>
       </ServiceDegradedFallback>
-      <HubHero role={user?.role} />
-      <Tier0ScoreStrip />
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold flex items-center gap-2">
+            <Gauge className="w-5 h-5 text-accent" /> Wealth Engine
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Holistic planning across personal and practice wealth
+          </p>
+        </div>
+        <ShareButton contentType="wealth-engine" contentId="wealth-analysis" contentTitle="Wealth Analysis" variant="ghost" size="sm" />
+      </div>
+
+      {/* KPI Strip — real data from goals + planning tree */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {[
+          { label: "Goals Tracked", value: isLoading ? "…" : totalGoals, sub: `${categoriesUsed} categories`, color: "text-blue-400" },
+          { label: "On Track", value: isLoading ? "…" : onTrackGoals, sub: totalGoals > 0 ? `${Math.round((onTrackGoals / totalGoals) * 100)}%` : "—", color: "text-emerald-400" },
+          { label: "At Risk", value: isLoading ? "…" : atRiskGoals, sub: atRiskGoals > 0 ? "Review needed" : "None", color: atRiskGoals > 0 ? "text-red-400" : "text-emerald-400" },
+          { label: "Planning Nodes", value: isLoading ? "…" : treeSummary.totalNodes, sub: `${treeSummary.activeNodes} active`, color: "text-violet-400" },
+        ].map(s => (
+          <Card key={s.label} className="bg-card/40 border-border/30">
+            <CardContent className="p-3">
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+              <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-[9px] text-muted-foreground">{s.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Goal Categories — grouped by financial dimension */}
+      {totalGoals > 0 && (
+        <Card className="border-border/40">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Financial Goals by Category</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/wealth-engine/unified-client-plan")}>
+                View All <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {Object.entries(goalsByCategory).map(([cat, data]) => {
+                const Icon = GOAL_ICONS[cat] ?? Target;
+                return (
+                  <div key={cat} className="flex items-center gap-3 rounded-lg bg-background/50 p-2.5 hover:bg-background/80 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-none">
+                      <Icon className="w-4 h-4 text-accent" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium capitalize truncate">{cat.replace(/_/g, " ")}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">{data.total} goal{data.total !== 1 ? "s" : ""}</span>
+                        {data.onTrack > 0 && <Badge variant="outline" className="h-4 text-[8px] px-1 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">{data.onTrack} on track</Badge>}
+                        {data.atRisk > 0 && <Badge variant="outline" className="h-4 text-[8px] px-1 bg-red-500/10 text-red-400 border-red-500/20">{data.atRisk} at risk</Badge>}
+                      </div>
+                      {data.totalTarget > 0 && (
+                        <div className="mt-1">
+                          <div className="flex justify-between text-[9px] text-muted-foreground">
+                            <span>{fmt(data.totalCurrent)}</span>
+                            <span>{fmt(data.totalTarget)}</span>
+                          </div>
+                          <div className="h-1 rounded-full bg-border/50 mt-0.5">
+                            <div
+                              className={`h-full rounded-full transition-all ${data.totalCurrent >= data.totalTarget ? "bg-emerald-500" : "bg-accent"}`}
+                              style={{ width: `${Math.min(100, data.totalTarget > 0 ? (data.totalCurrent / data.totalTarget) * 100 : 0)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty state — no goals yet */}
+      {!isLoading && totalGoals === 0 && (
+        <Card className="border-border/40 border-dashed">
+          <CardContent className="p-6 text-center">
+            <Target className="w-8 h-8 mx-auto mb-3 text-muted-foreground/50" />
+            <p className="text-sm font-medium">No financial goals yet</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
+              Start by creating goals in the Unified Client Plan, or use the Quick Bundle calculator below to identify protection gaps.
+            </p>
+            <div className="flex gap-2 justify-center mt-4">
+              <Button size="sm" variant="outline" onClick={() => navigate("/wealth-engine/unified-client-plan")}>
+                <Layers className="w-3.5 h-3.5 mr-1.5" /> Create Goals
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => navigate("/wealth-engine/planning-hierarchy")}>
+                <Workflow className="w-3.5 h-3.5 mr-1.5" /> Planning Hierarchy
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Planning Tree Summary — cascading view */}
+      {treeSummary.totalNodes > 0 && (
+        <Card className="border-border/40">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Planning Hierarchy</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/wealth-engine/planning-hierarchy")}>
+                Expand <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </div>
+            <CardDescription className="text-[11px]">Forward/backward cascading plan — {treeSummary.activeNodes} active nodes across your hierarchy</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {tree.slice(0, 5).map((node: any) => (
+                <div key={node.id} className="flex items-center gap-3 rounded-lg bg-background/50 p-2.5">
+                  <div className={`w-2 h-2 rounded-full flex-none ${
+                    node.nodeStatus === "active" ? "bg-emerald-500" :
+                    node.nodeStatus === "review" ? "bg-amber-500" : "bg-zinc-500"
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{node.label ?? `${node.level} node`}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge variant="outline" className="h-4 text-[8px] px-1">{node.level}</Badge>
+                      {node.currentValue && node.forwardTarget && (
+                        <span className="text-[9px] text-muted-foreground">
+                          {fmt(parseFloat(node.currentValue))} → {fmt(parseFloat(node.forwardTarget))}
+                        </span>
+                      )}
+                      {node.probabilityOfSuccess && (
+                        <span className="text-[9px] text-muted-foreground">
+                          {parseFloat(node.probabilityOfSuccess).toFixed(0)}% success
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {node.children?.length > 0 && (
+                    <span className="text-[9px] text-muted-foreground">{node.children.length} sub-nodes</span>
+                  )}
+                </div>
+              ))}
+              {tree.length > 5 && (
+                <p className="text-[10px] text-muted-foreground text-center pt-1">
+                  + {tree.length - 5} more root nodes
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Latest Analyses — show most recent simulation results */}
+      <Card className="border-border/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Latest Analyses</CardTitle>
+          <CardDescription className="text-[11px]">Most recent simulation runs across engines</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {[
+              { label: "Strategy Simulation", icon: TrendingUp, data: latestUWE.data?.run, slug: "retirement", color: "text-blue-400" },
+              { label: "Monte Carlo", icon: BarChart3, data: latestMC.data?.run, slug: "sensitivity", color: "text-violet-400" },
+              { label: "Holistic Engine", icon: Gauge, data: latestHE.data?.run, slug: "holistic-comparison", color: "text-emerald-400" },
+            ].map(engine => (
+              <Card
+                key={engine.label}
+                className="bg-background/50 border-border/30 hover:border-primary/30 transition-colors cursor-pointer"
+                onClick={() => navigate(`/wealth-engine/${engine.slug}`)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <engine.icon className={`w-4 h-4 ${engine.color}`} />
+                    <span className="text-xs font-medium">{engine.label}</span>
+                  </div>
+                  {engine.data ? (
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Last run: {new Date((engine.data as any).createdAt).toLocaleDateString()}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">
+                        {(engine.data as any).tool}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground">No runs yet — click to start</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Planning Assumptions — current defaults */}
+      {assumptions && (
+        <Card className="border-border/40">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Planning Assumptions</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => navigate("/wealth-engine/configurator")}>
+                Edit <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { label: "Inflation", value: assumptions.inflationRate ? pct(parseFloat(assumptions.inflationRate)) : "3.0%" },
+                { label: "Equity Return", value: assumptions.equityReturn ? pct(parseFloat(assumptions.equityReturn)) : "7.0%" },
+                { label: "Bond Return", value: assumptions.bondReturn ? pct(parseFloat(assumptions.bondReturn)) : "4.0%" },
+                { label: "Risk-Free Rate", value: assumptions.riskFreeRate ? pct(parseFloat(assumptions.riskFreeRate)) : "4.3%" },
+              ].map(a => (
+                <div key={a.label} className="rounded-lg bg-background/50 p-2 text-center">
+                  <p className="text-[9px] text-muted-foreground">{a.label}</p>
+                  <p className="text-sm font-medium">{a.value}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quick Bundle — progressively disclosed */}
       <DisclosureSection minLevel={2} label="Quick Bundle Calculator" showTeaser>
         <InlineQuickBundle />
       </DisclosureSection>
-      <Tier0InstantCard />
+
       <p className="text-[10px] text-muted-foreground text-center pt-2">
         Outputs are illustrative and use industry-standard heuristics. For binding
         quotes, file applications through the carrier connector. For formal financial

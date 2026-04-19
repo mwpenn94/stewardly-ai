@@ -6456,3 +6456,48 @@
 - [x] Nested excess features via progressive disclosure (More/Less in chat, collapsible sections in hubs)
 - [x] Delightful design/color themes preserved (no visual regression)
 - [x] All 200 vitest tests passing (9 regression tests updated for structural changes)
+
+## Pass 131 — Substantive Structural Restructuring (not just nav labels)
+
+### Phase 1: Deep audit of actual page content
+- [x] Read full WealthEngineHub content — 22 lazy panels, real planningHierarchy router, but Overview is just hero+scores+quickbundle
+- [x] Read full LearningHome content — 6 trpc queries, 17 sub-pages, but no learning plan concept
+- [x] Read full PeopleHub content — 13 panels (6 real, 7 stubs), but no pipeline dashboard
+- [x] Identified: all 3 hubs are sidebar switchers with no unified overview/workflow
+
+### Phase 2: Wealth Engine — holistic cascading planning
+- [x] Replaced fake hero+scores+quickbundle overview with real holistic planning dashboard
+- [x] Dashboard pulls from planningHierarchy.getRoots (cascading tree), wealthEngine.getAdvisorGoals (real goals), wealthEngine.getLatestRun (simulations), wealthEngine.getAssumptions (shared assumptions)
+- [x] Roll-up/roll-down: root nodes show gap%, trend, status → click to drill into children → breadcrumb navigation back up
+- [x] Goal tracking by category (protection, retirement, estate, tax, education, healthcare, business) with progress bars and gap analysis
+- [x] Latest simulation results shown with key metrics
+- [x] Shared assumptions panel (inflation, growth, tax rates) editable inline
+- [x] Empty states guide users to create their first goal or run their first simulation
+- [x] Removed broken Tier0InstantCard (was called without required props)
+
+### Phase 3: Learning Engine — planning and actioning workflow
+- [x] Added "My Learning Plan" section with 4 structured steps computed from real data:
+  1. Build Mastery (overall mastery % → study sessions)
+  2. Complete Tracks (enrolled vs total tracks → continue studying)
+  3. Earn Licenses (active vs total licenses → exam prep)
+  4. Build Habits (streak days → daily practice)
+- [x] Each step is clickable, navigates to the relevant section
+- [x] Progress bars show real completion percentages from trpc queries
+- [x] Integrated between KPI snapshot and Continue Studying sections
+
+### Phase 4: Command Center — unified pipeline workflow
+- [x] Made PeopleHub default to command-center (Dashboard) instead of relationships
+- [x] Reordered nav: Dashboard first → Pipeline (Leads, Relationships, Onboarding) → Marketing (Campaigns, Assets, Automation) → Operations (CRM Sync, Compliance, Annual Review, Business Exit, Premium Finance)
+- [x] CommandCenter embedded mode: hides internal tab bar when inside PeopleHub (sidebar handles navigation)
+- [x] CommandCenter embedded mode: hides header (PeopleHub breadcrumb provides context)
+
+### Phase 5: Remove redundancies
+- [x] Removed redundant CommandCenter tab bar when embedded in PeopleHub
+- [x] Removed broken Tier0InstantCard from WE overview
+- [x] Removed duplicate Concept Map card from Learning (done in Pass 130)
+- [x] No functional regression — all 9942+ tests passing
+
+### Phase 6: Tests and delivery
+- [x] All 402 test files passing (9942+ tests)
+- [x] Browser validated: WE overview renders with skeleton loading, People Hub defaults to Dashboard, Learning Plan section visible
+- [x] Checkpoint saved

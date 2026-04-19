@@ -710,33 +710,40 @@ export default function CommandCenter({ embedded = false }: { embedded?: boolean
     <Shell>
       <SEOHead title="Command Center" description="Unified CRM, campaigns, ATS, LinkedIn, segmentation, and marketing asset library" />
       <div className="container max-w-7xl py-4">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-lg font-bold">Command Center</h1>
-            <p className="text-xs text-muted-foreground">CRM · Campaigns · ATS · LinkedIn · Segmentation · Assets</p>
+        {!embedded && (
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-lg font-bold">Command Center</h1>
+              <p className="text-xs text-muted-foreground">CRM · Campaigns · ATS · LinkedIn · Segmentation · Assets</p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => navigate("/crm-sync")}><RefreshCw className="w-3 h-3 mr-1" /> CRM Sync</Button>
+              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => navigate("/data-pipelines")}><Database className="w-3 h-3 mr-1" /> Data Pipelines</Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => navigate("/crm-sync")}><RefreshCw className="w-3 h-3 mr-1" /> CRM Sync</Button>
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => navigate("/data-pipelines")}><Database className="w-3 h-3 mr-1" /> Data Pipelines</Button>
-          </div>
-        </div>
+        )}
 
-        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as CommandTab)}>
-          <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/50 p-1">
-            {(Object.entries(TAB_CONFIG) as [CommandTab, typeof TAB_CONFIG[CommandTab]][]).map(([key, cfg]) => {
-              const Icon = cfg.icon;
-              return (<TabsTrigger key={key} value={key} className="text-xs gap-1.5 data-[state=active]:bg-background"><Icon className="w-3.5 h-3.5" /><span className="hidden sm:inline">{cfg.label}</span></TabsTrigger>);
-            })}
-          </TabsList>
+        {embedded ? (
+          /* When embedded in PeopleHub, show only the overview dashboard — PeopleHub sidebar handles sub-navigation */
+          <OverviewTab onNavigate={setActiveTab} />
+        ) : (
+          <Tabs value={activeTab} onValueChange={v => setActiveTab(v as CommandTab)}>
+            <TabsList className="mb-4 flex-wrap h-auto gap-1 bg-muted/50 p-1">
+              {(Object.entries(TAB_CONFIG) as [CommandTab, typeof TAB_CONFIG[CommandTab]][]).map(([key, cfg]) => {
+                const Icon = cfg.icon;
+                return (<TabsTrigger key={key} value={key} className="text-xs gap-1.5 data-[state=active]:bg-background"><Icon className="w-3.5 h-3.5" /><span className="hidden sm:inline">{cfg.label}</span></TabsTrigger>);
+              })}
+            </TabsList>
 
-          <TabsContent value="overview"><OverviewTab onNavigate={setActiveTab} /></TabsContent>
-          <TabsContent value="crm"><CRMTab /></TabsContent>
-          <TabsContent value="campaigns"><CampaignsTab /></TabsContent>
-          <TabsContent value="ats"><ATSTab /></TabsContent>
-          <TabsContent value="linkedin"><LinkedInTab /></TabsContent>
-          <TabsContent value="segments"><SegmentsTab /></TabsContent>
-          <TabsContent value="assets"><AssetsTab /></TabsContent>
-        </Tabs>
+            <TabsContent value="overview"><OverviewTab onNavigate={setActiveTab} /></TabsContent>
+            <TabsContent value="crm"><CRMTab /></TabsContent>
+            <TabsContent value="campaigns"><CampaignsTab /></TabsContent>
+            <TabsContent value="ats"><ATSTab /></TabsContent>
+            <TabsContent value="linkedin"><LinkedInTab /></TabsContent>
+            <TabsContent value="segments"><SegmentsTab /></TabsContent>
+            <TabsContent value="assets"><AssetsTab /></TabsContent>
+          </Tabs>
+        )}
       </div>
     </Shell>
   );

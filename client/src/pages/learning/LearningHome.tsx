@@ -213,6 +213,89 @@ export default function LearningHome() {
           </Card>
         </div>
 
+        {/* My Learning Plan — structured path with goal-setting */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-5 w-5" />
+              My Learning Plan
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              // Compute a learning plan from tracks, mastery, and licenses
+              const planItems: { label: string; status: "done" | "active" | "upcoming"; detail: string; href: string }[] = [];
+
+              // Step 1: Core mastery
+              const masteryPct = summary?.masteryPct ?? 0;
+              planItems.push({
+                label: "Build Core Mastery",
+                status: masteryPct >= 80 ? "done" : masteryPct > 0 ? "active" : "upcoming",
+                detail: masteryPct >= 80 ? `${masteryPct}% mastered` : masteryPct > 0 ? `${masteryPct}% — review ${summary?.dueNow ?? 0} due items` : "Start with flashcard review",
+                href: "/learning/review",
+              });
+
+              // Step 2: Complete exam tracks
+              const completedTracks = tracks.filter((t: any) => t.completionPct >= 100).length;
+              planItems.push({
+                label: "Complete Exam Tracks",
+                status: completedTracks >= tracks.length && tracks.length > 0 ? "done" : completedTracks > 0 ? "active" : "upcoming",
+                detail: tracks.length > 0 ? `${completedTracks}/${tracks.length} tracks completed` : "No tracks enrolled yet",
+                href: "/learning/search",
+              });
+
+              // Step 3: Maintain licenses
+              planItems.push({
+                label: "Maintain Licenses",
+                status: activeLicenses > 0 && expiringSoon === 0 ? "done" : activeLicenses > 0 ? "active" : "upcoming",
+                detail: activeLicenses > 0 ? `${activeLicenses} active${expiringSoon > 0 ? `, ${expiringSoon} expiring soon` : ""}` : "Add your first license",
+                href: "/learning/licenses",
+              });
+
+              // Step 4: Build study streak
+              planItems.push({
+                label: "Build Study Habit",
+                status: streak.current >= 7 ? "done" : streak.current > 0 ? "active" : "upcoming",
+                detail: streak.current > 0 ? `${streak.current}-day streak (longest: ${streak.longest})` : "Start a daily study streak",
+                href: "/learning/review",
+              });
+
+              return (
+                <div className="space-y-2">
+                  {planItems.map((item, idx) => (
+                    <Link key={idx} href={item.href}>
+                      <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors hover:bg-accent/5 ${
+                        item.status === "done" ? "border-emerald-500/20 bg-emerald-500/5" :
+                        item.status === "active" ? "border-primary/20 bg-primary/5" :
+                        "border-border/40"
+                      }`}>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none ${
+                          item.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
+                          item.status === "active" ? "bg-primary/20 text-primary" :
+                          "bg-muted text-muted-foreground"
+                        }`}>
+                          {item.status === "done" ? "✓" : idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>{item.label}</p>
+                          <p className="text-[11px] text-muted-foreground">{item.detail}</p>
+                        </div>
+                        <Badge variant="outline" className={`text-[9px] h-5 ${
+                          item.status === "done" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                          item.status === "active" ? "bg-primary/10 text-primary border-primary/20" :
+                          ""
+                        }`}>
+                          {item.status === "done" ? "Complete" : item.status === "active" ? "In Progress" : "Upcoming"}
+                        </Badge>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+
         {/* Continue Studying — recently visited tracks */}
         {recentTracks.length > 0 && (
           <Card>

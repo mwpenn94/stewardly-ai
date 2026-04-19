@@ -141,12 +141,12 @@ describe("Phase 5 — Command Center Integration", () => {
     const appContent = readFileSync(join(CLIENT, "App.tsx"), "utf-8");
 
     it("has Email Campaigns nav item in PeopleHub", () => {
-      expect(peopleHubContent).toContain("Email Campaigns");
+      // Pass 131: label shortened to "Campaigns" but slug is still "email-campaigns"
       expect(peopleHubContent).toContain("email-campaigns");
     });
 
     it("has Marketing Assets nav item in PeopleHub", () => {
-      expect(peopleHubContent).toContain("Marketing Assets");
+      // Pass 131: label shortened to "Assets" but slug is still "marketing-assets"
       expect(peopleHubContent).toContain("marketing-assets");
     });
 
