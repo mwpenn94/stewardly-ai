@@ -1,15 +1,13 @@
 /**
- * EMBA Learning — Learning Home dashboard (Task 4B + 6D).
+ * Learning Engine — Restructured into workflow tabs with progressive disclosure.
  *
- * Primary entry point for the Learning & Licensing section. Shows:
- *   - Mastery snapshot (overall pct, due now, streak)
- *   - License tracker summary (active, expiring)
- *   - Personalized study recommendations
- *   - Quick links to exam tracks, AI Quiz, Content Studio (advisor+)
+ * Tab structure:
+ *   Overview  — KPIs + Learning Plan + Recommendations (what you see first)
+ *   Study     — Exam tracks + Study tools (the doing)
+ *   Reference — Deep dive, case studies, concept map, study buddy (the learning)
+ *   Manage    — Licenses, achievements, content studio, regulatory (the tracking)
  *
- * The dashboard is role-aware: users see recommendations, advisors
- * additionally see the Content Studio entry, admins see the
- * regulatory review queue.
+ * All existing functionality preserved, just reorganized into a coherent workflow.
  */
 
 import { useEffect, useState, type ReactNode } from "react";
@@ -20,8 +18,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award, ClipboardCheck, Scale, Flame, Search, ChevronDown, AlertTriangle, Layers, HelpCircle, Users, RotateCcw } from "lucide-react";
-import { Link } from "wouter";
+import {
+  BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award,
+  ClipboardCheck, Scale, Flame, Search, ChevronDown, AlertTriangle, Layers,
+  HelpCircle, Users, RotateCcw, Settings, FolderOpen, Home, ChevronRight,
+} from "lucide-react";
+import { Link, useLocation } from "wouter";
 import {
   loadStreakFromStorage,
   summarizeStreak,
@@ -35,10 +37,24 @@ import {
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
+/* ─── Tab definitions ─── */
+type LearningTab = "overview" | "study" | "reference" | "manage";
+
+const TABS: { id: LearningTab; label: string; icon: React.ElementType; description: string }[] = [
+  { id: "overview", label: "Overview", icon: Home, description: "Progress & plan" },
+  { id: "study", label: "Study", icon: BookOpen, description: "Tracks & practice" },
+  { id: "reference", label: "Reference", icon: Brain, description: "Deep learning" },
+  { id: "manage", label: "Manage", icon: Settings, description: "Licenses & admin" },
+];
+
 export default function LearningHome() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
 
-  // All hooks MUST be called before any conditional returns (React rules of hooks)
+  // Tab state
+  const [activeTab, setActiveTab] = useState<LearningTab>("overview");
+
+  // All hooks MUST be called before any conditional returns
   const meQ = trpc.auth.me.useQuery(undefined, { enabled: !!isAuthenticated });
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
   const licensesQ = trpc.learning.licenses.list.useQuery(undefined, { enabled: !!isAuthenticated });
@@ -47,10 +63,7 @@ export default function LearningHome() {
   const tracksQ = trpc.learning.content.listTracks.useQuery(undefined, { enabled: !!isAuthenticated });
 
   const [streak, setStreak] = useState<StreakSummary>({
-    current: 0,
-    longest: 0,
-    lastDay: null,
-    status: "none",
+    current: 0, longest: 0, lastDay: null, status: "none",
   });
   const [recentTracks, setRecentTracks] = useState<RecentTrack[]>([]);
   useEffect(() => {
@@ -64,7 +77,6 @@ export default function LearningHome() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  // Conditional returns AFTER all hooks
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -92,492 +104,578 @@ export default function LearningHome() {
   const tracks = tracksQ.data ?? [];
 
   const hasError = summaryQ.isError || licensesQ.isError || tracksQ.isError;
-
   const activeLicenses = licenses.filter((l: any) => l.status === "active").length;
   const expiringSoon = alerts.filter((a: any) => a.alertType === "expiration_warning").length;
 
   return (
     <AppShell title="Learning">
       <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
-      <div className="mx-auto max-w-6xl p-6 space-y-6">
+      <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">
+
+        {/* ─── HEADER ─── */}
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2">
-              <GraduationCap className="h-8 w-8 text-accent" />
-              Learning &amp; Licensing
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
+              <GraduationCap className="h-7 w-7 text-accent" />
+              Learning Engine
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              Track your progress across {tracks.length} exam tracks and {licenses.length} licenses.
+              {tracks.length} tracks · {activeLicenses} licenses · {summary?.masteryPct ?? 0}% mastery
             </p>
           </div>
           <div className="flex gap-2">
             <Link href="/learning/search">
-              <Button variant="outline" size="sm">
-                <Search className="h-4 w-4 mr-2" />
-                Search
-              </Button>
-            </Link>
-            <Link href="/learning/licenses">
-              <Button variant="outline" size="sm">
-                <Shield className="h-4 w-4 mr-2" />
-                License Tracker
-              </Button>
+              <Button variant="outline" size="sm"><Search className="h-4 w-4 mr-1.5" />Search</Button>
             </Link>
             {isAdvisorPlus && (
               <Link href="/learning/studio">
-                <Button size="sm">
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Content Studio
-                </Button>
+                <Button size="sm"><Sparkles className="h-4 w-4 mr-1.5" />Studio</Button>
               </Link>
             )}
           </div>
         </header>
 
-        {/* Error banner for failed queries */}
+        {/* Error banner */}
         {hasError && (
           <Card className="border-destructive/30 bg-destructive/5">
             <CardContent className="py-3 flex items-center gap-2 text-sm">
               <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
               <span className="text-foreground/90">Some data failed to load.</span>
-              <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => { summaryQ.refetch(); licensesQ.refetch(); tracksQ.refetch(); }}>
-                Retry
-              </Button>
+              <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => { summaryQ.refetch(); licensesQ.refetch(); tracksQ.refetch(); }}>Retry</Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Snapshot row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Mastery</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold">{summary?.masteryPct ?? 0}%</div>
-              <Progress value={summary?.masteryPct ?? 0} className="mt-2" />
-              <div className="text-xs text-muted-foreground mt-2">
-                {summary?.mastered ?? 0} mastered / {summary?.total ?? 0} tracked
-              </div>
-            </CardContent>
-          </Card>
-
-          <StreakCard streak={streak} />
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Due Now</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold">{summary?.dueNow ?? 0}</div>
-              <div className="text-xs text-muted-foreground mt-2">
-                items ready for review across all tracks
-              </div>
-              <Link href="/learning/review">
-                <Button
-                  variant={summary?.dueNow ? "default" : "link"}
-                  size="sm"
-                  className={summary?.dueNow ? "mt-2" : "px-0 mt-1"}
-                >
-                  {summary?.dueNow ? (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" /> Start review session
-                    </>
-                  ) : (
-                    <>Browse review →</>
-                  )}
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide">Licenses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold">{activeLicenses}</div>
-              <div className="text-xs text-muted-foreground mt-2">
-                {expiringSoon > 0 ? (
-                  <span className="text-amber-600 dark:text-amber-400">{expiringSoon} expiring soon</span>
-                ) : (
-                  "all healthy"
-                )}
-              </div>
-              <Link href="/learning/licenses">
-                <Button variant="link" size="sm" className="px-0 mt-1">
-                  View tracker →
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+        {/* ─── TAB BAR ─── */}
+        <div className="flex gap-1 p-1 bg-card rounded-lg border border-border overflow-x-auto" role="tablist">
+          {TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                  isActive
+                    ? "bg-primary/10 text-primary border border-primary/30"
+                    : "text-muted-foreground hover:bg-background hover:text-foreground border border-transparent"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+                <span className="hidden sm:inline text-[10px] text-muted-foreground/60">{tab.description}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* My Learning Plan — structured path with goal-setting */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <TrendingUp className="h-5 w-5" />
-              My Learning Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {(() => {
-              // Compute a learning plan from tracks, mastery, and licenses
-              const planItems: { label: string; status: "done" | "active" | "upcoming"; detail: string; href: string }[] = [];
-
-              // Step 1: Core mastery
-              const masteryPct = summary?.masteryPct ?? 0;
-              planItems.push({
-                label: "Build Core Mastery",
-                status: masteryPct >= 80 ? "done" : masteryPct > 0 ? "active" : "upcoming",
-                detail: masteryPct >= 80 ? `${masteryPct}% mastered` : masteryPct > 0 ? `${masteryPct}% — review ${summary?.dueNow ?? 0} due items` : "Start with flashcard review",
-                href: "/learning/review",
-              });
-
-              // Step 2: Complete exam tracks
-              const completedTracks = tracks.filter((t: any) => t.completionPct >= 100).length;
-              planItems.push({
-                label: "Complete Exam Tracks",
-                status: completedTracks >= tracks.length && tracks.length > 0 ? "done" : completedTracks > 0 ? "active" : "upcoming",
-                detail: tracks.length > 0 ? `${completedTracks}/${tracks.length} tracks completed` : "No tracks enrolled yet",
-                href: "/learning/search",
-              });
-
-              // Step 3: Maintain licenses
-              planItems.push({
-                label: "Maintain Licenses",
-                status: activeLicenses > 0 && expiringSoon === 0 ? "done" : activeLicenses > 0 ? "active" : "upcoming",
-                detail: activeLicenses > 0 ? `${activeLicenses} active${expiringSoon > 0 ? `, ${expiringSoon} expiring soon` : ""}` : "Add your first license",
-                href: "/learning/licenses",
-              });
-
-              // Step 4: Build study streak
-              planItems.push({
-                label: "Build Study Habit",
-                status: streak.current >= 7 ? "done" : streak.current > 0 ? "active" : "upcoming",
-                detail: streak.current > 0 ? `${streak.current}-day streak (longest: ${streak.longest})` : "Start a daily study streak",
-                href: "/learning/review",
-              });
-
-              return (
-                <div className="space-y-2">
-                  {planItems.map((item, idx) => (
-                    <Link key={idx} href={item.href}>
-                      <div className={`flex items-center gap-3 p-3 rounded-lg border transition-colors hover:bg-accent/5 ${
-                        item.status === "done" ? "border-emerald-500/20 bg-emerald-500/5" :
-                        item.status === "active" ? "border-primary/20 bg-primary/5" :
-                        "border-border/40"
-                      }`}>
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-none ${
-                          item.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
-                          item.status === "active" ? "bg-primary/20 text-primary" :
-                          "bg-muted text-muted-foreground"
-                        }`}>
-                          {item.status === "done" ? "✓" : idx + 1}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>{item.label}</p>
-                          <p className="text-[11px] text-muted-foreground">{item.detail}</p>
-                        </div>
-                        <Badge variant="outline" className={`text-[9px] h-5 ${
-                          item.status === "done" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
-                          item.status === "active" ? "bg-primary/10 text-primary border-primary/20" :
-                          ""
-                        }`}>
-                          {item.status === "done" ? "Complete" : item.status === "active" ? "In Progress" : "Upcoming"}
-                        </Badge>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              );
-            })()}
-          </CardContent>
-        </Card>
-
-        {/* Continue Studying — recently visited tracks */}
-        {recentTracks.length > 0 && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <BookOpen className="h-5 w-5" />
-                Continue Studying
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-3 overflow-x-auto pb-2">
-                {recentTracks.map((rt) => {
-                  const age = Math.round((Date.now() - rt.lastVisited) / 60000);
-                  const ageStr = age < 60 ? `${age}m ago` : age < 1440 ? `${Math.round(age / 60)}h ago` : `${Math.round(age / 1440)}d ago`;
-                  return (
-                    <Link key={rt.slug} href={`/learning/tracks/${rt.slug}`}>
-                      <Card className="card-lift cursor-pointer min-w-[160px] flex-shrink-0">
-                        <CardContent className="p-3">
-                          <div className="text-2xl">{rt.emoji}</div>
-                          <div className="font-medium text-sm mt-1 line-clamp-1">{rt.name}</div>
-                          <div className="text-[10px] text-muted-foreground mt-1">{ageStr}</div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Agent recommendations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5" />
-              Agent Recommendations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recs.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                You're all caught up. The agent will surface recommendations here as your mastery,
-                calculator usage, and licensure state evolve.
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {recs.map((r, idx) => (
-                  <li key={idx} className="flex items-start gap-3 p-3 rounded-md border">
-                    <Badge variant="outline">P{r.priority}</Badge>
-                    <div className="flex-1">
-                      <div className="font-medium">{r.reason}</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {r.action}
-                        {r.estimatedMinutes ? ` · ${r.estimatedMinutes} min` : ""}
-                        {r.trackSlug ? ` · track: ${r.trackSlug}` : ""}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Exam tracks grid */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Exam Tracks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {tracksQ.isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {[1,2,3,4].map(i => (
-                  <div key={i} className="h-32 rounded-lg bg-card/50 animate-pulse" />
-                ))}
-              </div>
-            ) : tracks.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No tracks seeded yet. {isAdmin && "Run the admin seed from the Learning Studio."}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {tracks.map((t: any) => (
-                  <Link key={t.id} href={`/learning/tracks/${t.slug}`}>
-                    <Card className="card-lift cursor-pointer h-full">
-                      <CardContent className="p-4">
-                        <div className="text-2xl">{t.emoji ?? "📘"}</div>
-                        <div className="font-semibold mt-2">{t.name}</div>
-                        <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                          {t.subtitle ?? t.description ?? ""}
-                        </div>
-                        <Badge variant="outline" className="mt-2 text-[10px]">
-                          {t.category}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Study Tools — consolidated, no duplicates */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" />
-              Study Tools
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {/* Core study tools */}
-              {tracks.length > 0 && (
-                <ToolCardWithTrackPicker
-                  icon={<ClipboardCheck className="h-6 w-6 text-primary" />}
-                  title="Practice Exam"
-                  description="Timed, adaptive, or audio mode"
-                  tracks={tracks}
-                  buildHref={(slug) => `/learning/exam/${slug}`}
-                />
-              )}
-              {tracks.length > 0 && (
-                <ToolCardWithTrackPicker
-                  icon={<Layers className="h-6 w-6 text-primary" />}
-                  title="Flashcards"
-                  description="Spaced repetition study cards"
-                  tracks={tracks}
-                  buildHref={(slug) => `/learning/tracks/${slug}/study`}
-                />
-              )}
-              {tracks.length > 0 && (
-                <ToolCardWithTrackPicker
-                  icon={<HelpCircle className="h-6 w-6 text-primary" />}
-                  title="Quiz"
-                  description="Test your knowledge per track"
-                  tracks={tracks}
-                  buildHref={(slug) => `/learning/tracks/${slug}/quiz`}
-                />
-              )}
-              <Link href="/learning/review">
-                <Card className="card-lift cursor-pointer h-full">
-                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                    <RotateCcw className="h-6 w-6 text-primary" />
-                    <div className="text-sm font-medium">Due Review</div>
-                    <div className="text-[10px] text-muted-foreground">Spaced repetition items due</div>
-                  </CardContent>
-                </Card>
-              </Link>
-              {/* Deep learning tools */}
-              {tracks.length > 0 && (
-                <ToolCardWithTrackPicker
-                  icon={<BookOpen className="h-6 w-6 text-primary" />}
-                  title="Deep Dive"
-                  description="Definitions, formulas, cases"
-                  tracks={tracks}
-                  buildHref={(slug) => `/learning/discipline/${slug}`}
-                />
-              )}
-              {tracks.length > 0 && (
-                <ToolCardWithTrackPicker
-                  icon={<Scale className="h-6 w-6 text-primary" />}
-                  title="Case Studies"
-                  description="Branching scenario decisions"
-                  tracks={tracks}
-                  buildHref={(slug) => `/learning/case/${slug}`}
-                />
-              )}
-              <Link href="/learning/connections">
-                <Card className="card-lift cursor-pointer h-full">
-                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                    <Brain className="h-6 w-6 text-primary" />
-                    <div className="text-sm font-medium">Concept Map</div>
-                    <div className="text-[10px] text-muted-foreground">Visual concept graph</div>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="/learning/study-buddy">
-                <Card className="card-lift cursor-pointer h-full">
-                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                    <Users className="h-6 w-6 text-primary" />
-                    <div className="text-sm font-medium">Study Buddy</div>
-                    <div className="text-[10px] text-muted-foreground">AI-powered study partner</div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Achievements — separated from tools for clarity */}
-        <div className="flex gap-3">
-          <Link href="/learning/achievements" className="flex-1">
-            <Card className="card-lift cursor-pointer h-full">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Award className="h-5 w-5 text-accent" />
-                <div>
-                  <div className="text-sm font-medium">Achievements</div>
-                  <div className="text-[10px] text-muted-foreground">Streaks, goals, milestones</div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+        {/* ─── TAB CONTENT ─── */}
+        <div className="space-y-4" role="tabpanel">
+          {activeTab === "overview" && (
+            <OverviewTab
+              summary={summary}
+              streak={streak}
+              activeLicenses={activeLicenses}
+              expiringSoon={expiringSoon}
+              recs={recs}
+              tracks={tracks}
+              recentTracks={recentTracks}
+            />
+          )}
+          {activeTab === "study" && (
+            <StudyTab tracks={tracks} tracksLoading={tracksQ.isLoading} isAdmin={isAdmin} recentTracks={recentTracks} summary={summary} />
+          )}
+          {activeTab === "reference" && (
+            <ReferenceTab tracks={tracks} />
+          )}
+          {activeTab === "manage" && (
+            <ManageTab
+              activeLicenses={activeLicenses}
+              expiringSoon={expiringSoon}
+              isAdvisorPlus={isAdvisorPlus}
+              isAdmin={isAdmin}
+            />
+          )}
         </div>
-
-        {/* Admin: regulatory review queue link */}
-        {isAdmin && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Regulatory Pipeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Link href="/learning/studio/review">
-                <Button variant="outline" size="sm">
-                  Review pending regulatory updates
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </AppShell>
   );
 }
 
-// ─── Pass 7 (build loop) — Study streak card ──────────────────────────────
-//
-// Reads from the pure `studyStreak` module's localStorage snapshot.
-// Tone shifts to amber when the streak is "at risk" (user studied
-// yesterday but not yet today) and muted when broken. The CLAUDE.md
-// docstring has promised a streak since pass 58 — this is the UI.
+/* ═══════════════════════════════════════════════════════════════════════════
+   OVERVIEW TAB — KPIs + Learning Plan + Recommendations + Continue Studying
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-function StreakCard({ streak }: { streak: StreakSummary }) {
-  const isActive = streak.status === "active";
-  const isAtRisk = streak.status === "at-risk";
-  const isNone = streak.status === "none";
-  const isBroken = streak.status === "broken";
+function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, tracks, recentTracks }: {
+  summary: any;
+  streak: StreakSummary;
+  activeLicenses: number;
+  expiringSoon: number;
+  recs: any[];
+  tracks: any[];
+  recentTracks: RecentTrack[];
+}) {
+  return (
+    <div className="space-y-4">
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KPICard
+          label="Mastery"
+          value={`${summary?.masteryPct ?? 0}%`}
+          detail={`${summary?.mastered ?? 0} mastered / ${summary?.total ?? 0} tracked`}
+          progress={summary?.masteryPct ?? 0}
+        />
+        <StreakCard streak={streak} />
+        <KPICard
+          label="Due Now"
+          value={String(summary?.dueNow ?? 0)}
+          detail="items ready for review"
+          action={summary?.dueNow ? { label: "Start review", href: "/learning/review" } : undefined}
+        />
+        <KPICard
+          label="Licenses"
+          value={String(activeLicenses)}
+          detail={expiringSoon > 0 ? `${expiringSoon} expiring soon` : "all healthy"}
+          detailWarning={expiringSoon > 0}
+          action={{ label: "View tracker", href: "/learning/licenses" }}
+        />
+      </div>
 
-  const tone = isActive
-    ? "text-accent"
-    : isAtRisk
-      ? "text-amber-600 dark:text-amber-400"
-      : "text-muted-foreground";
+      {/* Learning Plan */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <TrendingUp className="h-5 w-5" />
+            My Learning Plan
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LearningPlanSteps summary={summary} tracks={tracks} activeLicenses={activeLicenses} expiringSoon={expiringSoon} streak={streak} />
+        </CardContent>
+      </Card>
 
-  const label = isNone
-    ? "Start a streak"
-    : isActive
-      ? "day streak"
-      : isAtRisk
-        ? "day streak — study today to keep it"
-        : "day streak — last session";
+      {/* Continue Studying */}
+      {recentTracks.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BookOpen className="h-5 w-5" />
+              Continue Studying
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {recentTracks.map((rt) => {
+                const age = Math.round((Date.now() - rt.lastVisited) / 60000);
+                const ageStr = age < 60 ? `${age}m ago` : age < 1440 ? `${Math.round(age / 60)}h ago` : `${Math.round(age / 1440)}d ago`;
+                return (
+                  <Link key={rt.slug} href={`/learning/tracks/${rt.slug}`}>
+                    <Card className="card-lift cursor-pointer min-w-[140px] flex-shrink-0">
+                      <CardContent className="p-3">
+                        <div className="text-2xl">{rt.emoji}</div>
+                        <div className="font-medium text-sm mt-1 line-clamp-1">{rt.name}</div>
+                        <div className="text-[10px] text-muted-foreground mt-1">{ageStr}</div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
+      {/* Recommendations */}
+      {recs.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Sparkles className="h-5 w-5" />
+              Recommendations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {recs.map((r, idx) => (
+                <li key={idx} className="flex items-start gap-3 p-3 rounded-md border">
+                  <Badge variant="outline" className="text-[10px]">P{r.priority}</Badge>
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{r.reason}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {r.action}{r.estimatedMinutes ? ` · ${r.estimatedMinutes} min` : ""}{r.trackSlug ? ` · ${r.trackSlug}` : ""}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STUDY TAB — Exam tracks + Study tools (the doing)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary }: {
+  tracks: any[];
+  tracksLoading: boolean;
+  isAdmin: boolean;
+  recentTracks: RecentTrack[];
+  summary: any;
+}) {
+  return (
+    <div className="space-y-4">
+      {/* Quick actions bar */}
+      <div className="flex flex-wrap gap-2">
+        {summary?.dueNow > 0 && (
+          <Link href="/learning/review">
+            <Button size="sm" className="gap-1.5">
+              <RotateCcw className="h-3.5 w-3.5" />
+              Review {summary.dueNow} due items
+            </Button>
+          </Link>
+        )}
+        <Link href="/learning/search">
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <Search className="h-3.5 w-3.5" />
+            Find tracks
+          </Button>
+        </Link>
+      </div>
+
+      {/* Continue studying — recent tracks */}
+      {recentTracks.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Continue Where You Left Off</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {recentTracks.map((rt) => {
+                const age = Math.round((Date.now() - rt.lastVisited) / 60000);
+                const ageStr = age < 60 ? `${age}m ago` : age < 1440 ? `${Math.round(age / 60)}h ago` : `${Math.round(age / 1440)}d ago`;
+                return (
+                  <Link key={rt.slug} href={`/learning/tracks/${rt.slug}`}>
+                    <Card className="card-lift cursor-pointer min-w-[130px] flex-shrink-0">
+                      <CardContent className="p-3">
+                        <div className="text-xl">{rt.emoji}</div>
+                        <div className="font-medium text-xs mt-1 line-clamp-1">{rt.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{ageStr}</div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Exam Tracks Grid */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BookOpen className="h-5 w-5" />
+            Exam Tracks
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {tracksLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {[1,2,3,4].map(i => <div key={i} className="h-28 rounded-lg bg-card/50 animate-pulse" />)}
+            </div>
+          ) : tracks.length === 0 ? (
+            <div className="text-sm text-muted-foreground">
+              No tracks available yet.{isAdmin && " Run the admin seed from the Learning Studio."}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {tracks.map((t: any) => (
+                <Link key={t.id} href={`/learning/tracks/${t.slug}`}>
+                  <Card className="card-lift cursor-pointer h-full">
+                    <CardContent className="p-3">
+                      <div className="text-xl">{t.emoji ?? "📘"}</div>
+                      <div className="font-semibold text-sm mt-1.5">{t.name}</div>
+                      <div className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{t.subtitle ?? t.description ?? ""}</div>
+                      <Badge variant="outline" className="mt-2 text-[9px]">{t.category}</Badge>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Study Tools */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <GraduationCap className="h-5 w-5" />
+            Study Tools
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {tracks.length > 0 && (
+              <ToolCardWithTrackPicker icon={<ClipboardCheck className="h-5 w-5 text-primary" />} title="Practice Exam" description="Timed, adaptive, or audio" tracks={tracks} buildHref={(slug) => `/learning/exam/${slug}`} />
+            )}
+            {tracks.length > 0 && (
+              <ToolCardWithTrackPicker icon={<Layers className="h-5 w-5 text-primary" />} title="Flashcards" description="Spaced repetition cards" tracks={tracks} buildHref={(slug) => `/learning/tracks/${slug}/study`} />
+            )}
+            {tracks.length > 0 && (
+              <ToolCardWithTrackPicker icon={<HelpCircle className="h-5 w-5 text-primary" />} title="Quiz" description="Test your knowledge" tracks={tracks} buildHref={(slug) => `/learning/tracks/${slug}/quiz`} />
+            )}
+            <Link href="/learning/review">
+              <Card className="card-lift cursor-pointer h-full">
+                <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
+                  <RotateCcw className="h-5 w-5 text-primary" />
+                  <div className="text-sm font-medium">Due Review</div>
+                  <div className="text-[10px] text-muted-foreground">Spaced repetition</div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   REFERENCE TAB — Deep learning tools (concept exploration)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function ReferenceTab({ tracks }: { tracks: any[] }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Deep Dive */}
+        {tracks.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BookOpen className="h-5 w-5" />
+                Deep Dive
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">Explore definitions, formulas, and detailed explanations by track.</p>
+              <div className="space-y-1">
+                {tracks.slice(0, 6).map((t: any) => (
+                  <Link key={t.slug} href={`/learning/discipline/${t.slug}`}>
+                    <button className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent/10 transition-colors flex items-center gap-2">
+                      <span>{t.emoji ?? "📘"}</span>
+                      <span>{t.name}</span>
+                    </button>
+                  </Link>
+                ))}
+                {tracks.length > 6 && (
+                  <Link href="/learning/search">
+                    <button className="w-full text-left px-3 py-2 rounded-md text-xs text-muted-foreground hover:bg-accent/10 transition-colors">
+                      View all {tracks.length} tracks →
+                    </button>
+                  </Link>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Case Studies */}
+        {tracks.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Scale className="h-5 w-5" />
+                Case Studies
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">Branching scenario decisions to test applied knowledge.</p>
+              <div className="space-y-1">
+                {tracks.slice(0, 6).map((t: any) => (
+                  <Link key={t.slug} href={`/learning/case/${t.slug}`}>
+                    <button className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-accent/10 transition-colors flex items-center gap-2">
+                      <span>{t.emoji ?? "📘"}</span>
+                      <span>{t.name}</span>
+                    </button>
+                  </Link>
+                ))}
+                {tracks.length > 6 && (
+                  <Link href="/learning/search">
+                    <button className="w-full text-left px-3 py-2 rounded-md text-xs text-muted-foreground hover:bg-accent/10 transition-colors">
+                      View all {tracks.length} tracks →
+                    </button>
+                  </Link>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Concept Map */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Brain className="h-5 w-5" />
+              Concept Map
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Visual graph of interconnected concepts across all tracks.</p>
+            <Link href="/learning/connections">
+              <Button variant="outline" size="sm">Open Concept Map →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Study Buddy */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-5 w-5" />
+              Study Buddy
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">AI-powered study partner for interactive learning sessions.</p>
+            <Link href="/learning/study-buddy">
+              <Button variant="outline" size="sm">Start Session →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MANAGE TAB — Licenses, achievements, content studio, regulatory
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function ManageTab({ activeLicenses, expiringSoon, isAdvisorPlus, isAdmin }: {
+  activeLicenses: number;
+  expiringSoon: number;
+  isAdvisorPlus: boolean;
+  isAdmin: boolean;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* License Tracker */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Shield className="h-5 w-5" />
+              License Tracker
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4 mb-3">
+              <div>
+                <div className="text-2xl font-semibold">{activeLicenses}</div>
+                <div className="text-xs text-muted-foreground">active licenses</div>
+              </div>
+              {expiringSoon > 0 && (
+                <Badge variant="outline" className="text-amber-600 border-amber-600/30 bg-amber-600/5">
+                  {expiringSoon} expiring soon
+                </Badge>
+              )}
+            </div>
+            <Link href="/learning/licenses">
+              <Button variant="outline" size="sm">Manage Licenses →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Achievements */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Award className="h-5 w-5" />
+              Achievements
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Streaks, goals, and milestones earned through study.</p>
+            <Link href="/learning/achievements">
+              <Button variant="outline" size="sm">View Achievements →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Content Studio (advisor+) */}
+        {isAdvisorPlus && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Sparkles className="h-5 w-5" />
+                Content Studio
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">Create and manage learning content for your team.</p>
+              <Link href="/learning/studio">
+                <Button variant="outline" size="sm">Open Studio →</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Regulatory Pipeline (admin) */}
+        {isAdmin && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="h-5 w-5" />
+                Regulatory Pipeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">Review pending regulatory updates and compliance items.</p>
+              <Link href="/learning/studio/review">
+                <Button variant="outline" size="sm">Review Queue →</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function KPICard({ label, value, detail, detailWarning, progress, action }: {
+  label: string;
+  value: string;
+  detail: string;
+  detailWarning?: boolean;
+  progress?: number;
+  action?: { label: string; href: string };
+}) {
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-          <Flame className={`h-4 w-4 ${tone}`} aria-hidden />
-          Streak
-        </CardTitle>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-[11px] text-muted-foreground uppercase tracking-wide">{label}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className={`text-3xl font-semibold ${tone}`}>{streak.current}</div>
-        <div className="text-xs text-muted-foreground mt-2">{label}</div>
-        {streak.longest > 0 && (
-          <div className="text-[11px] text-muted-foreground mt-1">
-            longest {streak.longest}
-            {streak.lastDay && isBroken && ` · last ${streak.lastDay}`}
-          </div>
-        )}
-        {isAtRisk && (
-          <Link href="/learning/review">
-            <Button variant="link" size="sm" className="px-0 mt-1 text-amber-600">
-              Save your streak →
-            </Button>
+        <div className="text-2xl font-semibold">{value}</div>
+        {progress !== undefined && <Progress value={progress} className="mt-1.5 h-1.5" />}
+        <div className={`text-[11px] mt-1.5 ${detailWarning ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>
+          {detail}
+        </div>
+        {action && (
+          <Link href={action.href}>
+            <Button variant="link" size="sm" className="px-0 mt-0.5 h-auto text-xs">{action.label} →</Button>
           </Link>
         )}
       </CardContent>
@@ -585,10 +683,106 @@ function StreakCard({ streak }: { streak: StreakSummary }) {
   );
 }
 
-/** Learning tool card with an inline track picker — replaces the old hardcoded
- *  first-track-only links so users can access exams, deep dives, and case
- *  studies for ANY imported track. Tapping the card opens a track list;
- *  tapping a track navigates to the tool for that track. */
+function StreakCard({ streak }: { streak: StreakSummary }) {
+  const isActive = streak.status === "active";
+  const isAtRisk = streak.status === "at-risk";
+  const isNone = streak.status === "none";
+  const isBroken = streak.status === "broken";
+
+  const tone = isActive ? "text-accent" : isAtRisk ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground";
+  const label = isNone ? "Start a streak" : isActive ? "day streak" : isAtRisk ? "study today to keep it" : "last session";
+
+  return (
+    <Card>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-[11px] text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+          <Flame className={`h-3.5 w-3.5 ${tone}`} />Streak
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className={`text-2xl font-semibold ${tone}`}>{streak.current}</div>
+        <div className="text-[11px] text-muted-foreground mt-1.5">{label}</div>
+        {streak.longest > 0 && (
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            longest {streak.longest}{streak.lastDay && isBroken && ` · last ${streak.lastDay}`}
+          </div>
+        )}
+        {isAtRisk && (
+          <Link href="/learning/review">
+            <Button variant="link" size="sm" className="px-0 mt-0.5 h-auto text-xs text-amber-600">Save streak →</Button>
+          </Link>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LearningPlanSteps({ summary, tracks, activeLicenses, expiringSoon, streak }: {
+  summary: any; tracks: any[]; activeLicenses: number; expiringSoon: number; streak: StreakSummary;
+}) {
+  const masteryPct = summary?.masteryPct ?? 0;
+  const completedTracks = tracks.filter((t: any) => t.completionPct >= 100).length;
+
+  const steps = [
+    {
+      label: "Build Core Mastery",
+      status: masteryPct >= 80 ? "done" as const : masteryPct > 0 ? "active" as const : "upcoming" as const,
+      detail: masteryPct >= 80 ? `${masteryPct}% mastered` : masteryPct > 0 ? `${masteryPct}% — review ${summary?.dueNow ?? 0} due items` : "Start with flashcard review",
+      href: "/learning/review",
+    },
+    {
+      label: "Complete Exam Tracks",
+      status: completedTracks >= tracks.length && tracks.length > 0 ? "done" as const : completedTracks > 0 ? "active" as const : "upcoming" as const,
+      detail: tracks.length > 0 ? `${completedTracks}/${tracks.length} tracks completed` : "No tracks enrolled yet",
+      href: "/learning/search",
+    },
+    {
+      label: "Maintain Licenses",
+      status: activeLicenses > 0 && expiringSoon === 0 ? "done" as const : activeLicenses > 0 ? "active" as const : "upcoming" as const,
+      detail: activeLicenses > 0 ? `${activeLicenses} active${expiringSoon > 0 ? `, ${expiringSoon} expiring soon` : ""}` : "Add your first license",
+      href: "/learning/licenses",
+    },
+    {
+      label: "Build Study Habit",
+      status: streak.current >= 7 ? "done" as const : streak.current > 0 ? "active" as const : "upcoming" as const,
+      detail: streak.current > 0 ? `${streak.current}-day streak (longest: ${streak.longest})` : "Start a daily study streak",
+      href: "/learning/review",
+    },
+  ];
+
+  return (
+    <div className="space-y-1.5">
+      {steps.map((item, idx) => (
+        <Link key={idx} href={item.href}>
+          <div className={`flex items-center gap-3 p-2.5 rounded-lg border transition-colors hover:bg-accent/5 ${
+            item.status === "done" ? "border-emerald-500/20 bg-emerald-500/5" :
+            item.status === "active" ? "border-primary/20 bg-primary/5" :
+            "border-border/40"
+          }`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-none ${
+              item.status === "done" ? "bg-emerald-500/20 text-emerald-500" :
+              item.status === "active" ? "bg-primary/20 text-primary" :
+              "bg-muted text-muted-foreground"
+            }`}>
+              {item.status === "done" ? "✓" : idx + 1}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>{item.label}</p>
+              <p className="text-[10px] text-muted-foreground">{item.detail}</p>
+            </div>
+            <Badge variant="outline" className={`text-[9px] h-5 ${
+              item.status === "done" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+              item.status === "active" ? "bg-primary/10 text-primary border-primary/20" : ""
+            }`}>
+              {item.status === "done" ? "Complete" : item.status === "active" ? "In Progress" : "Upcoming"}
+            </Badge>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 function ToolCardWithTrackPicker({ icon, title, description, tracks, buildHref }: {
   icon: ReactNode;
   title: string;
@@ -598,19 +792,18 @@ function ToolCardWithTrackPicker({ icon, title, description, tracks, buildHref }
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <Card className="card-lift cursor-pointer h-full" role="button" tabIndex={0} onClick={() => setOpen(!open)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => setOpen(!open))(); } }}>
-      <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+    <Card className="card-lift cursor-pointer h-full" role="button" tabIndex={0} onClick={() => setOpen(!open)} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(!open); } }}>
+      <CardContent className="p-3 flex flex-col items-center text-center gap-1.5">
         {icon}
         <div className="text-sm font-medium">{title}</div>
         <div className="text-[10px] text-muted-foreground">{description}</div>
-        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
         {open && (
-          <div className="w-full mt-1 space-y-1 text-left" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full mt-1 space-y-0.5 text-left" onClick={(e) => e.stopPropagation()}>
             {tracks.map(t => (
               <Link key={t.slug} href={buildHref(t.slug)}>
                 <button type="button" className="w-full text-left px-2 py-1.5 rounded-md text-xs hover:bg-secondary/60 transition-colors truncate">
-                  {t.emoji && <span className="mr-1">{t.emoji}</span>}
-                  {t.name}
+                  {t.emoji && <span className="mr-1">{t.emoji}</span>}{t.name}
                 </button>
               </Link>
             ))}

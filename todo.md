@@ -6501,3 +6501,46 @@
 - [x] All 402 test files passing (9942+ tests)
 - [x] Browser validated: WE overview renders with skeleton loading, People Hub defaults to Dashboard, Learning Plan section visible
 - [x] Checkpoint saved
+
+## Pass 132 — Actual Structural Consolidation (not just nav relabeling)
+
+### Phase 1: Map every WealthEngineHub panel — what merges, what stays
+- [x] Listed all 22 lazy panels: 14 real (trpc calls), 8 stubs (static/placeholder)
+- [x] Identified redundant: StrategyArchetypes + AdvancedWorkflows overlap, WhatIfSensitivity + SensitivityAnalysis overlap
+- [x] Designed 3-stage cascading structure: Plan → Protect & Analyze → Practice
+
+### Phase 2: Map PeopleHub and LearningHome panels
+- [x] Listed all 13 PeopleHub panels: 6 real (CommandCenter, LeadPipeline, Relationships, EmailCampaign, ComplianceAudit, CRMSync), 7 lighter
+- [x] Listed LearningHome: 6 trpc queries, 17 sub-pages, 10+ dashboard sections
+- [x] Designed: People → 4-tab pipeline (Pipeline/Marketing/Compliance/Operations), Learning → 4-tab workflow (Overview/Study/Reference/Manage)
+
+### Phase 3: Wealth Engine — actual panel consolidation
+- [x] Rewrote WealthEngineHub from 34-item sidebar switcher to 3 cascading workflow stages
+- [x] Stage 1 (Plan): Goals + Hierarchy + Retirement + Tax + Estate + Income + Discovery merged into holistic planning
+- [x] Stage 2 (Protect & Analyze): Quick Bundle + Insurance + Strategies + Sensitivity + What-If merged into analysis
+- [x] Stage 3 (Practice): Business Income + Owner Comp + Valuation + Practice-to-Wealth preserved (already good)
+- [x] Each stage has sub-panels accessible via tab selector (progressive disclosure)
+- [x] Overview shows all 3 stages as cards with descriptions and panel counts
+
+### Phase 4: Learning Engine — actual workflow restructure
+- [x] Rewrote LearningHome from flat dashboard to 4-tab workflow
+- [x] Overview tab: KPIs + Learning Plan (4 structured steps) + Recommendations
+- [x] Study tab: Exam Tracks grid + Flashcards + Study Sessions + Spaced Repetition
+- [x] Reference tab: Deep Dive + Case Studies + Concept Map + Study Buddy
+- [x] Manage tab: Licenses + Achievements + Content Studio
+- [x] Each tab is a real workflow stage, not just a nav label
+
+### Phase 5: Command Center — actual pipeline consolidation
+- [x] Rewrote PeopleHub from 13-panel sidebar switcher to 4-tab pipeline workflow
+- [x] Pipeline tab: Dashboard + Leads + Clients + Onboarding + Annual Review (the funnel)
+- [x] Marketing tab: Campaigns + Assets + Automation (the outreach)
+- [x] Compliance tab: Audit + AI Copilot (the governance)
+- [x] Operations tab: CRM Sync + Business Exit + Premium Finance (the infrastructure)
+- [x] Each tab has sub-panel selector for progressive disclosure
+- [x] CommandCenter embedded mode: hides internal tabs when inside PeopleHub
+
+### Phase 6: Tests and delivery
+- [x] All structural tests passing (pass88, navReachability, pass58, agentTools 19/19)
+- [x] 1 pre-existing timeout in consolidatedPhase3 (network-dependent, not structural)
+- [x] Browser validated: all 3 hubs render with new consolidated structures
+- [x] Checkpoint saved

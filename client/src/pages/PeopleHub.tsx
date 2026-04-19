@@ -1,21 +1,31 @@
 /**
- * PeopleHub — Hub page for all people/relationship/CRM features.
- * Uses the exact same sidebar pattern as the Wealth Engine (Calculators.tsx).
+ * Command Center — Restructured into workflow tabs with progressive disclosure.
+ *
+ * Tab structure:
+ *   Pipeline    — Dashboard overview + Leads + Clients + Onboarding + Annual Review (the funnel)
+ *   Marketing   — Campaigns + Assets + Automation (the outreach)
+ *   Compliance  — Audit + AI Copilot (the governance)
+ *   Operations  — CRM Sync + Business Exit + Premium Finance (the infrastructure)
+ *
+ * All existing functionality preserved via lazy-loaded panels, just reorganized
+ * into a coherent workflow instead of 13 separate sidebar items.
  */
 import { useState, useEffect, lazy, Suspense, useMemo } from "react";
 import { useRoute, useLocation } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { hasMinRole } from "@/lib/navigation";
 import {
   Loader2, Users, Target, RefreshCw, ShieldCheck, Mail, FolderOpen, Zap,
   LayoutGrid, UserPlus, FileText, Shield, ArrowRight, DollarSign,
-  PanelLeftClose, PanelLeftOpen, ChevronRight, Home,
+  ChevronRight, Home, ChevronDown,
 } from "lucide-react";
 
+/* ─── Lazy-loaded panels (all existing panels preserved) ─── */
 const Relationships = lazy(() => import("./RelationshipsHub"));
 const LeadPipeline = lazy(() => import("./LeadPipeline"));
 const CRMSync = lazy(() => import("./CRMSync"));
@@ -30,191 +40,206 @@ const AnnualReview = lazy(() => import("./AnnualReview"));
 const BusinessExit = lazy(() => import("./BusinessExit"));
 const PremiumFinanceRates = lazy(() => import("./PremiumFinanceRates"));
 
-type PeopleTab =
-  | "relationships" | "leads" | "crm-sync" | "compliance" | "compliance-copilot"
-  | "email-campaigns" | "marketing-assets" | "outreach" | "command-center"
-  | "client-onboarding" | "annual-review" | "business-exit" | "premium-finance";
+/* ─── Tab definitions ─── */
+type HubTab = "pipeline" | "marketing" | "compliance" | "operations";
 
-interface NavItem { id: PeopleTab; label: string; icon: React.ElementType; minRole: "user"|"advisor"|"manager"|"admin"; slug: string; }
-interface NavSection { group: string; items: NavItem[]; }
+interface SubPanel {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  minRole: "user" | "advisor" | "manager" | "admin";
+}
 
-/**
- * Pass 130: Consolidated from 4 groups to 3 streamlined groups.
- *
- * - Clients: CRM, leads, onboarding, annual review (core relationship management)
- * - Marketing & Outreach: Command center, campaigns, assets, automation
- * - Operations: Compliance, CRM sync, business exit, premium finance
- */
-const NAV_SECTIONS: NavSection[] = [
-  { group: "Overview", items: [
-    { id: "command-center", label: "Dashboard", icon: LayoutGrid, minRole: "user", slug: "command-center" },
-  ]},
-  { group: "Pipeline", items: [
-    { id: "leads", label: "Lead Pipeline", icon: Target, minRole: "advisor", slug: "leads" },
-    { id: "relationships", label: "Clients", icon: Users, minRole: "user", slug: "clients" },
-    { id: "client-onboarding", label: "Onboarding", icon: UserPlus, minRole: "user", slug: "onboarding" },
-    { id: "annual-review", label: "Annual Review", icon: FileText, minRole: "advisor", slug: "annual-review" },
-  ]},
-  { group: "Marketing", items: [
-    { id: "email-campaigns", label: "Campaigns", icon: Mail, minRole: "advisor", slug: "email-campaigns" },
-    { id: "marketing-assets", label: "Assets", icon: FolderOpen, minRole: "advisor", slug: "marketing-assets" },
-    { id: "outreach", label: "Automation", icon: Zap, minRole: "advisor", slug: "outreach" },
-  ]},
-  { group: "Operations", items: [
-    { id: "compliance", label: "Compliance", icon: ShieldCheck, minRole: "advisor", slug: "compliance" },
-    { id: "compliance-copilot", label: "Compliance AI", icon: Shield, minRole: "advisor", slug: "compliance-copilot" },
-    { id: "crm-sync", label: "CRM Sync", icon: RefreshCw, minRole: "advisor", slug: "crm-sync" },
-    { id: "business-exit", label: "Business Exit", icon: ArrowRight, minRole: "advisor", slug: "business-exit" },
-    { id: "premium-finance", label: "Premium Finance", icon: DollarSign, minRole: "advisor", slug: "premium-finance" },
-  ]},
+interface TabDef {
+  id: HubTab;
+  label: string;
+  icon: React.ElementType;
+  description: string;
+  panels: SubPanel[];
+}
+
+const TAB_DEFS: TabDef[] = [
+  {
+    id: "pipeline",
+    label: "Pipeline",
+    icon: Target,
+    description: "Leads → Clients → Growth",
+    panels: [
+      { id: "command-center", label: "Dashboard", icon: LayoutGrid, minRole: "user" },
+      { id: "leads", label: "Lead Pipeline", icon: Target, minRole: "advisor" },
+      { id: "relationships", label: "Clients", icon: Users, minRole: "user" },
+      { id: "client-onboarding", label: "Onboarding", icon: UserPlus, minRole: "user" },
+      { id: "annual-review", label: "Annual Review", icon: FileText, minRole: "advisor" },
+    ],
+  },
+  {
+    id: "marketing",
+    label: "Marketing",
+    icon: Mail,
+    description: "Campaigns & outreach",
+    panels: [
+      { id: "email-campaigns", label: "Campaigns", icon: Mail, minRole: "advisor" },
+      { id: "marketing-assets", label: "Assets", icon: FolderOpen, minRole: "advisor" },
+      { id: "outreach", label: "Automation", icon: Zap, minRole: "advisor" },
+    ],
+  },
+  {
+    id: "compliance",
+    label: "Compliance",
+    icon: ShieldCheck,
+    description: "Audit & governance",
+    panels: [
+      { id: "compliance", label: "Compliance Audit", icon: ShieldCheck, minRole: "advisor" },
+      { id: "compliance-copilot", label: "Compliance AI", icon: Shield, minRole: "advisor" },
+    ],
+  },
+  {
+    id: "operations",
+    label: "Operations",
+    icon: RefreshCw,
+    description: "Infrastructure & tools",
+    panels: [
+      { id: "crm-sync", label: "CRM Sync", icon: RefreshCw, minRole: "advisor" },
+      { id: "business-exit", label: "Business Exit", icon: ArrowRight, minRole: "advisor" },
+      { id: "premium-finance", label: "Premium Finance", icon: DollarSign, minRole: "advisor" },
+    ],
+  },
 ];
 
-const ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
+const Fallback = () => (
+  <div className="flex items-center justify-center py-20">
+    <Loader2 className="w-6 h-6 animate-spin text-accent" />
+  </div>
+);
 
 export default function PeopleHub() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [matchTab, paramsTab] = useRoute("/people/:tab");
-  const userRole = (user?.role ?? "user") as "user"|"advisor"|"manager"|"admin";
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const userRole = (user?.role ?? "user") as "user" | "advisor" | "manager" | "admin";
 
-  const visibleSections = useMemo(() =>
-    NAV_SECTIONS.map(s => ({ ...s, items: s.items.filter(i => hasMinRole(userRole, i.minRole)) }))
-      .filter(s => s.items.length > 0),
+  // Filter tabs and panels by role
+  const visibleTabs = useMemo(() =>
+    TAB_DEFS.map(tab => ({
+      ...tab,
+      panels: tab.panels.filter(p => hasMinRole(userRole, p.minRole)),
+    })).filter(tab => tab.panels.length > 0),
     [userRole],
   );
-  const visibleItems = visibleSections.flatMap(s => s.items);
 
-  // Default to command-center (pipeline overview) for advisors, relationships for users
-  const defaultTab: PeopleTab = visibleItems.find(t => t.id === "command-center") ? "command-center" : visibleItems[0]?.id ?? "relationships";
-  const initialTab = (matchTab && paramsTab?.tab && visibleItems.find(t => t.slug === paramsTab.tab))
-    ? visibleItems.find(t => t.slug === paramsTab.tab)!.id
-    : defaultTab;
+  // Active tab + active panel within tab
+  const [activeTab, setActiveTab] = useState<HubTab>("pipeline");
+  const [activePanel, setActivePanel] = useState<string>("command-center");
 
-  const [activeTab, setActiveTab] = useState<PeopleTab>(initialTab);
-
+  // URL sync
   useEffect(() => {
-    const slug = ALL_ITEMS.find(t => t.id === activeTab)?.slug || "clients";
-    navigate(`/people/${slug}`, { replace: true });
-  }, [activeTab, navigate]);
+    navigate(`/people/${activePanel}`, { replace: true });
+  }, [activePanel, navigate]);
 
   useEffect(() => {
     if (matchTab && paramsTab?.tab) {
-      const tab = visibleItems.find(t => t.slug === paramsTab.tab);
-      if (tab && tab.id !== activeTab) setActiveTab(tab.id);
+      const slug = paramsTab.tab;
+      // Find which tab contains this panel
+      for (const tab of visibleTabs) {
+        const panel = tab.panels.find(p => p.id === slug);
+        if (panel) {
+          setActiveTab(tab.id);
+          setActivePanel(panel.id);
+          return;
+        }
+      }
     }
-  }, [matchTab, paramsTab?.tab]);
+  }, [matchTab, paramsTab?.tab, visibleTabs]);
+
+  const currentTab = visibleTabs.find(t => t.id === activeTab) ?? visibleTabs[0];
+  const currentPanel = currentTab?.panels.find(p => p.id === activePanel);
 
   return (
     <AppShell title="People">
-      <SEOHead title="People Hub" description="Manage clients, leads, campaigns, and compliance" />
-      <div className="flex min-h-full bg-background relative">
-        {/* ─── MOBILE SIDEBAR OVERLAY ─── */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} role="presentation" aria-hidden="true" />
+      <SEOHead title="Command Center" description="Manage your pipeline, marketing, compliance, and operations" />
+      <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">
+
+        {/* ─── HEADER ─── */}
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight flex items-center gap-2">
+              <Users className="h-7 w-7 text-primary" />
+              Command Center
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Pipeline · Marketing · Compliance · Operations
+            </p>
+          </div>
+        </header>
+
+        {/* ─── TAB BAR ─── */}
+        <div className="flex gap-1 p-1 bg-card rounded-lg border border-border overflow-x-auto" role="tablist">
+          {visibleTabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setActivePanel(tab.panels[0]?.id ?? "command-center");
+                }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                  isActive
+                    ? "bg-primary/10 text-primary border border-primary/30"
+                    : "text-muted-foreground hover:bg-background hover:text-foreground border border-transparent"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+                <span className="hidden sm:inline text-[10px] text-muted-foreground/60">{tab.description}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ─── SUB-PANEL SELECTOR (progressive disclosure within each tab) ─── */}
+        {currentTab && currentTab.panels.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            {currentTab.panels.map(panel => {
+              const Icon = panel.icon;
+              const isActive = activePanel === panel.id;
+              return (
+                <button
+                  key={panel.id}
+                  onClick={() => setActivePanel(panel.id)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    isActive
+                      ? "bg-accent/10 text-accent border border-accent/30"
+                      : "text-muted-foreground hover:bg-background hover:text-foreground border border-border/50"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {panel.label}
+                </button>
+              );
+            })}
+          </div>
         )}
 
-        {/* ─── SIDEBAR ─── */}
-        <aside role="complementary" aria-label="People navigation sidebar" className={`
-          fixed inset-y-0 left-0 lg:sticky lg:top-0 z-50 lg:z-auto
-          w-56 shrink-0 border-r border-border bg-card flex flex-col
-          max-h-[100dvh] lg:max-h-screen lg:self-start
-          transition-transform duration-200 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
-          <div className="p-3 border-b border-border/50 flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                <span className="text-sm font-bold text-foreground">People</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Pipeline · Marketing · Operations</p>
-            </div>
-            <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
-              <PanelLeftClose className="w-4 h-4" />
-            </Button>
-          </div>
-          <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
-            <nav className="p-2 space-y-3" role="navigation" aria-label="People sections">
-              {visibleSections.map(section => (
-                <div key={section.group} role="group" aria-label={section.group}>
-                  <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1">{section.group}</p>
-                  <div role="list">
-                    {section.items.map(item => {
-                      const Icon = item.icon;
-                      return (
-                        <button type="button" key={item.id} role="listitem"
-                          onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-                          aria-current={activeTab === item.id ? 'page' : undefined}
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                            activeTab === item.id
-                              ? 'bg-primary/10 text-primary border border-primary/30'
-                              : 'text-muted-foreground hover:bg-background hover:text-foreground border border-transparent'
-                          }`}>
-                          <Icon className="w-3.5 h-3.5 shrink-0" />
-                          {item.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </nav>
-          </ScrollArea>
-          <div className="p-3 border-t border-border/50 bg-background">
-            <div className="text-center text-[9px] text-muted-foreground/30">People Hub</div>
-          </div>
-        </aside>
-
-        {/* ─── MAIN CONTENT ─── */}
-        <main className="flex-1 min-w-0" role="main" aria-label="People content">
-          <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-6">
-            {/* ─── TOOLBAR ─── */}
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-card rounded-lg border border-border px-3 py-2">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
-                  <PanelLeftOpen className="w-4 h-4" />
-                </Button>
-                <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs">
-                  <button type="button" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-                    <Home className="w-3 h-3" /><span className="hidden sm:inline">Home</span>
-                  </button>
-                  <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
-                  <button type="button" onClick={() => setActiveTab("relationships")} className={`transition-colors flex items-center gap-1 ${activeTab === "relationships" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"}`}>
-                    <Users className="w-3 h-3" /><span>People</span>
-                  </button>
-                  {activeTab !== "relationships" && (() => {
-                    const currentItem = ALL_ITEMS.find(t => t.id === activeTab);
-                    const currentSection = NAV_SECTIONS.find(s => s.items.some(i => i.id === activeTab));
-                    if (!currentItem) return null;
-                    const Icon = currentItem.icon;
-                    return (<>
-                      <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
-                      <span className="text-muted-foreground/60 hidden sm:inline">{currentSection?.group}</span>
-                      {currentSection && <ChevronRight className="w-3 h-3 text-muted-foreground/50 hidden sm:inline" />}
-                      <span className="text-foreground font-medium flex items-center gap-1"><Icon className="w-3 h-3" />{currentItem.label}</span>
-                    </>);
-                  })()}
-                </nav>
-              </div>
-            </div>
-            <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>}>
-              {activeTab === "relationships" && <Relationships embedded />}
-              {activeTab === "leads" && <LeadPipeline embedded />}
-              {activeTab === "command-center" && <CommandCenter embedded />}
-              {activeTab === "client-onboarding" && <ClientOnboarding embedded />}
-              {activeTab === "email-campaigns" && <EmailCampaign embedded />}
-              {activeTab === "marketing-assets" && <MarketingAssets embedded />}
-              {activeTab === "outreach" && <OutreachAutomation embedded />}
-              {activeTab === "crm-sync" && <CRMSync embedded />}
-              {activeTab === "compliance" && <ComplianceAudit embedded />}
-              {activeTab === "compliance-copilot" && <ComplianceCopilot embedded />}
-              {activeTab === "annual-review" && <AnnualReview embedded />}
-              {activeTab === "business-exit" && <BusinessExit embedded />}
-              {activeTab === "premium-finance" && <PremiumFinanceRates embedded />}
-            </Suspense>
-          </div>
-        </main>
+        {/* ─── PANEL CONTENT ─── */}
+        <Suspense fallback={<Fallback />}>
+          {activePanel === "command-center" && <CommandCenter embedded />}
+          {activePanel === "leads" && <LeadPipeline embedded />}
+          {activePanel === "relationships" && <Relationships embedded />}
+          {activePanel === "client-onboarding" && <ClientOnboarding embedded />}
+          {activePanel === "annual-review" && <AnnualReview embedded />}
+          {activePanel === "email-campaigns" && <EmailCampaign embedded />}
+          {activePanel === "marketing-assets" && <MarketingAssets embedded />}
+          {activePanel === "outreach" && <OutreachAutomation embedded />}
+          {activePanel === "compliance" && <ComplianceAudit embedded />}
+          {activePanel === "compliance-copilot" && <ComplianceCopilot embedded />}
+          {activePanel === "crm-sync" && <CRMSync embedded />}
+          {activePanel === "business-exit" && <BusinessExit embedded />}
+          {activePanel === "premium-finance" && <PremiumFinanceRates embedded />}
+        </Suspense>
       </div>
     </AppShell>
   );
