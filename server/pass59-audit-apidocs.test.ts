@@ -172,8 +172,8 @@ describe("Sidebar navigation", () => {
   });
 
   it("sets correct disclosure levels in sidebar", () => {
-    // Admin hub is at disclosureLevel 4 in the main sidebar
-    expect(sidebarSrc).toContain("disclosureLevel: 4");
+    // Admin hub is at disclosureLevel 3 in the simplified sidebar (Pass 130)
+    expect(sidebarSrc).toContain("disclosureLevel: 3");
     // Admin match includes /admin/audit-trail
     expect(sidebarSrc).toContain("/admin/audit-trail");
   });

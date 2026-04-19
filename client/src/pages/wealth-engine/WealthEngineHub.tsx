@@ -69,14 +69,28 @@ interface NavItem {
 }
 interface NavSection { group: string; items: NavItem[]; }
 
+/**
+ * Pass 130: Consolidated from 7 groups (34 items) to 5 streamlined groups.
+ *
+ * Structure mirrors practice management: holistic planning that supports
+ * forward/back/roll-up/roll-down cascading across personal and practice wealth.
+ *
+ * - My Plan: Overview + unified planning hierarchy + financial twin
+ * - Personal: Retirement, tax, estate, risk, income, social security, medicare
+ * - Protection: Insurance analysis, protection score, quick bundle, quotes
+ * - Practice: Business income, owner comp, valuation, practice-to-wealth, workflows
+ * - Strategy: Advanced workflows, archetypes, firm comparison, tools, references
+ */
 const NAV_SECTIONS: NavSection[] = [
-  { group: "Overview", items: [
+  { group: "My Plan", items: [
     { id: "overview", label: "Overview", icon: LayoutGrid, slug: "overview" },
+    { id: "planning-hierarchy" as WETab, label: "Planning Hierarchy", icon: Layers, slug: "planning-hierarchy" },
+    { id: "financial-twin", label: "Financial Twin", icon: Users, slug: "financial-twin", externalPath: "/financial-twin" },
+    { id: "unified-client-plan" as WETab, label: "Unified Client Plan", icon: Layers, slug: "unified-client-plan" },
   ]},
-  { group: "Plan", items: [
-    { id: "planning-hierarchy" as WETab, label: "Planning Hierarchy", icon: Layers, slug: "planning-hierarchy", badge: "New" },
-    { id: "retirement", label: "Retirement Planner", icon: PiggyBank, slug: "retirement" },
-    { id: "tax", label: "Tax Projector", icon: DollarSign, slug: "tax", externalPath: "/tax-planning" },
+  { group: "Personal Planning", items: [
+    { id: "retirement", label: "Retirement", icon: PiggyBank, slug: "retirement" },
+    { id: "tax", label: "Tax Planning", icon: DollarSign, slug: "tax", externalPath: "/tax-planning" },
     { id: "estate", label: "Estate Planning", icon: Briefcase, slug: "estate", externalPath: "/estate" },
     { id: "risk", label: "Risk Assessment", icon: Scale, slug: "risk", externalPath: "/risk-assessment" },
     { id: "income", label: "Income Projection", icon: TrendingUp, slug: "income", externalPath: "/income-projection" },
@@ -84,39 +98,33 @@ const NAV_SECTIONS: NavSection[] = [
     { id: "medicare", label: "Medicare", icon: Stethoscope, slug: "medicare", externalPath: "/medicare" },
     { id: "calculators", label: "All Calculators", icon: Calculator, slug: "calculators", externalPath: "/calculators" },
   ]},
-  { group: "Protect", items: [
-    { id: "quick-bundle", label: "Quick Bundle", icon: Sparkles, slug: "quick-bundle", badge: "New" },
+  { group: "Protection", items: [
+    { id: "quick-bundle", label: "Quick Bundle", icon: Sparkles, slug: "quick-bundle" },
     { id: "protection-score", label: "Protection Score", icon: ShieldCheck, slug: "protection-score", externalPath: "/protection-score" },
-    { id: "strategy-comparison", label: "Strategy Comparison", icon: BarChart3, slug: "strategy-comparison" },
     { id: "insurance-analysis", label: "Insurance Analysis", icon: Shield, slug: "insurance-analysis", externalPath: "/insurance-analysis" },
-    { id: "quick-quote-hub", label: "Quick Quote Hub", icon: Zap, slug: "quick-quote-hub" },
+    { id: "strategy-comparison", label: "Strategy Comparison", icon: BarChart3, slug: "strategy-comparison" },
     { id: "holistic-comparison", label: "Holistic Comparison", icon: Target, slug: "holistic-comparison" },
+    { id: "quick-quote-hub", label: "Quick Quotes", icon: Zap, slug: "quick-quote-hub" },
   ]},
-  { group: "Grow", items: [
-    { id: "engine-dashboard", label: "Engine Dashboard", icon: BarChart3, slug: "engine-dashboard", externalPath: "/engine-dashboard" },
-    { id: "owner-comp", label: "Owner Comp", icon: Building2, slug: "owner-comp", badge: "New" },
-    { id: "business-valuation", label: "Business Valuation", icon: Rocket, slug: "business-valuation", badge: "New" },
+  { group: "Practice", items: [
+    { id: "engine-dashboard", label: "Practice Dashboard", icon: BarChart3, slug: "engine-dashboard", externalPath: "/engine-dashboard" },
     { id: "business-income", label: "Business Income", icon: DollarSign, slug: "business-income" },
+    { id: "owner-comp", label: "Owner Compensation", icon: Building2, slug: "owner-comp" },
+    { id: "business-valuation", label: "Business Valuation", icon: Rocket, slug: "business-valuation" },
     { id: "practice-to-wealth", label: "Practice-to-Wealth", icon: Workflow, slug: "practice-to-wealth" },
-    { id: "financial-twin", label: "Financial Twin", icon: Users, slug: "financial-twin", externalPath: "/financial-twin" },
     { id: "workflows", label: "Workflows", icon: Workflow, slug: "workflows", externalPath: "/workflows" },
   ]},
-  { group: "Tools", items: [
+  { group: "Strategy & Tools", items: [
+    { id: "strategy-archetypes" as WETab, label: "Strategy Archetypes", icon: Target, slug: "strategy-archetypes" },
+    { id: "advanced-workflows" as WETab, label: "Advanced Workflows", icon: Shield, slug: "advanced-workflows" },
+    { id: "firm-comparison" as WETab, label: "Firm Comparison", icon: BarChart3, slug: "firm-comparison" },
+    { id: "cascade-alerts" as WETab, label: "Cascade Alerts", icon: Zap, slug: "cascade-alerts" },
     { id: "configurator", label: "Configurator", icon: Gauge, slug: "configurator" },
     { id: "sensitivity", label: "Sensitivity", icon: BarChart3, slug: "sensitivity" },
     { id: "what-if", label: "What-If Analysis", icon: Zap, slug: "what-if" },
     { id: "team-builder", label: "Team Builder", icon: Users, slug: "team-builder" },
     { id: "references", label: "Reference Hub", icon: FileText, slug: "references" },
-  ]},
-  { group: "Advisory", items: [
-    { id: "advanced-workflows" as WETab, label: "Advanced Workflows", icon: Shield, slug: "advanced-workflows", badge: "New" },
-    { id: "strategy-archetypes" as WETab, label: "Strategy Archetypes", icon: Target, slug: "strategy-archetypes", badge: "New" },
-    { id: "unified-client-plan" as WETab, label: "Unified Client Plan", icon: Layers, slug: "unified-client-plan", badge: "New" },
-    { id: "firm-comparison" as WETab, label: "Firm Comparison", icon: BarChart3, slug: "firm-comparison", badge: "New" },
-    { id: "cascade-alerts" as WETab, label: "Cascade Alerts", icon: Zap, slug: "cascade-alerts" },
-  ]},
-  { group: "Data", items: [
-    { id: "financial-data-hub" as WETab, label: "Financial Data Hub", icon: Database, slug: "financial-data-hub", badge: "New" },
+    { id: "financial-data-hub" as WETab, label: "Financial Data Hub", icon: Database, slug: "financial-data-hub" },
   ]},
 ];
 
@@ -220,7 +228,7 @@ function HubHero({ role }: { role?: string }) {
               <Gauge className="w-5 h-5 text-accent" /> Wealth Engine
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              30+ planning, protection, and growth tools — unified in one hub.
+              Holistic planning across personal and practice wealth — plan, protect, and grow.
             </p>
           </div>
           <div className="flex gap-2">
@@ -342,7 +350,7 @@ export default function WealthEngineHub() {
                 <Gauge className="w-5 h-5 text-primary" />
                 <span className="text-sm font-bold text-foreground">Wealth Engine</span>
               </div>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Plan · Protect · Grow</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">My Plan · Personal · Protection · Practice · Strategy</p>
             </div>
             <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
               <PanelLeftClose className="w-4 h-4" />
@@ -387,7 +395,7 @@ export default function WealthEngineHub() {
           </ScrollArea>
 
           <div className="p-3 border-t border-border/50 bg-background">
-            <div className="text-center text-[9px] text-muted-foreground/30">Wealth Engine · {ALL_ITEMS.length} tools</div>
+            <div className="text-center text-[9px] text-muted-foreground/30">Wealth Engine</div>
           </div>
         </aside>
 

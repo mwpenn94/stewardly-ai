@@ -320,16 +320,17 @@ export default function LearningHome() {
           </CardContent>
         </Card>
 
-        {/* Learning tools — links to pass 120 sub-pages */}
+        {/* Study Tools — consolidated, no duplicates */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5" />
-              Learning Tools
+              Study Tools
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {/* Core study tools */}
               {tracks.length > 0 && (
                 <ToolCardWithTrackPicker
                   icon={<ClipboardCheck className="h-6 w-6 text-primary" />}
@@ -339,33 +340,6 @@ export default function LearningHome() {
                   buildHref={(slug) => `/learning/exam/${slug}`}
                 />
               )}
-              {tracks.length > 0 && (
-                <ToolCardWithTrackPicker
-                  icon={<BookOpen className="h-6 w-6 text-primary" />}
-                  title="Deep Dive"
-                  description="Definitions, formulas, cases"
-                  tracks={tracks}
-                  buildHref={(slug) => `/learning/discipline/${slug}`}
-                />
-              )}
-              {tracks.length > 0 && (
-                <ToolCardWithTrackPicker
-                  icon={<Scale className="h-6 w-6 text-primary" />}
-                  title="Case Studies"
-                  description="Branching scenario decisions"
-                  tracks={tracks}
-                  buildHref={(slug) => `/learning/case/${slug}`}
-                />
-              )}
-              <Link href="/learning/connections">
-                <Card className="card-lift cursor-pointer h-full">
-                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                    <Brain className="h-6 w-6 text-primary" />
-                    <div className="text-sm font-medium">Concept Map</div>
-                    <div className="text-[10px] text-muted-foreground">Visual concept graph</div>
-                  </CardContent>
-                </Card>
-              </Link>
               {tracks.length > 0 && (
                 <ToolCardWithTrackPicker
                   icon={<Layers className="h-6 w-6 text-primary" />}
@@ -393,15 +367,25 @@ export default function LearningHome() {
                   </CardContent>
                 </Card>
               </Link>
-              <Link href="/learning/study-buddy">
-                <Card className="card-lift cursor-pointer h-full">
-                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                    <Users className="h-6 w-6 text-primary" />
-                    <div className="text-sm font-medium">Study Buddy</div>
-                    <div className="text-[10px] text-muted-foreground">AI-powered study partner</div>
-                  </CardContent>
-                </Card>
-              </Link>
+              {/* Deep learning tools */}
+              {tracks.length > 0 && (
+                <ToolCardWithTrackPicker
+                  icon={<BookOpen className="h-6 w-6 text-primary" />}
+                  title="Deep Dive"
+                  description="Definitions, formulas, cases"
+                  tracks={tracks}
+                  buildHref={(slug) => `/learning/discipline/${slug}`}
+                />
+              )}
+              {tracks.length > 0 && (
+                <ToolCardWithTrackPicker
+                  icon={<Scale className="h-6 w-6 text-primary" />}
+                  title="Case Studies"
+                  description="Branching scenario decisions"
+                  tracks={tracks}
+                  buildHref={(slug) => `/learning/case/${slug}`}
+                />
+              )}
               <Link href="/learning/connections">
                 <Card className="card-lift cursor-pointer h-full">
                   <CardContent className="p-4 flex flex-col items-center text-center gap-2">
@@ -411,18 +395,33 @@ export default function LearningHome() {
                   </CardContent>
                 </Card>
               </Link>
-              <Link href="/learning/achievements">
+              <Link href="/learning/study-buddy">
                 <Card className="card-lift cursor-pointer h-full">
                   <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                    <Award className="h-6 w-6 text-primary" />
-                    <div className="text-sm font-medium">Achievements</div>
-                    <div className="text-[10px] text-muted-foreground">Streaks, goals, milestones</div>
+                    <Users className="h-6 w-6 text-primary" />
+                    <div className="text-sm font-medium">Study Buddy</div>
+                    <div className="text-[10px] text-muted-foreground">AI-powered study partner</div>
                   </CardContent>
                 </Card>
               </Link>
             </div>
           </CardContent>
         </Card>
+
+        {/* Achievements — separated from tools for clarity */}
+        <div className="flex gap-3">
+          <Link href="/learning/achievements" className="flex-1">
+            <Card className="card-lift cursor-pointer h-full">
+              <CardContent className="p-4 flex items-center gap-3">
+                <Award className="h-5 w-5 text-accent" />
+                <div>
+                  <div className="text-sm font-medium">Achievements</div>
+                  <div className="text-[10px] text-muted-foreground">Streaks, goals, milestones</div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
 
         {/* Admin: regulatory review queue link */}
         {isAdmin && (

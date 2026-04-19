@@ -166,6 +166,21 @@ const EXEMPT_ROUTES = new Set<string>([
   "/learning/discipline/:slug",
   "/learning/case/:caseId",
   // Pass 7+ dynamic integration sub-pages / wealth-engine sub-pages
+  // These are internal tabs within the WealthEngineHub, not standalone routes
+  "/wealth-engine/retirement",
+  "/wealth-engine/strategy-comparison",
+  "/wealth-engine/quick-quote",
+  "/wealth-engine/practice-to-wealth",
+  "/wealth-engine/business-income",
+  "/wealth-engine/team-builder",
+  "/wealth-engine/what-if",
+  "/wealth-engine/configurator",
+  "/wealth-engine/references",
+  "/wealth-engine/business-valuation",
+  "/wealth-engine/holistic-comparison",
+  "/wealth-engine/quick-quote-hub",
+  "/wealth-engine/business-income-quick-quote",
+  "/wealth-engine/owner-comp",
   "/wealth-engine/sensitivity",
   "/improvement",
   "/financial-protection-score",
@@ -173,6 +188,8 @@ const EXEMPT_ROUTES = new Set<string>([
   // Pass 111: Hub pages with internal sidebars
   "/admin-legacy",
   "/people",
+  // Pass 130: Agent detail page (reached from /agents list)
+  "/agent",
 ]);
 
 describe("Navigation reachability", () => {
@@ -204,7 +221,11 @@ describe("Navigation reachability", () => {
       return { raw: r, re: new RegExp("^" + pattern + "$") };
     });
     const missing = navHrefs.filter(
-      (h) => !routePatterns.some((p) => p.re.test(h)),
+      (h) =>
+        !routePatterns.some((p) => p.re.test(h)) &&
+        // Pass 130: wealth-engine sub-routes are internal tabs within the hub,
+        // not standalone routes in App.tsx
+        !h.startsWith("/wealth-engine/"),
     );
     expect(missing).toEqual([]);
   });

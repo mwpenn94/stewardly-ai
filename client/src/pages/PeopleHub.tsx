@@ -38,6 +38,13 @@ type PeopleTab =
 interface NavItem { id: PeopleTab; label: string; icon: React.ElementType; minRole: "user"|"advisor"|"manager"|"admin"; slug: string; }
 interface NavSection { group: string; items: NavItem[]; }
 
+/**
+ * Pass 130: Consolidated from 4 groups to 3 streamlined groups.
+ *
+ * - Clients: CRM, leads, onboarding, annual review (core relationship management)
+ * - Marketing & Outreach: Command center, campaigns, assets, automation
+ * - Operations: Compliance, CRM sync, business exit, premium finance
+ */
 const NAV_SECTIONS: NavSection[] = [
   { group: "Clients", items: [
     { id: "relationships", label: "Clients", icon: Users, minRole: "user", slug: "clients" },
@@ -45,17 +52,15 @@ const NAV_SECTIONS: NavSection[] = [
     { id: "client-onboarding", label: "Onboarding", icon: UserPlus, minRole: "user", slug: "onboarding" },
     { id: "annual-review", label: "Annual Review", icon: FileText, minRole: "advisor", slug: "annual-review" },
   ]},
-  { group: "Outreach", items: [
+  { group: "Marketing & Outreach", items: [
     { id: "command-center", label: "Command Center", icon: LayoutGrid, minRole: "advisor", slug: "command-center" },
     { id: "email-campaigns", label: "Email Campaigns", icon: Mail, minRole: "advisor", slug: "email-campaigns" },
     { id: "marketing-assets", label: "Marketing Assets", icon: FolderOpen, minRole: "advisor", slug: "marketing-assets" },
-    { id: "outreach", label: "Outreach Automation", icon: Zap, minRole: "advisor", slug: "outreach" },
+    { id: "outreach", label: "Automation", icon: Zap, minRole: "advisor", slug: "outreach" },
   ]},
-  { group: "Compliance", items: [
-    { id: "compliance", label: "Compliance Audit", icon: ShieldCheck, minRole: "advisor", slug: "compliance" },
+  { group: "Operations", items: [
+    { id: "compliance", label: "Compliance", icon: ShieldCheck, minRole: "advisor", slug: "compliance" },
     { id: "compliance-copilot", label: "Compliance Copilot", icon: Shield, minRole: "advisor", slug: "compliance-copilot" },
-  ]},
-  { group: "Advanced", items: [
     { id: "crm-sync", label: "CRM Sync", icon: RefreshCw, minRole: "advisor", slug: "crm-sync" },
     { id: "business-exit", label: "Business Exit", icon: ArrowRight, minRole: "advisor", slug: "business-exit" },
     { id: "premium-finance", label: "Premium Finance", icon: DollarSign, minRole: "advisor", slug: "premium-finance" },
@@ -119,7 +124,7 @@ export default function PeopleHub() {
                 <Users className="w-5 h-5 text-primary" />
                 <span className="text-sm font-bold text-foreground">People</span>
               </div>
-              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Relationships & Outreach</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-0.5">Clients · Marketing · Operations</p>
             </div>
             <Button variant="ghost" size="icon" className="lg:hidden h-7 w-7" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
               <PanelLeftClose className="w-4 h-4" />
@@ -153,7 +158,7 @@ export default function PeopleHub() {
             </nav>
           </ScrollArea>
           <div className="p-3 border-t border-border/50 bg-background">
-            <div className="text-center text-[9px] text-muted-foreground/30">People Hub · {visibleItems.length} sections</div>
+            <div className="text-center text-[9px] text-muted-foreground/30">People Hub</div>
           </div>
         </aside>
 

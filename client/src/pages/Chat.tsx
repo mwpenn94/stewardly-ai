@@ -2773,59 +2773,8 @@ export default function Chat() {
                 )}
               </div>
 
-              {/* Inline media shortcuts — always visible for quick access */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    className="p-2 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all hidden sm:block"
-                    onClick={() => fileInputRef.current?.click()}
-                    aria-label="Attach file"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Attach file</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    className="p-2 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all hidden sm:block"
-                    onClick={() => imageInputRef.current?.click()}
-                    aria-label="Attach image"
-                  >
-                    <Image className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Attach image</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    className={`p-2 rounded-full transition-all hidden sm:block ${
-                      liveSessionMode === "screen" ? "bg-red-500/15 text-red-400" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setLiveSessionMode(liveSessionMode === "screen" ? null : "screen")}
-                    aria-label={liveSessionMode === "screen" ? "End screen share" : "Share screen"}
-                  >
-                    <Monitor className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{liveSessionMode === "screen" ? "End screen share" : "Share screen"}</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    className={`p-2 rounded-full transition-all hidden sm:block ${
-                      liveSessionMode === "camera" ? "bg-red-500/15 text-red-400" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setLiveSessionMode(liveSessionMode === "camera" ? null : "camera")}
-                    aria-label={liveSessionMode === "camera" ? "End video" : "Start video"}
-                  >
-                    <Video className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{liveSessionMode === "camera" ? "End video session" : "Go live — Video"}</TooltipContent>
-              </Tooltip>
+              {/* Pass 130: Removed 4 always-visible inline media shortcuts (Paperclip, Image, Screen, Video)
+                 — all are accessible via the [+] menu. Keeps input bar clean like Claude/Manus. */}
 
               {/* Mode dropdown — Copilot "Smart v" style */}
               <div className="relative" data-tour="focus-mode">
@@ -2908,21 +2857,21 @@ export default function Chat() {
                   for power users (one click to reveal). When a non-default
                   chat mode is active, a small badge replaces the toggle so
                   the user can see at a glance what mode they're in. */}
-              {/* Mobile model picker — always visible on mobile so users can
-                  switch models without needing the hidden More/Less toggle */}
-              <button type="button"
-                
-                onClick={() => setShowModelMenu(!showModelMenu)}
-                className={`flex md:hidden h-7 text-[10px] rounded-lg px-2 items-center gap-1 transition-all ${
-                  isMultiModel
-                    ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                    : "bg-secondary/30 border border-border text-muted-foreground"
-                }`}
-                aria-label={`Current model: ${modelLabel}. Tap to change.`}
-              >
-                <Brain className="w-3 h-3" />
-                <span className="max-w-[80px] truncate" title={modelLabel}>{modelLabel}</span>
-              </button>
+              {/* Pass 130: Mobile model picker — only visible when advanced is open */}
+              {advancedOpen && (
+                <button type="button"
+                  onClick={() => setShowModelMenu(!showModelMenu)}
+                  className={`flex md:hidden h-7 text-[10px] rounded-lg px-2 items-center gap-1 transition-all ${
+                    isMultiModel
+                      ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
+                      : "bg-secondary/30 border border-border text-muted-foreground"
+                  }`}
+                  aria-label={`Current model: ${modelLabel}. Tap to change.`}
+                >
+                  <Brain className="w-3 h-3" />
+                  <span className="max-w-[80px] truncate" title={modelLabel}>{modelLabel}</span>
+                </button>
+              )}
 
               {/* Mobile model menu (shared with desktop — rendered here for mobile access) */}
               {showModelMenu && (
@@ -3269,23 +3218,21 @@ export default function Chat() {
                 </TooltipTrigger>
                 <TooltipContent>{voice.isListening ? "Stop listening" : "Voice input (tap to speak)"}</TooltipContent>
               </Tooltip>
-              {/* Audio toggle — hidden on mobile to reduce toolbar clutter */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    data-tour="voice-toggle"
-                    className={`hidden sm:block p-2.5 rounded-full transition-all ${
-                      ttsEnabled
-                        ? "bg-accent/15 text-accent"
-                        : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => { setTtsEnabled(!ttsEnabled); tts.cancel(); }}
-                  >
-                    {ttsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{ttsEnabled ? "Mute audio" : "Enable audio"}</TooltipContent>
-              </Tooltip>
+              {/* Pass 130: Audio toggle moved — only visible when TTS is active (as a mute indicator) */}
+              {ttsEnabled && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button"
+                      data-tour="voice-toggle"
+                      className="p-2 rounded-full bg-accent/15 text-accent transition-all"
+                      onClick={() => { setTtsEnabled(false); tts.cancel(); }}
+                    >
+                      <Volume2 className="w-4 h-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Mute audio</TooltipContent>
+                </Tooltip>
+              )}
 
               {/* Unified hands-free / send button (rightmost, same position always) */}
               {isStreaming ? (

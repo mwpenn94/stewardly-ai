@@ -112,10 +112,10 @@ describe("Pass 58 — Progressive disclosure sidebar filtering", () => {
     expect(src).toContain("item.disclosureLevel");
   });
 
-  it("has level 2, 3, and 4 items defined", () => {
+  it("has level 2 and 3 items defined (Pass 130: simplified sidebar removed level 4)", () => {
     expect(src).toContain("disclosureLevel: 2");
     expect(src).toContain("disclosureLevel: 3");
-    expect(src).toContain("disclosureLevel: 4");
+    // Pass 130: level 4 removed — Admin moved to level 3 in simplified sidebar
   });
 
   it("uses DisclosureContext", () => {

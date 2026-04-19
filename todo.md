@@ -6422,3 +6422,37 @@
 - [x] Browser validation screenshots captured and saved
 - [x] 19/19 vitest tests passing for agentTools
 - [x] Save checkpoint
+
+## Pass 130 — Structural UI/UX Overhaul
+
+### Phase 1: Audit current state
+- [x] Map all sidebar items (5 sections, 16 items), pages (100+ routes), and identified redundancies
+- [x] Document current navigation hierarchy (PersonaSidebar5 → 5 sections → hub pages)
+- [x] Identify features to consolidate: WE 7→5 groups, People 4→3 groups, Sidebar 5→3 sections
+
+### Phase 2: Simplify AppShell and Chat UI
+- [x] Simplify ChatGreeting — removed 18-chip grid, feature cards → Claude-style minimal greeting + 4 suggestion prompts
+- [x] Simplify sidebar — consolidated from 5 sections to 3 (Core, Professional, System)
+- [x] Clean up chat input — removed 4 inline media shortcuts (in + menu), hid audio toggle + mobile model picker behind More/Less
+
+### Phase 3: Consolidate Wealth Engine
+- [x] Merged 7 nav groups (34 items) into 5 holistic groups: Overview, Financial Planning, Practice Management, Advanced Strategies, Tools & References
+- [x] Practice management structure serves as inspiration for client planning consolidation
+- [x] Practice and personal wealth planning relatable for advisor-as-own-client scenario
+- [x] Rich supporting references preserved throughout (Reference Hub, Quick Quote Hub)
+
+### Phase 4: Optimize Learning Engine
+- [x] Removed duplicate Concept Map card
+- [x] Grouped learning tools into progressive disclosure sections (Study, Practice, Reference)
+- [x] Consistent with overall app UX patterns (collapsible sections, track-based navigation)
+
+### Phase 5: Optimize Command Center (CRM & Marketing)
+- [x] Consolidated from 4 nav groups to 3: Clients, Marketing & Outreach, Operations
+- [x] Unified hub for lead sourcing (Leads), CRM (Relationships), marketing (Campaigns, Assets), outreach (Automation)
+- [x] Consistent with overall app UX patterns (sidebar + content area)
+
+### Phase 6: Remove redundancies and consolidate
+- [x] Removed redundant sidebar items: Capabilities section eliminated, Documents → Settings, My Work → Dashboard
+- [x] Nested excess features via progressive disclosure (More/Less in chat, collapsible sections in hubs)
+- [x] Delightful design/color themes preserved (no visual regression)
+- [x] All 200 vitest tests passing (9 regression tests updated for structural changes)

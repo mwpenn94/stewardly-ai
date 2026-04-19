@@ -156,7 +156,8 @@ describe("Phase 5 — Command Center Integration", () => {
     });
 
     it("has Outreach Automation nav item in PeopleHub", () => {
-      expect(peopleHubContent).toContain("Outreach Automation");
+      // Pass 130: label shortened to "Automation" but slug is still "outreach"
+      expect(peopleHubContent).toContain("Automation");
       expect(peopleHubContent).toContain("outreach");
     });
 

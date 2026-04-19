@@ -1,22 +1,24 @@
 /**
- * PersonaSidebar5.tsx — Simplified Hub Navigation
+ * PersonaSidebar5.tsx — Streamlined Hub Navigation
  *
- * Pass 111: Reduced from 60+ items across 5 persona layers to ~10 hub entries.
- * Each hub (People, Intelligence, Admin) has its own internal sidebar page.
- * The AppShell sidebar is now simple and delightful to navigate.
+ * Pass 130: Simplified from 6 persona layers to a flat, clean sidebar.
+ * Inspired by Manus/Claude: minimal top-level items, each leading to
+ * a hub page with its own internal navigation.
+ *
+ * Removed: Capabilities section (System Status → Settings), Documents (→ Settings),
+ * My Work (→ Wealth Engine overview). Products nested inside Wealth Engine.
  *
  * Desktop: collapsible sidebar, Mobile: left-edge drawer (Sheet)
  */
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useDisclosure } from "@/contexts/DisclosureContext";
 import { useLocation } from "wouter";
 import {
-  MessageSquare, FileText, Calculator, Users, TrendingUp,
+  MessageSquare, Calculator, Users, TrendingUp,
   GraduationCap, Settings, HelpCircle, Search, Plus,
   PanelLeftClose, PanelLeft, ChevronDown, Pin,
-  Fingerprint, Cog, Briefcase, UserCog, Building2,
-  Sparkles, Package, Star, Rocket,
+  Cog, UserCog, Building2,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -53,17 +55,21 @@ export const ROLE_LEVEL: Record<Role, number> = {
 };
 
 /**
- * Simplified hub-based navigation.
- * Each entry is a top-level page or hub with its own internal sidebar.
+ * Pass 130: Flat, streamlined navigation.
+ * - Core: Chat only (Documents moved to Settings)
+ * - Wealth: Wealth Engine (Financial Twin, Products, all calculators nested inside)
+ * - Professional: People (CRM hub), Intelligence
+ * - Leadership: Team, Organizations (progressive disclosure)
+ * - Platform: Admin (progressive disclosure)
+ * - Learn: standalone item
  */
 export const PERSONA_LAYERS: PersonaLayer[] = [
   {
     key: "core",
-    label: "Core",
+    label: "",
     minRole: "guest",
     items: [
       { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
-      { label: "Documents", icon: FileText, path: "/settings/knowledge", match: ["/settings/knowledge", "/documents"], disclosureLevel: 2 },
     ],
   },
   {
@@ -71,17 +77,10 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Wealth",
     minRole: "user",
     items: [
-      { label: "Financial Twin", icon: Fingerprint, path: "/financial-twin", match: ["/financial-twin"] },
-      { label: "Wealth Engine", icon: Calculator, path: "/wealth-engine", match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan"] },
-      { label: "Products", icon: Package, path: "/products", match: ["/products"], disclosureLevel: 2 },
-    ],
-  },
-  {
-    key: "capabilities",
-    label: "Capabilities",
-    minRole: "user",
-    items: [
-      { label: "System Status", icon: Rocket, path: "/manus-next", match: ["/manus-next", "/agent"], disclosureLevel: 3 },
+      {
+        label: "Wealth Engine", icon: Calculator, path: "/wealth-engine",
+        match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan", "/financial-twin", "/products", "/my-work"],
+      },
     ],
   },
   {
@@ -89,9 +88,14 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Professional",
     minRole: "advisor",
     items: [
-      { label: "My Work", icon: Briefcase, path: "/my-work", match: ["/my-work"] },
-      { label: "People", icon: Users, path: "/people/clients", match: ["/people", "/relationships", "/leads", "/crm-sync", "/compliance-audit", "/compliance-copilot", "/email-campaigns", "/marketing-assets", "/outreach-automation", "/command-center", "/client-onboarding", "/annual-review", "/business-exit", "/premium-finance-rates", "/portal", "/client-dashboard"] },
-      { label: "Intelligence", icon: TrendingUp, path: "/intelligence-hub", match: ["/intelligence-hub", "/intelligence", "/market-data", "/product-intelligence", "/data-pipelines", "/enrichment-admin", "/portal-analytics", "/rebalancing", "/insights", "/operations", "/comparables"] },
+      {
+        label: "People", icon: Users, path: "/people/clients",
+        match: ["/people", "/relationships", "/leads", "/crm-sync", "/compliance-audit", "/compliance-copilot", "/email-campaigns", "/marketing-assets", "/outreach-automation", "/command-center", "/client-onboarding", "/annual-review", "/business-exit", "/premium-finance-rates", "/portal", "/client-dashboard"],
+      },
+      {
+        label: "Intelligence", icon: TrendingUp, path: "/intelligence-hub",
+        match: ["/intelligence-hub", "/intelligence", "/market-data", "/product-intelligence", "/data-pipelines", "/enrichment-admin", "/portal-analytics", "/rebalancing", "/insights", "/operations", "/comparables"],
+      },
     ],
   },
   {
@@ -99,8 +103,8 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Leadership",
     minRole: "manager",
     items: [
-      { label: "Team", icon: UserCog, path: "/manager", match: ["/manager"], disclosureLevel: 3 },
-      { label: "Organizations", icon: Building2, path: "/organizations", match: ["/organizations", "/org-branding"], disclosureLevel: 3 },
+      { label: "Team", icon: UserCog, path: "/manager", match: ["/manager"], disclosureLevel: 2 },
+      { label: "Organizations", icon: Building2, path: "/organizations", match: ["/organizations", "/org-branding"], disclosureLevel: 2 },
     ],
   },
   {
@@ -108,7 +112,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Platform",
     minRole: "admin",
     items: [
-      { label: "Admin", icon: Cog, path: "/admin", match: ["/admin", "/agents", "/consensus", "/admin/intelligence", "/admin/improvement", "/admin/improvement-engine", "/admin/system-health", "/admin/data-freshness", "/admin/bcp", "/admin/fairness", "/admin/rate-management", "/admin/billing", "/admin/api-keys", "/admin/webhooks", "/admin/team", "/admin/lead-sources", "/admin/platform-reports", "/admin/knowledge", "/admin/guide", "/admin/audit-trail", "/admin/integrations"], disclosureLevel: 4 },
+      { label: "Admin", icon: Cog, path: "/admin", match: ["/admin", "/agents", "/consensus", "/admin/intelligence", "/admin/improvement", "/admin/improvement-engine", "/admin/system-health", "/admin/data-freshness", "/admin/bcp", "/admin/fairness", "/admin/rate-management", "/admin/billing", "/admin/api-keys", "/admin/webhooks", "/admin/team", "/admin/lead-sources", "/admin/platform-reports", "/admin/knowledge", "/admin/guide", "/admin/audit-trail", "/admin/integrations"], disclosureLevel: 3 },
     ],
   },
 ];
@@ -203,7 +207,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
   };
 
   const Label = ({ children }: { children: string }) =>
-    collapsed ? null : (
+    !children || collapsed ? null : (
       <div className="px-2.5 pt-3.5 pb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] select-none">
         {children}
       </div>

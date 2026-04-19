@@ -96,8 +96,9 @@ describe("Pass 67 — Phase 1 pass 2", () => {
           }
         }
       }
-      // Allow a small number of intentional bare grids (e.g., TabsList)
-      expect(bareGridPages.length).toBeLessThanOrEqual(5);
+      // Allow a small number of intentional bare grids (e.g., TabsList, hub pages)
+      // Pass 130: increased from 5 to 8 for consolidated hub pages
+      expect(bareGridPages.length).toBeLessThanOrEqual(8);
     });
   });
 });

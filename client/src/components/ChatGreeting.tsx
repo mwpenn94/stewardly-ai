@@ -1,43 +1,24 @@
 /**
- * ChatGreetingV2 -- enhanced chat empty-state greeting with:
- * - Time-based greeting
- * - "Resume where you left off" card for returning users (Pass 3)
- * - Proactive insight card surfacing top actionable insight (Pass 3)
- * - Active context sources indicator (Pass 3)
- * - Role-specific suggestion chips with daily rotation (year-aware seed)
- * - Feature discovery cards (guest / user / advisor pools)
- * - AI health warning banner
- * - Reduced motion support
+ * ChatGreeting — Claude/Manus-style minimal chat empty state.
+ *
+ * Pass 130: Stripped down from 30+ interactive elements to a clean,
+ * inviting greeting with:
+ *   - Time-based personalized greeting
+ *   - Resume where you left off (max 2 recent conversations)
+ *   - 3–4 rotating suggestion prompts (role-aware)
+ *   - AI health warning (only when degraded)
+ *
+ * All capability discovery moved to sidebar navigation and hub pages
+ * where it belongs. The chat is for conversation, not a feature catalog.
  */
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Sparkles,
-  Brain,
-  Calculator,
-  Shield,
-  BookOpen,
-  BarChart3,
-  Users,
   AlertTriangle,
   MessageSquare,
-  Zap,
-  GraduationCap,
-  TrendingUp,
   Clock,
   ArrowRight,
-  Lightbulb,
-  FileText,
-  Database,
-  Fingerprint,
-  Globe,
-  Code2,
-  Image,
-  FileOutput,
-  Search,
-  Scale,
-  Dices,
-  Receipt,
 } from "lucide-react";
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -82,148 +63,82 @@ function getTimeGreeting(): string {
 }
 
 function dailySeed(): number {
-  const now = new Date();
-  return now.getFullYear() * 1000 + Math.floor(
-    (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86_400_000
-  );
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 }
 
 function seededShuffle<T>(arr: T[], seed: number): T[] {
   const copy = [...arr];
   let s = seed;
   for (let i = copy.length - 1; i > 0; i--) {
-    s = (s * 1664525 + 1013904223) >>> 0;
+    s = (s * 16807 + 0) % 2147483647;
     const j = s % (i + 1);
     [copy[i], copy[j]] = [copy[j], copy[i]];
   }
   return copy;
 }
 
-function usePrefersReducedMotion(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
-}
-
 function formatRelativeTime(date: string | Date | null): string {
   if (!date) return "";
-  const now = Date.now();
-  const then = new Date(date).getTime();
-  const diffMs = now - then;
-  const mins = Math.floor(diffMs / 60_000);
-  if (mins < 1) return "just now";
+  const ms = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "Just now";
   if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return "yesterday";
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
   if (days < 7) return `${days}d ago`;
   return new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// ── Suggestion chip pools ───────────────────────────────────────────
+function usePrefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+}
+
+// ── Suggestion pools — role-aware, rotated daily ────────────────────
 const GUEST_SUGGESTIONS = [
-  "What can Stewardly help me with?",
-  "Show me the retirement calculator",
-  "How does multi-model consensus work?",
-  "What compliance guardrails are built in?",
-  "Tell me about the Wealth Engine",
-  "How do I get started as a financial advisor?",
+  "How does life insurance protect my family?",
+  "What's the difference between a Roth IRA and Traditional IRA?",
+  "Help me understand index universal life insurance",
+  "What should I know about estate planning?",
 ];
 
 const USER_SUGGESTIONS = [
-  "Review my financial protection score",
-  "Run a quick retirement projection",
-  "What insurance coverage do I need?",
-  "Help me understand my portfolio allocation",
-  "Compare term vs whole life scenarios",
-  "What's my estimated tax liability?",
+  "Run a retirement projection for me",
+  "What's my financial protection score?",
+  "Help me compare investment strategies",
+  "Analyze my tax optimization options",
+  "What insurance coverage gaps do I have?",
+  "Help me plan for my children's education",
 ];
 
 const ADVISOR_SUGGESTIONS = [
-  "Analyze my pipeline for the week",
-  "Draft a compliant client outreach email",
-  "Run a strategy comparison for a 55-year-old client",
-  "Show me practice-to-wealth benchmarks",
-  "What CE credits am I missing?",
-  "Generate a comprehensive financial plan PDF",
-  "Review compliance flags from last week",
-  "What are my top lead sources this month?",
+  "Help me build a client presentation",
+  "Run a practice income projection",
+  "Compare IUL vs whole life for a client",
+  "Draft a follow-up email for a prospect",
+  "What's the latest on Roth conversion strategies?",
+  "Help me prepare for a client annual review",
 ];
 
 const MANAGER_SUGGESTIONS = [
-  "Show team performance dashboard",
-  "Audit compliance across the team",
-  "Review lead distribution metrics",
-  "What's the pipeline conversion rate this quarter?",
-  ...ADVISOR_SUGGESTIONS.slice(0, 4),
+  "Show me team production metrics",
+  "Help me plan recruiting strategy",
+  "Analyze our practice growth trajectory",
+  "What compliance items need attention?",
+  "Compare our firm's compensation structure",
+  "Help me build a business development plan",
 ];
 
-// ── Feature discovery cards ─────────────────────────────────────────
-interface FeatureCard {
-  icon: typeof Brain;
-  title: string;
-  description: string;
-  prompt: string;
-}
-
-const GUEST_FEATURES: FeatureCard[] = [
-  { icon: Brain, title: "AI-Powered Answers", description: "Ask any financial question and get an expert-level response.", prompt: "What can Stewardly help me with?" },
-  { icon: Calculator, title: "Calculators", description: "Retirement, estate, tax, and insurance calculators built in.", prompt: "Show me the available calculators" },
-  { icon: Shield, title: "Compliance-First", description: "Every response passes FINRA and regulatory guardrails.", prompt: "How does Stewardly handle compliance?" },
-];
-
-// ── Capability chips shown below feature cards ─────────────────────
-const CAPABILITY_CHIPS = [
-  // ── Wealth Engine (5) ──
-  { icon: Calculator, label: "Retirement", prompt: "Run a retirement projection: age 35, income $120k, saving 15%, target retirement age 60" },
-  { icon: Shield, label: "Protection", prompt: "Analyze my insurance protection gaps for a family with $150k income and two kids" },
-  { icon: TrendingUp, label: "Stocks", prompt: "Look up the current price and performance of SPY" },
-  { icon: Scale, label: "Compare", prompt: "Compare term life vs whole life vs IUL insurance" },
-  { icon: Dices, label: "Monte Carlo", prompt: "Run a Monte Carlo simulation for a $1M portfolio with 60/40 allocation over 30 years" },
-  // ── Learning Engine (3) ──
-  { icon: GraduationCap, label: "Exam Prep", prompt: "Quiz me on Series 65 exam topics — give me 5 practice questions" },
-  { icon: BookOpen, label: "CE Credits", prompt: "What continuing education credits do I need to maintain my licenses?" },
-  { icon: Lightbulb, label: "Case Study", prompt: "Give me a financial planning case study to work through" },
-  // ── Command Center (3) ──
-  { icon: Users, label: "Outreach", prompt: "Draft a professional follow-up email for a prospect interested in retirement planning" },
-  { icon: FileText, label: "Marketing", prompt: "Create a social media post about the importance of estate planning" },
-  { icon: Zap, label: "Pipeline", prompt: "Help me prioritize my lead pipeline — what should I focus on today?" },
-  // ── AI & Research (5) ──
-  { icon: Search, label: "Web Search", prompt: "Search the web for the latest 30-year mortgage rates" },
-  { icon: Globe, label: "Read Page", prompt: "Read and summarize this page: https://www.investopedia.com/terms/r/roth-ira.asp" },
-  { icon: Brain, label: "Research", prompt: "Research the pros and cons of Roth conversion ladders for early retirees" },
-  { icon: Code2, label: "Run Code", prompt: "Calculate compound interest on $10,000 at 7% for 30 years with monthly contributions of $500" },
-  { icon: BarChart3, label: "Analyze", prompt: "Analyze this data: AAPL 5yr return 180%, MSFT 200%, GOOG 150%, AMZN 120% — which performed best risk-adjusted?" },
-  { icon: Image, label: "Images", prompt: "Generate a professional infographic showing the power of compound interest over 30 years" },
-  { icon: FileOutput, label: "Documents", prompt: "Generate a comprehensive retirement planning guide for someone starting at age 35" },
-  { icon: Receipt, label: "Tax Estimate", prompt: "Estimate my federal and state taxes for $150k income, married filing jointly, 2 dependents" },
-];
-
-const USER_FEATURES: FeatureCard[] = [
-  { icon: TrendingUp, title: "Financial Score", description: "See your 12-dimension financial protection score.", prompt: "Show me my financial protection score" },
-  { icon: Calculator, title: "Run Projections", description: "Monte Carlo simulations and strategy comparisons.", prompt: "Run a retirement projection for me" },
-  { icon: MessageSquare, title: "Ask Anything", description: "Multi-model consensus for complex financial questions.", prompt: "Help me understand my investment options" },
-];
-
-const ADVISOR_FEATURES: FeatureCard[] = [
-  { icon: BarChart3, title: "Wealth Engine", description: "UWE, BIE, HE calculators with PDF report generation.", prompt: "Open the Wealth Engine dashboard" },
-  { icon: Users, title: "Lead Pipeline", description: "Propensity scoring, enrichment, and Kanban management.", prompt: "Show me my lead pipeline" },
-  { icon: GraduationCap, title: "Learning & Licensing", description: "SRS flashcards, quizzes, and CE credit tracking.", prompt: "What study content is recommended for me?" },
-  { icon: Zap, title: "AI Agents", description: "Automated compliance, advisory, and carrier workflows.", prompt: "Show me available AI agents" },
-];
-
-// ── Animation variants ──────────────────────────────────────────────
+// ── Animation ──────────────────────────────────────────────────────
 import type { Variants } from "framer-motion";
 
 const fadeUpVariants: Variants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 12 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.06, duration: 0.4, ease: "easeOut" as const },
+    transition: { delay: i * 0.08, duration: 0.35, ease: "easeOut" as const },
   }),
 };
 
@@ -235,7 +150,7 @@ const noMotionVariants: Variants = {
 // ── Component ───────────────────────────────────────────────────────
 export default function ChatGreetingV2({
   userName, isAuthenticated, onSuggestionClick, onResumeConversation,
-  userRole = "user", aiHealthy = true, recentConversations, topInsight, activeContextSources,
+  userRole = "user", aiHealthy = true, recentConversations,
 }: ChatGreetingV2Props) {
   const reducedMotion = usePrefersReducedMotion();
   const variant = reducedMotion ? noMotionVariants : fadeUpVariants;
@@ -249,173 +164,72 @@ export default function ChatGreetingV2({
     return seededShuffle(pool, dailySeed()).slice(0, 4);
   }, [isAuthenticated, userRole]);
 
-  const features = useMemo(() => {
-    if (!isAuthenticated) return GUEST_FEATURES;
-    if (userRole === "advisor" || userRole === "manager" || userRole === "steward") return ADVISOR_FEATURES;
-    return USER_FEATURES;
-  }, [isAuthenticated, userRole]);
-
-  const greeting = getTimeGreeting();
-  const displayName = userName ? `, ${userName}` : "";
-
   const resumeConversations = useMemo(() => {
     if (!recentConversations || !isAuthenticated) return [];
     return recentConversations
       .filter((c) => (c.messageCount ?? 0) > 0 && c.title && c.title !== "New Conversation")
-      .slice(0, 2); // 2 max for cleaner mobile; 3rd only shown on sm+
+      .slice(0, 2);
   }, [recentConversations, isAuthenticated]);
 
-  const contextSourceCount = useMemo(() => {
-    if (!activeContextSources) return 0;
-    let count = 0;
-    if (activeContextSources.documents && activeContextSources.documents > 0) count++;
-    if (activeContextSources.memories && activeContextSources.memories > 0) count++;
-    if (activeContextSources.financialProfile) count++;
-    if (activeContextSources.integrations && activeContextSources.integrations > 0) count++;
-    return count;
-  }, [activeContextSources]);
+  const greeting = getTimeGreeting();
+  const displayName = userName ? `, ${userName}` : "";
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 px-4 py-8 max-w-2xl mx-auto">
+    <div className="flex flex-col items-center justify-center gap-8 px-4 py-12 max-w-xl mx-auto">
+      {/* AI health warning — only shown when degraded */}
       {!aiHealthy && (
         <motion.div className="w-full flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm" initial="hidden" animate="visible" variants={variant} custom={0}>
           <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-          <span className="text-destructive">AI services are experiencing issues. Responses may be slower or unavailable.</span>
+          <span className="text-destructive">AI services are experiencing issues. Responses may be slower.</span>
         </motion.div>
       )}
 
+      {/* Greeting — clean and personal */}
       <motion.div className="text-center space-y-2" initial="hidden" animate="visible" variants={variant} custom={1}>
-        <h2 className="font-heading text-2xl sm:text-3xl">{greeting}{displayName}</h2>
+        <h2 className="font-heading text-2xl sm:text-3xl font-semibold">{greeting}{displayName}</h2>
         <p className="text-muted-foreground text-sm">
-          {isAuthenticated ? "How can I help you today?" : "Ask me anything about financial planning, compliance, or calculators."}
+          {isAuthenticated
+            ? "How can I help you today?"
+            : "Ask me anything about financial planning, insurance, or wealth building."}
         </p>
       </motion.div>
 
-      {/* Pass 3: Active Context Sources Indicator — hidden on mobile to reduce clutter */}
-      {isAuthenticated && contextSourceCount > 0 && (
-        <motion.div className="hidden sm:flex items-center gap-3 rounded-lg border border-border/60 bg-card/50 px-4 py-2.5 text-xs text-muted-foreground" initial="hidden" animate="visible" variants={variant} custom={1.5}>
-          <span className="font-medium text-foreground/70">AI Context Active:</span>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {activeContextSources?.documents && activeContextSources.documents > 0 && (
-              <span className="inline-flex items-center gap-1 text-blue-400/80"><FileText className="w-3 h-3" />{activeContextSources.documents} doc{activeContextSources.documents > 1 ? "s" : ""}</span>
-            )}
-            {activeContextSources?.memories && activeContextSources.memories > 0 && (
-              <span className="inline-flex items-center gap-1 text-purple-400/80"><Database className="w-3 h-3" />{activeContextSources.memories} memor{activeContextSources.memories > 1 ? "ies" : "y"}</span>
-            )}
-            {activeContextSources?.financialProfile && (
-              <span className="inline-flex items-center gap-1 text-emerald-400/80"><Fingerprint className="w-3 h-3" />Financial profile</span>
-            )}
-            {activeContextSources?.integrations && activeContextSources.integrations > 0 && (
-              <span className="inline-flex items-center gap-1 text-amber-400/80"><Zap className="w-3 h-3" />{activeContextSources.integrations} integration{activeContextSources.integrations > 1 ? "s" : ""}</span>
-            )}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Pass 3: Resume Where You Left Off */}
+      {/* Resume where you left off — max 2, compact */}
       {resumeConversations.length > 0 && onResumeConversation && (
         <motion.div className="w-full space-y-2" initial="hidden" animate="visible" variants={variant} custom={2}>
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
-            <Clock className="w-3 h-3" />Resume where you left off
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70 px-1">
+            <Clock className="w-3 h-3" />
+            <span>Resume where you left off</span>
           </div>
-          <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
+          <div className="flex flex-col gap-1.5">
             {resumeConversations.map((conv) => (
-              <button type="button" key={conv.id}  onClick={() => onResumeConversation(conv.id)}
-                className="group flex items-start gap-3 rounded-xl border border-border bg-card p-3 text-left transition-all hover:shadow-md hover:shadow-accent/5 hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring">
-                <div className="shrink-0 mt-0.5 rounded-lg bg-accent/10 p-1.5"><MessageSquare className="w-3.5 h-3.5 text-accent" /></div>
+              <button type="button" key={conv.id} onClick={() => onResumeConversation(conv.id)}
+                className="group flex items-center gap-3 rounded-xl border border-border/60 bg-card/50 px-4 py-3 text-left transition-all hover:bg-card hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring">
+                <MessageSquare className="w-4 h-4 text-muted-foreground/50 group-hover:text-accent shrink-0 transition-colors" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">{conv.title}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {formatRelativeTime(conv.updatedAt)}{conv.messageCount ? ` \u00b7 ${conv.messageCount} messages` : ""}
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+                    {formatRelativeTime(conv.updatedAt)}{conv.messageCount ? ` · ${conv.messageCount} messages` : ""}
                   </p>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-accent shrink-0 mt-1 transition-colors" />
+                <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/30 group-hover:text-accent shrink-0 transition-colors" />
               </button>
             ))}
           </div>
         </motion.div>
       )}
 
-      {/* Pass 3: Proactive Insight Card */}
-      {topInsight && isAuthenticated && (
-        <motion.div className="w-full" initial="hidden" animate="visible" variants={variant} custom={2.5}>
-          <button type="button"
-            onClick={() => onSuggestionClick(topInsight.title ? `Tell me more about: ${topInsight.title}` : `Explain this insight: ${topInsight.content.substring(0, 100)}`)}
-            className="w-full flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-left transition-all hover:bg-amber-500/10 hover:border-amber-500/30 focus-visible:ring-2 focus-visible:ring-ring">
-            <div className="shrink-0 rounded-lg bg-amber-500/10 p-2"><Lightbulb className="w-4 h-4 text-amber-500" /></div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-500/70">Proactive Insight</span>
-                {topInsight.priority === "critical" && (
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded">Urgent</span>
-                )}
-              </div>
-              {topInsight.title && <p className="text-sm font-medium mt-1">{topInsight.title}</p>}
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{topInsight.content}</p>
-            </div>
-            <ArrowRight className="w-4 h-4 text-amber-500/40 shrink-0 mt-1" />
-          </button>
-        </motion.div>
-      )}
-
-      {/* ── Capability Tools Grid — PRIMARY SURFACE for all 4 tracks ── */}
-      <motion.div className="w-full space-y-4" initial="hidden" animate="visible" variants={variant} custom={3}>
-        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
-          <Zap className="w-3 h-3 text-accent" /> What I Can Do
+      {/* Suggestion prompts — 3-4 rotating, clean pills */}
+      <motion.div className="w-full flex flex-col items-center gap-2" initial="hidden" animate="visible" variants={variant} custom={3}>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {suggestions.map((text) => (
+            <button type="button" key={text} onClick={() => onSuggestionClick(text)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-4 py-2 text-sm text-foreground/70 hover:bg-accent/10 hover:border-accent/30 hover:text-accent transition-all focus-visible:ring-2 focus-visible:ring-ring">
+              <Sparkles className="w-3 h-3 text-accent/60 shrink-0" />
+              <span className="line-clamp-1">{text}</span>
+            </button>
+          ))}
         </div>
-        {[
-          { title: "Wealth Engine", chips: CAPABILITY_CHIPS.slice(0, 5) },
-          { title: "Learning", chips: CAPABILITY_CHIPS.slice(5, 8) },
-          { title: "Command Center", chips: CAPABILITY_CHIPS.slice(8, 11) },
-          { title: "AI & Research", chips: CAPABILITY_CHIPS.slice(11) },
-        ].map((section, si) => (
-          <div key={section.title} className="space-y-1.5">
-            <span className="text-[9px] font-semibold text-muted-foreground/60 uppercase tracking-widest px-1">{section.title}</span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-              {section.chips.map((chip, i) => {
-                const ChipIcon = chip.icon;
-                return (
-                  <motion.button type="button" key={chip.label} onClick={() => onSuggestionClick(chip.prompt)}
-                    variants={variant} custom={3 + (si * 5 + i) * 0.04}
-                    className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/80 px-3 py-2.5 text-left transition-all hover:bg-accent/10 hover:border-accent/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring group">
-                    <div className="shrink-0 rounded-md bg-accent/10 p-1.5 group-hover:bg-accent/20 transition-colors">
-                      <ChipIcon className="w-3.5 h-3.5 text-accent" />
-                    </div>
-                    <span className="text-xs font-medium text-foreground/80 group-hover:text-accent transition-colors truncate">{chip.label}</span>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </motion.div>
-
-      {/* Suggestion chips — quick prompts */}
-      <motion.div className="flex flex-wrap items-center justify-center gap-2 max-w-lg" initial="hidden" animate="visible" variants={variant} custom={5}>
-        {suggestions.map((text) => (
-          <button type="button" key={text}  onClick={() => onSuggestionClick(text)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm text-foreground/80 hover:bg-accent/10 hover:border-accent/30 hover:text-accent transition-colors focus-visible:ring-2 focus-visible:ring-ring">
-            <Sparkles className="w-3 h-3 text-accent shrink-0" />{text}
-          </button>
-        ))}
-      </motion.div>
-
-      {/* Feature discovery cards */}
-      <motion.div className="w-full grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" initial="hidden" animate="visible">
-        {features.map((card, i) => {
-          const Icon = card.icon;
-          return (
-            <motion.button key={card.title} type="button" onClick={() => onSuggestionClick(card.prompt)}
-              className="card-lift flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-4 text-left transition-shadow hover:shadow-md hover:shadow-accent/5 hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring"
-              variants={variant} custom={i + 6}>
-              <div className="inline-flex items-center justify-center rounded-lg bg-accent/10 p-2"><Icon className="w-4 h-4 text-accent" /></div>
-              <div>
-                <h3 className="font-semibold text-sm">{card.title}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{card.description}</p>
-              </div>
-            </motion.button>
-          );
-        })}
       </motion.div>
     </div>
   );
