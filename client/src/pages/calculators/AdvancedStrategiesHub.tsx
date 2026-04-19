@@ -750,7 +750,7 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
             </div>
           </CardContent>
         )}
-      </Card>
+      </Card>}
 
       {/* ─── ALLOCATION PIE CHART ─── */}
       <Card>
@@ -780,7 +780,7 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
             </ResponsiveContainer>
           </div>
         </CardContent>
-      </Card>}
+      </Card>
 
       {/* ─── CASCADE FLOW DIAGRAM ─── */}
       {hubComplexity === 'expert' && <CascadeSankey compact />}

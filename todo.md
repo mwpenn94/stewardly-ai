@@ -6773,3 +6773,8 @@
 - [x] Convergence Pass 2 — All imports resolve, no duplicate registrations, DB migration applied
 - [x] Convergence Pass 3 — 5-layer persona assessment confirms optimal coverage
 - [x] All 11 tests pass (pass142-features.test.ts), checkpoint saved
+
+## Build Fix — Publish Error
+- [x] Fix JSX syntax error in AdvancedStrategiesHub.tsx — stray `}` on Allocation Pie Chart Card (not in conditional)
+- [x] Fix stray `}` on separate line in ClientWealthHub.tsx sensitivity section
+- [x] Verify production build succeeds (vite build + esbuild both pass)

@@ -663,9 +663,8 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
             </div>
           </CardContent>
         )}
-      </Card>
+      </Card>}
 
-      }
       {/* ─── TIME-PHASED PROJECTIONS ─── */}
       {hubComplexity !== 'simple' &&
       <Card className="mb-4">
