@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import type { WealthEngineData } from '@/contexts/WealthEngineContext';
 
-const fmt = (v: number) => v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v / 1_000).toFixed(0)}K` : `$${Math.round(v)}`;
+const fmt = (v: number) => !isFinite(v) ? '—' : v >= 1_000_000 ? `$${(v / 1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v / 1_000).toFixed(0)}K` : `$${Math.round(v)}`;
 
 function DeltaBadge({ current, baseline, label, format = 'dollar' }: {
   current: number; baseline: number; label: string; format?: 'dollar' | 'pct' | 'score';

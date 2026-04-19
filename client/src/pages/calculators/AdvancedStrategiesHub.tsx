@@ -298,9 +298,10 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
               Advanced Strategies Hub
               <RefTip text="Unified view of all advanced planning strategies. Premium financing, ILIT, executive compensation, charitable vehicles, and business planning — with cross-strategy cascade showing how each feeds into your client's holistic financial plan. Sources: AALU (2024), Estate Planning Council, IRC §7702, §2042, §162, §170." refId="advanced-hub" />
             </span>
-            <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5">
+            <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5" role="tablist" aria-label="Complexity level">
               {(['simple', 'detailed', 'expert'] as const).map(lvl => (
                 <button key={lvl} onClick={() => setHubComplexity(lvl)}
+                  role="tab" aria-selected={hubComplexity === lvl}
                   className={`px-2 py-0.5 text-[10px] rounded transition-all ${
                     hubComplexity === lvl ? 'bg-primary text-primary-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
                   }`}>

@@ -289,9 +289,10 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
         </h2>
         <div className="flex items-center gap-2">
           {/* Complexity Toggle */}
-          <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5">
+          <div className="flex bg-muted/40 rounded-md p-0.5 gap-0.5" role="tablist" aria-label="Complexity level">
             {(['simple', 'detailed', 'expert'] as const).map(lvl => (
               <button key={lvl} onClick={() => setHubComplexity(lvl)}
+                role="tab" aria-selected={hubComplexity === lvl}
                 className={`px-2 py-0.5 text-[10px] rounded transition-all ${
                   hubComplexity === lvl ? 'bg-primary text-primary-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
                 }`}>

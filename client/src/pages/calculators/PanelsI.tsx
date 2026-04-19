@@ -83,6 +83,9 @@ export function BalanceSheetPanel({ nw, savings, retirement401k, mortgage, debt 
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Wallet className="w-5 h-5 text-blue-400" /> Balance Sheet — Net Worth View
+            <Tooltip><TooltipTrigger><Info className="w-4 h-4 text-muted-foreground" /></TooltipTrigger>
+              <TooltipContent className="max-w-xs">Aggregated view of all assets vs. liabilities. Net worth is the foundation of financial health — track it over time to measure progress toward your goals.</TooltipContent>
+            </Tooltip>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -217,6 +220,9 @@ export function DebtManagementPanel({ mortgage, debt, income }: DebtProps) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <CreditCard className="w-5 h-5 text-amber-400" /> Debt Management
+            <Tooltip><TooltipTrigger><Info className="w-4 h-4 text-muted-foreground" /></TooltipTrigger>
+              <TooltipContent className="max-w-xs">Analyze your debt structure, interest costs, and payoff strategies. Compare avalanche vs. snowball methods to find the optimal repayment plan.</TooltipContent>
+            </Tooltip>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -425,6 +431,9 @@ export function GovernanceIPSPanel({ riskTolerance }: GovernanceProps) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileCheck className="w-5 h-5 text-blue-400" /> Investment Policy Statement (IPS) Generator
+            <Tooltip><TooltipTrigger><Info className="w-4 h-4 text-muted-foreground" /></TooltipTrigger>
+              <TooltipContent className="max-w-xs">Generate a formal Investment Policy Statement based on your risk profile, goals, and constraints. IPS documents are best practice for fiduciary compliance and client governance.</TooltipContent>
+            </Tooltip>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -681,6 +690,9 @@ export function StockCompPanel({ income }: StockCompProps) {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Percent className="w-5 h-5 text-blue-400" /> Stock-Based Compensation Analysis
+            <Tooltip><TooltipTrigger><Info className="w-4 h-4 text-muted-foreground" /></TooltipTrigger>
+              <TooltipContent className="max-w-xs">Model RSU, ISO, and NQSO vesting schedules with tax implications. Optimize exercise timing and diversification strategies to maximize after-tax value.</TooltipContent>
+            </Tooltip>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">

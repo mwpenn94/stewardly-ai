@@ -902,15 +902,16 @@ export function MyPlanPanel(p: PracticeProps) {
         </div>
 
         {/* ─── Complexity Level Selector ─── */}
-        <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1" role="tablist" aria-label="Complexity level">
           {(['simple', 'detailed', 'expert'] as const).map(lvl => (
             <button key={lvl} onClick={() => p.setComplexity(lvl)}
+              role="tab" aria-selected={p.complexity === lvl}
               className={`flex-1 px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
                 p.complexity === lvl
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-muted/50'
               }`}>
-              {lvl === 'simple' ? '\u2728 Simple' : lvl === 'detailed' ? '\ud83d\udcca Detailed' : '\ud83d\udd2c Expert'}
+              {lvl === 'simple' ? 'Quick' : lvl === 'detailed' ? 'Standard' : 'Expert'}
             </button>
           ))}
         </div>
