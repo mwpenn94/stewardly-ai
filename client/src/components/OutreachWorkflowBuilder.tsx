@@ -4,7 +4,7 @@
  * Provides drag-to-reorder step builder for marketing automation sequences.
  */
 import { useState } from "react";
-import { Plus, Mail, MessageSquare, Clock, GitBranch, Trash2, ArrowDown, Phone, Zap } from "lucide-react";
+import { Plus, Mail, MessageSquare, Clock, GitBranch, Trash2, ArrowDown, Phone, Zap, Linkedin, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 
 export interface WorkflowStep {
   id: string;
-  type: "email" | "sms" | "wait" | "condition" | "call" | "task";
+  type: "email" | "sms" | "wait" | "condition" | "call" | "task" | "linkedin_inmail" | "dripify_sequence";
   config: Record<string, any>;
 }
 
@@ -35,6 +35,8 @@ const stepTypeConfig: Record<WorkflowStep["type"], { icon: any; label: string; c
   condition: { icon: GitBranch, label: "Condition", colorClass: "bg-purple-500/10 text-purple-400" },
   call: { icon: Phone, label: "Schedule Call", colorClass: "bg-cyan-500/10 text-cyan-400" },
   task: { icon: Zap, label: "Create Task", colorClass: "bg-orange-500/10 text-orange-400" },
+  linkedin_inmail: { icon: Linkedin, label: "LinkedIn InMail", colorClass: "bg-sky-500/10 text-sky-400" },
+  dripify_sequence: { icon: Send, label: "Dripify Sequence", colorClass: "bg-indigo-500/10 text-indigo-400" },
 };
 
 let stepIdCounter = Date.now();
@@ -56,6 +58,8 @@ export default function OutreachWorkflowBuilder({ steps, onChange }: OutreachWor
     if (type === "condition") config.condition = "";
     if (type === "call") config.duration = 30;
     if (type === "task") config.description = "";
+    if (type === "linkedin_inmail") config.template = "Default InMail";
+    if (type === "dripify_sequence") config.campaignName = "";
     onChange([...steps, { id, type, config }]);
     setShowAddMenu(false);
   };

@@ -25,7 +25,7 @@ This document tracks competitive parity gaps identified through the 8-domain cap
 | Data | 2 | 2 | 0 | 0 | 100% |
 | AI | 3 | 3 | 0 | 0 | 100% |
 | Client Experience | 2 | 2 | 0 | 0 | 100% |
-| Integration | 2 | 2 | 0 | 0 | 100% |
+| Integration | 7 | 7 | 0 | 0 | 100% |
 | Reporting | 2 | 2 | 0 | 0 | 100% |
 
 ## Remaining Gaps and Enhancement Opportunities
@@ -46,7 +46,7 @@ The following items represent areas where competitors offer deeper functionality
 |----|--------|-----------|-----------------|---------------------|--------|
 | GAP-004 | Data | Real-Time Market Data | Bloomberg/Refinitiv offer streaming quotes; current FRED data is delayed | Bloomberg Terminal | Evaluate real-time data feed integration |
 | GAP-005 | Client Experience | Client Mobile App | RightCapital offers a dedicated client-facing mobile app | RightCapital | Progressive web app (PWA) for client access |
-| GAP-006 | Integration | CRM Deep Integration | eMoney integrates deeply with Salesforce and Redtail | eMoney | Build Salesforce/Redtail webhook connectors |
+| ~~GAP-006~~ | Integration | CRM Deep Integration | **RESOLVED Pass 14** — Salesforce, Redtail, GoHighLevel, Wealthbox all wired with bidirectional sync | eMoney | ~~Build Salesforce/Redtail webhook connectors~~ |
 | GAP-007 | Reporting | Custom Report Builder | MoneyGuidePro offers drag-and-drop report customization | MoneyGuidePro | Add report template editor to annual review |
 
 ### Low Priority (Differentiation Opportunities)
@@ -80,3 +80,4 @@ The monolith-to-monorepo extraction is tracked separately in the ManusNextDashbo
 | Version | Date | Changes |
 |---------|------|---------|
 | v124 | 2026-04-18 | Initial parity backlog creation, 10 gaps identified, 7 differentiators documented |
+| v125 | 2026-04-20 | Pass 14: Integration parity resolved — GHL, Dripify, LinkedIn, Workable, Salesforce all wired into UI + routers |

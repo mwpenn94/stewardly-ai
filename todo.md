@@ -7604,3 +7604,13 @@
 - [x] P13-3: People Engine confirmed in PersonaSidebar5 gated behind professional tier (label: "People", path: /people/clients)
 - [x] P13-LVUA: Confirmed via Playwright — sign-in CTA visible on desktop + mobile, degraded banner present
 - [x] P13-TESTS: 13/13 passed (v83-pass13-signin.test.ts) + PARITY.md updated
+
+### v8.3 Pass 14 — Restore Missing Integrations + Leads Pipeline
+- [x] P14-1: GoHighLevel wired into CRM adapter factory, CRMSync dropdown, DataPipelines (webhook + contact sync), CommandCenter status card
+- [x] P14-2: Dripify wired into DataPipelines (CSV import), OutreachAutomation (triggers + workflow), LinkedInTab (Dripify section), seed provider
+- [x] P14-3: LinkedIn wired into DataPipelines (Sales Navigator), OutreachAutomation (InMail step + triggers + workflow), CommandCenter status card, seed provider
+- [x] P14-4: Workable wired into DataPipelines (ATS Sync), ATSTab (sync button), CommandCenter status card, seed provider
+- [x] P14-5: Lead Pipeline page at /leads confirmed accessible via LVUA (1/1 selectors)
+- [x] P14-6: Wealth Engine at /wealth-engine confirmed accessible, Calculators at /calculators routed
+- [x] P14-LVUA: 5/7 pages fully validated, 2 partial (text nuances only) — CRMSync 5/5, DataPipelines 6/6, CommandCenter 5/5, LeadPipeline 1/1, Integrations 1/1
+- [x] P14-TESTS: 25/25 vitest tests pass (pass14-integrations.test.ts) + PARITY_BACKLOG v125 updated + GAP-006 resolved

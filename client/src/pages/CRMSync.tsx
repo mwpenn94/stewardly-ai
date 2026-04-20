@@ -2,7 +2,7 @@
  * CRMSync — CRM integration dashboard.
  *
  * Wired to:
- * - crm.sync mutation (real Wealthbox/Salesforce/Redtail sync)
+ * - crm.sync mutation (real Wealthbox/Salesforce/Redtail/GoHighLevel sync)
  * - crm.syncHistory query (real sync log from crm_sync_log table)
  * - crm.providers query (aggregated provider status from sync log)
  */
@@ -30,7 +30,7 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
   const isAdmin = user?.role === "admin";
   const [, navigate] = useLocation();
   const [autoSync, setAutoSync] = useState(true);
-  const [provider, setProvider] = useState<"wealthbox" | "salesforce" | "redtail">("wealthbox");
+  const [provider, setProvider] = useState<"wealthbox" | "salesforce" | "redtail" | "gohighlevel">("wealthbox");
   const [direction, setDirection] = useState<"pull" | "push" | "bidirectional">("pull");
 
   const utils = trpc.useUtils();
@@ -88,7 +88,7 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">CRM Sync</h1>
-            <p className="text-sm text-muted-foreground">Wealthbox, Salesforce, and Redtail integration management</p>
+            <p className="text-sm text-muted-foreground">Wealthbox, Salesforce, Redtail, and GoHighLevel integration management</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -98,6 +98,7 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
               <SelectItem value="wealthbox">Wealthbox</SelectItem>
               <SelectItem value="salesforce">Salesforce</SelectItem>
               <SelectItem value="redtail">Redtail</SelectItem>
+              <SelectItem value="gohighlevel">GoHighLevel</SelectItem>
             </SelectContent>
           </Select>
           <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
@@ -118,8 +119,8 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
       <QueryErrorBanner query={syncHistory} label="sync history" />
 
       {/* Provider status cards — derived from real sync log data */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {(["wealthbox", "salesforce", "redtail"] as const).map((prov) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {(["wealthbox", "salesforce", "redtail", "gohighlevel"] as const).map((prov) => {
           const info = providerMap[prov];
           const statusIcon = info?.status === "completed"
             ? <CheckCircle2 className="h-4 w-4 text-emerald-400" />

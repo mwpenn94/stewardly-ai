@@ -26,6 +26,10 @@ const TRIGGER_OPTIONS = [
   { value: "no_activity", label: "No Activity (X days)" },
   { value: "appointment_booked", label: "Appointment Booked" },
   { value: "manual", label: "Manual Enrollment" },
+  { value: "ghl_webhook", label: "GoHighLevel Webhook" },
+  { value: "dripify_reply", label: "Dripify Reply Received" },
+  { value: "linkedin_connection", label: "LinkedIn Connection Accepted" },
+  { value: "workable_application", label: "Workable Application Received" },
 ];
 
 const INITIAL_WORKFLOWS: OutreachWorkflow[] = [
@@ -78,6 +82,39 @@ const INITIAL_WORKFLOWS: OutreachWorkflow[] = [
     enrolledCount: 23,
     completedCount: 8,
     createdAt: new Date(Date.now() - 86400000 * 45).toISOString(),
+  },
+  {
+    id: "ow-4",
+    name: "LinkedIn Prospecting Sequence",
+    trigger: "linkedin_connection",
+    status: "active",
+    steps: [
+      { id: "s1", type: "linkedin_inmail", config: { template: "Warm Introduction — Value-First" } },
+      { id: "s2", type: "wait", config: { delayDays: 3 } },
+      { id: "s3", type: "dripify_sequence", config: { campaignName: "HNW Advisor Outreach" } },
+      { id: "s4", type: "wait", config: { delayDays: 5 } },
+      { id: "s5", type: "condition", config: { condition: "dripify_replied = true" } },
+      { id: "s6", type: "call", config: { duration: 15 } },
+    ],
+    enrolledCount: 67,
+    completedCount: 12,
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+  },
+  {
+    id: "ow-5",
+    name: "GoHighLevel Lead Nurture",
+    trigger: "ghl_webhook",
+    status: "active",
+    steps: [
+      { id: "s1", type: "email", config: { template: "GHL Welcome — Automated Follow-Up" } },
+      { id: "s2", type: "wait", config: { delayDays: 2 } },
+      { id: "s3", type: "sms", config: { message: "Hi {{name}}, thanks for reaching out! Would you like to schedule a quick call?" } },
+      { id: "s4", type: "wait", config: { delayDays: 3 } },
+      { id: "s5", type: "call", config: { duration: 15 } },
+    ],
+    enrolledCount: 145,
+    completedCount: 38,
+    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
   },
 ];
 

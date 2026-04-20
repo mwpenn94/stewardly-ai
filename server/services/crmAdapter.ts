@@ -307,10 +307,140 @@ export class RedtailAdapter implements CRMAdapter {
 }
 
 // ─── Adapter Factory ────────────────────────────────────────────────────
+// ─── Salesforce CRM Adapter (stub — uses same interface) ────────────────
+export class SalesforceAdapter implements CRMAdapter {
+  provider = "salesforce";
+  async testConnection(credentials: Record<string, string>): Promise<boolean> {
+    const instanceUrl = credentials.instanceUrl || "https://login.salesforce.com";
+    try {
+      const resp = await fetch(`${instanceUrl}/services/data/v59.0/`, {
+        headers: { "Authorization": `Bearer ${credentials.accessToken}`, "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(10000),
+      });
+      return resp.ok;
+    } catch { return false; }
+  }
+  async pullContacts(credentials: Record<string, string>, since?: number): Promise<CRMContact[]> {
+    try {
+      const instanceUrl = credentials.instanceUrl || "https://login.salesforce.com";
+      let soql = "SELECT Id, FirstName, LastName, Email, Phone, Account.Name FROM Contact";
+      if (since) soql += ` WHERE LastModifiedDate > ${new Date(since).toISOString()}`;
+      soql += " LIMIT 200";
+      const resp = await fetch(`${instanceUrl}/services/data/v59.0/query?q=${encodeURIComponent(soql)}`, {
+        headers: { "Authorization": `Bearer ${credentials.accessToken}`, "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!resp.ok) throw new Error(`Salesforce HTTP ${resp.status}`);
+      const data = await resp.json() as any;
+      return (data.records || []).map((c: any) => ({
+        externalId: c.Id, firstName: c.FirstName || "", lastName: c.LastName || "",
+        email: c.Email, phone: c.Phone, company: c.Account?.Name,
+        tags: [], customFields: {},
+        updatedAt: c.LastModifiedDate ? new Date(c.LastModifiedDate).getTime() : undefined,
+      }));
+    } catch (err: any) {
+      logger.error({ operation: "crmAdapter", err }, "[CRM:Salesforce] Pull contacts error:", err.message);
+      return [];
+    }
+  }
+  async pushContact(credentials: Record<string, string>, contact: CRMContact): Promise<string> {
+    try {
+      const instanceUrl = credentials.instanceUrl || "https://login.salesforce.com";
+      const resp = await fetch(`${instanceUrl}/services/data/v59.0/sobjects/Contact/`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${credentials.accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ FirstName: contact.firstName, LastName: contact.lastName, Email: contact.email, Phone: contact.phone }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await resp.json() as any;
+      return data.id || "";
+    } catch (err: any) {
+      logger.error({ operation: "crmAdapter", err }, "[CRM:Salesforce] Push contact error:", err.message);
+      return "";
+    }
+  }
+  async pullActivities(): Promise<CRMActivity[]> { return []; }
+  async pushActivity(): Promise<string> { return ""; }
+}
+
+// ─── GoHighLevel CRM Adapter (wraps existing gohighlevel.ts) ────────────
+export class GoHighLevelCRMAdapter implements CRMAdapter {
+  provider = "gohighlevel";
+  private baseUrl = "https://services.leadconnectorhq.com";
+  private headers(credentials: Record<string, string>) {
+    return {
+      "Authorization": `Bearer ${credentials.apiToken || credentials.accessToken || process.env.GHL_API_TOKEN || ""}`,
+      "Content-Type": "application/json",
+      "Version": "2021-07-28",
+    };
+  }
+  async testConnection(credentials: Record<string, string>): Promise<boolean> {
+    try {
+      const locationId = credentials.locationId || process.env.GHL_LOCATION_ID || "";
+      const resp = await fetch(`${this.baseUrl}/contacts/?locationId=${locationId}&limit=1`, {
+        headers: this.headers(credentials), signal: AbortSignal.timeout(10000),
+      });
+      return resp.ok;
+    } catch { return false; }
+  }
+  async pullContacts(credentials: Record<string, string>, since?: number): Promise<CRMContact[]> {
+    try {
+      const locationId = credentials.locationId || process.env.GHL_LOCATION_ID || "";
+      const resp = await fetch(`${this.baseUrl}/contacts/?locationId=${locationId}&limit=100`, {
+        headers: this.headers(credentials), signal: AbortSignal.timeout(30000),
+      });
+      if (!resp.ok) throw new Error(`GHL HTTP ${resp.status}`);
+      const data = await resp.json() as any;
+      return (data.contacts || []).map((c: any) => ({
+        externalId: c.id, firstName: c.firstName || "", lastName: c.lastName || "",
+        email: c.email, phone: c.phone, company: c.companyName,
+        tags: c.tags || [], customFields: c.customField || {},
+        updatedAt: c.dateAdded ? new Date(c.dateAdded).getTime() : undefined,
+      }));
+    } catch (err: any) {
+      logger.error({ operation: "crmAdapter", err }, "[CRM:GHL] Pull contacts error:", err.message);
+      return [];
+    }
+  }
+  async pushContact(credentials: Record<string, string>, contact: CRMContact): Promise<string> {
+    try {
+      const locationId = credentials.locationId || process.env.GHL_LOCATION_ID || "";
+      const resp = await fetch(`${this.baseUrl}/contacts/`, {
+        method: "POST", headers: this.headers(credentials),
+        body: JSON.stringify({ locationId, firstName: contact.firstName, lastName: contact.lastName, email: contact.email, phone: contact.phone, tags: contact.tags }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await resp.json() as any;
+      return data.contact?.id || "";
+    } catch (err: any) {
+      logger.error({ operation: "crmAdapter", err }, "[CRM:GHL] Push contact error:", err.message);
+      return "";
+    }
+  }
+  async pullActivities(): Promise<CRMActivity[]> { return []; }
+  async pushActivity(credentials: Record<string, string>, activity: CRMActivity): Promise<string> {
+    try {
+      if (!activity.contactExternalId) return "";
+      const resp = await fetch(`${this.baseUrl}/contacts/${activity.contactExternalId}/notes`, {
+        method: "POST", headers: this.headers(credentials),
+        body: JSON.stringify({ body: `[${activity.type}] ${activity.subject}\n${activity.body || ""}` }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await resp.json() as any;
+      return data.id || "";
+    } catch (err: any) {
+      logger.error({ operation: "crmAdapter", err }, "[CRM:GHL] Push activity error:", err.message);
+      return "";
+    }
+  }
+}
+
 export function getCRMAdapter(provider: string): CRMAdapter {
   switch (provider.toLowerCase()) {
     case "wealthbox": return new WealthboxAdapter();
     case "redtail": return new RedtailAdapter();
+    case "salesforce": return new SalesforceAdapter();
+    case "gohighlevel": return new GoHighLevelCRMAdapter();
     default: throw new Error(`Unsupported CRM provider: ${provider}`);
   }
 }

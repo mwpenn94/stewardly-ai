@@ -5,7 +5,7 @@ import { logger } from "../_core/logger";
 
 const uuid = () => crypto.randomUUID();
 
-const PROVIDERS = [
+export const PROVIDERS = [
   {
     id: uuid(), slug: "gohighlevel", name: "GoHighLevel", description: "All-in-one CRM, marketing automation, and sales pipeline management for agencies.", category: "crm" as const,
     ownershipTier: "organization" as const, authMethod: "oauth2" as const,
@@ -289,6 +289,42 @@ const PROVIDERS = [
     signupUrl: "https://corporate.redtailtechnology.com/",
     freeTierDescription: "No free tier. $99/mo per database (up to 15 users). API included.",
     freeTierLimit: "None",
+  },
+  {
+    id: uuid(), slug: "salesforce", name: "Salesforce Financial Services Cloud", description: "Enterprise CRM with Financial Services Cloud for advisor-client relationship management, pipeline tracking, and compliance workflows.", category: "crm" as const,
+    ownershipTier: "professional" as const, authMethod: "oauth2" as const,
+    baseUrl: "https://login.salesforce.com",
+    docsUrl: "https://developer.salesforce.com/docs",
+    signupUrl: "https://www.salesforce.com/financial-services/",
+    freeTierDescription: "No free tier. Enterprise pricing. Developer edition available for testing.",
+    freeTierLimit: "None",
+  },
+  {
+    id: uuid(), slug: "dripify", name: "Dripify", description: "LinkedIn automation platform for drip campaigns, connection requests, and outreach sequences. CSV export integration for lead pipeline.", category: "marketing" as const,
+    ownershipTier: "professional" as const, authMethod: "api_key" as const,
+    baseUrl: "https://dripify.io",
+    docsUrl: "https://dripify.io/help",
+    signupUrl: "https://dripify.io/",
+    freeTierDescription: "Free trial available. Plans from $59/mo. CSV export on all plans.",
+    freeTierLimit: "7-day trial",
+  },
+  {
+    id: uuid(), slug: "linkedin", name: "LinkedIn / Sales Navigator", description: "Professional networking platform with Sales Navigator for advanced lead search, InMail, and relationship tracking. CSV export for lead lists.", category: "marketing" as const,
+    ownershipTier: "professional" as const, authMethod: "oauth2" as const,
+    baseUrl: "https://api.linkedin.com/v2",
+    docsUrl: "https://learn.microsoft.com/en-us/linkedin/",
+    signupUrl: "https://business.linkedin.com/sales-solutions",
+    freeTierDescription: "Basic LinkedIn free. Sales Navigator from $99.99/mo. CSV export on Team+ plans.",
+    freeTierLimit: "Basic profile access",
+  },
+  {
+    id: uuid(), slug: "workable", name: "Workable", description: "Applicant Tracking System (ATS) for recruiting financial advisors, associates, and operations staff. Pipeline tracking and candidate management.", category: "recruiting" as const,
+    ownershipTier: "professional" as const, authMethod: "api_key" as const,
+    baseUrl: "https://www.workable.com/spi/v3",
+    docsUrl: "https://workable.readme.io/reference",
+    signupUrl: "https://www.workable.com/",
+    freeTierDescription: "Free trial available. Starter plan from $149/mo. API on Pro+ plans.",
+    freeTierLimit: "15-day trial",
   },
 ];
 

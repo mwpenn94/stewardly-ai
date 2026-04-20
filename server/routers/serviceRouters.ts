@@ -159,7 +159,7 @@ export const creditBureauRouter = router({
 export const crmRouter = router({
   sync: adminProcedure
     .input(z.object({
-      provider: z.enum(["wealthbox", "salesforce", "redtail"]),
+      provider: z.enum(["wealthbox", "salesforce", "redtail", "gohighlevel"]),
       direction: z.enum(["push", "pull", "bidirectional"]).default("pull"),
     }))
     .mutation(async ({ input }) => {

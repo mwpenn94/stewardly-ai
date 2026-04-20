@@ -2491,7 +2491,8 @@ export const integrationProviders = mysqlTable("integration_providers", {
   description: text("description"),
   category: mysqlEnum("category", [
     "crm", "messaging", "carrier", "investments", "insurance",
-    "demographics", "economic", "enrichment", "regulatory", "property", "middleware"
+    "demographics", "economic", "enrichment", "regulatory", "property", "middleware",
+    "marketing", "recruiting", "government"
   ]).notNull(),
   ownershipTier: mysqlEnum("ownership_tier", ["platform", "organization", "professional", "client"]).notNull(),
   authMethod: mysqlEnum("auth_method", [
