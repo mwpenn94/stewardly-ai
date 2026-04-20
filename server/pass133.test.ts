@@ -209,7 +209,7 @@ describe("Pass 133 — Depth Pass Components", () => {
       expect(calcContent).toContain("client-wealth-hub");
       expect(calcContent).toContain("ClientWealthHub");
       // Should appear in the nav section under Foundation group
-      expect(calcContent).toContain("Unified Wealth Plan");
+      expect(calcContent).toContain("Client Wealth Hub");
       // Should be rendered in the panel switch
       expect(calcContent).toContain("activePanel === 'client-wealth-hub'");
     });

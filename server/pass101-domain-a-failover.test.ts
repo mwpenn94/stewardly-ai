@@ -118,7 +118,7 @@ describe("Pass 101 — Calculators.tsx panel wiring", () => {
   });
 
   it("imports PnLBusinessEconomicsPanel from PanelsH", () => {
-    expect(src).toContain("PnLBusinessEconomicsPanel");
+     expect(src).toContain("PnLBusinessEconomicsPanel");
   });
 
   it("imports GDCOverrideOptPanel from PanelsH", () => {

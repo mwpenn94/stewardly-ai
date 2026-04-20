@@ -7170,3 +7170,52 @@
 - [x] Production build succeeds (~36s)
 - [x] Dev server running (200 OK)
 - [x] Updated pass101 tests to reflect Pass 150 consolidation
+
+## Pass 151 — Profile Persistence, PDF Export, Quick Start Tour & Deep Structural Audit
+
+### Profile Auto-Sync to Database
+- [x] Wired profile fields to financialProfile.set tRPC mutation with 30s debounce
+- [x] Auto-sync fires alongside localStorage auto-save (silent background mutation)
+- [x] Profile data persists across sessions via financialProfiles table
+
+### Merged Panel PDF Export
+- [x] Enhanced handleExportPdf with 7 new Profile Detail sections (Retirement, Insurance, Education, Estate, Budget, Employment, Charitable)
+- [x] Added GDC Bracket table to PDF export
+- [x] All merged panel data included in unified PDF output
+
+### Quick Start Guided Tour
+- [x] Extended OnboardingTour with 4 Wealth Engine steps (My Plan, Profile, Client Wealth Hub, Tools & Reports)
+- [x] Added data-tour attributes to Chat.tsx sidebar for Wealth Engine sub-pages
+- [x] Tour steps guide: My Plan → Profile → Client Wealth Hub → Tools & Reports
+- [x] Tour completion persisted via existing OnboardingTour localStorage state
+
+### Deep Structural Audit — 6 Additional Merges
+- [x] Merged AUM Override + AUM Pipeline → "AUM & Pipeline" panel
+- [x] Merged Goal Tracker + Monthly Production → "Goals & Tracking" panel
+- [x] Merged Product Optimization + Growth Optimization → "Growth & Optimization" panel
+- [x] Merged Strategy Compare + Cost-Benefit → "Strategy Analysis" panel
+- [x] Merged Timeline + Implementation Timeline → "Action Timeline" panel
+- [x] Merged Unified Client Plan + Planning Hierarchy → "Unified Plan View" panel
+- [x] Fixed label: "Channel Diversification" → "Channels & Marketing"
+- [x] Added LEGACY_REDIRECTS for all 6 removed panel IDs
+- [x] Reduced from 61 panels to 53 panels (net -8)
+
+### Test Updates for Pass 151
+- [x] Updated pass101 test labels for merged panels
+- [x] Updated persona-testing pmCoverage threshold (≥3 after merges)
+- [x] Updated pass133 test label (Unified Wealth Plan → Client Wealth Hub)
+- [x] Updated wealth-engine-context test for unified-client-plan merge
+- [x] Updated parityMapping.ts for new merged panel IDs
+- [x] Updated persona workflow arrays for merged panel IDs
+
+### Recursive Convergence
+- [x] Convergence Pass 1: Fixed stale test references, parityMapping, persona arrays (counter reset)
+- [x] Convergence Pass 2: CLEAN — 15 checks (panel IDs, icons, renders, imports, dark mode, responsive, auto-sync, tour, PDF)
+- [x] Convergence Pass 3: CLEAN — 15 cross-cutting checks (cascade flow, session save/load, keyboard nav, memory, EmbedCalculator, WealthEngineHub)
+- [x] Convergence Pass 4: CLEAN — 12 novel checks (TODO/FIXME, URLs, exports, state, lazy imports, Suspense, event handlers, z-index, XSS)
+- [x] **3/3 CONSECUTIVE CLEAN PASSES — CONVERGED**
+
+### Final Verification
+- [x] Vitest: 10,030 PASS / 402 files / 0 FAIL (66s)
+- [x] Production build succeeds (34.5s)
+- [x] Dev server running

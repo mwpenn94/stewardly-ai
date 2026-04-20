@@ -99,20 +99,16 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
     { id: 'dashboard' as PanelId, label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'pnl' as PanelId, label: 'P&L & Business Economics', icon: <Receipt className="w-4 h-4" /> },
-    { id: 'aumoverride' as PanelId, label: 'AUM Override', icon: <Layers className="w-4 h-4" /> },
-    { id: 'aumpipeline' as PanelId, label: 'AUM Pipeline', icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 'aumoverride' as PanelId, label: 'AUM Management', icon: <Layers className="w-4 h-4" /> },
     { id: 'affiliatepipeline' as PanelId, label: 'Affiliate Pipeline', icon: <Handshake className="w-4 h-4" /> },
-    { id: 'goaltracker' as PanelId, label: 'Goal Tracker', icon: <Flag className="w-4 h-4" /> },
-    { id: 'monthlyproduction' as PanelId, label: 'Monthly Production', icon: <CalendarDays className="w-4 h-4" /> },
-    { id: 'prodopt' as PanelId, label: 'Production Optimization', icon: <Target className="w-4 h-4" /> },
-    { id: 'chandivers' as PanelId, label: 'Channel Diversification', icon: <PieChart className="w-4 h-4" /> },
-    { id: 'mktgroi' as PanelId, label: 'Marketing ROI', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'goaltracker' as PanelId, label: 'Goals & Tracking', icon: <Flag className="w-4 h-4" /> },
+    { id: 'prodopt' as PanelId, label: 'Growth Optimization', icon: <Target className="w-4 h-4" /> },
 
   ]},
   /* ─── Holistic Planning: merged Client Planning + Advanced + Advisory ─── */
   { group: '① Foundation', items: [
     { id: 'pfr-wizard' as PanelId, label: '📋 PFR Wizard', icon: <Sparkles className="w-4 h-4" /> },
-    { id: 'client-wealth-hub' as PanelId, label: '⭐ Unified Wealth Plan', icon: <Target className="w-4 h-4" /> },
+    { id: 'client-wealth-hub' as PanelId, label: '⭐ Client Wealth Hub', icon: <Target className="w-4 h-4" /> },
     { id: 'profile', label: 'Client Profile', icon: <User className="w-4 h-4" /> },
     { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
     { id: 'balancesheet' as PanelId, label: 'Balance Sheet', icon: <Wallet className="w-4 h-4" /> },
@@ -126,8 +122,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'edu', label: 'Education', icon: <GraduationCap className="w-4 h-4" /> },
     { id: 'trusteng' as PanelId, label: 'Trust Engineering', icon: <Gavel className="w-4 h-4" /> },
     { id: 'governance' as PanelId, label: 'Governance / IPS', icon: <FileCheck className="w-4 h-4" /> },
-    { id: 'planning-hierarchy' as PanelId, label: 'Planning Hierarchy', icon: <Layers className="w-4 h-4" /> },
-    { id: 'unified-client-plan' as PanelId, label: 'Unified Client Plan', icon: <Layers className="w-4 h-4" /> },
+    { id: 'planning-hierarchy' as PanelId, label: 'Unified Plan View', icon: <Layers className="w-4 h-4" /> },
   ]},
   { group: '③ Protect & Advance', items: [
     { id: 'advanced-strategies-hub' as PanelId, label: '⭐ Advanced Strategies Hub', icon: <Gem className="w-4 h-4" /> },
@@ -147,11 +142,9 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'strategy-archetypes' as PanelId, label: 'Strategy Archetypes', icon: <Target className="w-4 h-4" /> },
   ]},
   { group: '⑤ Analyze & Act', items: [
-    { id: 'costben', label: 'Cost-Benefit', icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'compare', label: 'Strategy Compare', icon: <GitCompare className="w-4 h-4" /> },
+    { id: 'costben', label: 'Strategy Analysis', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'summary', label: 'Scorecard Summary', icon: <FileText className="w-4 h-4" /> },
-    { id: 'timeline', label: 'Action Plan', icon: <ListChecks className="w-4 h-4" /> },
-    { id: 'impl_timeline', label: 'Timeline', icon: <CalendarRange className="w-4 h-4" /> },
+    { id: 'timeline', label: 'Action Plan & Timeline', icon: <ListChecks className="w-4 h-4" /> },
     { id: 'cascade-alerts' as PanelId, label: 'Cascade Alerts', icon: <Zap className="w-4 h-4" /> },
     { id: 'firm-comparison' as PanelId, label: 'Firm Comparison', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'scenario-comparison' as PanelId, label: 'Scenarios', icon: <GitCompare className="w-4 h-4" /> },
@@ -194,7 +187,7 @@ export default function Calculators() {
       const params = new URLSearchParams(window.location.search);
       let p = params.get('panel');
       // Legacy panel ID redirects (Pass 150 consolidation)
-      const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets' };
+      const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets', aumpipeline: 'aumoverride', monthlyproduction: 'goaltracker', chandivers: 'prodopt', mktgroi: 'prodopt', compare: 'costben', impl_timeline: 'timeline', 'unified-client-plan': 'planning-hierarchy' };
       if (p && LEGACY_REDIRECTS[p]) p = LEGACY_REDIRECTS[p];
       if (p && NAV_SECTIONS.some(s => s.items.some(i => i.id === p))) return p as PanelId;
     } catch {}
@@ -494,7 +487,9 @@ export default function Calculators() {
     ppCacOverrides, ppCogsOverrides,
   ]);
 
-  /* Auto-save to localStorage with 2s debounce */
+  /* Auto-save to localStorage with 2s debounce + sync core profile to DB */
+  const profileSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const profileSyncMut = trpc.financialProfile.set.useMutation();
   useEffect(() => {
     if (isRestoringRef.current) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
@@ -503,7 +498,27 @@ export default function Calculators() {
         localStorage.setItem('wb-calc-autosave', JSON.stringify(gatherInputsForSave()));
       } catch { /* quota exceeded — ignore */ }
     }, 2000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+    // Sync core profile fields to DB every 5s (debounced, only when logged in)
+    if (user && !profileSyncTimer.current) {
+      profileSyncTimer.current = setTimeout(() => {
+        profileSyncTimer.current = null;
+        profileSyncMut.mutate({
+          profile: {
+            age, income, netWorth: nw, savings, monthlySavings: monthlySav,
+            dependents: dep, mortgage, debts: debt, marginalRate: stateRate,
+            equitiesReturn: iulReturn, existingInsurance: existIns,
+            isBizOwner: isBiz, retirementAge: retireAge,
+            yearsInRetirement: replaceYrs, stateOfResidence: undefined,
+            filingStatus: filing as any, lifeInsuranceCoverage: pfFace,
+            businessRevenue: bizRevenue, businessEmployees: bizEmployees,
+          },
+        });
+      }, 5000);
+    }
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      if (profileSyncTimer.current) { clearTimeout(profileSyncTimer.current); profileSyncTimer.current = null; }
+    };
   }, [gatherInputsForSave]);
 
   /* ─── SESSION HELPERS ─── */
@@ -819,6 +834,30 @@ export default function Calculators() {
       <tr><td>Effective Tax Rate</td><td>${pct(txResult.effectiveRate)}</td></tr>
       <tr><td>Estate Tax Exposure</td><td>${fmtSm(esResult.estateTax)}</td></tr>
       <tr><td>Education Funding Gap</td><td>${fmtSm(edResult.totalGap)}</td></tr>
+      </table>
+      </div>
+
+      <div class="section">
+      <h2>Client Profile — Extended Details</h2>
+      <table>
+      <tr><th colspan="2">Retirement Planning</th></tr>
+      <tr><td>Target Retirement Age</td><td>${retireAge}</td></tr>
+      <tr><td>Emergency Fund (months)</td><td>${emMonths}</td></tr>
+      <tr><td>Income Replacement Years</td><td>${replaceYrs}</td></tr>
+      <tr><td>Monthly Savings</td><td>${fmt(monthlySav)}</td></tr>
+      <tr><th colspan="2">Insurance & Protection</th></tr>
+      <tr><td>Payoff Rate</td><td>${pct(payoffRate / 100)}</td></tr>
+      <tr><td>Disability Coverage</td><td>${pct(diPct / 100)}</td></tr>
+      <tr><td>Existing Insurance</td><td>${fmt(existIns)}</td></tr>
+      <tr><th colspan="2">Education Planning</th></tr>
+      <tr><td>Children</td><td>${numChildren}</td></tr>
+      <tr><td>529 Balance</td><td>${fmt(current529)}</td></tr>
+      <tr><td>Monthly 529 Contribution</td><td>${fmt(monthly529)}</td></tr>
+      <tr><th colspan="2">Estate & Legacy</th></tr>
+      <tr><td>Will Status</td><td>${willStatus || 'Not specified'}</td></tr>
+      <tr><td>Gross Estate</td><td>${fmt(grossEstate)}</td></tr>
+      <tr><td>Annual Gifting</td><td>${fmt(giftingAnnual)}</td></tr>
+      <tr><td>Charitable Giving</td><td>${fmt(charitableGiving)}</td></tr>
       </table>
       </div>
 
@@ -1534,8 +1573,7 @@ export default function Calculators() {
             bcEmployees={bcEmployees} setBcEmployees={setBcEmployees}
             age={age}
           />}
-          {activePanel === 'costben' && <CostBenefitPanel {...pp} horizonData={horizonData} />}
-          {activePanel === 'compare' && <StrategyComparePanel {...pp} savedScenarios={
+          {activePanel === 'costben' && <StrategyAnalysisMergedPanel pp={pp} horizonData={horizonData} savedScenarios={
             (sessionsQuery.data || []).map((s: any) => ({
               id: s.id,
               name: s.name,
@@ -1545,8 +1583,7 @@ export default function Calculators() {
             }))
           } />}
           {activePanel === 'summary' && <SummaryPanel {...pp} />}
-          {activePanel === 'timeline' && <ActionPlanPanel {...pp} />}
-          {activePanel === 'impl_timeline' && <TimelinePanel {...pp} />}
+          {activePanel === 'timeline' && <ActionTimelineMergedPanel pp={pp} />}
           {activePanel === 'partner' && <PartnerPanel paLow={paLow} setPaLow={setPaLow} paMid={paMid} setPaMid={setPaMid} paHigh={paHigh} setPaHigh={setPaHigh} />}
           {activePanel === 'income' && <IncomeStreamsPanel incomeStreams={incomeStreams} setIncomeStreams={setIncomeStreams} scores={pp.scores} />}
           {activePanel === 'refs' && <ReferencesPanel />}
@@ -1560,14 +1597,10 @@ export default function Calculators() {
           {activePanel === 'channels' && <ChannelsPanel {...practiceProps} />}
           {activePanel === 'dashboard' && <DashboardPanel {...practiceProps} />}
           {activePanel === 'pnl' && <PnLMergedPanel practiceProps={practiceProps} />}
-          {activePanel === 'goaltracker' && <GoalTrackerPanel {...practiceProps} />}
-          {activePanel === 'monthlyproduction' && <MonthlyProductionPanel {...practiceProps} />}
-          {activePanel === 'aumoverride' && <AUMOverrideCascadePanel />}
-          {activePanel === 'aumpipeline' && <AUMPipelinePanel />}
+          {activePanel === 'goaltracker' && <GoalsTrackingMergedPanel practiceProps={practiceProps} />}
+          {activePanel === 'aumoverride' && <AUMMergedPanel />}
           {activePanel === 'affiliatepipeline' && <AffiliatePipelinePanel />}
-          {activePanel === 'prodopt' && <ProductionOptPanel />}
-          {activePanel === 'chandivers' && <ChannelDiversPanel />}
-          {activePanel === 'mktgroi' && <MarketingROIPanel />}
+          {activePanel === 'prodopt' && <GrowthOptMergedPanel />}
 
           {activePanel === 'balancesheet' && <BalanceSheetPanel nw={nw} savings={savings} retirement401k={retirement401k} mortgage={mortgage} debt={debt} />}
           {activePanel === 'debtmgmt' && <DebtManagementPanel mortgage={mortgage} debt={debt} income={income} />}
@@ -1585,10 +1618,9 @@ export default function Calculators() {
           <CascadeToastBridge data={weData} />
           <WealthEngineProvider value={weData}>
             <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="animate-spin">⏳</span></div>}>
-              {activePanel === 'planning-hierarchy' && <WePlanningHierarchy />}
+              {activePanel === 'planning-hierarchy' && <UnifiedPlanMergedPanel />}
               {activePanel === 'advanced-workflows' && <WeAdvancedWorkflows />}
               {activePanel === 'strategy-archetypes' && <WeStrategyArchetypes />}
-              {activePanel === 'unified-client-plan' && <WeUnifiedClientPlan />}
               {activePanel === 'firm-comparison' && <WeFirmComparison />}
               {activePanel === 'cascade-alerts' && <WeCascadeAlerts />}
               {activePanel === 'financial-data-hub' && <WeFinancialDataHub />}
@@ -1740,6 +1772,129 @@ function GDCMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
         </button>
       </div>
       {view === 'brackets' ? <GDCBracketsPanel {...practiceProps} /> : <GDCOverrideOptPanel />}
+    </div>
+  );
+}
+
+
+/* ═══ PASS 151 MERGED PANELS ═══ */
+
+function AUMMergedPanel() {
+  const [view, setView] = useState<'override' | 'pipeline'>('override');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('override')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'override' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          AUM Override
+        </button>
+        <button type="button" onClick={() => setView('pipeline')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'pipeline' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          AUM Pipeline
+        </button>
+      </div>
+      {view === 'override' ? <AUMOverrideCascadePanel /> : <AUMPipelinePanel />}
+    </div>
+  );
+}
+
+function GoalsTrackingMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
+  const [view, setView] = useState<'goals' | 'monthly'>('goals');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('goals')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'goals' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Goal Tracker
+        </button>
+        <button type="button" onClick={() => setView('monthly')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'monthly' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Monthly Production
+        </button>
+      </div>
+      {view === 'goals' ? <GoalTrackerPanel {...practiceProps} /> : <MonthlyProductionPanel {...practiceProps} />}
+    </div>
+  );
+}
+
+function GrowthOptMergedPanel() {
+  const [view, setView] = useState<'production' | 'channels' | 'roi'>('production');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('production')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'production' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Production
+        </button>
+        <button type="button" onClick={() => setView('channels')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'channels' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Channels
+        </button>
+        <button type="button" onClick={() => setView('roi')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'roi' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Marketing ROI
+        </button>
+      </div>
+      {view === 'production' && <ProductionOptPanel />}
+      {view === 'channels' && <ChannelDiversPanel />}
+      {view === 'roi' && <MarketingROIPanel />}
+    </div>
+  );
+}
+
+function StrategyAnalysisMergedPanel({ pp, horizonData, savedScenarios }: { pp: any; horizonData: any; savedScenarios: any }) {
+  const [view, setView] = useState<'costbenefit' | 'compare'>('costbenefit');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('costbenefit')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'costbenefit' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Cost-Benefit
+        </button>
+        <button type="button" onClick={() => setView('compare')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'compare' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Strategy Compare
+        </button>
+      </div>
+      {view === 'costbenefit' ? <CostBenefitPanel {...pp} horizonData={horizonData} /> : <StrategyComparePanel {...pp} savedScenarios={savedScenarios} />}
+    </div>
+  );
+}
+
+function ActionTimelineMergedPanel({ pp }: { pp: any }) {
+  const [view, setView] = useState<'actions' | 'timeline'>('actions');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('actions')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'actions' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Action Plan
+        </button>
+        <button type="button" onClick={() => setView('timeline')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'timeline' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Timeline
+        </button>
+      </div>
+      {view === 'actions' ? <ActionPlanPanel {...pp} /> : <TimelinePanel {...pp} />}
+    </div>
+  );
+}
+
+function UnifiedPlanMergedPanel() {
+  const [view, setView] = useState<'hierarchy' | 'plan'>('hierarchy');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('hierarchy')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'hierarchy' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Planning Hierarchy
+        </button>
+        <button type="button" onClick={() => setView('plan')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'plan' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Unified Client Plan
+        </button>
+      </div>
+      {view === 'hierarchy' ? <WePlanningHierarchy /> : <WeUnifiedClientPlan />}
     </div>
   );
 }

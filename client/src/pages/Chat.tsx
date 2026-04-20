@@ -2033,7 +2033,7 @@ export default function Chat() {
                           <button type="button"
                             key={item.path}
                             onClick={() => { navigate(item.path); setSidebarOpen(false); }}
-                            data-tour={item.path === "/wealth-engine" ? "financial-tools" : item.path === "/settings/knowledge" ? "data-intelligence" : item.path === "/products" ? "products" : item.path === "/compliance-audit" ? "compliance" : item.path === "/intelligence-hub" ? "market-data" : item.path === "/campaigns" ? "email-campaigns" : undefined}
+                            data-tour={item.path === "/wealth-engine" ? "wealth-engine" : item.path === "/settings/knowledge" ? "data-intelligence" : item.path === "/products" ? "products" : item.path === "/compliance-audit" ? "compliance" : item.path === "/intelligence-hub" ? "market-data" : item.path === "/campaigns" ? "email-campaigns" : undefined}
                             className={`flex items-center gap-2.5 w-full px-2.5 py-[7px] rounded-lg text-[13px] transition-colors ${
                               active ? "bg-accent/10 text-accent font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                             }`}

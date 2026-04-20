@@ -55,12 +55,12 @@ describe("Unified Wealth Engine Panel Structure", () => {
     expect(content).toContain("References & Due Diligence");
   });
 
-  it("contains all 7 new panel IDs in PanelId type", () => {
+  it("contains all 7 new panel IDs in PanelId type (unified-client-plan merged into planning-hierarchy in Pass 151)", () => {
     const content = fs.readFileSync(calculatorsPath, "utf-8");
     const newPanels = [
       "planning-hierarchy",
       "strategy-archetypes",
-      "unified-client-plan",
+      "unified-client-plan", // still in PanelId type for legacy redirect
       "firm-comparison",
       "cascade-alerts",
       "advanced-workflows",
@@ -82,11 +82,13 @@ describe("Unified Wealth Engine Panel Structure", () => {
     expect(content).toContain("WeFinancialDataHub");
   });
 
-  it("renders all 7 new panels conditionally", () => {
+  it("renders all 7 new panels conditionally (unified-client-plan merged into UnifiedPlanMergedPanel in Pass 151)", () => {
     const content = fs.readFileSync(calculatorsPath, "utf-8");
     expect(content).toContain("activePanel === 'planning-hierarchy'");
     expect(content).toContain("activePanel === 'strategy-archetypes'");
-    expect(content).toContain("activePanel === 'unified-client-plan'");
+    // unified-client-plan is now rendered inside UnifiedPlanMergedPanel (tab toggle)
+    expect(content).toContain("UnifiedPlanMergedPanel");
+    expect(content).toContain("WeUnifiedClientPlan");
     expect(content).toContain("activePanel === 'firm-comparison'");
     expect(content).toContain("activePanel === 'cascade-alerts'");
     expect(content).toContain("activePanel === 'advanced-workflows'");

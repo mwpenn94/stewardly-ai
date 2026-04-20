@@ -75,7 +75,7 @@ export const PARITY_CAPABILITIES: ParityCapability[] = [
   {
     id: 'plan-008', category: 'Planning', capability: 'Unified Client Plan',
     description: 'Forward/backward planning with practice-to-client income roll-up across 15+ domains',
-    status: 'live', panel: 'unified-client-plan', route: '/wealth-engine?panel=unified-client-plan',
+    status: 'live', panel: 'planning-hierarchy', route: '/wealth-engine?panel=planning-hierarchy',
     competitors: ['eMoney (partial)', 'MoneyGuidePro (partial)'],
     differentiator: 'Bidirectional planning with 15 client + 12 advanced domains, practice income integration',
   },
@@ -159,7 +159,7 @@ export const PARITY_CAPABILITIES: ParityCapability[] = [
   {
     id: 'pm-003', category: 'Practice Management', capability: 'AUM Pipeline & Override',
     description: 'AUM growth tracking with override cascade calculations',
-    status: 'live', panel: 'aumpipeline', route: '/wealth-engine?panel=aumpipeline',
+    status: 'live', panel: 'aumoverride', route: '/wealth-engine?panel=aumoverride',
     competitors: ['Orion', 'Black Diamond', 'Tamarac'],
     differentiator: 'Unified with GDC, channels, and practice P&L',
   },
