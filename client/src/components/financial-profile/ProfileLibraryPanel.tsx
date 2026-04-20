@@ -351,7 +351,7 @@ export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps)
                                 Switch
                               </Button>
                               <Button
-                                size="icon"
+                                size="icon" aria-label="Edit profile"
                                 variant="ghost"
                                 onClick={() => handleBeginEdit(entry)}
                                 aria-label={`Edit ${entry.label}`}
@@ -359,7 +359,7 @@ export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps)
                                 <Pencil className="w-3 h-3" />
                               </Button>
                               <Button
-                                size="icon"
+                                size="icon" aria-label="Delete profile"
                                 variant="ghost"
                                 onClick={() => handleDelete(entry.id)}
                                 aria-label={`Delete ${entry.label}`}

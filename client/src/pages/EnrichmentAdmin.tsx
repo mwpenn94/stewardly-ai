@@ -131,7 +131,7 @@ export default function EnrichmentAdmin({ embedded = false }: { embedded?: boole
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search datasets..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
             </div>
-            <Button variant="outline" size="icon" onClick={() => datasetsQ.refetch()}>
+            <Button variant="outline" size="icon" aria-label="Refresh" onClick={() => datasetsQ.refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>

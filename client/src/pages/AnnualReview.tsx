@@ -107,7 +107,7 @@ export default function AnnualReview({ embedded = false }: { embedded?: boolean 
                     <div className="flex items-center gap-2">
                       <Label className="text-xs">On Track</Label>
                       <Switch checked={g.onTrack} onCheckedChange={(v) => updateGoal(i, "onTrack", v)} />
-                      <Button variant="ghost" size="icon" onClick={() => removeGoal(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => removeGoal(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -150,7 +150,7 @@ export default function AnnualReview({ embedded = false }: { embedded?: boolean 
                   <div><Label className="text-xs">Coverage ($)</Label><Input type="number" value={ins.coverage} onChange={(e) => updateInsurance(i, "coverage", +e.target.value)} /></div>
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1"><Label className="text-xs">Adequate</Label><Switch checked={ins.adequate} onCheckedChange={(v) => updateInsurance(i, "adequate", v)} /></div>
-                    <Button variant="ghost" size="icon" onClick={() => removeInsurance(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => removeInsurance(i)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 </div>
               ))}

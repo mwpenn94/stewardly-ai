@@ -250,7 +250,7 @@ function ChatPanel() {
         <div className="w-56 border-r border-border/50 flex flex-col shrink-0 bg-background/50">
           <div className="p-2 border-b border-border/50 flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">History</span>
-            <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setActiveConvId(null); setMessages([]); createConv.mutate({ mode: "client" }); }}>
+            <Button type="button" size="icon" aria-label="New item" variant="ghost" className="h-6 w-6" onClick={() => { setActiveConvId(null); setMessages([]); createConv.mutate({ mode: "client" }); }}>
               <Plus className="w-3 h-3" />
             </Button>
           </div>
@@ -380,7 +380,7 @@ function ChatPanel() {
           <div className="flex flex-col gap-1">
             <Button
               type="button"
-              size="icon"
+              size="icon" aria-label="Send message"
               className="h-9 w-9"
               onClick={() => handleSend()}
               disabled={!input.trim() || isStreaming}
@@ -390,7 +390,7 @@ function ChatPanel() {
             {messages.length > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={handleClear}>
+                  <Button type="button" size="icon" aria-label="Delete" variant="ghost" className="h-7 w-7" onClick={handleClear}>
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </TooltipTrigger>
@@ -601,7 +601,7 @@ function DevPanel() {
           <div className="flex items-center gap-1">
             <Button
               type="button"
-              size="icon"
+              size="icon" aria-label="Send message"
               variant="ghost"
               className="h-8 w-8 text-emerald-400 hover:bg-emerald-500/10"
               onClick={() => handleSend()}
@@ -610,7 +610,7 @@ function DevPanel() {
               {chatMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
             {messages.length > 0 && (
-              <Button type="button" size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handleClear}>
+              <Button type="button" size="icon" aria-label="Delete" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handleClear}>
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             )}
@@ -727,7 +727,7 @@ function AutoPanel() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Create Agent</CardTitle>
-                <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setShowCreate(false); resetForm(); }}>
+                <Button type="button" size="icon" aria-label="Close" variant="ghost" className="h-6 w-6" onClick={() => { setShowCreate(false); resetForm(); }}>
                   <X className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -812,7 +812,7 @@ function AutoPanel() {
                     {agent.status === "running" ? (
                       <Button
                         type="button"
-                        size="icon"
+                        size="icon" aria-label="Delete item"
                         variant="ghost"
                         className="h-7 w-7 text-red-400 hover:bg-red-500/10"
                         onClick={e => { e.stopPropagation(); stopMutation.mutate({ agentId: agent.id }); }}
@@ -824,7 +824,7 @@ function AutoPanel() {
                     ) : (
                       <Button
                         type="button"
-                        size="icon"
+                        size="icon" aria-label="Approve item"
                         variant="ghost"
                         className="h-7 w-7 text-emerald-400 hover:bg-emerald-500/10"
                         onClick={e => { e.stopPropagation(); launchMutation.mutate({ agentId: agent.id }); }}
@@ -836,7 +836,7 @@ function AutoPanel() {
                     )}
                     <Button
                       type="button"
-                      size="icon"
+                      size="icon" aria-label="More options"
                       variant="ghost"
                       className="h-7 w-7 text-muted-foreground hover:text-red-400"
                       onClick={e => { e.stopPropagation(); deleteMutation.mutate({ agentId: agent.id }); }}

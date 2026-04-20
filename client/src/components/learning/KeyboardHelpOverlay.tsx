@@ -21,6 +21,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Keyboard, X } from "lucide-react";
@@ -67,6 +68,7 @@ export function KeyboardHelpOverlay({ shortcuts, title = "Keyboard shortcuts" }:
     return () => window.removeEventListener("keydown", handler);
   }, [open]);
 
+  const focusTrapRef = useFocusTrap<HTMLDivElement>(open);
   if (!open) return null;
 
   // Group shortcuts by category for legibility. Ungrouped entries
@@ -88,6 +90,7 @@ export function KeyboardHelpOverlay({ shortcuts, title = "Keyboard shortcuts" }:
       onClick={() => setOpen(false)}
     >
       <Card
+        ref={focusTrapRef as React.Ref<HTMLDivElement>}
         className="max-w-md w-full shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >

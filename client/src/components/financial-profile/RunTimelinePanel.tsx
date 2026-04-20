@@ -193,7 +193,7 @@ export function RunTimelinePanel({ open, onClose }: RunTimelinePanelProps) {
                           </Button>
                         )}
                         <Button
-                          size="icon"
+                          size="icon" aria-label="Remove run"
                           variant="ghost"
                           onClick={() => removeRun(entry.id)}
                           aria-label={`Delete run ${entry.label}`}

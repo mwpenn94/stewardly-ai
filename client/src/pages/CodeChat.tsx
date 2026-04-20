@@ -1348,6 +1348,12 @@ function CodeChatInterface() {
                   <button type="button" role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setSymbolNavOpen(true); setMobileMenuOpen(false); }}>
                     <Sparkles className="w-3.5 h-3.5" /> Symbols
                   </button>
+                  <button type="button" role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setOutlineOpen(v => !v); setMobileMenuOpen(false); }}>
+                    <List className="w-3.5 h-3.5" /> {outlineOpen ? 'Hide Outline' : 'Show Outline'}
+                  </button>
+                  <button type="button" role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setShowFiles(v => !v); setMobileMenuOpen(false); }}>
+                    <FolderOpen className="w-3.5 h-3.5" /> {showFiles ? 'Hide Files' : 'Show Files'}
+                  </button>
                   <div className="border-t border-border/40 my-1" />
                   <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Context</div>
                   <button type="button" role="menuitem" className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/40" onClick={() => { setMemoryOpen(true); setMobileMenuOpen(false); }}>
@@ -1633,10 +1639,10 @@ function CodeChatInterface() {
       />
 
       {/* Split layout: chat + optional file panel + optional outline rail */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
       {/* Pass 234: outline rail (user prompts only, click to scroll) */}
       {outlineOpen && (
-        <div className="hidden md:flex flex-col w-60 border-r border-border/40 overflow-y-auto bg-card/20">
+        <div className="flex flex-col w-full md:w-60 max-h-[40vh] md:max-h-none border-b md:border-b-0 md:border-r border-border/40 overflow-y-auto bg-card/20">
           <div className="p-3 border-b border-border/40 flex items-center justify-between text-xs font-medium">
             <span className="flex items-center gap-1.5">
               <List className="w-3.5 h-3.5" /> Outline
@@ -2082,7 +2088,7 @@ function CodeChatInterface() {
 
       {/* File panel (desktop only, toggled) */}
       {showFiles && (
-        <div className="hidden md:flex flex-col w-80 border-l border-border/40 overflow-y-auto">
+        <div className="flex flex-col w-full md:w-80 max-h-[40vh] md:max-h-none border-b md:border-b-0 md:border-l border-border/40 overflow-y-auto">
           <div className="p-3 border-b border-border/40 flex items-center justify-between">
             <span className="text-xs font-medium flex items-center gap-1.5">
               <FolderOpen className="w-3.5 h-3.5" /> File Explorer

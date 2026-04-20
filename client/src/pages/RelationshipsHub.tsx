@@ -35,6 +35,12 @@ export default function RelationshipsHub({ embedded = false }: { embedded?: bool
   const { data: leadsQ, isLoading: _pageLoading } = trpc.leadPipeline.getPipeline.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const leadCount = ((leadsQ as any)?.leads ?? []).length;
 
+  // PARITY-DATA-0007: Wire meetings + campaigns stats
+  const { data: meetingsData } = trpc.meetings.list.useQuery({ status: "scheduled" }, { enabled: isAuthenticated, retry: false });
+  const upcomingCount = (meetingsData ?? []).length;
+  const { data: campaignsData } = trpc.emailCampaign.list.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const campaignCount = (campaignsData ?? []).length;
+
   if (_pageLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -62,8 +68,8 @@ export default function RelationshipsHub({ embedded = false }: { embedded?: bool
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <QuickStat icon={Users} label="Leads" value={String(leadCount)} color="text-blue-500" />
-          <QuickStat icon={Calendar} label="Upcoming" value="0" color="text-purple-500" />
-          <QuickStat icon={Mail} label="Campaigns" value="0" color="text-green-500" />
+          <QuickStat icon={Calendar} label="Upcoming" value={String(upcomingCount)} color="text-purple-500" />
+          <QuickStat icon={Mail} label="Campaigns" value={String(campaignCount)} color="text-green-500" />
           <QuickStat icon={Star} label="COI Partners" value="0" color="text-amber-500" />
         </div>
 

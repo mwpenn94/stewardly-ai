@@ -8,6 +8,7 @@
  *   - General (send, new line, search, etc.)
  */
 import { useEffect, useState, useCallback } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, Keyboard, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -99,6 +100,8 @@ export function KeyboardShortcuts() {
     };
   }, [open, toggle]);
 
+  const focusTrapRef = useFocusTrap<HTMLDivElement>(open);
+
   if (!open) return null;
 
   const categories = Array.from(new Set(SHORTCUTS.map(s => s.category)));
@@ -111,8 +114,8 @@ export function KeyboardShortcuts() {
         onClick={() => setOpen(false)}
       />
 
-      {/* Modal */}
-      <div className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      {/* Modal — focus-trapped (G18) */}
+      <div ref={focusTrapRef} className="relative bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2.5">

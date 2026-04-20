@@ -63,6 +63,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v82-pass1-pil-gaps.test.ts",
       // v8.2 Pass 2: PARITY gap closures (G16, G36, G38, G48, G55)
       "client/src/pages/__tests__/v82-pass2-parity.test.ts",
+      // v8.3 Pass 3: G18 focus trap, G20 aria-labels, G27 tooltips, NAV-0006, MOBILE-0008, DATA-0007, G45 zoom
+      "client/src/pages/__tests__/v83-pass3-parity.test.ts",
     ],
   },
 });

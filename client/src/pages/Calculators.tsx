@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { trpc } from '@/lib/trpc';
 import {
   User, DollarSign, Shield, TrendingUp, Clock, Building2, GraduationCap,
@@ -1620,28 +1621,34 @@ export default function Calculators() {
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Undo/Redo (v8 Pass 4) */}
+              <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" onClick={() => { const prev = undoHistory.undo(); if (prev) { restoreInputs(prev); toast.info('Undo'); } }}
                 disabled={!undoHistory.canUndo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                title={`Undo (${navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Z)`} aria-label="Undo last change">
+                aria-label="Undo last change">
                 <Undo2 className="w-3.5 h-3.5" />
               </Button>
+              </TooltipTrigger><TooltipContent>Undo <kbd className="ml-1 font-mono text-[10px] opacity-60">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Z</kbd></TooltipContent></Tooltip>
+              <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" onClick={() => { const next = undoHistory.redo(); if (next) { restoreInputs(next); toast.info('Redo'); } }}
                 disabled={!undoHistory.canRedo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                title={`Redo (${navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+Z)`} aria-label="Redo last change">
+                aria-label="Redo last change">
                 <Redo2 className="w-3.5 h-3.5" />
               </Button>
+              </TooltipTrigger><TooltipContent>Redo <kbd className="ml-1 font-mono text-[10px] opacity-60">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+Z</kbd></TooltipContent></Tooltip>
               {undoHistory.length > 1 && <span className="text-[9px] text-muted-foreground/50 hidden xl:inline">{undoHistory.position + 1}/{undoHistory.length}</span>}
               {/* Split-View Compare Toggle (Pass 154) */}
               <Button variant={compareMode ? 'default' : 'outline'} size="sm"
                 onClick={() => { setCompareMode(m => !m); if (!compareMode) setShowComparePicker(true); else { setComparePanel(null); setShowComparePicker(false); } }}
                 className={`text-xs gap-1 h-7 hidden lg:flex ${compareMode ? 'bg-primary text-primary-foreground' : ''}`}
-                title="Compare two panels side-by-side">
+                title="Compare two panels side-by-side" aria-label="Compare two panels side-by-side">
                 <Columns2 className="w-3 h-3" /> <span className="hidden xl:inline">Compare</span>
               </Button>
+              <Tooltip><TooltipTrigger asChild>
               <Button variant="ghost" size="icon" onClick={() => setShowShortcuts(true)}
-                className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Keyboard shortcuts (?)">
+                className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label="Keyboard shortcuts">
                 <Keyboard className="w-3.5 h-3.5" />
               </Button>
+              </TooltipTrigger><TooltipContent>Keyboard shortcuts <kbd className="ml-1 font-mono text-[10px] opacity-60">?</kbd></TooltipContent></Tooltip>
               <Button variant="outline" size="sm" onClick={handleSave} disabled={saveMut.isPending || updateMut.isPending}
                 className="text-xs gap-1 h-7">
                 <Save className="w-3 h-3" /> <span className="hidden sm:inline">{activeSessionId ? 'Update' : 'Save'}</span>

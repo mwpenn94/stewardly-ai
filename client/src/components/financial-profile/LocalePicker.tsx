@@ -72,7 +72,7 @@ export function LocalePicker() {
               </div>
               <Button
                 variant="ghost"
-                size="icon"
+                size="icon" aria-label="Close locale picker"
                 onClick={() => setOpen(false)}
                 aria-label="Close locale picker"
               >

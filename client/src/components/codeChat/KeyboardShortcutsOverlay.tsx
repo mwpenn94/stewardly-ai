@@ -10,6 +10,7 @@
 
 import { X } from "lucide-react";
 import { BUILT_IN_COMMANDS } from "./slashCommands";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 export interface Shortcut {
   keys: string[];
@@ -48,6 +49,7 @@ export default function KeyboardShortcutsOverlay({
   open: boolean;
   onClose: () => void;
 }) {
+  const focusTrapRef = useFocusTrap<HTMLDivElement>(open);
   if (!open) return null;
 
   return (
@@ -59,6 +61,7 @@ export default function KeyboardShortcutsOverlay({
       aria-label="Keyboard shortcuts"
     >
       <div
+        ref={focusTrapRef}
         className="relative w-full max-w-2xl max-h-[80vh] overflow-auto rounded-xl border border-border/60 bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

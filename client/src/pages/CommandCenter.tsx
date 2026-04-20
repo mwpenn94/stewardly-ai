@@ -263,7 +263,7 @@ function CRMTab() {
                   <td className="p-2 text-right">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => toast.info(`Lead #${l.id}: ${l.firstName} ${l.lastName}`)}>
+                        <Button type="button" size="icon" aria-label="Open link" variant="ghost" className="h-6 w-6" onClick={() => toast.info(`Lead #${l.id}: ${l.firstName} ${l.lastName}`)}>
                           <ExternalLink className="w-3 h-3 text-muted-foreground" />
                         </Button>
                       </TooltipTrigger>

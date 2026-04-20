@@ -7441,3 +7441,16 @@
 - [x] G55: Create useGChordNavigation hook consolidating duplicate g-chord handlers from AppShell.tsx and Chat.tsx
 - [x] Write 12 vitest tests for v8.2 Pass 2 (all passing)
 - [x] Update PARITY.md — mark G16, G21, G23, G24, G36, G38, G48, G55 as done
+
+### v8.3 Pass 3 — MULTI (PLANS + PEOPLE + PLATFORM)
+- [x] Upgrade recursive-optimization-spec.md to v8.3
+- [ ] Add Pillar column to PARITY.md gap matrix per v8.3 schema
+- [x] G18: Wire useFocusTrap into KeyboardShortcuts overlay + codeChat popovers + learning overlays (PLATFORM)
+- [x] G20: Audit and add missing aria-labels on icon-only buttons across Calculators, codeChat, learning (PLATFORM)
+- [x] PARITY-DATA-0007: Wire real backend queries for RelationshipsHub meeting + campaign counts (PEOPLE)
+- [x] PARITY-NAV-0006: Add missing wealth-engine sub-routes to PersonaSidebar5 (PLATFORM)
+- [x] G27: Add keyboard shortcut hints to toolbar button tooltips (PLATFORM)
+- [x] PARITY-MOBILE-0008: Add mobile bottom-sheet for CodeChat outline + files panels (PEOPLE+PLATFORM)
+- [x] G45: CSS fixes for 200% zoom breakage (PLATFORM)
+- [x] Write tests for v8.3 Pass 3 (26 tests passing)
+- [x] Update PARITY.md bidirectionally + append Pass Log

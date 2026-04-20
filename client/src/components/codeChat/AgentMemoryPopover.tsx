@@ -13,6 +13,7 @@
  */
 
 import { useState } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, Brain, Plus, Trash2, Pencil, Check, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,6 +67,7 @@ export default function AgentMemoryPopover({
   const [editDraft, setEditDraft] = useState("");
   const [editCategory, setEditCategory] = useState<MemoryCategory>("fact");
 
+  const focusTrapRef = useFocusTrap<HTMLDivElement>(open);
   if (!open) return null;
 
   const summary = summarizeMemory(entries);
@@ -112,6 +114,7 @@ export default function AgentMemoryPopover({
       aria-label="Agent memory"
     >
       <div
+        ref={focusTrapRef}
         className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-xl border border-border/60 bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

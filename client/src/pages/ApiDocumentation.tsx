@@ -239,7 +239,7 @@ export default function ApiDocumentation() {
                                     <pre className="text-xs bg-muted/50 p-3 rounded-lg font-mono overflow-x-auto">{ep.inputSchema}</pre>
                                     <Button
                                       variant="ghost"
-                                      size="icon"
+                                      size="icon" aria-label="Copy"
                                       className="absolute top-1 right-1 h-6 w-6"
                                       onClick={() => copyToClipboard(ep.inputSchema!)}
                                     >
@@ -266,7 +266,7 @@ export default function ApiDocumentation() {
                                   </pre>
                                   <Button
                                     variant="ghost"
-                                    size="icon"
+                                    size="icon" aria-label="Copy code"
                                     className="absolute top-1 right-1 h-6 w-6"
                                     onClick={() => copyToClipboard(
                                       ep.type === "query"

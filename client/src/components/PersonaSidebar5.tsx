@@ -69,7 +69,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "",
     minRole: "guest",
     items: [
-      { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat"] },
+      { label: "Chat", icon: MessageSquare, path: "/chat", match: ["/chat", "/code-chat"] },
     ],
   },
   {
@@ -79,7 +79,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       {
         label: "Wealth Engine", icon: Calculator, path: "/wealth-engine",
-        match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan", "/financial-twin", "/products", "/my-work"],
+        match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan", "/financial-twin", "/products", "/my-work", "/tax-projector", "/insurance-applications", "/advisory-execution", "/carrier-connector", "/suitability-panel", "/sovereign-study"],
       },
     ],
   },
@@ -90,11 +90,11 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       {
         label: "People", icon: Users, path: "/people/clients",
-        match: ["/people", "/relationships", "/leads", "/crm-sync", "/compliance-audit", "/compliance-copilot", "/email-campaigns", "/marketing-assets", "/outreach-automation", "/command-center", "/client-onboarding", "/annual-review", "/business-exit", "/premium-finance-rates", "/portal", "/client-dashboard"],
+        match: ["/people", "/relationships", "/leads", "/crm-sync", "/compliance-audit", "/compliance-copilot", "/email-campaigns", "/marketing-assets", "/outreach-automation", "/command-center", "/client-onboarding", "/annual-review", "/business-exit", "/premium-finance-rates", "/portal", "/client-dashboard", "/passive-actions", "/proficiency", "/community", "/documents"],
       },
       {
         label: "Intelligence", icon: TrendingUp, path: "/intelligence-hub",
-        match: ["/intelligence-hub", "/intelligence", "/market-data", "/product-intelligence", "/data-pipelines", "/enrichment-admin", "/portal-analytics", "/rebalancing", "/insights", "/operations", "/comparables"],
+        match: ["/intelligence-hub", "/intelligence", "/market-data", "/product-intelligence", "/data-pipelines", "/enrichment-admin", "/portal-analytics", "/rebalancing", "/insights", "/operations", "/comparables", "/workflow-automation", "/workflows", "/dynamic-integrations", "/integration-health"],
       },
     ],
   },
@@ -112,7 +112,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     label: "Platform",
     minRole: "admin",
     items: [
-      { label: "Admin", icon: Cog, path: "/admin", match: ["/admin", "/agents", "/consensus", "/admin/intelligence", "/admin/improvement", "/admin/improvement-engine", "/admin/system-health", "/admin/data-freshness", "/admin/bcp", "/admin/fairness", "/admin/rate-management", "/admin/billing", "/admin/api-keys", "/admin/webhooks", "/admin/team", "/admin/lead-sources", "/admin/platform-reports", "/admin/knowledge", "/admin/guide", "/admin/audit-trail", "/admin/integrations"], disclosureLevel: 3 },
+      { label: "Admin", icon: Cog, path: "/admin", match: ["/admin", "/agents", "/consensus", "/admin/intelligence", "/admin/improvement", "/admin/improvement-engine", "/admin/system-health", "/admin/data-freshness", "/admin/bcp", "/admin/fairness", "/admin/rate-management", "/admin/billing", "/admin/api-keys", "/admin/webhooks", "/admin/team", "/admin/lead-sources", "/admin/platform-reports", "/admin/knowledge", "/admin/guide", "/admin/audit-trail", "/admin/integrations", "/admin-legacy", "/api-docs", "/manus-next", "/my-integrations", "/integrations", "/import"], disclosureLevel: 3 },
     ],
   },
 ];
@@ -123,8 +123,8 @@ const LEARN_ITEM: NavItem = {
 };
 
 const FOOTER_ITEMS: NavItem[] = [
-  { label: "Settings", icon: Settings, path: "/settings", match: ["/settings"] },
-  { label: "Help", icon: HelpCircle, path: "/help", match: ["/help"] },
+  { label: "Settings", icon: Settings, path: "/settings", match: ["/settings", "/ai-settings"] },
+  { label: "Help", icon: HelpCircle, path: "/help", match: ["/help", "/changelog"] },
 ];
 
 interface Conversation { id: string; title: string; updatedAt: string; pinned?: boolean; }

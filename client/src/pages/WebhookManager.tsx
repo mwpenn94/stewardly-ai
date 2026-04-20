@@ -109,10 +109,10 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
                       )}
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleMut.mutate({ id: wh.id })}>
+                      <Button variant="ghost" size="icon" aria-label="Toggle" className="h-7 w-7" onClick={() => toggleMut.mutate({ id: wh.id })}>
                         {wh.active !== false ? <ToggleRight className="h-4 w-4 text-emerald-400" /> : <ToggleLeft className="h-4 w-4" />}
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Delete this webhook?")) deleteMut.mutate({ id: wh.id }); }}>
+                      <Button variant="ghost" size="icon" aria-label="Delete" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Delete this webhook?")) deleteMut.mutate({ id: wh.id }); }}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

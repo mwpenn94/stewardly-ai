@@ -235,6 +235,21 @@ body.chat-density-default     { --chat-density-scale: 1; }
 body.chat-density-spacious    { --chat-density-scale: 1.25; }
 
 /*
+  G45 — 200% browser zoom safety.
+  At high zoom levels, fixed-px text (text-[9px], text-[10px]) becomes
+  unreadable. This media query bumps the minimum floor so nothing drops
+  below ~12px effective at 200% zoom. The resolution query detects zoom
+  indirectly via device-pixel-ratio changes.
+*/
+@media (min-resolution: 192dpi) {
+  /* High-DPI or zoomed: ensure small labels remain legible */
+  .text-\[9px\]  { font-size: max(9px, 0.5625rem) !important; }
+  .text-\[10px\] { font-size: max(10px, 0.625rem) !important; }
+  .text-\[11px\] { font-size: max(11px, 0.6875rem) !important; }
+  .text-\[12px\] { font-size: max(12px, 0.75rem) !important; }
+}
+
+/*
   Build Loop Pass 4 — user-level reduced motion override. The @media
   (prefers-reduced-motion: reduce) rule already handles OS-level opt-in;
   this class lets AppearanceTab force-enable it for users who want the

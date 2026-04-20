@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { X, Search, Command } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,7 @@ export default function ActionPalettePopover({
     setActiveIdx(0);
   }, [query]);
 
+  const focusTrapRef = useFocusTrap<HTMLDivElement>(open);
   if (!open) return null;
 
   const handleSelect = (idx: number) => {
@@ -98,6 +100,7 @@ export default function ActionPalettePopover({
       aria-label="Action palette"
     >
       <div
+        ref={focusTrapRef}
         className="relative w-full max-w-xl max-h-[70vh] overflow-hidden flex flex-col rounded-xl border border-border/60 bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

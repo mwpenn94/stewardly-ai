@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   loadLibrary,
   saveLibrary,
@@ -126,6 +127,7 @@ export default function SessionsLibraryPopover({
     [currentMessages],
   );
 
+  const focusTrapRef = useFocusTrap<HTMLDivElement>(open);
   if (!open) return null;
 
   const handleSave = () => {
@@ -174,6 +176,7 @@ export default function SessionsLibraryPopover({
       aria-label="Sessions library"
     >
       <div
+        ref={focusTrapRef}
         className="relative w-full max-w-xl max-h-[80vh] overflow-auto rounded-xl border border-border/60 bg-card p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
