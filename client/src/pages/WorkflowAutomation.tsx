@@ -3,6 +3,7 @@
  * Wired to trpc.workflowAutomation.{chains,executions,checkpoints}
  */
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,7 @@ import { toast } from "sonner";
 import {
   Workflow, Play, Pause, History, CheckCircle2, XCircle,
   AlertTriangle, Loader2, Plus, Trash2, RotateCcw, Eye,
-  Clock, Activity, Layers, Search, RefreshCw,
+  Clock, Activity, Layers, Search, RefreshCw, ArrowLeft
 } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 
@@ -37,6 +38,7 @@ const STATUS_BADGE: Record<string, { variant: "default" | "secondary" | "destruc
 export default function WorkflowAutomation() {
   const { user } = useAuth();
   const [tab, setTab] = useState("chains");
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [newChain, setNewChain] = useState({ name: "", eventType: "", actionsJson: "[]", isActive: true });
@@ -86,6 +88,9 @@ export default function WorkflowAutomation() {
 
   return (
     <div className="container max-w-6xl py-8 space-y-6">
+      <button type="button" onClick={() => navigate("/operations")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors -ml-1 mb-2">
+        <ArrowLeft className="h-4 w-4" /> Back to Operations
+      </button>
       <SEOHead title="Workflow Automation" description="Event chain automation and execution management" />
       <div className="flex items-center justify-between">
         <div>

@@ -22,11 +22,12 @@ import {
   Scale, BarChart3, GitCompare, FileText, ListChecks, BookOpen,
   Calculator, CheckCircle2, Save, FolderOpen, Download, Trash2, Upload,
   Target, Layers, Package, Filter, Users, Megaphone, LayoutDashboard, Receipt,
-  Flag, CalendarDays, PanelLeftClose, PanelLeftOpen, Menu,
-  Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info,
-  PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2,
-  Database, Zap, Sparkles, Gauge, Rocket, ShieldCheck, Workflow,
-  ClipboardList, FileBarChart, UsersRound, Network, Search, Star
+  Flag, PanelLeftClose, PanelLeftOpen,
+  Briefcase, Gem, Handshake, RotateCcw, X, Info,
+  Landmark, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2,
+  Database, Zap, Sparkles, ShieldCheck,
+  ClipboardList, FileBarChart, UsersRound, Search, Star,
+  Banknote, Crown, SlidersHorizontal
 } from 'lucide-react';
 
 import {
@@ -90,20 +91,24 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'compliance-checklist' | 'generate-report' | 'multi-compare' | 'cascade-flow';
 
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
-  { group: 'Practice Management', items: [
-    { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
-    { id: 'gdcbrackets' as PanelId, label: 'GDC & Overrides', icon: <Layers className="w-4 h-4" /> },
-    { id: 'products' as PanelId, label: 'Products', icon: <Package className="w-4 h-4" /> },
-    { id: 'salesfunnel' as PanelId, label: 'Sales Funnel', icon: <Filter className="w-4 h-4" /> },
-    { id: 'recruiting' as PanelId, label: 'Recruiting & Funnel', icon: <Users className="w-4 h-4" /> },
-    { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
+  /* ─── Practice Management: split into 3 sub-groups for G8 compliance (Pass 153) ─── */
+  { group: 'PM · Business Operations', items: [
+    { id: 'myplan' as PanelId, label: '🏠 My Plan', icon: <Home className="w-4 h-4" /> },
     { id: 'dashboard' as PanelId, label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'pnl' as PanelId, label: 'P&L & Business Economics', icon: <Receipt className="w-4 h-4" /> },
     { id: 'aumoverride' as PanelId, label: 'AUM Management', icon: <Layers className="w-4 h-4" /> },
+  ]},
+  { group: 'PM · Revenue & Growth', items: [
+    { id: 'salesfunnel' as PanelId, label: 'Sales Funnel', icon: <Filter className="w-4 h-4" /> },
+    { id: 'recruiting' as PanelId, label: 'Recruiting & Funnel', icon: <Users className="w-4 h-4" /> },
+    { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
     { id: 'affiliatepipeline' as PanelId, label: 'Affiliate Pipeline', icon: <Handshake className="w-4 h-4" /> },
-    { id: 'goaltracker' as PanelId, label: 'Goals & Tracking', icon: <Flag className="w-4 h-4" /> },
     { id: 'prodopt' as PanelId, label: 'Growth Optimization', icon: <Target className="w-4 h-4" /> },
-
+  ]},
+  { group: 'PM · Products & Goals', items: [
+    { id: 'products' as PanelId, label: 'Products', icon: <Package className="w-4 h-4" /> },
+    { id: 'gdcbrackets' as PanelId, label: 'GDC & Overrides', icon: <Percent className="w-4 h-4" /> },
+    { id: 'goaltracker' as PanelId, label: 'Goals & Tracking', icon: <Flag className="w-4 h-4" /> },
   ]},
   /* ─── Holistic Planning: merged Client Planning + Advanced + Advisory ─── */
   { group: '① Foundation', items: [
@@ -113,7 +118,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'cash', label: 'Cash Flow', icon: <DollarSign className="w-4 h-4" /> },
     { id: 'balancesheet' as PanelId, label: 'Balance Sheet', icon: <Wallet className="w-4 h-4" /> },
     { id: 'debtmgmt' as PanelId, label: 'Debt Management', icon: <CreditCard className="w-4 h-4" /> },
-    { id: 'income', label: 'Income Streams', icon: <DollarSign className="w-4 h-4" /> },
+    { id: 'income', label: 'Income Streams', icon: <Banknote className="w-4 h-4" /> },
   ]},
   { group: '② Plan', items: [
     { id: 'retire', label: 'Retirement', icon: <Clock className="w-4 h-4" /> },
@@ -130,9 +135,9 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'premfin' as PanelId, label: 'Premium Financing', icon: <Landmark className="w-4 h-4" /> },
     /* ilitrust merged into trusteng as tab — Pass 152 */
-    { id: 'execcomp' as PanelId, label: 'Executive Comp', icon: <Briefcase className="w-4 h-4" /> },
+    { id: 'execcomp' as PanelId, label: 'Executive Comp', icon: <Crown className="w-4 h-4" /> },
     { id: 'charitable' as PanelId, label: 'Charitable Planning', icon: <Gift className="w-4 h-4" /> },
-    { id: 'advanced', label: 'Strategy Inputs', icon: <Gem className="w-4 h-4" /> },
+    { id: 'advanced', label: 'Strategy Inputs', icon: <SlidersHorizontal className="w-4 h-4" /> },
     { id: 'advanced-workflows' as PanelId, label: 'Workflow Automation', icon: <ShieldCheck className="w-4 h-4" /> },
   ]},
   { group: '④ Grow', items: [
@@ -146,20 +151,19 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'summary', label: 'Scorecard Summary', icon: <FileText className="w-4 h-4" /> },
     { id: 'timeline', label: 'Action Plan & Timeline', icon: <ListChecks className="w-4 h-4" /> },
     { id: 'cascade-alerts' as PanelId, label: 'Cascade Intelligence', icon: <Zap className="w-4 h-4" /> },
-    { id: 'firm-comparison' as PanelId, label: 'Firm Comparison', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'firm-comparison' as PanelId, label: 'Firm Comparison', icon: <Building2 className="w-4 h-4" /> },
     { id: 'scenario-comparison' as PanelId, label: 'Scenarios', icon: <GitCompare className="w-4 h-4" /> },
     { id: 'partner', label: 'Partner Earnings', icon: <Handshake className="w-4 h-4" /> },
   ]},
-  { group: 'Data', items: [
-    { id: 'financial-data-hub' as PanelId, label: 'Financial Data Hub', icon: <Database className="w-4 h-4" /> },
-  ]},
+  /* Data group merged into References — Pass 153 */
   { group: 'Tools & Reports', items: [
     { id: 'compliance-checklist' as PanelId, label: 'Compliance Checklist', icon: <ClipboardList className="w-4 h-4" /> },
     { id: 'generate-report' as PanelId, label: 'Generate Report', icon: <FileBarChart className="w-4 h-4" /> },
     { id: 'multi-compare' as PanelId, label: 'Multi-Client Compare', icon: <UsersRound className="w-4 h-4" /> },
     /* cascade-flow merged into cascade-alerts as tab — Pass 152 */
   ]},
-  { group: 'References & Due Diligence', items: [
+  { group: 'Data & References', items: [
+    { id: 'financial-data-hub' as PanelId, label: 'Financial Data Hub', icon: <Database className="w-4 h-4" /> },
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
     { id: 'duediligence' as PanelId, label: 'Due Diligence', icon: <FileCheck className="w-4 h-4" /> },
   ]},
@@ -1692,7 +1696,7 @@ export default function Calculators() {
           {activePanel === 'governance' && <GovernanceIPSPanel riskTolerance={riskTolerance} />}
           {activePanel === 'montecarlo' && <MonteCarloPanel savings={savings} retirement401k={retirement401k} monthlySav={monthlySav} retireAge={retireAge} age={age} />}
           {activePanel === 'stockcomp' && <StockCompPanel income={income} />}
-          {activePanel === 'premfin' && <PremiumFinancingPanel />}
+          {activePanel === 'premfin' && <PremiumFinancingPanel income={totalIncome} grossEstate={grossEstate} savings={savings} />}
           {/* ilitrust merged into trusteng — Pass 152 */}
           {activePanel === 'execcomp' && <ExecCompPanel income={income} />}
           {activePanel === 'charitable' && <CharitablePlanningPanel income={income} />}

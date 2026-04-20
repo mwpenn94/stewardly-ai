@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +12,7 @@ import {
   Package, Layers, Shield, Zap, Database, Brain, BarChart3, Search,
   CheckCircle, AlertCircle, Clock, ArrowRight, ChevronRight, Loader2,
   Globe, Lock, Mic, Video, Mail, DollarSign, Users, FileText, Settings,
-  Activity, Box, GitBranch, Terminal, Eye, Sparkles, RefreshCw
+  Activity, Box, GitBranch, Terminal, Eye, Sparkles, RefreshCw, ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { SEOHead } from "@/components/SEOHead";
@@ -94,6 +95,7 @@ export default function ManusNextDashboard() {
   const { user } = useAuth();
   
   const [tab, setTab] = useState("overview");
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [validating, setValidating] = useState<string | null>(null);
@@ -147,6 +149,9 @@ export default function ManusNextDashboard() {
 
   return (
     <div className="container max-w-6xl py-8 space-y-6">
+      <button type="button" onClick={() => navigate("/chat")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors -ml-1 mb-2">
+        <ArrowLeft className="h-4 w-4" /> Back to Chat
+      </button>
       <SEOHead title="Manus-Next" description="Platform capability validation dashboard" />
       <div className="flex items-start justify-between">
         <div>

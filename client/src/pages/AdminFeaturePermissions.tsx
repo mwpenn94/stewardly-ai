@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Shield, Lock, Unlock, Eye, Users, Building2, Search, Filter, ChevronRight, History, Clock } from "lucide-react";
+import { Shield, Lock, Unlock, Eye, Users, Building2, Search, Filter, ChevronRight, History, Clock, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { SEOHead } from "@/components/SEOHead";
@@ -27,7 +29,7 @@ const DISCLOSURE_LABELS: Record<number, string> = {
 };
 
 export default function AdminFeaturePermissions({ embedded = false }: { embedded?: boolean } = {}) {
-
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [filterLayer, setFilterLayer] = useState("all");
   const [filterDisclosure, setFilterDisclosure] = useState("all");
@@ -69,7 +71,12 @@ export default function AdminFeaturePermissions({ embedded = false }: { embedded
         <SEOHead title="Feature Permissions" description="Manage feature access and permissions across the platform." />
     <div className="space-y-6">
       <QueryErrorBanner error={registryError || permsError} />
-      {/* Header */}
+      {/* Back + Header */}
+      {!embedded && (
+        <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="-ml-2 text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Admin
+        </Button>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">

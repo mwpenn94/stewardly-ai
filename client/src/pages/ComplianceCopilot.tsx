@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Shield, FileSearch, Lock, Loader2, Search, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { Shield, FileSearch, Lock, Loader2, Search, AlertTriangle, CheckCircle, Info , ArrowLeft } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -27,6 +29,7 @@ const SEVERITY_ICON: Record<string, React.ReactNode> = {
 export default function ComplianceCopilot({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const [tab, setTab] = useState("audit");
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
 
   const auditQ = trpc.complianceCopilot.auditLog.useQuery({ limit: 100 }, { enabled: !!user });
@@ -75,6 +78,9 @@ export default function ComplianceCopilot({ embedded = false }: { embedded?: boo
 
   return (
     <div className="container max-w-5xl py-8 space-y-6">
+      <button type="button" onClick={() => navigate("/operations")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors -ml-1 mb-2">
+        <ArrowLeft className="h-4 w-4" /> Back to Operations
+      </button>
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Shield className="h-8 w-8 text-primary" /> Compliance Copilot

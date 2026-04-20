@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, TrendingDown, RefreshCw, DollarSign, Loader2, BarChart3, ArrowRight } from "lucide-react";
+import { Calculator, TrendingDown, RefreshCw, DollarSign, Loader2, BarChart3, ArrowRight , ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { SEOHead } from "@/components/SEOHead";
 import { fmt, pct } from "@/lib/format";
@@ -73,6 +74,9 @@ export default function TaxProjector() {
 
   return (
     <div className="container max-w-5xl py-8 space-y-6">
+      <button type="button" onClick={() => navigate("/wealth-engine")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors -ml-1 mb-2">
+        <ArrowLeft className="h-4 w-4" /> Back to Wealth Engine
+      </button>
       <SEOHead title="Tax Projector" description="Multi-year tax projection and Roth conversion analysis" />
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">

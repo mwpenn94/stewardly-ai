@@ -45,14 +45,18 @@ describe("Unified Wealth Engine Panel Structure", () => {
     expect(fs.existsSync(calculatorsPath)).toBe(true);
   });
 
-  it("contains all 6 navigation groups", () => {
+  it("contains all navigation groups (Pass 153: PM split into 3 sub-groups, Data merged into References)", () => {
     const content = fs.readFileSync(calculatorsPath, "utf-8");
-    expect(content).toContain("Practice Management");
-    expect(content).toContain("Client Planning");
-    expect(content).toContain("Advanced");
-    expect(content).toContain("Advisory");
-    expect(content).toContain("Data");
-    expect(content).toContain("References & Due Diligence");
+    expect(content).toContain("PM \u00b7 Business Operations");
+    expect(content).toContain("PM \u00b7 Revenue & Growth");
+    expect(content).toContain("PM \u00b7 Products & Goals");
+    expect(content).toContain("\u2460 Foundation");
+    expect(content).toContain("\u2461 Plan");
+    expect(content).toContain("\u2462 Protect & Advance");
+    expect(content).toContain("\u2463 Grow");
+    expect(content).toContain("\u2464 Analyze & Act");
+    expect(content).toContain("Tools & Reports");
+    expect(content).toContain("Data & References");
   });
 
   it("contains all 7 new panel IDs in PanelId type (unified-client-plan merged into planning-hierarchy in Pass 151)", () => {

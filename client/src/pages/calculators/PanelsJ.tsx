@@ -46,15 +46,16 @@ const RISK_FACTORS = [
   { name: 'Exit Strategy Risk', desc: 'Limited options if arrangement underperforms — surrender charges, loan payoff', severity: 'high' },
 ];
 
-export function PremiumFinancingPanel() {
-  const [deathBenefit, setDeathBenefit] = useState(5000000);
-  const [annualPremium, setAnnualPremium] = useState(100000);
+interface PremiumFinancingProps { income?: number; grossEstate?: number; savings?: number; }
+export function PremiumFinancingPanel({ income = 0, grossEstate = 0, savings = 0 }: PremiumFinancingProps) {
+  const [deathBenefit, setDeathBenefit] = useState(() => grossEstate > 0 ? Math.max(5000000, Math.round(grossEstate * 0.5)) : 5000000);
+  const [annualPremium, setAnnualPremium] = useState(() => income > 0 ? Math.round(income * 0.1) : 100000);
   const [premiumYears, setPremiumYears] = useState(10);
   const [loanRate, setLoanRate] = useState(5.5);
   const [policyCrediting, setPolicyCrediting] = useState(6.5);
   const [collateralPct, setCollateralPct] = useState(10);
-  const [clientNetWorth, setClientNetWorth] = useState(10000000);
-  const [clientLiquid, setClientLiquid] = useState(2000000);
+  const [clientNetWorth, setClientNetWorth] = useState(() => grossEstate > 0 ? grossEstate : 10000000);
+  const [clientLiquid, setClientLiquid] = useState(() => savings > 0 ? savings : 2000000);
 
   const totalPremiums = annualPremium * premiumYears;
   const spread = policyCrediting - loanRate;

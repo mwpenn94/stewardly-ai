@@ -3,6 +3,7 @@
  * Wired to trpc.enrichmentEngine.{datasets,cohorts,matches}
  */
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,13 +20,14 @@ import { toast } from "sonner";
 import {
   Database, Layers, Users, Link2, Plus, Trash2,
   Loader2, Search, RefreshCw, Eye, BarChart3,
-  CheckCircle2, Target, Sparkles,
+  CheckCircle2, Target, Sparkles, ArrowLeft
 } from "lucide-react";
 import { SEOHead } from "@/components/SEOHead";
 
 export default function EnrichmentAdmin({ embedded = false }: { embedded?: boolean } = {}) {
   const { user } = useAuth();
   const [tab, setTab] = useState("datasets");
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [showCreateDataset, setShowCreateDataset] = useState(false);
   const [selectedDatasetId, setSelectedDatasetId] = useState<number | null>(null);
@@ -70,6 +72,9 @@ export default function EnrichmentAdmin({ embedded = false }: { embedded?: boole
 
   return (
     <div className="container max-w-6xl py-8 space-y-6">
+      <button type="button" onClick={() => navigate("/admin")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors -ml-1 mb-2">
+        <ArrowLeft className="h-4 w-4" /> Back to Admin
+      </button>
       <SEOHead title="Enrichment Engine" description="Data enrichment datasets, cohorts, and matching" />
       <div className="flex items-center justify-between">
         <div>

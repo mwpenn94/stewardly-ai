@@ -10,6 +10,7 @@
  * - Schedule and send campaigns
  */
 import { useState, useMemo, useCallback } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -361,6 +362,9 @@ function CampaignEditor({
 
   return (
     <div className="space-y-6">
+      <button type="button" onClick={() => navigate("/operations")} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors -ml-1 mb-2">
+        <ArrowLeft className="h-4 w-4" /> Back to Operations
+      </button>
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
           <ArrowLeft className="w-4 h-4" />
