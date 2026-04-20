@@ -10,6 +10,14 @@ import {
   setUserPreferences,
   type NotificationPreferences,
 } from "../services/websocketNotifications";
+import {
+  dispatchWorkflowEvent,
+  getWorkflowRules,
+  getWorkflowStats,
+  checkMeetingReminders,
+  checkOverdueActionItems,
+  checkComplianceAlerts,
+} from "../services/notificationWorkflows";
 
 export const notificationsRouter = router({
   // Get all notifications for the current user (REST fallback)
@@ -87,6 +95,30 @@ export const notificationsRouter = router({
     };
   }),
 
+  // ─── Workflow Automation ──────────────────────────────────────────────
+  workflowRules: protectedProcedure.query(() => getWorkflowRules()),
+  workflowStats: protectedProcedure.query(() => getWorkflowStats()),
+  triggerWorkflow: protectedProcedure
+    .input(z.object({
+      eventType: z.string(),
+      userId: z.number().default(0),
+      data: z.record(z.string(), z.unknown()).default({}),
+    }))
+    .mutation(({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Only admins can trigger workflow events");
+      const result = dispatchWorkflowEvent({
+        type: input.eventType, userId: input.userId,
+        data: input.data, timestamp: Date.now(),
+      });
+      return { success: true, ...result };
+    }),
+  runScheduledChecks: protectedProcedure.mutation(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") throw new Error("Only admins can run scheduled checks");
+    const [meetings, actions, compliance] = await Promise.all([
+      checkMeetingReminders(), checkOverdueActionItems(), checkComplianceAlerts(),
+    ]);
+    return { success: true, meetingReminders: meetings, overdueActions: actions, complianceAlerts: compliance };
+  }),
   // Save notification preferences
   savePreferences: protectedProcedure
     .input(z.object({

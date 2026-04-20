@@ -5,6 +5,7 @@ import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { logger } from "../_core/logger";
+import { dispatchWorkflowEvent } from "../services/notificationWorkflows";
 
 export const leadPipelineRouter = router({
   getPipeline: protectedProcedure
@@ -34,6 +35,13 @@ export const leadPipelineRouter = router({
       const { leadPipeline } = await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
       await db.update(leadPipeline).set({ assignedAdvisorId: input.advisorId, assignedAt: new Date(), status: "assigned" }).where(eq(leadPipeline.id, input.leadId));
+      // Dispatch notification workflow
+      dispatchWorkflowEvent({
+        type: "lead.assigned",
+        userId: input.advisorId,
+        data: { leadName: "Lead #" + input.leadId, advisorId: input.advisorId },
+        timestamp: Date.now(),
+      });
       return { success: true };
     }),
 
@@ -46,6 +54,13 @@ export const leadPipelineRouter = router({
       const { leadPipeline } = await import("../../drizzle/schema");
       const { eq } = await import("drizzle-orm");
       await db.update(leadPipeline).set({ status: input.status as any, updatedAt: new Date() }).where(eq(leadPipeline.id, input.leadId));
+      // Dispatch notification workflow for status changes
+      dispatchWorkflowEvent({
+        type: "lead.status_changed",
+        userId: 0,
+        data: { leadName: "Lead #" + input.leadId, newStatus: input.status },
+        timestamp: Date.now(),
+      });
       return { success: true };
     }),
 

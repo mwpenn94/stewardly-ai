@@ -957,4 +957,61 @@ export const improvementEngineRouter = router({
         },
       };
     }),
+
+  // ─── Signal Bridge (Pass 11) ───────────────────────────────────────
+  signalBridgeMetrics: protectedProcedure.query(async () => {
+    const { getSignalBridgeMetrics } = await import("../services/improvementSignalBridge");
+    return getSignalBridgeMetrics();
+  }),
+
+  recordTransactionSignal: protectedProcedure
+    .input(z.object({
+      accountId: z.string(),
+      transactionCount: z.number(),
+      totalAmount: z.number(),
+      categories: z.array(z.string()).default([]),
+      dateRange: z.object({ start: z.string(), end: z.string() }),
+      syncLatencyMs: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { processTransactionSignal } = await import("../services/improvementSignalBridge");
+      processTransactionSignal({
+        userId: String(ctx.user.id),
+        ...input,
+      });
+      return { success: true };
+    }),
+
+  recordUserAction: protectedProcedure
+    .input(z.object({
+      action: z.string(),
+      feature: z.string(),
+      durationMs: z.number(),
+      success: z.boolean().default(true),
+      metadata: z.record(z.string(), z.unknown()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { processUserActionSignal } = await import("../services/improvementSignalBridge");
+      processUserActionSignal({
+        userId: String(ctx.user.id),
+        ...input,
+      });
+      return { success: true };
+    }),
+
+  recordFeedbackSignal: protectedProcedure
+    .input(z.object({
+      conversationId: z.number(),
+      messageId: z.number(),
+      rating: z.enum(["up", "down"]),
+      modelVersion: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { processModelQualitySignal } = await import("../services/improvementSignalBridge");
+      processModelQualitySignal({
+        userId: String(ctx.user.id),
+        ...input,
+      });
+      return { success: true };
+    }),
 });

@@ -37,13 +37,14 @@ const AdminAuditTrail = lazy(() => import("./AdminAuditTrail"));
 const AgentManager = lazy(() => import("./AgentManager"));
 const ConsensusPage = lazy(() => import("./Consensus"));
 const AdminFeaturePermissions = lazy(() => import("./AdminFeaturePermissions"));
+const AdminUsageAnalytics = lazy(() => import("./AdminUsageAnalytics"));
 
 type AdminTab =
   | "overview" | "system-health" | "data-freshness" | "rate-management"
   | "lead-sources" | "intelligence" | "guide" | "knowledge"
   | "integrations" | "team" | "billing" | "api-keys" | "webhooks"
   | "reports" | "improvement" | "bcp" | "fairness" | "audit-trail"
-  | "agents" | "consensus" | "feature-permissions";
+  | "agents" | "consensus" | "feature-permissions" | "usage-analytics";
 
 interface NavItem { id: AdminTab; label: string; icon: React.ElementType; slug: string; }
 interface NavSection { group: string; items: NavItem[]; }
@@ -52,6 +53,7 @@ const NAV_SECTIONS: NavSection[] = [
   { group: "General", items: [
     { id: "overview", label: "Overview", icon: Cog, slug: "overview" },
     { id: "system-health", label: "System Health", icon: Activity, slug: "system-health" },
+    { id: "usage-analytics", label: "Usage Analytics", icon: BarChart3, slug: "usage-analytics" },
     { id: "data-freshness", label: "Data Freshness", icon: TrendingUp, slug: "data-freshness" },
     { id: "feature-permissions", label: "Feature Flags", icon: Settings2, slug: "feature-permissions" },
   ]},
@@ -222,6 +224,7 @@ export default function AdminHubV2() {
               {activeTab === "reports" && <AdminPlatformReports embedded />}
               {activeTab === "guide" && <PlatformGuide embedded />}
               {activeTab === "audit-trail" && <AdminAuditTrail embedded />}
+              {activeTab === "usage-analytics" && <AdminUsageAnalytics embedded />}
             </Suspense>
           </div>
         </main>

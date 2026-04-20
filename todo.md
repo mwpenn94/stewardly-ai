@@ -7572,3 +7572,11 @@
 - [x] Combined Pass 9+10 tests: 51/51 passed, 0 regressions
 - [x] PARITY.md updated with Pass 10 entry + Pass 9 checkpoint SHA
 - [x] CONVERGED — No new actionable gaps found. Only infrastructure/external-dependency items remain.
+
+### v8.3 Pass 11 — Recommended Next Steps + Remaining Items
+- [x] P11-1: Notification workflow automation service (11 rules: lead.created/status_changed/assigned, compliance.license_expiring/ce_deadline/review_due, meeting.reminder/overdue, improvement.quality/convergence, system.error_spike) + lead pipeline wiring [PEOPLE+PLATFORM]
+- [x] P11-2: Admin Usage Analytics Dashboard (10 tRPC queries: overview KPIs, chat volume, mode distribution, engagement trend, feature adoption, feedback summary, meeting stats, top users, role distribution) + AdminHubV2 tab [PLATFORM]
+- [x] P11-3: Improvement Signal Bridge service (6 loops: Calculator Accuracy, User Engagement, Data Freshness, Model Quality, Compliance, Performance) + 3 new tRPC procedures [PLANS]
+- [x] P11-4: LVUA Pass 11: 13/16 passed (3 timeout false negatives on heavy-data pages), 0 JS errors
+- [x] P11-5: Pass 11 tests: 17/17 passed (v83-pass11-recommended.test.ts), combined 41/41 with Pass 10
+- [x] P11-6: PARITY.md updated with Pass 11 entry
