@@ -49,6 +49,8 @@ export default defineConfig({
       "client/src/pages/calculators/advancedHub.test.ts",
       // Pass 154: keyboard shortcuts + compare mode tests
       "client/src/pages/__tests__/calculators-pass154.test.ts",
+      // Pass 155: drag-reorder, shortcut modal, compare diff highlights
+      "client/src/pages/__tests__/calculators-pass155.test.ts",
     ],
   },
 });

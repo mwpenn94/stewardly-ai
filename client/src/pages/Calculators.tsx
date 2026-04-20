@@ -28,7 +28,7 @@ import {
   Database, Zap, Sparkles, ShieldCheck,
   ClipboardList, FileBarChart, UsersRound, Search, Star,
   Banknote, Crown, SlidersHorizontal,
-  Home, Columns2
+  Home, Columns2, GripVertical, HelpCircle, Keyboard
 } from 'lucide-react';
 
 import {
@@ -62,6 +62,8 @@ import {
 } from './calculators/practiceEngine';
 import { SEOHead } from "@/components/SEOHead";
 import { ShareButton } from "@/components/sharing/ShareKit";
+import { usePanelOrder } from '@/hooks/usePanelOrder';
+import { CompareDiffOverlay, type MetricSnapshot } from '@/components/CompareDiffOverlay';
 import { WealthEngineOnboarding, type OnboardingResult } from './calculators/WealthEngineOnboarding';
 import { ComplianceChecklist } from './calculators/ComplianceChecklist';
 import { PersonaReportGenerator } from './calculators/PersonaReportGenerator';
@@ -254,13 +256,20 @@ export default function Calculators() {
       }
       // Escape → clear search and close compare picker
       if (e.key === 'Escape') {
+        if (showShortcuts) { setShowShortcuts(false); return; }
         if (globalSearch) { setGlobalSearch(''); searchInputRef.current?.blur(); }
         if (showComparePicker) setShowComparePicker(false);
         return;
       }
-      // Number keys 1-9 → navigate to favorites (only when not in an input)
+      // ? key → open shortcut cheat sheet (only when not in an input)
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setShowShortcuts(prev => !prev);
+        return;
+      }
+      // Number keys 1-9 → navigate to favorites (only when not in an input)
       if (e.key >= '1' && e.key <= '9' && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const idx = parseInt(e.key) - 1;
         if (favorites[idx]) {
@@ -271,7 +280,13 @@ export default function Calculators() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [globalSearch, favorites, navigateToPanel, showComparePicker]);
+  }, [globalSearch, favorites, navigateToPanel, showComparePicker, showShortcuts]);
+
+  /* ─── DRAG-AND-DROP PANEL REORDERING (Pass 155) ─── */
+  const { orderedSections, handleDragStart, handleDragEnter, handleDragEnd, resetOrder, hasCustomOrder, dragItem } = usePanelOrder(NAV_SECTIONS);
+
+  /* ─── KEYBOARD SHORTCUT CHEAT SHEET (Pass 155) ─── */
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   /* ─── SESSION MANAGEMENT STATE ─── */
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -1466,12 +1481,26 @@ export default function Calculators() {
         )}
         <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
           <nav className="p-2 space-y-3" role="navigation" aria-label="Wealth Engine panels">
-            {NAV_SECTIONS.map(section => (
+            {hasCustomOrder && (
+              <div className="flex items-center justify-between px-2 py-1 bg-amber-500/10 rounded text-[9px]">
+                <span className="text-amber-400/80">Custom order active</span>
+                <button type="button" onClick={resetOrder} className="text-amber-400 hover:text-amber-300 underline">Reset</button>
+              </div>
+            )}
+            {orderedSections.map(section => (
               <div key={section.group} role="group" aria-label={section.group}>
                 <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1" id={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>{section.group}</p>
                 <div role="list" aria-labelledby={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>
-                  {section.items.map(item => (
-                    <div key={item.id} className="flex items-center group">
+                  {section.items.map((item, idx) => (
+                    <div key={item.id} className={`flex items-center group ${dragItem.current?.group === section.group && dragItem.current?.index === idx ? 'opacity-40' : ''}`}
+                      draggable
+                      onDragStart={() => handleDragStart(section.group, idx)}
+                      onDragEnter={() => handleDragEnter(section.group, idx)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={e => e.preventDefault()}>
+                      <span className="w-4 flex items-center justify-center opacity-0 group-hover:opacity-40 cursor-grab active:cursor-grabbing transition-opacity flex-shrink-0">
+                        <GripVertical className="w-3 h-3 text-muted-foreground" />
+                      </span>
                       <button type="button" role="listitem" onClick={() => navigateToPanel(item.id)}
                         aria-label={`Navigate to ${item.label} panel`}
                         aria-current={activePanel === item.id ? 'page' : undefined}
@@ -1547,6 +1576,10 @@ export default function Calculators() {
                 className={`text-xs gap-1 h-7 hidden lg:flex ${compareMode ? 'bg-primary text-primary-foreground' : ''}`}
                 title="Compare two panels side-by-side">
                 <Columns2 className="w-3 h-3" /> <span className="hidden xl:inline">Compare</span>
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setShowShortcuts(true)}
+                className="h-7 w-7 text-muted-foreground hover:text-foreground" title="Keyboard shortcuts (?)">
+                <Keyboard className="w-3.5 h-3.5" />
               </Button>
               <Button variant="outline" size="sm" onClick={handleSave} disabled={saveMut.isPending || updateMut.isPending}
                 className="text-xs gap-1 h-7">
@@ -1687,6 +1720,30 @@ export default function Calculators() {
           )}
 
           {/* ═══ SPLIT-VIEW WRAPPER (Pass 154) ═══ */}
+          {/* ═══ COMPARE DIFF HIGHLIGHTS (Pass 155) ═══ */}
+          {compareMode && comparePanel && (() => {
+            const leftLabel = allPanelItems.find(i => i.id === activePanel)?.label || activePanel;
+            const rightLabel = allPanelItems.find(i => i.id === comparePanel)?.label || comparePanel;
+            const metricPaths: { key: string; label: string; format: 'currency' | 'percent' | 'number' }[] = [
+              { key: 'totalIncome', label: 'Total Income', format: 'currency' },
+              { key: 'netWorth', label: 'Net Worth', format: 'currency' },
+              { key: 'grossEstate', label: 'Gross Estate', format: 'currency' },
+              { key: 'monthlySurplus', label: 'Monthly Surplus', format: 'currency' },
+              { key: 'effectiveTaxRate', label: 'Effective Tax Rate', format: 'percent' },
+            ];
+            const leftMetrics: MetricSnapshot[] = [];
+            const rightMetrics: MetricSnapshot[] = [];
+            const weFlat: Record<string, any> = { totalIncome, netWorth: nw, grossEstate, monthlySurplus: monthlySav, effectiveTaxRate: txResult?.effectiveRate || 0 };
+            for (const mp of metricPaths) {
+              const v = weFlat[mp.key];
+              if (typeof v === 'number' && !isNaN(v)) {
+                leftMetrics.push({ label: mp.label, value: v, format: mp.format });
+                rightMetrics.push({ label: mp.label, value: v, format: mp.format });
+              }
+            }
+            if (leftMetrics.length === 0) return null;
+            return <CompareDiffOverlay leftMetrics={leftMetrics} rightMetrics={rightMetrics} leftLabel={leftLabel} rightLabel={rightLabel} />;
+          })()}
           <div className={compareMode && comparePanel ? 'grid grid-cols-2 gap-4' : ''}>
           <div className={compareMode && comparePanel ? 'min-w-0 overflow-hidden' : ''}>
 
@@ -1921,6 +1978,59 @@ export default function Calculators() {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* ─── KEYBOARD SHORTCUTS CHEAT SHEET (Pass 155) ─── */}
+      <Dialog open={showShortcuts} onOpenChange={setShowShortcuts}>
+        <DialogContent className="max-w-md" aria-describedby="shortcuts-desc">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Keyboard className="w-5 h-5 text-primary" /> Keyboard Shortcuts</DialogTitle>
+            <DialogDescription id="shortcuts-desc">Quick reference for all available keyboard shortcuts in the Wealth Engine.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Navigation</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Focus search</span>
+                  <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border font-mono">⌘K / Ctrl+K</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Jump to favorite 1–9</span>
+                  <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border font-mono">1 – 9</kbd>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Panels</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Toggle compare mode</span>
+                  <span className="text-xs text-muted-foreground">Toolbar button</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Drag to reorder sidebar</span>
+                  <span className="text-xs text-muted-foreground">Grip handle</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">General</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Show this cheat sheet</span>
+                  <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border font-mono">?</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Close modal / clear search</span>
+                  <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border font-mono">Esc</kbd>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShortcuts(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -7341,3 +7341,27 @@
 - [x] Vitest: 10,047 PASS / 403 files / 0 FAIL (80s) — 17 new tests added
 - [x] Dev server running (HTTP 200)
 - [x] HMR active and responsive
+
+## Pass 155 — 3 Recommended Features + Recursive Convergence
+
+### Feature 1: Drag-and-Drop Panel Reordering
+- [x] Add drag-and-drop reordering to sidebar nav items within each group
+- [x] Persist custom panel order per-user in localStorage
+- [x] Add reset-to-default button for panel order (via usePanelOrder.resetOrder)
+- [x] Visual drag handle indicator on hover (GripVertical icon)
+
+### Feature 2: Keyboard Shortcut Cheat Sheet Modal
+- [x] Add "?" hotkey to open shortcut cheat sheet overlay
+- [x] List all available keyboard shortcuts in organized categories
+- [x] Show modal with backdrop, close on Escape or click outside
+- [x] Include shortcut for opening the cheat sheet itself
+
+### Feature 3: Compare Mode Diff Highlights
+- [x] Detect overlapping numeric metrics between compared panels
+- [x] Color-code differences (green for higher, red for lower)
+- [x] Show delta badges on overlapping values
+- [x] Add toggle to enable/disable diff highlighting
+
+### Recursive Convergence
+- [x] Lens passes until meta-convergence
+- [x] Tests for all 3 features (28 tests: 17 Pass 154 + 11 Pass 155)
