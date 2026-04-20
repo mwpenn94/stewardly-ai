@@ -83,6 +83,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass10-convergence.test.ts",
       // v8.3 Pass 11: Recommended next steps — notification workflows, signal bridge, usage analytics, greeting fix
       "client/src/pages/__tests__/v83-pass11-recommended.test.ts",
+      // v8.3 Pass 12: P0 blank screen fix — guest provisioning timeout, toast suppression, People Engine
+      "client/src/pages/__tests__/v83-pass12-bugfix.test.ts",
     ],
   },
 });

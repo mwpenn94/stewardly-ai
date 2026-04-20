@@ -83,21 +83,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hasAttempted = useRef(false);
   const [guestProvisioningDone, setGuestProvisioningDone] = useState(false);
 
+  // Safety timeout: if guest provisioning takes too long, mark it as done
+  // so the app renders in degraded anonymous mode instead of infinite spinner
+  const GUEST_PROVISION_TIMEOUT_MS = 8_000;
+
   const provisionGuest = useCallback(async () => {
     if (isProvisioning.current || hasAttempted.current) return;
     isProvisioning.current = true;
     hasAttempted.current = true;
 
+    // Set up a safety timeout — if provisioning hangs, unblock the UI
+    const timeoutId = setTimeout(() => {
+      if (!guestProvisioningDone) {
+        console.warn("[AuthProvider] Guest provisioning timed out — entering anonymous mode");
+        isProvisioning.current = false;
+        setGuestProvisioningDone(true);
+        // Set anonymous mode so Chat renders without auth
+        try { localStorage.setItem("anonymousMode", "true"); } catch {}
+      }
+    }, GUEST_PROVISION_TIMEOUT_MS);
+
     try {
       // Create the guest session (server creates user + returns token)
+      const controller = new AbortController();
+      const fetchTimeout = setTimeout(() => controller.abort(), GUEST_PROVISION_TIMEOUT_MS - 1000);
+
       const res = await fetch("/api/auth/guest-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        signal: controller.signal,
       });
+      clearTimeout(fetchTimeout);
 
       if (!res.ok) {
         console.warn("[AuthProvider] Guest session creation failed:", res.status);
+        // Fall through to finally — still set anonymousMode
+        try { localStorage.setItem("anonymousMode", "true"); } catch {}
         return;
       }
 
@@ -107,17 +129,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Store token in localStorage — this is the primary auth mechanism
         // since the proxy strips Set-Cookie headers
         setSessionToken(data.token);
+        // Clear anonymous mode since we have a real guest session
+        try { localStorage.removeItem("anonymousMode"); } catch {}
       }
 
       // Refresh auth.me — now the tRPC link will send the token via Authorization header
       await utils.auth.me.invalidate();
-    } catch (err) {
-      console.warn("[AuthProvider] Failed to provision guest:", err);
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        console.warn("[AuthProvider] Guest session fetch aborted (timeout)");
+      } else {
+        console.warn("[AuthProvider] Failed to provision guest:", err);
+      }
+      // Ensure anonymous mode is set so the app still renders
+      try { localStorage.setItem("anonymousMode", "true"); } catch {}
     } finally {
+      clearTimeout(timeoutId);
       isProvisioning.current = false;
       setGuestProvisioningDone(true);
     }
-  }, [utils]);
+  }, [utils, guestProvisioningDone]);
 
   // Track whether user just completed OAuth (for welcome-back toast)
   const justCompletedOAuth = useRef(false);

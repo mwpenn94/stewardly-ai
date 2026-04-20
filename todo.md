@@ -7580,3 +7580,12 @@
 - [x] P11-4: LVUA Pass 11: 13/16 passed (3 timeout false negatives on heavy-data pages), 0 JS errors
 - [x] P11-5: Pass 11 tests: 17/17 passed (v83-pass11-recommended.test.ts), combined 41/41 with Pass 10
 - [x] P11-6: PARITY.md updated with Pass 11 entry
+
+### v8.3 Pass 12 — P0 Bug Fixes + Carryover Next Steps
+- [x] P12-BUG-1: Fix blank screen — 8s AbortController timeout in AuthContext, anonymousMode fallback
+- [x] P12-BUG-2: People Engine confirmed present — was hidden behind blank screen, now visible
+- [ ] P12-CARRY-1: Connect Plaid sandbox account for Signal Bridge data flow (deferred — external dependency)
+- [ ] P12-CARRY-2: Add scheduled digest notifications (deferred — P2)
+- [ ] P12-CARRY-3: Build client-facing portal (deferred — P2, major feature)
+- [x] P12-LVUA: 12/13 passed (T7 Learn timeout false negative), 0 JS errors
+- [x] P12-TESTS: 15/15 passed (v83-pass12-bugfix.test.ts) + PARITY.md updated

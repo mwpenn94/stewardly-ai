@@ -130,6 +130,13 @@ const handleUnauthorizedGracefully = (error: unknown) => {
   // Invalidate auth.me so AuthProvider re-checks and re-provisions if needed
   queryClient.invalidateQueries({ queryKey: [["auth", "me"]] });
 
+  // Only show the toast if the user had a real session (not during initial guest provisioning)
+  // Check if there's a stored session token — if not, this is a first-visit anonymous user
+  const hasStoredToken = (() => {
+    try { return !!localStorage.getItem("stewardly_session_token"); } catch { return false; }
+  })();
+  if (!hasStoredToken) return; // Don't toast during initial guest provisioning
+
   // Show a toast (with cooldown to prevent spam)
   const now = Date.now();
   if (now - _lastAuthToastTime > AUTH_TOAST_COOLDOWN_MS) {
