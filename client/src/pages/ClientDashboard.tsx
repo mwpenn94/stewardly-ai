@@ -4,7 +4,7 @@
  * Wired to financialProfile.get for real profile data.
  * Derives domain scores from profile completeness + links to live tools.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -14,6 +14,8 @@ import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/PullToRefreshIndicator";
 import { Progress } from "@/components/ui/progress";
 import {
   Loader2, Shield, TrendingUp, Heart, FileText,
@@ -65,6 +67,18 @@ export default function ClientDashboard() {
     enabled: isAuthenticated,
   });
 
+  // G40: Pull-to-refresh for mobile
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      profile.refetch(),
+      conversations.refetch(),
+      learningProgress.refetch(),
+    ]);
+  }, [profile, conversations, learningProgress]);
+  const { pullRef, isRefreshing, pullProgress, pullDistance } = usePullToRefresh({
+    onRefresh: handleRefresh,
+  });
+
   // Derive domain scores from profile data presence
   const DOMAINS = useMemo(() => {
     const p = (profile.data ?? {}) as any;
@@ -104,7 +118,8 @@ export default function ClientDashboard() {
 
   return (
     <AppShell title="Client Dashboard">
-      <div className="container max-w-4xl py-8 space-y-6">
+      <div ref={pullRef} className="container max-w-4xl py-8 space-y-6">
+        <PullToRefreshIndicator pullDistance={pullDistance} pullProgress={pullProgress} isRefreshing={isRefreshing} />
         <QueryErrorBanner query={profile} label="financial profile" />
 
         <div className="flex justify-end">

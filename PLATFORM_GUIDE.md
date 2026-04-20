@@ -749,7 +749,11 @@ The platform supports OCR text extraction from images and scanned documents via 
 
 ### Voice and Audio
 
-**Speech-to-Text** uses Deepgram-powered real-time transcription. **Text-to-Speech** uses Edge TTS with 25+ natural voices across 6 locales. **Voice Mode** provides hands-free conversational interaction with continuous listening and audible processing cues. **Audio Transcription** transcribes uploaded audio and video files.
+**Speech-to-Text** uses Deepgram-powered real-time transcription with browser SpeechRecognition fallback. **Text-to-Speech** uses Edge TTS with 25+ natural voices across 6 locales, featuring word-level karaoke highlighting (TTSHighlighter component with browser `onboundary` events and Edge time-based estimation), pause/resume controls, and downloadable MP3 audio. **Hands-Free Mode** provides half-duplex conversational interaction with continuous listening, automatic turn-taking, and audible processing cues. **Conversational Voice Mode** (full-duplex) enables simultaneous listening and speaking with AudioContext-based voice activity detection, barge-in interruption (speaking during TTS automatically cancels playback and processes new input), and an animated energy-responsive orb overlay. **Voice Commands** support 7 dispatch actions: send, new chat, bookmark, open palette, cancel, stop, and undo. **Audio Transcription** transcribes uploaded audio and video files.
+
+### Internationalization (i18n)
+
+The platform uses i18next with react-i18next for multi-language support. **Browser language detection** automatically selects the user's preferred language. **Translation files** provide 130+ keys across English, Spanish, and Arabic. **RTL support** includes automatic direction detection, CSS utilities for sidebar mirroring, chevron flipping, and LTR preservation for code/numbers. The **Language Tab** in Settings allows users to switch languages with visual flag indicators. Key components (ChatGreeting, PersonaSidebar5, SettingsHub, ConversationalVoiceOverlay) are wired with `useTranslation()` hooks.
 
 ---
 
@@ -887,6 +891,14 @@ The platform is designed mobile-first with the following breakpoints:
 | Desktop | > 1024px | Full sidebar, multi-column layouts |
 
 The chat interface adapts its sidebar to an overlay on mobile viewports, with a hamburger menu button in the mobile header bar (h-12 height to accommodate touch targets).
+
+### Pull-to-Refresh
+
+Mobile list views support **pull-to-refresh** via the `usePullToRefresh` hook, which provides touch gesture detection with a resistance curve, configurable threshold trigger, and async refresh callback. The `PullToRefreshIndicator` component displays arrow/spinner animation with progress feedback. Currently wired into the ClientDashboard page.
+
+### RTL Layout Support
+
+The platform supports **right-to-left (RTL)** languages including Arabic. RTL CSS utilities handle direction flipping, sidebar mirroring, chevron rotation, and LTR preservation for code blocks and numeric content. Direction is auto-detected from the saved language preference on app load and updates dynamically when the language is changed via Settings.
 
 ---
 

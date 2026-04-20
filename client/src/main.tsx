@@ -13,7 +13,18 @@ import { initErrorTracking } from "@/lib/errorTracking";
 import { initPerformanceMonitor } from "@/lib/performanceMonitor";
 import "./index.css";
 // G31: i18n initialization (must be before App)
-import "@/lib/i18n";
+import i18n from "@/lib/i18n";
+
+// G32: Set initial document direction based on saved language
+const RTL_LANGS = new Set(["ar", "he", "fa", "ur"]);
+const savedLang = i18n.language?.split("-")[0] || "en";
+document.documentElement.dir = RTL_LANGS.has(savedLang) ? "rtl" : "ltr";
+document.documentElement.lang = savedLang;
+i18n.on("languageChanged", (lng: string) => {
+  const code = lng.split("-")[0];
+  document.documentElement.dir = RTL_LANGS.has(code) ? "rtl" : "ltr";
+  document.documentElement.lang = code;
+});
 
 // Initialize global error tracking & performance monitoring
 initErrorTracking();

@@ -13,6 +13,7 @@
  */
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   Sparkles,
   AlertTriangle,
@@ -55,11 +56,11 @@ export interface ChatGreetingV2Props {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
-function getTimeGreeting(): string {
+function getTimeOfDay(): "morning" | "afternoon" | "evening" {
   const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return "morning";
+  if (h < 17) return "afternoon";
+  return "evening";
 }
 
 function dailySeed(): number {
@@ -152,6 +153,7 @@ export default function ChatGreetingV2({
   userName, isAuthenticated, onSuggestionClick, onResumeConversation,
   userRole = "user", aiHealthy = true, recentConversations,
 }: ChatGreetingV2Props) {
+  const { t } = useTranslation();
   const reducedMotion = usePrefersReducedMotion();
   const variant = reducedMotion ? noMotionVariants : fadeUpVariants;
 
@@ -171,8 +173,11 @@ export default function ChatGreetingV2({
       .slice(0, 2);
   }, [recentConversations, isAuthenticated]);
 
-  const greeting = getTimeGreeting();
-  const displayName = userName ? `, ${userName}` : "";
+  const timeOfDay = getTimeOfDay();
+  const greeting = userName
+    ? t("chat.greeting", { timeOfDay: t(`common.${timeOfDay}`, timeOfDay), name: userName })
+    : `${t(`common.${timeOfDay}`, `Good ${timeOfDay}`)}`;
+  // Fallback for common.morning/afternoon/evening — add to en.ts
 
   return (
     <div className="flex flex-col items-center justify-center gap-8 px-4 py-12 max-w-xl mx-auto">
@@ -180,17 +185,17 @@ export default function ChatGreetingV2({
       {!aiHealthy && (
         <motion.div className="w-full flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm" initial="hidden" animate="visible" variants={variant} custom={0}>
           <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-          <span className="text-destructive">AI services are experiencing issues. Responses may be slower.</span>
+          <span className="text-destructive">{t("error.serverError", "AI services are experiencing issues. Responses may be slower.")}</span>
         </motion.div>
       )}
 
       {/* Greeting — clean and personal */}
       <motion.div className="text-center space-y-2" initial="hidden" animate="visible" variants={variant} custom={1}>
-        <h2 className="font-heading text-2xl sm:text-3xl font-semibold">{greeting}{displayName}</h2>
+        <h2 className="font-heading text-2xl sm:text-3xl font-semibold">{greeting}</h2>
         <p className="text-muted-foreground text-sm">
           {isAuthenticated
-            ? "How can I help you today?"
-            : "Ask me anything about financial planning, insurance, or wealth building."}
+            ? t("chat.howCanIHelp")
+            : t("chat.emptyState.description")}
         </p>
       </motion.div>
 
@@ -199,7 +204,7 @@ export default function ChatGreetingV2({
         <motion.div className="w-full space-y-2" initial="hidden" animate="visible" variants={variant} custom={2}>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70 px-1">
             <Clock className="w-3 h-3" />
-            <span>Resume where you left off</span>
+            <span>{t("chat.resumeWhereYouLeftOff")}</span>
           </div>
           <div className="flex flex-col gap-1.5">
             {resumeConversations.map((conv) => (

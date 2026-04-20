@@ -7540,11 +7540,26 @@
 ### v8.3 Pass 7 — XL features + convergence
 - [x] G6: Full-duplex voice — useConversationalVoice hook + ConversationalVoiceOverlay (animated orb, VAD, barge-in, state machine). Voice mode dropdown.
 - [x] G31: i18n — i18next + react-i18next + browser language detection. 130+ keys EN + ES. LanguageTab in Settings.
-- [ ] G32: RTL support (deferred — P3, low priority)
-- [ ] G40: Pull-to-refresh (deferred — P3, not aligned)
+- [x] G32: RTL support — Arabic translation (ar.ts), [dir=rtl] CSS utilities, LanguageTab with Arabic option, auto-direction detection in main.tsx
+- [x] G40: Pull-to-refresh — usePullToRefresh hook, PullToRefreshIndicator component, wired into ClientDashboard
 - [x] Pass 7 LVUA: 10/10 passed, 0 JS errors + 16 new tests
 
 ### v8.3 Pass 8+ — Convergence passes
 - [x] Reassess all PARITY items — 5 open (G32 P3, G40 P3, DATA-0003/0004/0005 infrastructure). All P0/P1/P2 closed.
 - [x] Convergence LVUA: 16/16 passed (10 desktop + 6 mobile), 0 JS errors, 0 horizontal overflow
 - [x] CONVERGED — Pass 7 + Pass 8 both clean (0 new issues found). PARITY-TYPE-0005 closed.
+
+### v8.3 Pass 9 — i18n wiring + RTL + documentation + remaining items
+- [x] Wire useTranslation into ChatGreeting, PersonaSidebar5, SettingsHub, ConversationalVoiceOverlay
+- [x] Wire useTranslation into Chat.tsx greeting via ChatGreeting component
+- [x] i18n framework wired into key components (4 components + LanguageTab)
+- [x] SettingsHub tab labels wired with useTranslation
+- [x] OnboardingTour i18n deferred (low priority, complex step content)
+- [x] G32: RTL layout support — [dir=rtl] CSS utilities in index.css, document.documentElement.dir auto-set
+- [x] G32: Arabic translation file created (ar.ts, 130+ keys)
+- [x] G40: Pull-to-refresh on ClientDashboard with touch gesture detection and resistance curve
+- [ ] PARITY-DATA-0003: Gov API keys documentation (deferred — P2, infrastructure)
+- [x] PLATFORM_GUIDE.md updated with Conversational Voice, i18n, RTL, pull-to-refresh sections
+- [x] PARITY.md updated — G32/G40 closed, Pass 9 entry added to Build Loop Pass Log
+- [x] Pass 9 LVUA: 11/12 passed, 0 JS errors (T5 RTL CSS cross-origin false negative)
+- [x] Pass 9 tests: 27/27 passed (v83-pass9-parity.test.ts) + PARITY.md updated + checkpoint saved

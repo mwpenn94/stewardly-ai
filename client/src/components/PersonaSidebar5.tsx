@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { useTranslation } from "react-i18next";
 
 export type Role = "guest" | "user" | "advisor" | "manager" | "admin";
 
@@ -171,6 +172,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
   const roleLevel = ROLE_LEVEL[role];
   const convoGroups = useMemo(() => groupConvos(conversations), [conversations]);
   const { level: disclosureLevel } = useDisclosure();
+  const { t } = useTranslation();
 
   // Filter layers by role AND disclosure level
   const visibleLayers = useMemo(() => {
@@ -221,11 +223,11 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         )}
         <div className="flex items-center gap-0.5">
           {!collapsed && (
-            <button type="button" onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label="New chat">
+            <button type="button" onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={t("nav.newConversation")}>
               <Plus className="w-4 h-4" />
             </button>
           )}
-          <button type="button" onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <button type="button" onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={collapsed ? t("a11y.expandSidebar") : t("a11y.collapseSidebar")}>
             {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
         </div>
@@ -235,7 +237,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         <div className="px-2 py-1.5 flex-none">
           <button type="button" onClick={onSearch} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 cursor-pointer transition-colors">
             <Search className="w-3.5 h-3.5" />
-            <span>Search</span>
+            <span>{t("common.search")}</span>
             <kbd className="ml-auto text-[9px] px-1 py-0.5 rounded bg-card border border-border/60">⌘K</kbd>
           </button>
         </div>

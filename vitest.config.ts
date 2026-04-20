@@ -77,6 +77,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass6-parity.test.ts",
       // v8.3 Pass 7: G6 full-duplex voice, G31 i18n framework
       "client/src/pages/__tests__/v83-pass7-parity.test.ts",
+      // v8.3 Pass 9: i18n wiring, G32 RTL, G40 pull-to-refresh, documentation
+      "client/src/pages/__tests__/v83-pass9-parity.test.ts",
     ],
   },
 });

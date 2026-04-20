@@ -14,6 +14,7 @@ import { useState, useEffect, useMemo } from "react";
 import { getLoginUrl } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation, useRoute } from "wouter";
+import { useTranslation } from "react-i18next";
 
 import ProfileTab from "./settings/ProfileTab";
 import SuitabilityTab from "./settings/SuitabilityTab";
@@ -62,6 +63,7 @@ const ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
 const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs", "voice", "shortcuts", "language"];
 
 export default function SettingsHub() {
+  const { t: tr } = useTranslation();
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [matchTab, paramsTab] = useRoute("/settings/:tab");
@@ -94,8 +96,8 @@ export default function SettingsHub() {
 
   if (loading) {
     return (
-      <AppShell title="Settings">
-        <SEOHead title="Settings" description="Account settings and preferences" />
+      <AppShell title={tr("common.settings")}>
+        <SEOHead title={tr("common.settings")} description={tr("settings.description", "Account settings and preferences")} />
         <div className="min-h-screen bg-background flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-accent" />
         </div>
@@ -106,8 +108,8 @@ export default function SettingsHub() {
   const needsAuth = !isAuthenticated && !ANONYMOUS_TABS.includes(activeTab);
 
   return (
-    <AppShell title="Settings">
-      <SEOHead title="Settings" description="Account settings and preferences" />
+    <AppShell title={tr("common.settings")}>
+      <SEOHead title={tr("common.settings")} description={tr("settings.description", "Account settings and preferences")} />
       <div className="flex min-h-full bg-background relative">
         {/* ─── MOBILE SIDEBAR OVERLAY ─── */}
         {sidebarOpen && (

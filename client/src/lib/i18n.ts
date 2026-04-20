@@ -18,10 +18,12 @@ import LanguageDetector from "i18next-browser-languagedetector";
 // ── English translations (base language) ──────────────────────
 import en from "@/locales/en";
 import es from "@/locales/es";
+import ar from "@/locales/ar";
 
 const resources = {
   en: { translation: en },
   es: { translation: es },
+  ar: { translation: ar },
 };
 
 i18n

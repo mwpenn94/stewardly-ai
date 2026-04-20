@@ -912,3 +912,50 @@ textarea,
     color: HighlightText;
   }
 }
+
+/* ── RTL Support (G32) ─────────────────────────────────────────── */
+/* When dir="rtl" is set on <html>, flip layout direction */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Flip sidebar from left to right in RTL */
+[dir="rtl"] .bg-sidebar {
+  border-left: 1px solid var(--border);
+  border-right: none;
+}
+
+/* Flip flex row items in RTL */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+/* Keep code blocks LTR even in RTL context */
+[dir="rtl"] pre,
+[dir="rtl"] code,
+[dir="rtl"] .font-mono {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Keep numbers and math LTR */
+[dir="rtl"] .tabular-nums,
+[dir="rtl"] [data-ltr] {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Flip margin/padding logical properties */
+[dir="rtl"] .ml-auto { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .mr-auto { margin-right: 0; margin-left: auto; }
+
+/* Flip chevron/arrow icons */
+[dir="rtl"] .lucide-chevron-right { transform: scaleX(-1); }
+[dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }
+[dir="rtl"] .lucide-arrow-right { transform: scaleX(-1); }
+[dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
+
+/* Flip panel collapse icons */
+[dir="rtl"] .lucide-panel-left-close { transform: scaleX(-1); }
+[dir="rtl"] .lucide-panel-left { transform: scaleX(-1); }

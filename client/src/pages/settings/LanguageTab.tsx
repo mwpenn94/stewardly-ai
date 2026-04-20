@@ -9,9 +9,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 
 const LANGUAGES = [
-  { code: "en", name: "English", nativeName: "English", flag: "🇺🇸" },
-  { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸" },
+  { code: "en", name: "English", nativeName: "English", flag: "🇺🇸", dir: "ltr" as const },
+  { code: "es", name: "Spanish", nativeName: "Español", flag: "🇪🇸", dir: "ltr" as const },
+  { code: "ar", name: "Arabic", nativeName: "العربية", flag: "🇸🇦", dir: "rtl" as const },
 ] as const;
+
+const RTL_LANGUAGES = new Set(["ar", "he", "fa", "ur"]);
 
 export function LanguageTab() {
   const { t, i18n } = useTranslation();
@@ -19,6 +22,10 @@ export function LanguageTab() {
 
   const changeLanguage = (code: string) => {
     i18n.changeLanguage(code);
+    // Set document direction for RTL languages
+    const dir = RTL_LANGUAGES.has(code) ? "rtl" : "ltr";
+    document.documentElement.dir = dir;
+    document.documentElement.lang = code;
     toast.success(`Language changed to ${LANGUAGES.find(l => l.code === code)?.name || code}`);
   };
 
@@ -66,7 +73,7 @@ export function LanguageTab() {
       <Card className="border-dashed">
         <CardContent className="py-4 text-center">
           <p className="text-sm text-muted-foreground">
-            More languages coming soon. Contact us to request a language.
+            {t("common.comingSoon", "More languages coming soon. Contact us to request a language.")}
           </p>
         </CardContent>
       </Card>
