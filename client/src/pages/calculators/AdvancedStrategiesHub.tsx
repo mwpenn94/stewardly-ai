@@ -207,7 +207,7 @@ export function AdvancedStrategiesHub(p: AdvancedStrategiesHubProps) {
   // Panel navigation map
   const strategyPanelMap: Record<string, string> = {
     premiumFinance: 'premfin',
-    ilit: 'ilitrust',
+    ilit: 'trusteng',
     execComp: 'execcomp',
     charitable: 'charitable',
     business: 'bizclient',

@@ -113,7 +113,7 @@ export const PARITY_CAPABILITIES: ParityCapability[] = [
   {
     id: 'prot-003', category: 'Protection', capability: 'ILIT / Trust Structuring',
     description: 'Irrevocable life insurance trust modeling with estate tax impact',
-    status: 'live', panel: 'ilitrust', route: '/wealth-engine?panel=ilitrust',
+    status: 'live', panel: 'trusteng', route: '/wealth-engine?panel=trusteng&tab=ilit',
     competitors: ['WealthCounsel', 'Vanilla'],
     differentiator: 'Integrated with estate panel and premium financing',
   },

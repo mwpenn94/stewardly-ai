@@ -149,7 +149,7 @@ const WE_PANELS = {
   practiceManagement: ['myplan', 'gdcbrackets', 'products', 'salesfunnel', 'recruiting', 'channels', 'dashboard', 'pnl', 'aumoverride', 'affiliatepipeline', 'goaltracker', 'prodopt', 'recruitfunnel', 'pnlbizecon', 'gdcoverride', 'aumpipeline', 'monthlyproduction', 'chandivers', 'mktgroi'],
   foundation: ['pfr-wizard', 'client-wealth-hub', 'profile', 'cash', 'balancesheet', 'debtmgmt', 'income'],
   plan: ['retire', 'tax', 'estate', 'edu', 'trusteng', 'governance', 'planning-hierarchy', 'unified-client-plan'],
-  protect: ['protect', 'bizclient', 'premfin', 'ilitrust', 'execcomp', 'charitable', 'advanced-strategies-hub', 'advanced', 'advanced-workflows'],
+  protect: ['protect', 'bizclient', 'premfin', 'trusteng', 'execcomp', 'charitable', 'advanced-strategies-hub', 'advanced', 'advanced-workflows'],
   grow: ['grow', 'montecarlo', 'stockcomp', 'strategy-archetypes'],
   analyzeAct: ['costben', 'summary', 'timeline', 'cascade-alerts', 'firm-comparison', 'scenario-comparison', 'partner', 'compare', 'impl_timeline'],
   data: ['financial-data-hub'],
@@ -198,7 +198,7 @@ const HNW_CLIENT: PersonaNeeds = {
   description: 'Age 52, married, $2M+ net worth, complex estate and tax optimization needs',
   primaryNeeds: ['Estate planning', 'Tax optimization', 'Advanced strategies (ILIT, premium finance)', 'Trust engineering', 'Charitable planning'],
   requiredRoutes: ['/chat', '/wealth-engine', '/estate', '/tax-planning', '/financial-twin'],
-  requiredWEPanels: ['profile', 'cash', 'estate', 'tax', 'trusteng', 'premfin', 'ilitrust', 'charitable', 'advanced-strategies-hub', 'advanced', 'governance'],
+  requiredWEPanels: ['profile', 'cash', 'estate', 'tax', 'trusteng', 'premfin', 'trusteng', 'charitable', 'advanced-strategies-hub', 'advanced', 'governance'],
   secondaryNeeds: ['Monte Carlo simulation', 'Stock-based compensation', 'Executive comp'],
   optionalRoutes: ['/insurance-analysis', '/social-security', '/medicare', '/risk-assessment'],
 };
@@ -299,7 +299,7 @@ const ESTATE_SPECIALIST: PersonaNeeds = {
   description: 'Focuses on estate tax, ILIT, charitable strategies, trust planning for HNW clients',
   primaryNeeds: ['Estate tax planning', 'ILIT structuring', 'Charitable strategies', 'Trust engineering', 'Governance/IPS'],
   requiredRoutes: ['/chat', '/wealth-engine', '/estate'],
-  requiredWEPanels: ['estate', 'trusteng', 'ilitrust', 'charitable', 'governance', 'advanced-strategies-hub', 'advanced', 'planning-hierarchy'],
+  requiredWEPanels: ['estate', 'trusteng', 'trusteng', 'charitable', 'governance', 'advanced-strategies-hub', 'advanced', 'planning-hierarchy'],
   secondaryNeeds: ['Premium finance', 'Executive comp', 'Business client'],
   optionalRoutes: ['/premium-finance-rates', '/business-exit'],
 };
@@ -721,7 +721,7 @@ describe('Enhanced Persona Workflow Testing', () => {
 
     it('HNW Client: advanced estate workflow should be complete', () => {
       // Profile → Estate → Trust Eng → ILIT → Charitable → Governance → Advanced Strategies
-      const workflow = ['profile', 'estate', 'trusteng', 'ilitrust', 'charitable', 'governance', 'advanced-strategies-hub', 'advanced'];
+      const workflow = ['profile', 'estate', 'trusteng', 'trusteng', 'charitable', 'governance', 'advanced-strategies-hub', 'advanced'];
       const allPanels = Object.values(WE_PANELS).flat();
       workflow.forEach(step => expect(allPanels).toContain(step));
     });
@@ -786,7 +786,7 @@ describe('Enhanced Persona Workflow Testing', () => {
 
     it('Estate Specialist: trust planning workflow should be complete', () => {
       // Estate → Trust Eng → ILIT → Charitable → Governance → Advanced Strategies → Planning Hierarchy
-      const workflow = ['estate', 'trusteng', 'ilitrust', 'charitable', 'governance', 'advanced-strategies-hub', 'advanced', 'planning-hierarchy'];
+      const workflow = ['estate', 'trusteng', 'trusteng', 'charitable', 'governance', 'advanced-strategies-hub', 'advanced', 'planning-hierarchy'];
       const allPanels = Object.values(WE_PANELS).flat();
       workflow.forEach(step => expect(allPanels).toContain(step));
     });
@@ -895,7 +895,7 @@ describe('Enhanced Persona Workflow Testing', () => {
       const featureMatrix: Record<string, string[]> = {
         'Financial Planning': ['profile', 'cash', 'retire', 'tax', 'estate', 'grow', 'protect'],
         'Practice Management': ['myplan', 'gdcbrackets', 'products', 'salesfunnel', 'recruiting', 'dashboard', 'pnl'],
-        'Advanced Strategies': ['advanced-strategies-hub', 'advanced', 'premfin', 'ilitrust', 'charitable', 'execcomp'],
+        'Advanced Strategies': ['advanced-strategies-hub', 'advanced', 'premfin', 'trusteng', 'charitable', 'execcomp'],
         'Analysis & Action': ['costben', 'summary', 'timeline', 'scenario-comparison', 'firm-comparison'],
         'Client Engagement': ['pfr-wizard', 'client-wealth-hub', 'planning-hierarchy'],
       };

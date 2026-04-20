@@ -301,7 +301,14 @@ export function SubDesc({ children }: { children: React.ReactNode }) {
 }
 
 /* B1: Cross-calculator recommendations shown after each panel result */
-export function CrossCalcRecs({ currentPanel, scores }: { currentPanel: string; scores: Record<string, number> }) {
+const PANEL_LABELS: Record<string, string> = {
+  cash: 'Cash Flow', protect: 'Protection', grow: 'Growth', retire: 'Retirement',
+  tax: 'Tax Planning', estate: 'Estate', edu: 'Education', advanced: 'Advanced Strategies',
+  bizclient: 'Business Client', costben: 'Strategy Analysis', timeline: 'Action Timeline',
+  recruiting: 'Recruiting', pnl: 'P&L', gdcbrackets: 'GDC & Overrides',
+};
+
+export function CrossCalcRecs({ currentPanel, scores, onNavigate }: { currentPanel: string; scores: Record<string, number>; onNavigate?: (panelId: string, tab?: string) => void }) {
   const recs: Record<string, { panels: string[]; msg: string }> = {
     cash: { panels: ['protect', 'retire'], msg: 'Low save rate? Check Protection gap and Retirement projections.' },
     protect: { panels: ['cash', 'estate'], msg: 'Coverage gap detected. Review Cash Flow for premium capacity and Estate for legacy planning.' },
@@ -321,6 +328,16 @@ export function CrossCalcRecs({ currentPanel, scores }: { currentPanel: string; 
     <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
       <p className="text-xs font-semibold text-primary mb-1">Related Recommendations</p>
       <p className="text-xs text-muted-foreground">{rec.msg}</p>
+      {onNavigate && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {rec.panels.map(p => (
+            <button key={p} type="button" onClick={() => onNavigate(p)}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium">
+              {PANEL_LABELS[p] || p} {(scores[p] ?? 100) < 70 && `(${scores[p] ?? 0}%)`}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

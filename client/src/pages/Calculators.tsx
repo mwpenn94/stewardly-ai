@@ -26,7 +26,7 @@ import {
   Briefcase, Gem, Handshake, CalendarRange, RotateCcw, X, Info,
   PieChart, Landmark, Heart, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2,
   Database, Zap, Sparkles, Gauge, Rocket, ShieldCheck, Workflow,
-  ClipboardList, FileBarChart, UsersRound, Network
+  ClipboardList, FileBarChart, UsersRound, Network, Search, Star
 } from 'lucide-react';
 
 import {
@@ -120,7 +120,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'tax', label: 'Tax Planning', icon: <Building2 className="w-4 h-4" /> },
     { id: 'estate', label: 'Estate', icon: <Scale className="w-4 h-4" /> },
     { id: 'edu', label: 'Education', icon: <GraduationCap className="w-4 h-4" /> },
-    { id: 'trusteng' as PanelId, label: 'Trust Engineering', icon: <Gavel className="w-4 h-4" /> },
+    { id: 'trusteng' as PanelId, label: 'Trust & Estate Structures', icon: <Gavel className="w-4 h-4" /> },
     { id: 'governance' as PanelId, label: 'Governance / IPS', icon: <FileCheck className="w-4 h-4" /> },
     { id: 'planning-hierarchy' as PanelId, label: 'Unified Plan View', icon: <Layers className="w-4 h-4" /> },
   ]},
@@ -129,7 +129,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'protect', label: 'Protection Needs', icon: <Shield className="w-4 h-4" /> },
     { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'premfin' as PanelId, label: 'Premium Financing', icon: <Landmark className="w-4 h-4" /> },
-    { id: 'ilitrust' as PanelId, label: 'ILIT / Trust Structuring', icon: <Gavel className="w-4 h-4" /> },
+    /* ilitrust merged into trusteng as tab — Pass 152 */
     { id: 'execcomp' as PanelId, label: 'Executive Comp', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'charitable' as PanelId, label: 'Charitable Planning', icon: <Gift className="w-4 h-4" /> },
     { id: 'advanced', label: 'Strategy Inputs', icon: <Gem className="w-4 h-4" /> },
@@ -145,7 +145,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'costben', label: 'Strategy Analysis', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'summary', label: 'Scorecard Summary', icon: <FileText className="w-4 h-4" /> },
     { id: 'timeline', label: 'Action Plan & Timeline', icon: <ListChecks className="w-4 h-4" /> },
-    { id: 'cascade-alerts' as PanelId, label: 'Cascade Alerts', icon: <Zap className="w-4 h-4" /> },
+    { id: 'cascade-alerts' as PanelId, label: 'Cascade Intelligence', icon: <Zap className="w-4 h-4" /> },
     { id: 'firm-comparison' as PanelId, label: 'Firm Comparison', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'scenario-comparison' as PanelId, label: 'Scenarios', icon: <GitCompare className="w-4 h-4" /> },
     { id: 'partner', label: 'Partner Earnings', icon: <Handshake className="w-4 h-4" /> },
@@ -157,7 +157,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'compliance-checklist' as PanelId, label: 'Compliance Checklist', icon: <ClipboardList className="w-4 h-4" /> },
     { id: 'generate-report' as PanelId, label: 'Generate Report', icon: <FileBarChart className="w-4 h-4" /> },
     { id: 'multi-compare' as PanelId, label: 'Multi-Client Compare', icon: <UsersRound className="w-4 h-4" /> },
-    { id: 'cascade-flow' as PanelId, label: 'Cascade Flow', icon: <Network className="w-4 h-4" /> },
+    /* cascade-flow merged into cascade-alerts as tab — Pass 152 */
   ]},
   { group: 'References & Due Diligence', items: [
     { id: 'refs', label: 'References', icon: <BookOpen className="w-4 h-4" /> },
@@ -181,19 +181,50 @@ function PFRWizardPanel({ onNavigateToPanel, weData }: { onNavigateToPanel: (pan
 
 export default function Calculators() {
   const { user } = useAuth();
-  // Pass 110: Support ?panel= query param for deep-linking (e.g. /calculators?panel=myplan)
+  // Pass 110: Support ?panel= query param for deep-linking (e.g. /calculators?panel=myplan&tab=funnel)
+  const urlTabRef = useRef<string | null>(null);
   const [activePanel, setActivePanel] = useState<PanelId>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       let p = params.get('panel');
-      // Legacy panel ID redirects (Pass 150 consolidation)
-      const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets', aumpipeline: 'aumoverride', monthlyproduction: 'goaltracker', chandivers: 'prodopt', mktgroi: 'prodopt', compare: 'costben', impl_timeline: 'timeline', 'unified-client-plan': 'planning-hierarchy' };
+      urlTabRef.current = params.get('tab');
+      // Legacy panel ID redirects (Pass 150/151 consolidation)
+      const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets', aumpipeline: 'aumoverride', monthlyproduction: 'goaltracker', chandivers: 'prodopt', mktgroi: 'prodopt', compare: 'costben', impl_timeline: 'timeline', 'unified-client-plan': 'planning-hierarchy', ilitrust: 'trusteng', 'cascade-flow': 'cascade-alerts' };
       if (p && LEGACY_REDIRECTS[p]) p = LEGACY_REDIRECTS[p];
       if (p && NAV_SECTIONS.some(s => s.items.some(i => i.id === p))) return p as PanelId;
     } catch {}
     return 'profile';
   });
   const [calcSidebarOpen, setCalcSidebarOpen] = useState(false);
+
+  /* ─── PANEL FAVORITES (Pass 152) ─── */
+  const [favorites, setFavorites] = useState<PanelId[]>(() => {
+    try { return JSON.parse(localStorage.getItem('wb-panel-favorites') || '[]'); } catch { return []; }
+  });
+  const toggleFavorite = useCallback((id: PanelId) => {
+    setFavorites(prev => {
+      const next = prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id].slice(0, 12);
+      localStorage.setItem('wb-panel-favorites', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  /* ─── GLOBAL SEARCH (Pass 152) ─── */
+  const [globalSearch, setGlobalSearch] = useState('');
+  const allPanelItems = useMemo(() => NAV_SECTIONS.flatMap(s => s.items.map(i => ({ ...i, group: s.group }))), []);
+  const searchResults = useMemo(() => {
+    if (!globalSearch.trim()) return [];
+    const q = globalSearch.toLowerCase();
+    return allPanelItems.filter(i => i.label.toLowerCase().includes(q) || i.group.toLowerCase().includes(q)).slice(0, 10);
+  }, [globalSearch, allPanelItems]);
+
+  // Helper to navigate to a panel with optional tab pre-selection
+  const navigateToPanel = useCallback((panelId: PanelId, tab?: string) => {
+    setActivePanel(panelId);
+    if (tab) urlTabRef.current = tab;
+    setCalcSidebarOpen(false);
+    setGlobalSearch('');
+  }, []);
 
   /* ─── SESSION MANAGEMENT STATE ─── */
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -1340,6 +1371,50 @@ export default function Calculators() {
             <PanelLeftClose className="w-4 h-4" />
           </Button>
         </div>
+        {/* ─── GLOBAL SEARCH (Pass 152) ─── */}
+        <div className="px-2 pt-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+            <input type="text" value={globalSearch} onChange={e => setGlobalSearch(e.target.value)}
+              placeholder="Search panels..." aria-label="Search all panels"
+              className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border/30 rounded-md placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground" />
+            {globalSearch && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+                {searchResults.length === 0 ? (
+                  <p className="p-2 text-xs text-muted-foreground">No panels found</p>
+                ) : searchResults.map(r => (
+                  <button key={r.id} type="button" onClick={() => navigateToPanel(r.id)}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground transition-colors">
+                    {r.icon}<span>{r.label}</span>
+                    <span className="ml-auto text-[9px] text-muted-foreground/50">{r.group}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        {/* ─── FAVORITES QUICK-ACCESS BAR (Pass 152) ─── */}
+        {favorites.length > 0 && (
+          <div className="px-2 pt-2">
+            <p className="text-[9px] font-semibold text-amber-500/70 uppercase tracking-wider px-1 mb-1 flex items-center gap-1">
+              <Star className="w-2.5 h-2.5" />Favorites
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {favorites.map(fid => {
+                const item = allPanelItems.find(i => i.id === fid);
+                if (!item) return null;
+                return (
+                  <button key={fid} type="button" onClick={() => navigateToPanel(fid)}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                      activePanel === fid ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-transparent'
+                    }`}>
+                    {item.icon}{item.label.replace(/^[⭐🏠] /, '')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
           <nav className="p-2 space-y-3" role="navigation" aria-label="Wealth Engine panels">
             {NAV_SECTIONS.map(section => (
@@ -1347,18 +1422,27 @@ export default function Calculators() {
                 <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider px-2 mb-1" id={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>{section.group}</p>
                 <div role="list" aria-labelledby={`nav-group-${section.group.toLowerCase().replace(/\s+/g, '-')}`}>
                   {section.items.map(item => (
-                    <button type="button" key={item.id} role="listitem" onClick={() => { setActivePanel(item.id); setCalcSidebarOpen(false); }}
-                      aria-label={`Navigate to ${item.label} panel`}
-                      aria-current={activePanel === item.id ? 'page' : undefined}
-                      tabIndex={0}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                        activePanel === item.id
-                          ? 'bg-primary/10 text-primary border border-primary/30'
-                          : 'text-muted-foreground hover:bg-background hover:text-foreground border border-transparent'
-                      }`}>
-                      {item.icon}
-                      {item.label}
-                    </button>
+                    <div key={item.id} className="flex items-center group">
+                      <button type="button" role="listitem" onClick={() => navigateToPanel(item.id)}
+                        aria-label={`Navigate to ${item.label} panel`}
+                        aria-current={activePanel === item.id ? 'page' : undefined}
+                        tabIndex={0}
+                        className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                          activePanel === item.id
+                            ? 'bg-primary/10 text-primary border border-primary/30'
+                            : 'text-muted-foreground hover:bg-background hover:text-foreground border border-transparent'
+                        }`}>
+                        {item.icon}
+                        {item.label}
+                      </button>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleFavorite(item.id); }}
+                        aria-label={favorites.includes(item.id) ? `Remove ${item.label} from favorites` : `Add ${item.label} to favorites`}
+                        className={`p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
+                          favorites.includes(item.id) ? 'text-amber-400 opacity-100' : 'text-muted-foreground/30 hover:text-amber-400'
+                        }`}>
+                        <Star className={`w-3 h-3 ${favorites.includes(item.id) ? 'fill-amber-400' : ''}`} />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1573,7 +1657,7 @@ export default function Calculators() {
             bcEmployees={bcEmployees} setBcEmployees={setBcEmployees}
             age={age}
           />}
-          {activePanel === 'costben' && <StrategyAnalysisMergedPanel pp={pp} horizonData={horizonData} savedScenarios={
+          {activePanel === 'costben' && <StrategyAnalysisMergedPanel pp={pp} horizonData={horizonData} defaultTab={urlTabRef.current || undefined} savedScenarios={
             (sessionsQuery.data || []).map((s: any) => ({
               id: s.id,
               name: s.name,
@@ -1583,33 +1667,33 @@ export default function Calculators() {
             }))
           } />}
           {activePanel === 'summary' && <SummaryPanel {...pp} />}
-          {activePanel === 'timeline' && <ActionTimelineMergedPanel pp={pp} />}
+          {activePanel === 'timeline' && <ActionTimelineMergedPanel pp={pp} defaultTab={urlTabRef.current || undefined} />}
           {activePanel === 'partner' && <PartnerPanel paLow={paLow} setPaLow={setPaLow} paMid={paMid} setPaMid={setPaMid} paHigh={paHigh} setPaHigh={setPaHigh} />}
           {activePanel === 'income' && <IncomeStreamsPanel incomeStreams={incomeStreams} setIncomeStreams={setIncomeStreams} scores={pp.scores} />}
           {activePanel === 'refs' && <ReferencesPanel />}
 
           {/* ═══ PRACTICE PLANNING PANELS ═══ */}
           {activePanel === 'myplan' && <MyPlanPanel {...practiceProps} />}
-          {activePanel === 'gdcbrackets' && <GDCMergedPanel practiceProps={practiceProps} />}
+          {activePanel === 'gdcbrackets' && <GDCMergedPanel practiceProps={practiceProps} defaultTab={urlTabRef.current || undefined} />}
           {activePanel === 'products' && <ProductsPanel {...practiceProps} />}
           {activePanel === 'salesfunnel' && <SalesFunnelPanel {...practiceProps} />}
-          {activePanel === 'recruiting' && <RecruitingMergedPanel practiceProps={practiceProps} />}
+          {activePanel === 'recruiting' && <RecruitingMergedPanel practiceProps={practiceProps} defaultTab={urlTabRef.current || undefined} />}
           {activePanel === 'channels' && <ChannelsPanel {...practiceProps} />}
           {activePanel === 'dashboard' && <DashboardPanel {...practiceProps} />}
-          {activePanel === 'pnl' && <PnLMergedPanel practiceProps={practiceProps} />}
-          {activePanel === 'goaltracker' && <GoalsTrackingMergedPanel practiceProps={practiceProps} />}
-          {activePanel === 'aumoverride' && <AUMMergedPanel />}
+          {activePanel === 'pnl' && <PnLMergedPanel practiceProps={practiceProps} defaultTab={urlTabRef.current || undefined} />}
+          {activePanel === 'goaltracker' && <GoalsTrackingMergedPanel practiceProps={practiceProps} defaultTab={urlTabRef.current || undefined} />}
+          {activePanel === 'aumoverride' && <AUMMergedPanel defaultTab={urlTabRef.current || undefined} />}
           {activePanel === 'affiliatepipeline' && <AffiliatePipelinePanel />}
-          {activePanel === 'prodopt' && <GrowthOptMergedPanel />}
+          {activePanel === 'prodopt' && <GrowthOptMergedPanel defaultTab={urlTabRef.current || undefined} />}
 
           {activePanel === 'balancesheet' && <BalanceSheetPanel nw={nw} savings={savings} retirement401k={retirement401k} mortgage={mortgage} debt={debt} />}
           {activePanel === 'debtmgmt' && <DebtManagementPanel mortgage={mortgage} debt={debt} income={income} />}
-          {activePanel === 'trusteng' && <TrustEngineeringPanel grossEstate={grossEstate} exemption={exemption} />}
+          {activePanel === 'trusteng' && <TrustMergedPanel grossEstate={grossEstate} exemption={exemption} defaultTab={urlTabRef.current || undefined} />}
           {activePanel === 'governance' && <GovernanceIPSPanel riskTolerance={riskTolerance} />}
           {activePanel === 'montecarlo' && <MonteCarloPanel savings={savings} retirement401k={retirement401k} monthlySav={monthlySav} retireAge={retireAge} age={age} />}
           {activePanel === 'stockcomp' && <StockCompPanel income={income} />}
           {activePanel === 'premfin' && <PremiumFinancingPanel />}
-          {activePanel === 'ilitrust' && <ILITTrustPanel grossEstate={grossEstate} exemption={exemption} />}
+          {/* ilitrust merged into trusteng — Pass 152 */}
           {activePanel === 'execcomp' && <ExecCompPanel income={income} />}
           {activePanel === 'charitable' && <CharitablePlanningPanel income={income} />}
           {activePanel === 'duediligence' && <DueDiligencePanel />}
@@ -1618,11 +1702,11 @@ export default function Calculators() {
           <CascadeToastBridge data={weData} />
           <WealthEngineProvider value={weData}>
             <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="animate-spin">⏳</span></div>}>
-              {activePanel === 'planning-hierarchy' && <UnifiedPlanMergedPanel />}
+              {activePanel === 'planning-hierarchy' && <UnifiedPlanMergedPanel defaultTab={urlTabRef.current || undefined} />}
               {activePanel === 'advanced-workflows' && <WeAdvancedWorkflows />}
               {activePanel === 'strategy-archetypes' && <WeStrategyArchetypes />}
               {activePanel === 'firm-comparison' && <WeFirmComparison />}
-              {activePanel === 'cascade-alerts' && <WeCascadeAlerts />}
+              {activePanel === 'cascade-alerts' && <CascadeIntelligenceMergedPanel weData={weData} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} defaultTab={urlTabRef.current || undefined} />}
               {activePanel === 'financial-data-hub' && <WeFinancialDataHub />}
               {activePanel === 'scenario-comparison' && <ScenarioComparisonPanel weData={weData} gatherInputs={gatherInputs} restoreInputs={restoreInputs} />}
               {activePanel === 'pfr-wizard' && <PFRWizardPanel onNavigateToPanel={(id) => setActivePanel(id as PanelId)} weData={{
@@ -1648,7 +1732,7 @@ export default function Calculators() {
             weData={weData}
           />}
           {activePanel === 'multi-compare' && <MultiClientComparison />}
-          {activePanel === 'cascade-flow' && <CascadeFlowDiagram weData={weData} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} />}
+          {/* cascade-flow merged into cascade-alerts — Pass 152 */}
 
           {/* ═══ FINRA/SIPC COMPLIANCE DISCLAIMER ═══ */}
           <div className="mt-8 rounded-lg border border-border/50 bg-card/50 p-4 text-[10px] text-muted-foreground/60 leading-relaxed space-y-2">
@@ -1719,8 +1803,8 @@ export default function Calculators() {
    Each consolidates two formerly-separate panels into a single tabbed view.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function RecruitingMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
-  const [view, setView] = useState<'roster' | 'funnel'>('roster');
+function RecruitingMergedPanel({ practiceProps, defaultTab }: { practiceProps: PracticeProps; defaultTab?: string }) {
+  const [view, setView] = useState<'roster' | 'funnel'>(defaultTab === 'funnel' ? 'funnel' : 'roster');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1738,8 +1822,8 @@ function RecruitingMergedPanel({ practiceProps }: { practiceProps: PracticeProps
   );
 }
 
-function PnLMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
-  const [view, setView] = useState<'practice' | 'business'>('practice');
+function PnLMergedPanel({ practiceProps, defaultTab }: { practiceProps: PracticeProps; defaultTab?: string }) {
+  const [view, setView] = useState<'practice' | 'business'>(defaultTab === 'business' ? 'business' : 'practice');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1757,8 +1841,8 @@ function PnLMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
   );
 }
 
-function GDCMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
-  const [view, setView] = useState<'brackets' | 'optimization'>('brackets');
+function GDCMergedPanel({ practiceProps, defaultTab }: { practiceProps: PracticeProps; defaultTab?: string }) {
+  const [view, setView] = useState<'brackets' | 'optimization'>(defaultTab === 'optimization' ? 'optimization' : 'brackets');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1779,8 +1863,8 @@ function GDCMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
 
 /* ═══ PASS 151 MERGED PANELS ═══ */
 
-function AUMMergedPanel() {
-  const [view, setView] = useState<'override' | 'pipeline'>('override');
+function AUMMergedPanel({ defaultTab }: { defaultTab?: string }) {
+  const [view, setView] = useState<'override' | 'pipeline'>(defaultTab === 'pipeline' ? 'pipeline' : 'override');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1798,8 +1882,8 @@ function AUMMergedPanel() {
   );
 }
 
-function GoalsTrackingMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
-  const [view, setView] = useState<'goals' | 'monthly'>('goals');
+function GoalsTrackingMergedPanel({ practiceProps, defaultTab }: { practiceProps: PracticeProps; defaultTab?: string }) {
+  const [view, setView] = useState<'goals' | 'monthly'>(defaultTab === 'monthly' ? 'monthly' : 'goals');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1817,8 +1901,8 @@ function GoalsTrackingMergedPanel({ practiceProps }: { practiceProps: PracticePr
   );
 }
 
-function GrowthOptMergedPanel() {
-  const [view, setView] = useState<'production' | 'channels' | 'roi'>('production');
+function GrowthOptMergedPanel({ defaultTab }: { defaultTab?: string }) {
+  const [view, setView] = useState<'production' | 'channels' | 'roi'>(defaultTab === 'channels' ? 'channels' : defaultTab === 'roi' ? 'roi' : 'production');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1842,8 +1926,8 @@ function GrowthOptMergedPanel() {
   );
 }
 
-function StrategyAnalysisMergedPanel({ pp, horizonData, savedScenarios }: { pp: any; horizonData: any; savedScenarios: any }) {
-  const [view, setView] = useState<'costbenefit' | 'compare'>('costbenefit');
+function StrategyAnalysisMergedPanel({ pp, horizonData, savedScenarios, defaultTab }: { pp: any; horizonData: any; savedScenarios: any; defaultTab?: string }) {
+  const [view, setView] = useState<'costbenefit' | 'compare'>(defaultTab === 'compare' ? 'compare' : 'costbenefit');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1861,8 +1945,8 @@ function StrategyAnalysisMergedPanel({ pp, horizonData, savedScenarios }: { pp: 
   );
 }
 
-function ActionTimelineMergedPanel({ pp }: { pp: any }) {
-  const [view, setView] = useState<'actions' | 'timeline'>('actions');
+function ActionTimelineMergedPanel({ pp, defaultTab }: { pp: any; defaultTab?: string }) {
+  const [view, setView] = useState<'actions' | 'timeline'>(defaultTab === 'timeline' ? 'timeline' : 'actions');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1880,8 +1964,8 @@ function ActionTimelineMergedPanel({ pp }: { pp: any }) {
   );
 }
 
-function UnifiedPlanMergedPanel() {
-  const [view, setView] = useState<'hierarchy' | 'plan'>('hierarchy');
+function UnifiedPlanMergedPanel({ defaultTab }: { defaultTab?: string }) {
+  const [view, setView] = useState<'hierarchy' | 'plan'>(defaultTab === 'plan' ? 'plan' : 'hierarchy');
   return (
     <div className="space-y-3">
       <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
@@ -1895,6 +1979,47 @@ function UnifiedPlanMergedPanel() {
         </button>
       </div>
       {view === 'hierarchy' ? <WePlanningHierarchy /> : <WeUnifiedClientPlan />}
+    </div>
+  );
+}
+
+
+/* ═══ PASS 152 MERGED PANELS ═══ */
+
+function TrustMergedPanel({ grossEstate, exemption, defaultTab }: { grossEstate: number; exemption: number; defaultTab?: string }) {
+  const [view, setView] = useState<'types' | 'ilit'>(defaultTab === 'ilit' ? 'ilit' : 'types');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('types')}
+          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${view === 'types' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Trust Types
+        </button>
+        <button type="button" onClick={() => setView('ilit')}
+          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${view === 'ilit' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          ILIT Calculator
+        </button>
+      </div>
+      {view === 'types' ? <TrustEngineeringPanel grossEstate={grossEstate} exemption={exemption} /> : <ILITTrustPanel grossEstate={grossEstate} exemption={exemption} />}
+    </div>
+  );
+}
+
+function CascadeIntelligenceMergedPanel({ weData, onNavigateToPanel, defaultTab }: { weData: any; onNavigateToPanel: (id: string) => void; defaultTab?: string }) {
+  const [view, setView] = useState<'alerts' | 'flow'>(defaultTab === 'flow' ? 'flow' : 'alerts');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('alerts')}
+          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${view === 'alerts' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Alerts & Actions
+        </button>
+        <button type="button" onClick={() => setView('flow')}
+          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${view === 'flow' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Flow Diagram
+        </button>
+      </div>
+      {view === 'alerts' ? <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="animate-spin">⏳</span></div>}><WeCascadeAlerts /></Suspense> : <CascadeFlowDiagram weData={weData} onNavigateToPanel={onNavigateToPanel} />}
     </div>
   );
 }

@@ -7219,3 +7219,44 @@
 - [x] Vitest: 10,030 PASS / 402 files / 0 FAIL (66s)
 - [x] Production build succeeds (34.5s)
 - [x] Dev server running
+## Pass 152 — Cross-Panel Deep Links, Panel Favorites, Global Search & Deep Audit
+
+### Cross-Panel Deep Links
+- [x] Added URL ?tab= parameter support for merged tab selection
+- [x] urlTabRef captures tab from URL and passes as defaultTab to all 11 merged wrappers
+- [x] Enhanced CrossCalcRecs with clickable panel links using navigateToPanel with tab support
+- [x] All 11 merged wrapper components accept and use defaultTab prop
+
+### Panel Favorites System
+- [x] Created favorites state with localStorage persistence (wb-panel-favorites key)
+- [x] Added star toggle to each nav item in sidebar (max 12 favorites)
+- [x] Created Favorites quick-access bar at top of sidebar (shows when favorites > 0)
+- [x] Favorites persist across sessions via localStorage
+
+### Unified Global Search
+- [x] Created allPanelItems index from NAV_SECTIONS flatMap
+- [x] Added global search input to sidebar header with Search icon
+- [x] Implemented label + group matching with top-10 results dropdown
+- [x] Click on search result navigates to panel and clears search
+
+### Deep Structural Audit — 2 Additional Merges
+- [x] Merged Trust Engineering + ILIT → "Trust & Estate Structures" panel with tab toggle
+- [x] Merged Cascade Flow + Cascade Alerts → "Cascade Intelligence" panel with tab toggle
+- [x] Updated AdvancedStrategiesHub panel map (ilitrust → trusteng)
+- [x] Updated parityMapping (ilitrust → trusteng?tab=ilit)
+- [x] Updated persona-testing.test.ts (ilitrust → trusteng)
+- [x] Updated pass88-domains.test.ts (ilitrust → trusteng)
+- [x] Added LEGACY_REDIRECTS for ilitrust and cascade-flow
+- [x] Reduced from 53 panels to 51 active nav items (54 in PanelId type including 3 legacy)
+
+### Recursive Convergence
+- [x] Convergence Pass 1: Fixed stale references in AdvancedStrategiesHub, parityMapping, 2 test files (counter reset)
+- [x] Convergence Pass 2: CLEAN — 17 checks (unique IDs, unique labels, icon distribution, tab toggles, favorites, search, deep links, dark mode, accessibility)
+- [x] Convergence Pass 3: CLEAN — 15 cross-cutting checks (nav/render count match, legacy redirects, WealthEngineHub, PeopleHub, EmbedCalculator, CalcNarrator, auto-sync, tour, data-tour)
+- [x] Convergence Pass 4: CLEAN — 10 novel deep checks (hardcoded ports, domains, memory leaks, XSS, catch blocks, key props, z-index, inline styles)
+- [x] **3/3 CONSECUTIVE CLEAN PASSES — CONVERGED**
+
+### Final Verification
+- [x] Vitest: 10,030 PASS / 402 files / 0 FAIL (87s)
+- [x] Production build succeeds (44s)
+- [x] Dev server running

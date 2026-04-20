@@ -193,7 +193,7 @@ describe('Pass 88 — Wealth Engine Domain A-D Panels', () => {
       expect(content).toContain("from './calculators/PanelsJ'");
     });
     it('has all 14 new panel IDs in PanelId type', () => {
-      const newIds = ['prodopt', 'chandivers', 'mktgroi', 'balancesheet', 'debtmgmt', 'trusteng', 'governance', 'montecarlo', 'stockcomp', 'premfin', 'ilitrust', 'execcomp', 'charitable', 'duediligence'];
+      const newIds = ['prodopt', 'chandivers', 'mktgroi', 'balancesheet', 'debtmgmt', 'trusteng', 'governance', 'montecarlo', 'stockcomp', 'premfin', 'trusteng', 'execcomp', 'charitable', 'duediligence'];
       for (const id of newIds) {
         expect(content).toContain(`'${id}'`);
       }
