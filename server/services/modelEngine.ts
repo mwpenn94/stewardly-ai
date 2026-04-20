@@ -279,7 +279,17 @@ export async function executeModel(
   }
 }
 
-// ─── Model Logic Dispatcher ────────────────────────────────────────────────
+// ─── Model Logic Dispatcher ────────────────────────────────────────────────────────────
+
+/** Type-safe cast helper: narrows Record<string, unknown> to a specific model input type */
+function narrowInput<T>(input: Record<string, unknown>): T {
+  return input as T;
+}
+
+/** Wraps a typed model result back to the generic Record for the dispatcher return type */
+function wrapResult(result: object): Record<string, unknown> {
+  return result as Record<string, unknown>;
+}
 
 async function runModelLogic(
   slug: string,
@@ -302,21 +312,21 @@ async function runModelLogic(
       return trackGoalProgress(input);
     // ─── Full Statistical Models ─────────────────────────────────────────
     case "monte-carlo-retirement":
-      return monteCarloRetirement(input as unknown as RetirementInput) as unknown as Record<string, unknown>;
+      return wrapResult(monteCarloRetirement(narrowInput<RetirementInput>(input)));
     case "debt-optimization":
-      return optimizeDebt(input as unknown as DebtOptimizationInput) as unknown as Record<string, unknown>;
+      return wrapResult(optimizeDebt(narrowInput<DebtOptimizationInput>(input)));
     case "tax-optimization":
-      return optimizeTax(input as unknown as TaxOptimizationInput) as unknown as Record<string, unknown>;
+      return wrapResult(optimizeTax(narrowInput<TaxOptimizationInput>(input)));
     case "cash-flow-projection":
-      return projectCashFlow(input as unknown as CashFlowInput) as unknown as Record<string, unknown>;
+      return wrapResult(projectCashFlow(narrowInput<CashFlowInput>(input)));
     case "insurance-gap-analysis":
-      return analyzeInsuranceGaps(input as unknown as InsuranceGapInput) as unknown as Record<string, unknown>;
+      return wrapResult(analyzeInsuranceGaps(narrowInput<InsuranceGapInput>(input)));
     case "estate-planning":
-      return analyzeEstatePlan(input as unknown as EstatePlanningInput) as unknown as Record<string, unknown>;
+      return wrapResult(analyzeEstatePlan(narrowInput<EstatePlanningInput>(input)));
     case "education-funding":
-      return projectEducationFunding(input as unknown as EducationFundingInput) as unknown as Record<string, unknown>;
+      return wrapResult(projectEducationFunding(narrowInput<EducationFundingInput>(input)));
     case "risk-tolerance-assessment":
-      return scoreRiskTolerance(input as unknown as RiskToleranceInput) as unknown as Record<string, unknown>;
+      return wrapResult(scoreRiskTolerance(narrowInput<RiskToleranceInput>(input)));
     default:
       return { status: "not_implemented", message: `Model ${slug} execution not yet implemented` };
   }

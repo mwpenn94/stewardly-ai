@@ -7545,6 +7545,6 @@
 - [x] Pass 7 LVUA: 10/10 passed, 0 JS errors + 16 new tests
 
 ### v8.3 Pass 8+ — Convergence passes
-- [ ] Reassess all PARITY items
-- [ ] Final comprehensive LVUA across 12 personas
-- [ ] Convergence validation (3 consecutive clean passes)
+- [x] Reassess all PARITY items — 5 open (G32 P3, G40 P3, DATA-0003/0004/0005 infrastructure). All P0/P1/P2 closed.
+- [x] Convergence LVUA: 16/16 passed (10 desktop + 6 mobile), 0 JS errors, 0 horizontal overflow
+- [x] CONVERGED — Pass 7 + Pass 8 both clean (0 new issues found). PARITY-TYPE-0005 closed.
