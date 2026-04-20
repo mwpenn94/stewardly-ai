@@ -33,10 +33,16 @@ export const systemRouter = router({
    * serviceHealth — Returns health status of all external services.
    * Used by ServiceStatusProvider to show degraded/down indicators in the UI.
    */
-  serviceHealth: protectedProcedure
+  serviceHealth: publicProcedure
     .query(async () => {
       try {
-        const healthChecks = await checkSystemHealth();
+        // Wrap in a 5s timeout to prevent blocking the tRPC batch
+        const healthChecks = await Promise.race([
+          checkSystemHealth(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Health check timeout')), 5000)
+          ),
+        ]);
         const serviceMap: Array<{
           service: string;
           status: string;

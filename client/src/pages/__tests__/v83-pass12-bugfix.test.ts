@@ -77,7 +77,7 @@ describe("Pass 12 — P0 Blank Screen Fix", () => {
       );
       expect(mainTsx).toContain("stewardly_session_token");
       expect(mainTsx).toContain("hasStoredToken");
-      expect(mainTsx).toContain("Don't toast during initial guest provisioning");
+      expect(mainTsx).toContain("Don't invalidate or toast during initial guest provisioning");
     });
   });
 

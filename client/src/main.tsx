@@ -1,7 +1,7 @@
 import { trpc } from "@/lib/trpc";
 import { UNAUTHED_ERR_MSG } from '@shared/const';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import { httpBatchLink, httpLink, splitLink, TRPCClientError } from "@trpc/client";
 import { getSessionToken } from "./lib/sessionToken";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
@@ -127,15 +127,15 @@ const handleUnauthorizedGracefully = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (error.message !== UNAUTHED_ERR_MSG) return;
 
-  // Invalidate auth.me so AuthProvider re-checks and re-provisions if needed
-  queryClient.invalidateQueries({ queryKey: [["auth", "me"]] });
-
-  // Only show the toast if the user had a real session (not during initial guest provisioning)
   // Check if there's a stored session token — if not, this is a first-visit anonymous user
+  // Skip EVERYTHING (including invalidateQueries) to prevent auth loop during guest provisioning
   const hasStoredToken = (() => {
     try { return !!localStorage.getItem("stewardly_session_token"); } catch { return false; }
   })();
-  if (!hasStoredToken) return; // Don't toast during initial guest provisioning
+  if (!hasStoredToken) return; // Don't invalidate or toast during initial guest provisioning
+
+  // Invalidate auth.me so AuthProvider re-checks and re-provisions if needed
+  queryClient.invalidateQueries({ queryKey: [["auth", "me"]] });
 
   // Show a toast (with cooldown to prevent spam)
   const now = Date.now();
@@ -224,23 +224,37 @@ queryClient.getMutationCache().subscribe(event => {
   }
 });
 
+// Custom fetch that injects the session token
+function authedFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const token = getSessionToken();
+  const headers = new Headers(init?.headers);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return globalThis.fetch(input, {
+    ...(init ?? {}),
+    headers,
+    credentials: "include",
+  });
+}
+
 const trpcClient = trpc.createClient({
   links: [
-    httpBatchLink({
-      url: "/api/trpc",
-      transformer: superjson,
-      fetch(input, init) {
-        const token = getSessionToken();
-        const headers = new Headers((init as RequestInit)?.headers);
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-        return globalThis.fetch(input, {
-          ...(init ?? {}),
-          headers,
-          credentials: "include",
-        });
-      },
+    // Split auth.me into a non-batching link so it never gets blocked
+    // by slow DB-hitting queries (serviceHealth, onboardingChecklist)
+    // that would otherwise be batched into the same HTTP request.
+    splitLink({
+      condition: (op) => op.path === 'auth.me' || op.path === 'auth.logout',
+      true: httpLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        fetch: authedFetch,
+      }),
+      false: httpBatchLink({
+        url: "/api/trpc",
+        transformer: superjson,
+        fetch: authedFetch,
+      }),
     }),
   ],
 });

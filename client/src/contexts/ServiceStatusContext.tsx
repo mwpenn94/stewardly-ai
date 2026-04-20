@@ -55,8 +55,19 @@ const DEFAULT_SERVICES: ServiceInfo[] = [
 export function ServiceStatusProvider({ children }: { children: ReactNode }) {
   const [services, setServices] = useState<ServiceInfo[]>(DEFAULT_SERVICES);
 
+  // Defer the health check to avoid blocking the initial tRPC batch (auth.me)
+  // The serviceHealth query can be slow when the DB is under load, and tRPC
+  // batches all concurrent queries into a single HTTP request. If serviceHealth
+  // hangs, it blocks auth.me from resolving, causing an infinite spinner.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 3000); // delay 3s after mount
+    return () => clearTimeout(t);
+  }, []);
+
   // Query the backend health endpoint (polling every 60s)
   const healthQ = trpc.system.serviceHealth.useQuery(undefined, {
+    enabled: ready,
     refetchInterval: 60_000,
     staleTime: 30_000,
     retry: 1,

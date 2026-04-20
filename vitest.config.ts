@@ -85,6 +85,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass11-recommended.test.ts",
       // v8.3 Pass 12: P0 blank screen fix — guest provisioning timeout, toast suppression, People Engine
       "client/src/pages/__tests__/v83-pass12-bugfix.test.ts",
+      // v8.3 Pass 12b: P0 blank screen root cause — splitLink, deferred serviceHealth, timeout wrapper
+      "client/src/pages/__tests__/v83-pass12b-blankscreen.test.ts",
     ],
   },
 });

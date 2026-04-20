@@ -7589,3 +7589,11 @@
 - [ ] P12-CARRY-3: Build client-facing portal (deferred — P2, major feature)
 - [x] P12-LVUA: 12/13 passed (T7 Learn timeout false negative), 0 JS errors
 - [x] P12-TESTS: 15/15 passed (v83-pass12-bugfix.test.ts) + PARITY.md updated
+
+### v8.3 Pass 12b — P0 Root Cause Fix (tRPC batch blocking auth.me)
+- [x] P12b-1: splitLink — auth.me and auth.logout routed through non-batching httpLink
+- [x] P12b-2: ServiceStatusProvider defers serviceHealth query by 3s (no mount-time batch)
+- [x] P12b-3: systemRouter.serviceHealth changed to publicProcedure with 5s Promise.race timeout
+- [x] P12b-4: handleUnauthorizedGracefully skips invalidateQueries for first-visit users
+- [x] P12b-LVUA: Page renders in 9s even with DB down (confirmed via Playwright timing test)
+- [x] P12b-TESTS: 10/10 passed (v83-pass12b-blankscreen.test.ts), combined 25/25 with Pass 12
