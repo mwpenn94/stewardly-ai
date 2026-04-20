@@ -7116,3 +7116,57 @@
 - [x] Vitest: 10,029 PASS / 402 files / 0 FAIL (67s)
 - [x] Playwright e2e: 79 PASS / 0 WARN / 0 FAIL
 - [x] Production build succeeds (~40s)
+
+## Pass 150 — Structural Consolidation, Hub Consistency & Cascade Unification
+
+### Recruiting Deduplication
+- [x] Merged "Recruiting" + "Recruiting Funnel" into single "Recruiting & Funnel" panel with tab toggle
+- [x] Removed recruitfunnel from nav, kept as legacy redirect → 'recruiting'
+- [x] CommandCenter ATS serves different purpose (candidate tracking vs financial modeling) — no cross-link needed
+
+### Practice Management Panel Consolidation
+- [x] Merged "P&L" + "Business P&L" into single "P&L & Business Economics" panel with tab toggle
+- [x] Merged "GDC Brackets" + "GDC/Override Opt" into single "GDC & Overrides" panel with tab toggle
+- [x] Added LEGACY_REDIRECTS map for old panel IDs (recruitfunnel→recruiting, pnlbizecon→pnl, gdcoverride→gdcbrackets)
+
+### Profile Panel Enhancement
+- [x] Added Retirement Planning section (target retirement age, emergency fund target, income replace years)
+- [x] Added Insurance & Protection section (payoff rate, DI coverage %)
+- [x] Added Education section (number of children, average child age, 529 balance, monthly contribution)
+- [x] Added Estate section (will status, trust status, POA, beneficiary designations)
+- [x] Added Monthly Budget section (monthly expenses, emergency fund target)
+- [x] Added Employment section (occupation, employer)
+- [x] Added Charitable Giving section (annual giving, DAF balance, CRT income)
+- [x] All 7 sections use CollapsibleSection with expand/collapse and score badges
+
+### Summary View Consolidation
+- [x] Assessed: Unified Client Plan, Planning Hierarchy, and Client Wealth Hub serve complementary purposes
+- [x] Client Wealth Hub = holistic overview with domain cards
+- [x] Planning Hierarchy = visual cascade tree
+- [x] Unified Client Plan = detailed implementation plan
+- [x] All three are accessible from sidebar — no redundancy, different views of same data
+
+### Advanced Strategies Consolidation
+- [x] Advanced Strategies Hub moved to top of ③ Protect & Advance section
+- [x] Labels differentiated: Hub = "⭐ Advanced Strategies Hub", Inputs = "Strategy Inputs", Workflows = "Workflow Automation"
+- [x] Hub serves as entry point with links to individual strategy panels
+
+### Hub Overview Consistency
+- [x] Wealth Engine: "My Plan" at top of Practice Management group = start here
+- [x] People Hub: "Dashboard" tab is first/default = start here
+- [x] Intelligence Hub: "Overview" tab is first/default = start here
+- [x] AdminHubV2: "Overview" section is first/default = start here
+- [x] All hubs now have consistent "start here" overview as first view
+
+### Recursive Convergence
+- [x] Convergence Pass 1: Fixed stray semicolon in PanelsA.tsx (counter reset)
+- [x] Convergence Pass 2: CLEAN — 14 structural checks (no topic duplication, consistent icons, no duplicate labels, responsive, dark mode)
+- [x] Convergence Pass 3: CLEAN — 14 cross-cutting checks (cascade state, WealthEngine context, exports, types, accessibility)
+- [x] Convergence Pass 4: CLEAN — 13 holistic checks (hub headers, stale tests, route definitions, pillar names, dev server)
+- [x] **3/3 CONSECUTIVE CLEAN PASSES — CONVERGED**
+
+### Final Verification
+- [x] Vitest: 10,030 PASS / 402 files / 0 FAIL (64s)
+- [x] Production build succeeds (~36s)
+- [x] Dev server running (200 OK)
+- [x] Updated pass101 tests to reflect Pass 150 consolidation

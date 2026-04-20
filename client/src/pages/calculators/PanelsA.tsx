@@ -1,13 +1,14 @@
 import { fmt, fmtSm, pct } from './format';
 /* Panels A: Profile (1), Cash Flow (2), Protection (3), Growth (4) */
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
-  User, DollarSign, Shield, TrendingUp, Building2, CheckCircle2, XCircle
+  User, DollarSign, Shield, TrendingUp, Building2, CheckCircle2, XCircle, ChevronDown, ChevronRight,
+  Clock, Home, Heart, GraduationCap, Landmark, Gift
 } from 'lucide-react';
-;
 import { FormInput, ScoreBadge, ResultBadge, KPI, ScoreGauge, RefTip, PillarTooltip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
 
 export function ProfilePanel(p: PanelProps) {
@@ -169,6 +170,9 @@ export function ProfilePanel(p: PanelProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* ═══ COMPREHENSIVE PROFILE SECTIONS (Pass 150) ═══ */}
+      <ProfileDetailSections p={p} />
 
       {/* Financial Health Scorecard */}
       <Card className="mb-4">
@@ -665,5 +669,174 @@ export function GrowthPanel(p: PanelProps) {
       </div>
       <CrossCalcRecs currentPanel="grow" scores={p.scores} />
     </section>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Pass 150 — Comprehensive Profile Detail Sections
+   Collapsible sections surfacing fields that already exist in state
+   but were previously only accessible in their individual domain panels.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function CollapsibleSection({ title, icon, children, defaultOpen = false }: {
+  title: string; icon: React.ReactNode; children: React.ReactNode; defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border border-border/50 rounded-lg overflow-hidden">
+      <button type="button" onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
+        {icon}
+        <span className="flex-1 text-left">{title}</span>
+        {open ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+      </button>
+      {open && <div className="px-3 pb-3 pt-1 border-t border-border/30">{children}</div>}
+    </div>
+  );
+}
+
+function ProfileDetailSections({ p }: { p: PanelProps }) {
+  return (
+    <Card className="mb-4">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Comprehensive Client Details</CardTitle>
+        <p className="text-[10px] text-muted-foreground">Expand sections below to view and edit all planning inputs. Changes cascade to every panel automatically.</p>
+      </CardHeader>
+      <CardContent className="space-y-2">
+
+        {/* Retirement Planning */}
+        <CollapsibleSection title="Retirement Planning" icon={<Clock className="w-4 h-4 text-blue-400" />}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+            <FormInput id="prof-retireAge" label="Target Retirement Age" value={p.retireAge} onChange={v => p.setRetireAge(+v)} min={50} max={80} />
+            <FormInput id="prof-monthlySav" label="Monthly Savings" value={p.monthlySav} onChange={v => p.setMonthlySav(+v)} prefix="$" />
+            <FormInput id="prof-ss62" label="SS at 62" value={p.ss62} onChange={v => p.setSs62(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-ss67" label="SS at 67" value={p.ss67} onChange={v => p.setSs67(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-ss70" label="SS at 70" value={p.ss70} onChange={v => p.setSs70(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-pension" label="Pension Income" value={p.pension} onChange={v => p.setPension(+v)} prefix="$" suffix="/yr" />
+            <FormInput id="prof-withdrawalRate" label="Withdrawal Rate" value={(p.withdrawalRate * 100).toFixed(1)} onChange={v => p.setWithdrawalRate(+v / 100)} suffix="%" />
+            <FormInput id="prof-infRate" label="Inflation Rate" value={(p.infRate * 100).toFixed(1)} onChange={v => p.setInfRate(+v / 100)} suffix="%" />
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <KPI label="Best SS Age" value={String(p.rtResult.bestAge)} variant="blu" />
+            <KPI label="Income Gap" value={fmtSm(p.rtResult.incomeGap)} variant={p.rtResult.incomeGap > 0 ? 'red' : 'grn'} />
+            <KPI label="Years to Retire" value={String(p.grResult.yrs)} variant="blu" />
+          </div>
+        </CollapsibleSection>
+
+        {/* Monthly Budget */}
+        <CollapsibleSection title="Monthly Budget & Expenses" icon={<Home className="w-4 h-4 text-emerald-400" />}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+            <FormInput id="prof-housing" label="Housing" value={p.housing} onChange={v => p.setHousing(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-transport" label="Transportation" value={p.transport} onChange={v => p.setTransport(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-food" label="Food & Dining" value={p.food} onChange={v => p.setFood(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-insurancePmt" label="Insurance Premiums" value={p.insurancePmt} onChange={v => p.setInsurancePmt(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-debtPmt" label="Debt Payments" value={p.debtPmt} onChange={v => p.setDebtPmt(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-otherExp" label="Other Expenses" value={p.otherExp} onChange={v => p.setOtherExp(+v)} prefix="$" suffix="/mo" />
+            <FormInput id="prof-emMonths" label="Emergency Fund Target" value={p.emMonths} onChange={v => p.setEmMonths(+v)} min={3} max={12} suffix="mo" />
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <KPI label="Save Rate" value={pct(p.cfResult.saveRate)} variant={p.cfResult.saveRate >= 0.2 ? 'grn' : p.cfResult.saveRate >= 0.1 ? 'gld' : 'red'} />
+            <KPI label="Monthly Surplus" value={fmt(p.cfResult.surplus)} variant={p.cfResult.surplus >= 0 ? 'grn' : 'red'} />
+            <KPI label="Emergency Fund" value={`${p.emMonths} mo`} variant={p.emMonths >= 6 ? 'grn' : 'gld'} />
+          </div>
+        </CollapsibleSection>
+
+        {/* Protection & Insurance */}
+        <CollapsibleSection title="Protection & Insurance" icon={<Heart className="w-4 h-4 text-red-400" />}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+            <FormInput id="prof-replaceYrs" label="Income Replace Years" value={p.replaceYrs} onChange={v => p.setReplaceYrs(+v)} min={1} max={30} />
+            <FormInput id="prof-payoffRate" label="Debt Payoff %" value={p.payoffRate} onChange={v => p.setPayoffRate(+v)} suffix="%" min={0} max={100} />
+            <FormInput id="prof-eduPerChild" label="Education per Child" value={p.eduPerChild} onChange={v => p.setEduPerChild(+v)} prefix="$" />
+            <FormInput id="prof-finalExp" label="Final Expenses" value={p.finalExp} onChange={v => p.setFinalExp(+v)} prefix="$" />
+            <FormInput id="prof-ssBenefit" label="SS Survivor Benefit" value={p.ssBenefit} onChange={v => p.setSsBenefit(+v)} prefix="$" suffix="/yr" />
+            <FormInput id="prof-diPct" label="DI Coverage %" value={p.diPct} onChange={v => p.setDiPct(+v)} suffix="%" min={0} max={100} />
+            <FormInput id="prof-hsaContrib" label="HSA Contribution" value={p.hsaContrib} onChange={v => p.setHsaContrib(+v)} prefix="$" suffix="/yr" />
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <KPI label="DIME Need" value={fmtSm(p.prResult.dimeNeed)} variant="blu" />
+            <KPI label="Coverage Gap" value={fmtSm(p.prResult.gap)} variant={p.prResult.gap > 0 ? 'red' : 'grn'} />
+            <KPI label="Existing Coverage" value={fmt(p.existIns)} variant="blu" />
+          </div>
+        </CollapsibleSection>
+
+        {/* Education Planning */}
+        {p.dep > 0 && (
+          <CollapsibleSection title="Education Planning" icon={<GraduationCap className="w-4 h-4 text-purple-400" />}>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+              <FormInput id="prof-numChildren" label="Children" value={p.numChildren} onChange={v => p.setNumChildren(+v)} min={0} max={10} />
+              <FormInput id="prof-avgChildAge" label="Avg Child Age" value={p.avgChildAge} onChange={v => p.setAvgChildAge(+v)} min={0} max={18} />
+              <FormInput id="prof-targetCost" label="Target Cost/Child" value={p.targetCost} onChange={v => p.setTargetCost(+v)} prefix="$" />
+              <FormInput id="prof-eduReturn" label="529 Return Rate" value={(p.eduReturn * 100).toFixed(1)} onChange={v => p.setEduReturn(+v / 100)} suffix="%" />
+              <FormInput id="prof-current529" label="Current 529 Balance" value={p.current529} onChange={v => p.setCurrent529(+v)} prefix="$" />
+              <FormInput id="prof-monthly529" label="Monthly 529 Contrib" value={p.monthly529} onChange={v => p.setMonthly529(+v)} prefix="$" />
+            </div>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <KPI label="Total Need" value={fmtSm(p.edResult.totalFutureCost)} variant="blu" />
+              <KPI label="Projected" value={fmtSm(p.edResult.totalProjected)} variant="grn" />
+              <KPI label="Gap" value={fmtSm(p.edResult.totalGap)} variant={p.edResult.totalGap > 0 ? 'red' : 'grn'} />
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Estate Planning */}
+        <CollapsibleSection title="Estate Planning" icon={<Landmark className="w-4 h-4 text-amber-400" />}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+            <FormInput id="prof-grossEstate" label="Gross Estate" value={p.grossEstate} onChange={v => p.setGrossEstate(+v)} prefix="$" />
+            <FormInput id="prof-exemption" label="Exemption Used" value={p.exemption} onChange={v => p.setExemption(+v)} prefix="$" />
+            <FormInput id="prof-estateGrowth" label="Estate Growth Rate" value={(p.estateGrowth * 100).toFixed(1)} onChange={v => p.setEstateGrowth(+v / 100)} suffix="%" />
+            <FormInput id="prof-giftingAnnual" label="Annual Gifting" value={p.giftingAnnual} onChange={v => p.setGiftingAnnual(+v)} prefix="$" />
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-muted-foreground">Will/Trust Status</Label>
+              <Select value={p.willStatus} onValueChange={p.setWillStatus}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Will</SelectItem>
+                  <SelectItem value="basic">Basic Will</SelectItem>
+                  <SelectItem value="trust">Revocable Trust</SelectItem>
+                  <SelectItem value="comprehensive">Comprehensive Estate Plan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <KPI label="Estate Tax" value={fmtSm(p.esResult.estateTax)} variant={p.esResult.estateTax > 0 ? 'red' : 'grn'} />
+            <KPI label="Net to Heirs" value={fmtSm(p.esResult.netToHeirs)} variant="grn" />
+              <KPI label="ILIT Savings" value={fmtSm(p.esResult.ilitSaving)} variant="grn" />
+          </div>
+        </CollapsibleSection>
+
+        {/* Tax & Charitable */}
+        <CollapsibleSection title="Tax Strategy & Charitable" icon={<Gift className="w-4 h-4 text-teal-400" />}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+            <FormInput id="prof-charitableGiving" label="Annual Charitable" value={p.charitableGiving} onChange={v => p.setCharitableGiving(+v)} prefix="$" />
+            <FormInput id="prof-taxReturn" label="Taxable Return" value={(p.taxReturn * 100).toFixed(1)} onChange={v => p.setTaxReturn(+v / 100)} suffix="%" />
+            <FormInput id="prof-iulReturn" label="IUL Return" value={(p.iulReturn * 100).toFixed(1)} onChange={v => p.setIulReturn(+v / 100)} suffix="%" />
+            <FormInput id="prof-fiaReturn" label="FIA Return" value={(p.fiaReturn * 100).toFixed(1)} onChange={v => p.setFiaReturn(+v / 100)} suffix="%" />
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <KPI label="Effective Tax" value={pct(p.txResult.effectiveRate)} variant={p.txResult.effectiveRate > 0.3 ? 'red' : 'grn'} />
+              <KPI label="Tax Savings" value={fmtSm(p.txResult.totalSaving)} variant="grn" />
+            <KPI label="Charitable Deduction" value={fmt(p.charitableGiving)} variant="blu" />
+          </div>
+        </CollapsibleSection>
+
+        {/* Growth Assumptions */}
+        <CollapsibleSection title="Growth & Investment Assumptions" icon={<TrendingUp className="w-4 h-4 text-cyan-400" />}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+            <FormInput id="prof-taxReturn2" label="Taxable Return" value={(p.taxReturn * 100).toFixed(1)} onChange={v => p.setTaxReturn(+v / 100)} suffix="%" />
+            <FormInput id="prof-iulReturn2" label="IUL Return" value={(p.iulReturn * 100).toFixed(1)} onChange={v => p.setIulReturn(+v / 100)} suffix="%" />
+            <FormInput id="prof-fiaReturn2" label="FIA Return" value={(p.fiaReturn * 100).toFixed(1)} onChange={v => p.setFiaReturn(+v / 100)} suffix="%" />
+            <FormInput id="prof-infRate2" label="Inflation" value={(p.infRate * 100).toFixed(1)} onChange={v => p.setInfRate(+v / 100)} suffix="%" />
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <KPI label="Tax-Free Edge" value={fmtSm(p.grResult.taxEdge)} variant="grn" />
+            <KPI label="Years to Retire" value={String(p.grResult.yrs)} variant="blu" />
+            <KPI label="Best Vehicle" value="Roth/IUL" variant="grn" />
+          </div>
+        </CollapsibleSection>
+
+      </CardContent>
+    </Card>
   );
 }

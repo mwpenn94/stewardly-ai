@@ -137,25 +137,35 @@ describe("Pass 101 — Calculators.tsx panel wiring", () => {
     expect(src).toContain("'gdcoverride'");
   });
 
-  it("renders RecruitingFunnelPanel when activePanel is recruitfunnel", () => {
-    expect(src).toContain("activePanel === 'recruitfunnel'");
-    expect(src).toContain("<RecruitingFunnelPanel");
+  it("renders merged recruiting panel when activePanel is recruiting (Pass 150 consolidation)", () => {
+    // Pass 150: recruitfunnel merged into 'recruiting' with RecruitingMergedPanel wrapper
+    expect(src).toContain("activePanel === 'recruiting'");
+    expect(src).toContain("RecruitingMergedPanel");
   });
 
-  it("renders PnLBusinessEconomicsPanel when activePanel is pnlbizecon", () => {
-    expect(src).toContain("activePanel === 'pnlbizecon'");
-    expect(src).toContain("<PnLBusinessEconomicsPanel");
+  it("renders merged P&L panel when activePanel is pnl (Pass 150 consolidation)", () => {
+    // Pass 150: pnlbizecon merged into 'pnl' with PnLMergedPanel wrapper
+    expect(src).toContain("activePanel === 'pnl'");
+    expect(src).toContain("PnLMergedPanel");
   });
 
-  it("renders GDCOverrideOptPanel when activePanel is gdcoverride", () => {
-    expect(src).toContain("activePanel === 'gdcoverride'");
-    expect(src).toContain("<GDCOverrideOptPanel");
+  it("renders merged GDC panel when activePanel is gdcbrackets (Pass 150 consolidation)", () => {
+    // Pass 150: gdcoverride merged into 'gdcbrackets' with GDCMergedPanel wrapper
+    expect(src).toContain("activePanel === 'gdcbrackets'");
+    expect(src).toContain("GDCMergedPanel");
   });
 
-  it("has nav items for all 3 new panels", () => {
-    expect(src).toContain("Recruiting Funnel");
-    expect(src).toContain("Business P&L");
-    expect(src).toContain("GDC/Override Opt");
+  it("has nav items for consolidated panels (Pass 150 labels)", () => {
+    expect(src).toContain("Recruiting & Funnel");
+    expect(src).toContain("P&L & Business Economics");
+    expect(src).toContain("GDC & Overrides");
+  });
+
+  it("has legacy redirect map for old panel IDs (Pass 150)", () => {
+    expect(src).toContain("recruitfunnel");
+    expect(src).toContain("pnlbizecon");
+    expect(src).toContain("gdcoverride");
+    expect(src).toContain("LEGACY_REDIRECTS");
   });
 });
 

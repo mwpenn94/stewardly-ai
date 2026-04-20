@@ -83,7 +83,7 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
   'myplan' | 'gdcbrackets' | 'products' | 'salesfunnel' | 'recruiting' | 'channels' | 'dashboard' | 'pnl' |
   'goaltracker' | 'monthlyproduction' | 'partner' | 'income' |
   'aumoverride' | 'aumpipeline' | 'affiliatepipeline' |
-  'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' |
+  'prodopt' | 'chandivers' | 'mktgroi' | 'recruitfunnel' | 'pnlbizecon' | 'gdcoverride' | /* legacy IDs kept for deep-link compat */
   'balancesheet' | 'debtmgmt' | 'trusteng' | 'governance' | 'montecarlo' | 'stockcomp' |
   'premfin' | 'ilitrust' | 'execcomp' | 'charitable' | 'duediligence' |
   'planning-hierarchy' | 'advanced-workflows' | 'strategy-archetypes' | 'unified-client-plan' | 'firm-comparison' | 'cascade-alerts' | 'financial-data-hub' | 'client-wealth-hub' | 'advanced-strategies-hub' | 'scenario-comparison' | 'pfr-wizard' |
@@ -92,13 +92,13 @@ type PanelId = 'profile' | 'cash' | 'protect' | 'grow' | 'retire' | 'tax' | 'est
 const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: React.ReactNode }[] }[] = [
   { group: 'Practice Management', items: [
     { id: 'myplan' as PanelId, label: 'My Plan', icon: <Target className="w-4 h-4" /> },
-    { id: 'gdcbrackets' as PanelId, label: 'GDC Brackets', icon: <Layers className="w-4 h-4" /> },
+    { id: 'gdcbrackets' as PanelId, label: 'GDC & Overrides', icon: <Layers className="w-4 h-4" /> },
     { id: 'products' as PanelId, label: 'Products', icon: <Package className="w-4 h-4" /> },
     { id: 'salesfunnel' as PanelId, label: 'Sales Funnel', icon: <Filter className="w-4 h-4" /> },
-    { id: 'recruiting' as PanelId, label: 'Recruiting', icon: <Users className="w-4 h-4" /> },
+    { id: 'recruiting' as PanelId, label: 'Recruiting & Funnel', icon: <Users className="w-4 h-4" /> },
     { id: 'channels' as PanelId, label: 'Channels', icon: <Megaphone className="w-4 h-4" /> },
     { id: 'dashboard' as PanelId, label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'pnl' as PanelId, label: 'P&L', icon: <Receipt className="w-4 h-4" /> },
+    { id: 'pnl' as PanelId, label: 'P&L & Business Economics', icon: <Receipt className="w-4 h-4" /> },
     { id: 'aumoverride' as PanelId, label: 'AUM Override', icon: <Layers className="w-4 h-4" /> },
     { id: 'aumpipeline' as PanelId, label: 'AUM Pipeline', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'affiliatepipeline' as PanelId, label: 'Affiliate Pipeline', icon: <Handshake className="w-4 h-4" /> },
@@ -107,9 +107,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'prodopt' as PanelId, label: 'Production Optimization', icon: <Target className="w-4 h-4" /> },
     { id: 'chandivers' as PanelId, label: 'Channel Diversification', icon: <PieChart className="w-4 h-4" /> },
     { id: 'mktgroi' as PanelId, label: 'Marketing ROI', icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'recruitfunnel' as PanelId, label: 'Recruiting Funnel', icon: <Users className="w-4 h-4" /> },
-    { id: 'pnlbizecon' as PanelId, label: 'Business P&L', icon: <Receipt className="w-4 h-4" /> },
-    { id: 'gdcoverride' as PanelId, label: 'GDC/Override Opt', icon: <Layers className="w-4 h-4" /> },
+
   ]},
   /* ─── Holistic Planning: merged Client Planning + Advanced + Advisory ─── */
   { group: '① Foundation', items: [
@@ -131,16 +129,16 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
     { id: 'planning-hierarchy' as PanelId, label: 'Planning Hierarchy', icon: <Layers className="w-4 h-4" /> },
     { id: 'unified-client-plan' as PanelId, label: 'Unified Client Plan', icon: <Layers className="w-4 h-4" /> },
   ]},
-  { group: '③ Protect', items: [
+  { group: '③ Protect & Advance', items: [
+    { id: 'advanced-strategies-hub' as PanelId, label: '⭐ Advanced Strategies Hub', icon: <Gem className="w-4 h-4" /> },
     { id: 'protect', label: 'Protection Needs', icon: <Shield className="w-4 h-4" /> },
     { id: 'bizclient', label: 'Business Client', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'premfin' as PanelId, label: 'Premium Financing', icon: <Landmark className="w-4 h-4" /> },
     { id: 'ilitrust' as PanelId, label: 'ILIT / Trust Structuring', icon: <Gavel className="w-4 h-4" /> },
     { id: 'execcomp' as PanelId, label: 'Executive Comp', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'charitable' as PanelId, label: 'Charitable Planning', icon: <Gift className="w-4 h-4" /> },
-    { id: 'advanced-strategies-hub' as PanelId, label: '⭐ Advanced Strategies Hub', icon: <Gem className="w-4 h-4" /> },
-    { id: 'advanced', label: 'Advanced Strategies', icon: <Gem className="w-4 h-4" /> },
-    { id: 'advanced-workflows' as PanelId, label: 'Advanced Workflows', icon: <ShieldCheck className="w-4 h-4" /> },
+    { id: 'advanced', label: 'Strategy Inputs', icon: <Gem className="w-4 h-4" /> },
+    { id: 'advanced-workflows' as PanelId, label: 'Workflow Automation', icon: <ShieldCheck className="w-4 h-4" /> },
   ]},
   { group: '④ Grow', items: [
     { id: 'grow', label: 'Growth & Accumulation', icon: <TrendingUp className="w-4 h-4" /> },
@@ -151,7 +149,7 @@ const NAV_SECTIONS: { group: string; items: { id: PanelId; label: string; icon: 
   { group: '⑤ Analyze & Act', items: [
     { id: 'costben', label: 'Cost-Benefit', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'compare', label: 'Strategy Compare', icon: <GitCompare className="w-4 h-4" /> },
-    { id: 'summary', label: 'Summary', icon: <FileText className="w-4 h-4" /> },
+    { id: 'summary', label: 'Scorecard Summary', icon: <FileText className="w-4 h-4" /> },
     { id: 'timeline', label: 'Action Plan', icon: <ListChecks className="w-4 h-4" /> },
     { id: 'impl_timeline', label: 'Timeline', icon: <CalendarRange className="w-4 h-4" /> },
     { id: 'cascade-alerts' as PanelId, label: 'Cascade Alerts', icon: <Zap className="w-4 h-4" /> },
@@ -194,7 +192,10 @@ export default function Calculators() {
   const [activePanel, setActivePanel] = useState<PanelId>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      const p = params.get('panel');
+      let p = params.get('panel');
+      // Legacy panel ID redirects (Pass 150 consolidation)
+      const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets' };
+      if (p && LEGACY_REDIRECTS[p]) p = LEGACY_REDIRECTS[p];
       if (p && NAV_SECTIONS.some(s => s.items.some(i => i.id === p))) return p as PanelId;
     } catch {}
     return 'profile';
@@ -1552,13 +1553,13 @@ export default function Calculators() {
 
           {/* ═══ PRACTICE PLANNING PANELS ═══ */}
           {activePanel === 'myplan' && <MyPlanPanel {...practiceProps} />}
-          {activePanel === 'gdcbrackets' && <GDCBracketsPanel {...practiceProps} />}
+          {activePanel === 'gdcbrackets' && <GDCMergedPanel practiceProps={practiceProps} />}
           {activePanel === 'products' && <ProductsPanel {...practiceProps} />}
           {activePanel === 'salesfunnel' && <SalesFunnelPanel {...practiceProps} />}
-          {activePanel === 'recruiting' && <RecruitingPanel {...practiceProps} />}
+          {activePanel === 'recruiting' && <RecruitingMergedPanel practiceProps={practiceProps} />}
           {activePanel === 'channels' && <ChannelsPanel {...practiceProps} />}
           {activePanel === 'dashboard' && <DashboardPanel {...practiceProps} />}
-          {activePanel === 'pnl' && <PnLPanel {...practiceProps} />}
+          {activePanel === 'pnl' && <PnLMergedPanel practiceProps={practiceProps} />}
           {activePanel === 'goaltracker' && <GoalTrackerPanel {...practiceProps} />}
           {activePanel === 'monthlyproduction' && <MonthlyProductionPanel {...practiceProps} />}
           {activePanel === 'aumoverride' && <AUMOverrideCascadePanel />}
@@ -1567,9 +1568,7 @@ export default function Calculators() {
           {activePanel === 'prodopt' && <ProductionOptPanel />}
           {activePanel === 'chandivers' && <ChannelDiversPanel />}
           {activePanel === 'mktgroi' && <MarketingROIPanel />}
-          {activePanel === 'recruitfunnel' && <RecruitingFunnelPanel />}
-          {activePanel === 'pnlbizecon' && <PnLBusinessEconomicsPanel />}
-          {activePanel === 'gdcoverride' && <GDCOverrideOptPanel />}
+
           {activePanel === 'balancesheet' && <BalanceSheetPanel nw={nw} savings={savings} retirement401k={retirement401k} mortgage={mortgage} debt={debt} />}
           {activePanel === 'debtmgmt' && <DebtManagementPanel mortgage={mortgage} debt={debt} income={income} />}
           {activePanel === 'trusteng' && <TrustEngineeringPanel grossEstate={grossEstate} exemption={exemption} />}
@@ -1680,5 +1679,67 @@ export default function Calculators() {
     </div>
     </AppShell>
       </>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Pass 150 — Merged Wrapper Components
+   Each consolidates two formerly-separate panels into a single tabbed view.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function RecruitingMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
+  const [view, setView] = useState<'roster' | 'funnel'>('roster');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('roster')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'roster' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Team Roster & Economics
+        </button>
+        <button type="button" onClick={() => setView('funnel')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'funnel' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Funnel Analytics & Benchmarks
+        </button>
+      </div>
+      {view === 'roster' ? <RecruitingPanel {...practiceProps} /> : <RecruitingFunnelPanel />}
+    </div>
+  );
+}
+
+function PnLMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
+  const [view, setView] = useState<'practice' | 'business'>('practice');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('practice')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'practice' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Practice P&L
+        </button>
+        <button type="button" onClick={() => setView('business')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'business' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Business Economics
+        </button>
+      </div>
+      {view === 'practice' ? <PnLPanel {...practiceProps} /> : <PnLBusinessEconomicsPanel />}
+    </div>
+  );
+}
+
+function GDCMergedPanel({ practiceProps }: { practiceProps: PracticeProps }) {
+  const [view, setView] = useState<'brackets' | 'optimization'>('brackets');
+  return (
+    <div className="space-y-3">
+      <div className="flex gap-1 p-0.5 bg-muted/50 rounded-lg w-fit">
+        <button type="button" onClick={() => setView('brackets')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'brackets' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          GDC Brackets
+        </button>
+        <button type="button" onClick={() => setView('optimization')}
+          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'optimization' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+          Override Optimization
+        </button>
+      </div>
+      {view === 'brackets' ? <GDCBracketsPanel {...practiceProps} /> : <GDCOverrideOptPanel />}
+    </div>
   );
 }
