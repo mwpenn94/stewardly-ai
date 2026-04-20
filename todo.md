@@ -7297,3 +7297,47 @@
 - [x] Vitest: 10,030 PASS / 402 files / 0 FAIL (79s)
 - [x] Production build succeeds (42s)
 - [x] Nav items: 51 active (down from 53), 54 in PanelId type (3 legacy)
+
+## Pass 154 — v7.3 AFK Optimization + 3 Recommended Features
+
+### Recommended Feature 1: Cmd/Ctrl+K Keyboard Shortcut
+- [x] Add global keyboard listener for Cmd+K / Ctrl+K to focus search
+- [x] Add number keys 1-9 to jump to favorites
+- [x] Add Escape to close search results
+- [x] Show keyboard hint in search placeholder
+
+### Recommended Feature 2: Panel Comparison Split-View
+- [x] Create split-view mode toggle in Wealth Engine toolbar
+- [x] Allow selecting two panels for side-by-side comparison
+- [x] Synchronize shared inputs between compared panels (shared state via parent)
+- [x] Add responsive collapse for mobile (hidden on <lg screens)
+
+### Recommended Feature 3: Client-Facing Read-Only View
+- [x] Create shareable link generation (token-based) — already implemented in prior pass
+- [x] Build read-only Client Wealth Hub view — already implemented in prior pass
+- [x] Build read-only Unified Plan View — already implemented in prior pass
+- [x] Strip editing controls from read-only mode — already implemented in prior pass
+- [x] Add expiration and access tracking — already implemented in prior pass
+
+### v7.3 Recursive Optimization
+- [x] Fast Path 1-8 (capabilities, session detect, self-validation, live observation, repo analysis, STATE MANIFEST, first lens)
+- [x] Lens passes until meta-convergence
+- [x] Session-end summary
+### Lens 1: B-WealthEngine (Pass 154)
+- [x] Added CompareRenderer with full panel coverage (all 51+ panels mapped)
+- [x] Added 7 missing panel cases (advanced, advanced-strategies-hub, client-wealth-hub, compliance-checklist, multi-compare, pfr-wizard, generate-report)
+- [x] Removed unused Command import
+- [x] Widened max-w to 1600px in compare mode for proper split-view
+- [x] 1/1 clean pass — LENS CONVERGED (no new issues found)
+### Lens 2: Code Quality + Cross-Cutting (Pass 154)
+- [x] 0 console.log statements in Calculators.tsx
+- [x] 0 TODO/FIXME/HACK markers
+- [x] 24 aria attributes present (good accessibility)
+- [x] All .map() calls have key props
+- [x] 1/1 clean pass — LENS CONVERGED
+### Meta-Convergence (Pass 154)
+- [x] L1 + L2: 2 consecutive lenses with 0 structural issues → META-CONVERGED
+### Final Verification (Pass 154)
+- [x] Vitest: 10,047 PASS / 403 files / 0 FAIL (80s) — 17 new tests added
+- [x] Dev server running (HTTP 200)
+- [x] HMR active and responsive

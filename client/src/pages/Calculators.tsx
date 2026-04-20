@@ -27,7 +27,8 @@ import {
   Landmark, Percent, Dices, FileCheck, Wallet, Gavel, CreditCard, Gift, Share2,
   Database, Zap, Sparkles, ShieldCheck,
   ClipboardList, FileBarChart, UsersRound, Search, Star,
-  Banknote, Crown, SlidersHorizontal
+  Banknote, Crown, SlidersHorizontal,
+  Home, Columns2
 } from 'lucide-react';
 
 import {
@@ -214,6 +215,7 @@ export default function Calculators() {
   }, []);
 
   /* ─── GLOBAL SEARCH (Pass 152) ─── */
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [globalSearch, setGlobalSearch] = useState('');
   const allPanelItems = useMemo(() => NAV_SECTIONS.flatMap(s => s.items.map(i => ({ ...i, group: s.group }))), []);
   const searchResults = useMemo(() => {
@@ -229,6 +231,47 @@ export default function Calculators() {
     setCalcSidebarOpen(false);
     setGlobalSearch('');
   }, []);
+
+  /* ─── PANEL COMPARISON SPLIT-VIEW (Pass 154) ─── */
+  const [compareMode, setCompareMode] = useState(false);
+  const [comparePanel, setComparePanel] = useState<PanelId | null>(null);
+  const [showComparePicker, setShowComparePicker] = useState(false);
+  const [compareSearch, setCompareSearch] = useState('');
+  const compareResults = useMemo(() => {
+    if (!compareSearch.trim()) return allPanelItems.filter(i => i.id !== activePanel).slice(0, 12);
+    const q = compareSearch.toLowerCase();
+    return allPanelItems.filter(i => i.id !== activePanel && (i.label.toLowerCase().includes(q) || i.group.toLowerCase().includes(q))).slice(0, 12);
+  }, [compareSearch, allPanelItems, activePanel]);
+
+  /* ─── KEYBOARD SHORTCUTS (Pass 154) ─── */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+K → focus search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+      // Escape → clear search and close compare picker
+      if (e.key === 'Escape') {
+        if (globalSearch) { setGlobalSearch(''); searchInputRef.current?.blur(); }
+        if (showComparePicker) setShowComparePicker(false);
+        return;
+      }
+      // Number keys 1-9 → navigate to favorites (only when not in an input)
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.key >= '1' && e.key <= '9' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const idx = parseInt(e.key) - 1;
+        if (favorites[idx]) {
+          e.preventDefault();
+          navigateToPanel(favorites[idx]);
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [globalSearch, favorites, navigateToPanel, showComparePicker]);
 
   /* ─── SESSION MANAGEMENT STATE ─── */
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -1379,8 +1422,8 @@ export default function Calculators() {
         <div className="px-2 pt-2">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-            <input type="text" value={globalSearch} onChange={e => setGlobalSearch(e.target.value)}
-              placeholder="Search panels..." aria-label="Search all panels"
+            <input ref={searchInputRef} type="text" value={globalSearch} onChange={e => setGlobalSearch(e.target.value)}
+              placeholder="Search panels... (⌘K)" aria-label="Search all panels — press Cmd+K or Ctrl+K to focus"
               className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/30 border border-border/30 rounded-md placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground" />
             {globalSearch && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-popover text-popover-foreground border border-border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
@@ -1404,14 +1447,16 @@ export default function Calculators() {
               <Star className="w-2.5 h-2.5" />Favorites
             </p>
             <div className="flex flex-wrap gap-1">
-              {favorites.map(fid => {
+              {favorites.map((fid, idx) => {
                 const item = allPanelItems.find(i => i.id === fid);
                 if (!item) return null;
                 return (
                   <button key={fid} type="button" onClick={() => navigateToPanel(fid)}
+                    title={idx < 9 ? `Press ${idx + 1} to navigate` : undefined}
                     className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
                       activePanel === fid ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-transparent'
                     }`}>
+                    {idx < 9 && <span className="text-[8px] text-muted-foreground/40 font-mono">{idx + 1}</span>}
                     {item.icon}{item.label.replace(/^[⭐🏠] /, '')}
                   </button>
                 );
@@ -1478,7 +1523,7 @@ export default function Calculators() {
 
       {/* ─── MAIN CONTENT ─── */}
       <main className="flex-1 min-w-0" role="main" aria-label="Calculator panel content">
-        <div className="max-w-5xl mx-auto p-3 sm:p-4 lg:p-6">
+        <div className={`mx-auto p-3 sm:p-4 lg:p-6 ${compareMode && comparePanel ? 'max-w-[1600px]' : 'max-w-5xl'}`}>
 
           {/* ─── TOOLBAR ─── */}
           <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-card rounded-lg border border-border px-3 py-2">
@@ -1496,6 +1541,13 @@ export default function Calculators() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Split-View Compare Toggle (Pass 154) */}
+              <Button variant={compareMode ? 'default' : 'outline'} size="sm"
+                onClick={() => { setCompareMode(m => !m); if (!compareMode) setShowComparePicker(true); else { setComparePanel(null); setShowComparePicker(false); } }}
+                className={`text-xs gap-1 h-7 hidden lg:flex ${compareMode ? 'bg-primary text-primary-foreground' : ''}`}
+                title="Compare two panels side-by-side">
+                <Columns2 className="w-3 h-3" /> <span className="hidden xl:inline">Compare</span>
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSave} disabled={saveMut.isPending || updateMut.isPending}
                 className="text-xs gap-1 h-7">
                 <Save className="w-3 h-3" /> <span className="hidden sm:inline">{activeSessionId ? 'Update' : 'Save'}</span>
@@ -1610,6 +1662,33 @@ export default function Calculators() {
               </button>
             </div>
           )}
+
+          {/* ═══ COMPARE PANEL PICKER (Pass 154) ═══ */}
+          {compareMode && showComparePicker && !comparePanel && (
+            <div className="mb-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <Columns2 className="w-4 h-4 text-primary" /> Select a panel to compare with <span className="font-bold text-primary">{allPanelItems.find(i => i.id === activePanel)?.label || activePanel}</span>
+                </p>
+                <button type="button" onClick={() => { setCompareMode(false); setShowComparePicker(false); }} className="text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+              </div>
+              <input type="text" value={compareSearch} onChange={e => setCompareSearch(e.target.value)}
+                placeholder="Search panels to compare..." autoFocus
+                className="w-full px-3 py-1.5 text-xs bg-background border border-border rounded-md placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 text-foreground mb-2" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto">
+                {compareResults.map(r => (
+                  <button key={r.id} type="button" onClick={() => { setComparePanel(r.id); setShowComparePicker(false); setCompareSearch(''); }}
+                    className="flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border border-border hover:bg-accent hover:text-accent-foreground transition-colors text-left">
+                    {r.icon}<span className="truncate">{r.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ SPLIT-VIEW WRAPPER (Pass 154) ═══ */}
+          <div className={compareMode && comparePanel ? 'grid grid-cols-2 gap-4' : ''}>
+          <div className={compareMode && comparePanel ? 'min-w-0 overflow-hidden' : ''}>
 
           {/* ═══ PANEL RENDERING ═══ */}
           {activePanel === 'client-wealth-hub' && <ClientWealthHub {...pp} onNavigateToPanel={(panelId: string) => setActivePanel(panelId as PanelId)} />}
@@ -1737,6 +1816,54 @@ export default function Calculators() {
           />}
           {activePanel === 'multi-compare' && <MultiClientComparison />}
           {/* cascade-flow merged into cascade-alerts — Pass 152 */}
+
+          </div>{/* end primary panel column */}
+
+          {/* ═══ COMPARE PANEL (right column, Pass 154) ═══ */}
+          {compareMode && comparePanel && (
+            <div className="min-w-0 overflow-hidden border-l border-border/30 pl-4">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/30">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <Columns2 className="w-3.5 h-3.5 text-primary" />
+                  Comparing: <span className="text-foreground">{allPanelItems.find(i => i.id === comparePanel)?.label || comparePanel}</span>
+                </p>
+                <div className="flex items-center gap-1">
+                  <button type="button" onClick={() => setShowComparePicker(true)} className="text-[10px] text-primary hover:underline">Change</button>
+                  <button type="button" onClick={() => { setCompareMode(false); setComparePanel(null); }} className="text-muted-foreground hover:text-foreground ml-1"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+              <CompareRenderer panelId={comparePanel} pp={pp} practiceProps={practiceProps} weData={weData}
+                urlTab={urlTabRef.current} sessionsData={sessionsQuery.data}
+                gatherInputs={gatherInputs} restoreInputs={restoreInputs}
+                holisticBridge={holisticBridge} grossEstate={grossEstate} exemption={exemption}
+                totalIncome={totalIncome} income={income} savings={savings} retirement401k={retirement401k}
+                mortgage={mortgage} debt={debt} nw={nw} monthlySav={monthlySav} retireAge={retireAge} age={age}
+                riskTolerance={riskTolerance} clientName={clientName} scorecard={scorecard}
+                recommendations={recommendations} horizonData={horizonData}
+                setActivePanel={setActivePanel}
+                pfFace={pfFace} setPfFace={setPfFace} pfPrem={pfPrem} setPfPrem={setPfPrem}
+                pfCash={pfCash} setPfCash={setPfCash} pfLoan={pfLoan} setPfLoan={setPfLoan}
+                pfCred={pfCred} setPfCred={setPfCred} pfYrs={pfYrs} setPfYrs={setPfYrs}
+                ilDB={ilDB} setIlDB={setIlDB} ilPr={ilPr} setIlPr={setIlPr}
+                ilCr={ilCr} setIlCr={setIlCr} ilTx={ilTx} setIlTx={setIlTx}
+                exSal={exSal} setExSal={setExSal} ex162={ex162} setEx162={setEx162}
+                exSERP={exSERP} setExSERP={setExSERP} exSD={exSD} setExSD={setExSD}
+                cvCRT={cvCRT} setCvCRT={setCvCRT} cvPO={cvPO} setCvPO={setCvPO}
+                cvDAF={cvDAF} setCvDAF={setCvDAF} cvLI={cvLI} setCvLI={setCvLI}
+                advGoal={advGoal} setAdvGoal={setAdvGoal}
+                bcBizValue={bcBizValue} setBcBizValue={setBcBizValue}
+                bcKeyPersonSalary={bcKeyPersonSalary} setBcKeyPersonSalary={setBcKeyPersonSalary}
+                bcKeyPersonMult={bcKeyPersonMult} setBcKeyPersonMult={setBcKeyPersonMult}
+                bcOwners={bcOwners} setBcOwners={setBcOwners}
+                bcEmployees={bcEmployees} setBcEmployees={setBcEmployees}
+                incomeStreams={incomeStreams} setIncomeStreams={setIncomeStreams}
+                paLow={paLow} setPaLow={setPaLow} paMid={paMid} setPaMid={setPaMid}
+                paHigh={paHigh} setPaHigh={setPaHigh}
+                advancedCascade={advancedCascade} setAdvancedCascade={setAdvancedCascade}
+              />
+            </div>
+          )}
+          </div>{/* end split-view grid */}
 
           {/* ═══ FINRA/SIPC COMPLIANCE DISCLAIMER ═══ */}
           <div className="mt-8 rounded-lg border border-border/50 bg-card/50 p-4 text-[10px] text-muted-foreground/60 leading-relaxed space-y-2">
@@ -2026,4 +2153,124 @@ function CascadeIntelligenceMergedPanel({ weData, onNavigateToPanel, defaultTab 
       {view === 'alerts' ? <Suspense fallback={<div className="flex items-center justify-center py-20"><span className="animate-spin">⏳</span></div>}><WeCascadeAlerts /></Suspense> : <CascadeFlowDiagram weData={weData} onNavigateToPanel={onNavigateToPanel} />}
     </div>
   );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CompareRenderer — Renders any panel by ID for split-view comparison.
+   Pass 154 — Panel Comparison Split-View
+   ═══════════════════════════════════════════════════════════════ */
+function CompareRenderer({ panelId, pp, practiceProps, weData, urlTab, sessionsData,
+  gatherInputs, restoreInputs, holisticBridge, grossEstate, exemption,
+  totalIncome, income, savings, retirement401k, mortgage, debt, nw, monthlySav, retireAge, age,
+  riskTolerance, clientName, scorecard, recommendations, horizonData,
+  setActivePanel,
+  pfFace, setPfFace, pfPrem, setPfPrem, pfCash, setPfCash, pfLoan, setPfLoan,
+  pfCred, setPfCred, pfYrs, setPfYrs,
+  ilDB, setIlDB, ilPr, setIlPr, ilCr, setIlCr, ilTx, setIlTx,
+  exSal, setExSal, ex162, setEx162, exSERP, setExSERP, exSD, setExSD,
+  cvCRT, setCvCRT, cvPO, setCvPO, cvDAF, setCvDAF, cvLI, setCvLI,
+  advGoal, setAdvGoal,
+  bcBizValue, setBcBizValue, bcKeyPersonSalary, setBcKeyPersonSalary,
+  bcKeyPersonMult, setBcKeyPersonMult, bcOwners, setBcOwners, bcEmployees, setBcEmployees,
+  incomeStreams, setIncomeStreams,
+  paLow, setPaLow, paMid, setPaMid, paHigh, setPaHigh,
+  advancedCascade, setAdvancedCascade,
+}: any) {
+  const savedScenarios = (sessionsData || []).map((s: any) => ({
+    id: s.id, name: s.name,
+    inputsJson: typeof s.inputsJson === 'string' ? JSON.parse(s.inputsJson) : (s.inputsJson || {}),
+    resultsJson: typeof s.resultsJson === 'string' ? JSON.parse(s.resultsJson) : s.resultsJson,
+    updatedAt: s.updatedAt,
+  }));
+
+  switch (panelId) {
+    case 'profile': return <ProfilePanel {...pp} />;
+    case 'cash': return <CashFlowPanel {...pp} />;
+    case 'protect': return <ProtectionPanel {...pp} />;
+    case 'grow': return <GrowthPanel {...pp} />;
+    case 'retire': return <RetirementPanel {...pp} />;
+    case 'tax': return <TaxPanel {...pp} />;
+    case 'estate': return <EstatePanel {...pp} />;
+    case 'edu': return <EducationPanel {...pp} />;
+    case 'summary': return <SummaryPanel {...pp} />;
+    case 'refs': return <ReferencesPanel />;
+    case 'partner': return <PartnerPanel paLow={paLow} setPaLow={setPaLow} paMid={paMid} setPaMid={setPaMid} paHigh={paHigh} setPaHigh={setPaHigh} />;
+    case 'income': return <IncomeStreamsPanel incomeStreams={incomeStreams} setIncomeStreams={setIncomeStreams} scores={pp.scores} />;
+    case 'bizclient': return <BusinessClientPanel bcBizValue={bcBizValue} setBcBizValue={setBcBizValue} bcKeyPersonSalary={bcKeyPersonSalary} setBcKeyPersonSalary={setBcKeyPersonSalary} bcKeyPersonMult={bcKeyPersonMult} setBcKeyPersonMult={setBcKeyPersonMult} bcOwners={bcOwners} setBcOwners={setBcOwners} bcEmployees={bcEmployees} setBcEmployees={setBcEmployees} age={age} />;
+    case 'costben': return <StrategyAnalysisMergedPanel pp={pp} horizonData={horizonData} defaultTab={urlTab || undefined} savedScenarios={savedScenarios} />;
+    case 'timeline': return <ActionTimelineMergedPanel pp={pp} defaultTab={urlTab || undefined} />;
+    case 'balancesheet': return <BalanceSheetPanel nw={nw} savings={savings} retirement401k={retirement401k} mortgage={mortgage} debt={debt} />;
+    case 'debtmgmt': return <DebtManagementPanel mortgage={mortgage} debt={debt} income={income} />;
+    case 'trusteng': return <TrustMergedPanel grossEstate={grossEstate} exemption={exemption} defaultTab={urlTab || undefined} />;
+    case 'governance': return <GovernanceIPSPanel riskTolerance={riskTolerance} />;
+    case 'montecarlo': return <MonteCarloPanel savings={savings} retirement401k={retirement401k} monthlySav={monthlySav} retireAge={retireAge} age={age} />;
+    case 'stockcomp': return <StockCompPanel income={income} />;
+    case 'premfin': return <PremiumFinancingPanel income={totalIncome} grossEstate={grossEstate} savings={savings} />;
+    case 'execcomp': return <ExecCompPanel income={income} />;
+    case 'charitable': return <CharitablePlanningPanel income={income} />;
+    case 'duediligence': return <DueDiligencePanel />;
+    // Practice panels
+    case 'myplan': return <MyPlanPanel {...practiceProps} />;
+    case 'gdcbrackets': return <GDCMergedPanel practiceProps={practiceProps} defaultTab={urlTab || undefined} />;
+    case 'products': return <ProductsPanel {...practiceProps} />;
+    case 'salesfunnel': return <SalesFunnelPanel {...practiceProps} />;
+    case 'recruiting': return <RecruitingMergedPanel practiceProps={practiceProps} defaultTab={urlTab || undefined} />;
+    case 'channels': return <ChannelsPanel {...practiceProps} />;
+    case 'dashboard': return <DashboardPanel {...practiceProps} />;
+    case 'pnl': return <PnLMergedPanel practiceProps={practiceProps} defaultTab={urlTab || undefined} />;
+    case 'goaltracker': return <GoalsTrackingMergedPanel practiceProps={practiceProps} defaultTab={urlTab || undefined} />;
+    case 'aumoverride': return <AUMMergedPanel defaultTab={urlTab || undefined} />;
+    case 'affiliatepipeline': return <AffiliatePipelinePanel />;
+    case 'prodopt': return <GrowthOptMergedPanel defaultTab={urlTab || undefined} />;
+    // WealthEngine panels (lazy)
+    case 'planning-hierarchy': return <Suspense fallback={<div className="py-10 text-center text-xs text-muted-foreground animate-pulse">Loading...</div>}><UnifiedPlanMergedPanel defaultTab={urlTab || undefined} /></Suspense>;
+    case 'cascade-alerts': return <Suspense fallback={<div className="py-10 text-center text-xs text-muted-foreground animate-pulse">Loading...</div>}><CascadeIntelligenceMergedPanel weData={weData} onNavigateToPanel={(id: string) => setActivePanel(id)} defaultTab={urlTab || undefined} /></Suspense>;
+    case 'financial-data-hub': return <Suspense fallback={<div className="py-10 text-center text-xs text-muted-foreground animate-pulse">Loading...</div>}><WeFinancialDataHub /></Suspense>;
+    case 'scenario-comparison': return <Suspense fallback={<div className="py-10 text-center text-xs text-muted-foreground animate-pulse">Loading...</div>}><ScenarioComparisonPanel weData={weData} gatherInputs={gatherInputs} restoreInputs={restoreInputs} /></Suspense>;
+    case 'firm-comparison': return <Suspense fallback={<div className="py-10 text-center text-xs text-muted-foreground animate-pulse">Loading...</div>}><WeFirmComparison /></Suspense>;
+    case 'advanced-workflows': return <Suspense fallback={<div className="py-10 text-center text-xs text-muted-foreground animate-pulse">Loading...</div>}><WeAdvancedWorkflows /></Suspense>;
+    case 'strategy-archetypes': return <Suspense fallback={<div className="py-10 text-center text-xs text-muted-foreground animate-pulse">Loading...</div>}><WeStrategyArchetypes /></Suspense>;
+    // Hub & composite panels
+    case 'client-wealth-hub': return <ClientWealthHub {...pp} onNavigateToPanel={(id: string) => setActivePanel(id)} />;
+    case 'advanced-strategies-hub': return <AdvancedStrategiesHub
+      pfFace={pfFace} setPfFace={setPfFace} pfPrem={pfPrem} setPfPrem={setPfPrem}
+      pfCash={pfCash} setPfCash={setPfCash} pfLoan={pfLoan} setPfLoan={setPfLoan}
+      pfCred={pfCred} setPfCred={setPfCred} pfYrs={pfYrs} setPfYrs={setPfYrs}
+      ilDB={ilDB} setIlDB={setIlDB} ilPr={ilPr} setIlPr={setIlPr}
+      ilCr={ilCr} setIlCr={setIlCr} ilTx={ilTx} setIlTx={setIlTx}
+      exSal={exSal} setExSal={setExSal} ex162={ex162} setEx162={setEx162}
+      exSERP={exSERP} setExSERP={setExSERP} exSD={exSD} setExSD={setExSD}
+      cvCRT={cvCRT} setCvCRT={setCvCRT} cvPO={cvPO} setCvPO={setCvPO}
+      cvDAF={cvDAF} setCvDAF={setCvDAF} cvLI={cvLI} setCvLI={setCvLI}
+      advGoal={advGoal} setAdvGoal={setAdvGoal}
+      bcBizValue={bcBizValue} setBcBizValue={setBcBizValue}
+      bcKeyPersonSalary={bcKeyPersonSalary} setBcKeyPersonSalary={setBcKeyPersonSalary}
+      bcKeyPersonMult={bcKeyPersonMult} setBcKeyPersonMult={setBcKeyPersonMult}
+      bcOwners={bcOwners} setBcOwners={setBcOwners}
+      bcEmployees={bcEmployees} setBcEmployees={setBcEmployees}
+      age={age} income={totalIncome} grossEstate={grossEstate}
+      onNavigateToPanel={(id: string) => setActivePanel(id)}
+      onCascadeUpdate={setAdvancedCascade}
+    />;
+    case 'advanced': return <AdvancedStrategiesPanel
+      pfFace={pfFace} setPfFace={setPfFace} pfPrem={pfPrem} setPfPrem={setPfPrem}
+      pfCash={pfCash} setPfCash={setPfCash} pfLoan={pfLoan} setPfLoan={setPfLoan}
+      pfCred={pfCred} setPfCred={setPfCred} pfYrs={pfYrs} setPfYrs={setPfYrs}
+      ilDB={ilDB} setIlDB={setIlDB} ilPr={ilPr} setIlPr={setIlPr}
+      ilCr={ilCr} setIlCr={setIlCr} ilTx={ilTx} setIlTx={setIlTx}
+      exSal={exSal} setExSal={setExSal} ex162={ex162} setEx162={setEx162}
+      exSERP={exSERP} setExSERP={setExSERP} exSD={exSD} setExSD={setExSD}
+      cvCRT={cvCRT} setCvCRT={setCvCRT} cvPO={cvPO} setCvPO={setCvPO}
+      cvDAF={cvDAF} setCvDAF={setCvDAF} cvLI={cvLI} setCvLI={setCvLI}
+      advGoal={advGoal} setAdvGoal={setAdvGoal}
+    />;
+    case 'compliance-checklist': return <ComplianceChecklist clientName={clientName} age={age} totalIncome={totalIncome} scorecard={scorecard} recommendations={recommendations} weData={weData} />;
+    case 'multi-compare': return <MultiClientComparison />;
+    // pfr-wizard and generate-report are complex wizards; show info message in compare
+    case 'pfr-wizard':
+    case 'generate-report':
+      return <div className="py-10 text-center text-sm text-muted-foreground">This panel works best in full-width view. Select it from the sidebar to use it.</div>;
+    default:
+      return <div className="py-10 text-center text-sm text-muted-foreground">Panel "{panelId}" is not available in compare view.</div>;
+  }
 }
