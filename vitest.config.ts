@@ -67,6 +67,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass3-parity.test.ts",
       // v8.3 Pass 3 LVUA: TDZ crash fixes, deep link, Chat a11y, People stats, mobile wrap
       "client/src/pages/__tests__/v83-pass3-lvua.test.ts",
+      // v8.3 Stability LVUA: scores.map crash, onboarding persistence, legacy redirects, panel structure
+      "client/src/pages/__tests__/v83-stability-lvua.test.ts",
     ],
   },
 });

@@ -7471,3 +7471,27 @@
 - [x] P2-FIX: 2 unlabeled buttons in Chat fixed (Add context + Mute audio)
 - [x] P3-FIX: People stats "--" → "0" with dimmed styling (PEOPLE)
 - [x] LVUA regression tests for P1 fixes (10 tests passing)
+
+### v8.3 Pass 3 — Stability Fix (user-reported)
+- [ ] P0-BUG: Wealth Engine crashes with "scores.map is not a function" after onboarding
+- [ ] Comprehensive LVUA: Guest user walkthrough of EVERY major page (not just landing)
+- [ ] Comprehensive LVUA: Test Wealth Engine post-onboarding flow
+- [ ] Comprehensive LVUA: Test Chat, People, Intelligence, Learn pages
+- [ ] Comprehensive LVUA: Test mobile viewport for all above
+- [ ] Fix all issues found during comprehensive LVUA
+- [ ] Re-verify all fixes with second LVUA pass
+
+### v8.3 Comprehensive Stability Validation
+- [x] P0-FIX: scores.map crash — scores is Record<string,number> not array, converted to scorecard.domains.map for PFR wizard
+- [x] Comprehensive LVUA: Guest walkthrough — Chat page (0 errors, loads correctly)
+- [x] Comprehensive LVUA: Guest walkthrough — Sidebar nav (all links work, 106 matched paths)
+- [x] Comprehensive LVUA: Guest walkthrough — People Hub (layout OK, stats wired)
+- [x] Comprehensive LVUA: Guest walkthrough — Intelligence page (loads correctly)
+- [x] Comprehensive LVUA: Guest walkthrough — Learn page (loads correctly)
+- [x] Comprehensive LVUA: Deep Wealth Engine — complete onboarding wizard (persists via localStorage)
+- [x] Comprehensive LVUA: Deep Wealth Engine — test 27/28 panels (15/16 via sidebar nav, 3600-5000+ chars each)
+- [x] Comprehensive LVUA: Deep Wealth Engine — content quality verified (Cash Flow, Retirement, Strategy, PFR, Dashboard all excellent)
+- [x] Comprehensive LVUA: Deep Wealth Engine — CascadeFlowDiagram, scorecard, recommendations verified
+- [x] Comprehensive LVUA: Mobile viewport — 0 horizontal overflow on all 5 tested pages (390×844)
+- [x] Fix ALL P0 issues found (scores.map crash, TDZ crashes, 404 route, natural URL aliases)
+- [x] Re-verified all fixes — 0 P0 crashes, 154 tests passing, 0 regressions

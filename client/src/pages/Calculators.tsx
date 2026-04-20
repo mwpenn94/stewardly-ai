@@ -210,7 +210,7 @@ export default function Calculators() {
       }
       urlTabRef.current = params.get('tab');
       // Legacy panel ID redirects (Pass 150/151 consolidation)
-      const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets', aumpipeline: 'aumoverride', monthlyproduction: 'goaltracker', chandivers: 'prodopt', mktgroi: 'prodopt', compare: 'costben', impl_timeline: 'timeline', 'unified-client-plan': 'planning-hierarchy', ilitrust: 'trusteng', 'cascade-flow': 'cascade-alerts' };
+      const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets', aumpipeline: 'aumoverride', monthlyproduction: 'goaltracker', chandivers: 'prodopt', mktgroi: 'prodopt', compare: 'costben', impl_timeline: 'timeline', 'unified-client-plan': 'planning-hierarchy', ilitrust: 'trusteng', 'cascade-flow': 'cascade-alerts', cashflow: 'cash', 'cash-flow': 'cash', protection: 'protect', growth: 'grow', retirement: 'retire', education: 'edu', 'balance-sheet': 'balancesheet', 'debt-management': 'debtmgmt', 'income-streams': 'income', 'monte-carlo': 'montecarlo', 'stock-comp': 'stockcomp', 'premium-financing': 'premfin', 'executive-comp': 'execcomp', 'business-client': 'bizclient', scorecard: 'summary', datahub: 'financial-data-hub' };
       if (p && LEGACY_REDIRECTS[p]) p = LEGACY_REDIRECTS[p];
       if (p && NAV_SECTIONS.some(s => s.items.some(i => i.id === p))) return p as PanelId;
     } catch {}
@@ -468,7 +468,7 @@ export default function Calculators() {
   const handleOnboardingComplete = useCallback((result: OnboardingResult) => {
     setShowOnboarding(false);
     setShowWelcome(false);
-    try { localStorage.setItem('wb-welcome-dismissed', 'true'); } catch {}
+    try { localStorage.setItem('wb-welcome-dismissed', 'true'); localStorage.setItem('wb-onboarding-complete', 'true'); } catch {}
     // Apply suggested complexity to all hubs
     handlePpComplexityChange(result.suggestedComplexity);
     // Navigate to suggested panel
@@ -479,6 +479,7 @@ export default function Calculators() {
   }, []);
   const handleOnboardingSkip = useCallback(() => {
     setShowOnboarding(false);
+    try { localStorage.setItem('wb-onboarding-complete', 'true'); } catch {}
   }, []);
 
   /* ─── PRACTICE PLANNING STATE ─── */
@@ -1948,7 +1949,7 @@ export default function Calculators() {
                 clientHubScore: holisticBridge.clientHubScore,
                 advancedHubScore: holisticBridge.advancedHubScore,
                 practiceHubScore: holisticBridge.practiceHubScore,
-                domainScores: scores.map((s: any) => ({ domain: s.domain, score: s.score, allocation: s.allocation, gap: s.gap })),
+                domainScores: scorecard.domains.map(d => ({ domain: d.name, score: d.score, allocation: Math.round(d.score / d.maxScore * 100), gap: d.maxScore - d.score })),
                 recommendations: recommendations.map((r: any) => ({ product: r.product, coverage: r.coverage, premium: r.premium, carrier: r.carrier, priority: r.priority, category: r.category })),
                 keyMetrics: { totalIncome, netWorth: nw, totalSavings: savings, retirementGap: rtResult.gap ?? 0, protectionCoverage: prResult.dimeNeed - prResult.gap, taxEfficiency: txResult.effectiveRate ?? 0 },
               }} />}
