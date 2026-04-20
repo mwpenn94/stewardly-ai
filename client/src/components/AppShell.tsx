@@ -15,7 +15,7 @@ import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
+import { useGChordNavigation } from "@/hooks/useGChordNavigation";
 import { recordPageVisit } from "@/hooks/useRecentPages";
 // MarketTicker removed per Phase 1 directive (Pass 106)
 // Build Loop Pass 9 (G56): the old nav import block, ICON_MAP, getIcon,
@@ -150,46 +150,9 @@ export default function AppShell({ children, title }: AppShellProps) {
     };
   }, [handleTouchStart, handleTouchEnd]);
 
-  // G-then-X keyboard navigation — uses custom shortcuts from Settings
-  // Default navigation targets: "/chat", "/operations", "/intelligence-hub",
-  // "/advisory", "/relationships", "/market-data", "/documents",
-  // "/integrations", "/settings/profile", "/help"
-  const { shortcutMap } = useCustomShortcuts();
-  const gPressedRef = useRef(false);
-  const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Pass 8 (G63): the `useKeyboardShortcuts` hook also attaches a
-      // window keydown listener. Either handler can fire first; skip
-      // if the other already consumed the event.
-      if (e.defaultPrevented) return;
-      const target = e.target as HTMLElement;
-      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
-      const isMod = e.metaKey || e.ctrlKey;
-      if (!isInput && !isMod && !e.shiftKey) {
-        if (e.key.toLowerCase() === "g") {
-          gPressedRef.current = true;
-          if (gTimerRef.current) clearTimeout(gTimerRef.current);
-          gTimerRef.current = setTimeout(() => { gPressedRef.current = false; }, 800);
-          return;
-        }
-        if (gPressedRef.current) {
-          gPressedRef.current = false;
-          if (gTimerRef.current) clearTimeout(gTimerRef.current);
-          const route = shortcutMap.get(e.key.toLowerCase());
-          if (route) {
-            e.preventDefault();
-            navigate(route);
-          }
-        }
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => {
-      window.removeEventListener("keydown", handler);
-      if (gTimerRef.current) clearTimeout(gTimerRef.current);
-    };
-  }, [navigate, shortcutMap]);
+  // v8.2 Pass 2 (G55): Consolidated g-chord handler into useGChordNavigation hook.
+  // Was ~35 lines of inline code duplicated in Chat.tsx — now a single hook.
+  useGChordNavigation();
 
   const userRole = (user as any)?.role || "user";
 

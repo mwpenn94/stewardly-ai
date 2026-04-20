@@ -7,7 +7,7 @@ import { loadCalculatorContext, buildContextOverlay } from "@/lib/calculatorCont
 import { SEOHead } from "@/components/SEOHead";
 import TypingIndicator from "@/components/TypingIndicator";
 import { EmptyConversations } from "@/components/EmptyStates";
-import { useCustomShortcuts } from "@/hooks/useCustomShortcuts";
+import { useGChordNavigation } from "@/hooks/useGChordNavigation";
 import { useSoundCues } from "@/hooks/useSoundCues";
 import { playEarconById } from "@/lib/earcons";
 import { prefetchRoute } from "@/lib/routePrefetch";
@@ -1512,9 +1512,8 @@ export default function Chat() {
   };
 
   // ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
-  const { shortcutMap } = useCustomShortcuts();
-  const gPressedRef = useRef(false);
-  const gTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // v8.2 Pass 2 (G55): G-then-X chord navigation consolidated into hook.
+  useGChordNavigation();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -1522,26 +1521,7 @@ export default function Chat() {
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
       const isMod = e.metaKey || e.ctrlKey;
 
-      // G-then-X navigation — uses custom shortcuts from Settings
-      if (!isInput && !isMod && !e.shiftKey) {
-        if (e.key.toLowerCase() === "g") {
-          gPressedRef.current = true;
-          if (gTimerRef.current) clearTimeout(gTimerRef.current);
-          gTimerRef.current = setTimeout(() => { gPressedRef.current = false; }, 800);
-          return;
-        }
-        if (gPressedRef.current) {
-          gPressedRef.current = false;
-          if (gTimerRef.current) clearTimeout(gTimerRef.current);
-          const route = shortcutMap.get(e.key.toLowerCase());
-          if (route) {
-            e.preventDefault();
-            navigate(route);
-            return;
-          }
-        }
-      }
-
+      // Chat-specific shortcuts (g-chord handled by useGChordNavigation) — uses custom shortcuts from Settings
       // Ctrl/Cmd + Shift + N  → New conversation
       if (isMod && e.shiftKey && e.key.toLowerCase() === "n") {
         e.preventDefault();
@@ -1596,9 +1576,8 @@ export default function Chat() {
     window.addEventListener("keydown", handler);
     return () => {
       window.removeEventListener("keydown", handler);
-      if (gTimerRef.current) clearTimeout(gTimerRef.current);
     };
-  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen, shortcutMap]);
+  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen]);
 
   const handleFeedback = async (messageId: number, rating: "up" | "down") => {
     if (!conversationId) return;

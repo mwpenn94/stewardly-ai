@@ -52,7 +52,8 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
   // ── NAVIGATION ──────────────────────────────────────────
   "navigate.success": (data) => ({
     visual: { type: "page_transition", content: { to: data?.page } },
-    audio: { type: "spoken", text: data?.pageName || "Done" },
+    audio: { type: "sound_effect", soundId: "navigate" },
+    haptic: "light",
   }),
 
   // ── CHAT ────────────────────────────────────────────────
@@ -64,10 +65,12 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
   "chat.streaming_start": () => ({
     visual: { type: "animation", content: { name: "typing-start" } },
     audio: { type: "silent" },
+    haptic: "light",
   }),
   "chat.streaming_end": () => ({
     visual: { type: "animation", content: { name: "typing-end" } },
-    audio: { type: "silent" },
+    audio: { type: "sound_effect", soundId: "receive" },
+    haptic: "light",
   }),
   "chat.error": (data) => {
     const err = getError(data?.code);
@@ -80,6 +83,7 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
   "chat.new_conversation": () => ({
     visual: { type: "animation", content: { name: "fade-in" }, duration: 200 },
     audio: { type: "sound_effect", soundId: "navigate" },
+    haptic: "light",
   }),
 
   // ── LEARNING ────────────────────────────────────────────
@@ -191,12 +195,14 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
   "document.analyzed": (data) => ({
     visual: { type: "toast", content: { variant: "info", title: "Analysis complete", description: `${data?.findings} key findings` } },
     audio: { type: "spoken", text: `Analysis complete. ${data?.findings} key findings. Want me to walk through them?` },
+    haptic: "success",
   }),
 
   // ── AUDIO ───────────────────────────────────────────────
   "audio.speed_changed": (data) => ({
     visual: { type: "toast", content: { variant: "info", title: `Speed: ${data?.speed}x`, duration: 1500 } },
     audio: { type: "spoken", text: `${data?.speed}x` },
+    haptic: "light",
   }),
   "audio.preferences_saved": () => ({
     visual: { type: "toast", content: { variant: "success", title: "Audio preferences saved" } },
@@ -208,24 +214,29 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
   "voice.listening_started": () => ({
     visual: { type: "animation", content: { name: "mic-pulse" }, duration: -1 },
     audio: { type: "sound_effect", soundId: "mic_on" },
+    haptic: "medium",
   }),
   "voice.listening_stopped": () => ({
     visual: { type: "animation", content: { name: "mic-pulse-stop" } },
     audio: { type: "sound_effect", soundId: "mic_off" },
+    haptic: "light",
   }),
   "voice.not_understood": () => ({
     visual: { type: "toast", content: { variant: "muted", title: "Didn't catch that. Try again?" } },
     audio: { type: "spoken", text: "Sorry, I didn't catch that." },
+    haptic: "light",
   }),
 
   // ── CLIENT ──────────────────────────────────────────────
   "client.twin_updated": () => ({
     visual: { type: "toast", content: { variant: "info", title: "Financial twin updated" } },
-    audio: { type: "spoken", text: "Your financial twin has been updated." },
+    audio: { type: "sound_effect", soundId: "correct" },
+    haptic: "success",
   }),
   "client.visibility_changed": (data) => ({
     visual: { type: "toast", content: { variant: "success", title: `Visibility: ${data?.level}` } },
     audio: { type: "spoken", text: `Privacy set to ${data?.level}.` },
+    haptic: "light",
   }),
 
   // ── ADVISOR ─────────────────────────────────────────────
@@ -243,7 +254,8 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
   // ── CALCULATORS ─────────────────────────────────────────
   "calculator.result": (data) => ({
     visual: { type: "inline_data", content: data },
-    audio: { type: "spoken", text: `Result: ${data?.formatted}. ${data?.insight || ""}` },
+    audio: { type: "sound_effect", soundId: "correct" },
+    haptic: "success",
   }),
 
   // ── CODE CHAT ───────────────────────────────────────────
@@ -257,10 +269,12 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
   "handsfree.activated": () => ({
     visual: { type: "toast", content: { variant: "info", title: "Hands-free mode active" } },
     audio: { type: "sound_effect", soundId: "mode_activate" },
+    haptic: "medium",
   }),
   "handsfree.deactivated": () => ({
     visual: { type: "toast", content: { variant: "info", title: "Hands-free mode off" } },
     audio: { type: "sound_effect", soundId: "mode_deactivate" },
+    haptic: "light",
   }),
 
   // ── ONBOARDING ──────────────────────────────────────────

@@ -24,7 +24,8 @@ import { lazy, Suspense, useEffect } from "react";
 import { AudioCompanionProvider } from "./components/AudioCompanion";
 import { PILProvider } from "./components/PlatformIntelligence";
 import { LiveAnnouncer } from "./lib/multisensory/LiveAnnouncer";
-// VisualAnnouncer, IntentRouter, GlobalVoiceButton removed (dead code cleanup Pass 147)
+// VisualAnnouncer, IntentRouter removed (dead code cleanup Pass 147)
+import { GlobalVoiceFAB } from "./components/GlobalVoiceFAB";
 import { useGlobalShortcuts } from "./lib/multisensory/useGlobalShortcuts";
 
 // ── Eagerly loaded (critical path — instant navigation) ──────────────
@@ -414,6 +415,15 @@ function AppContent() {
           Pass 4 (Delight): VisualAnnouncer mirrors LiveAnnouncer with a
           subtle centered toast so sighted users see the same feedback
           screen-reader users hear. */}
+      {/* v8.2 Pass 2 (G38): Global skip-to-content link — works on ALL pages
+          including Chat, Landing, Portal, and other non-AppShell pages.
+          AppShell pages get a second one (harmless — first one wins). */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40 focus:text-sm"
+      >
+        Skip to main content
+      </a>
       <LiveAnnouncer />
       <OfflineBanner />
       <GuestBanner />
@@ -421,6 +431,7 @@ function AppContent() {
       <Router />
       <ConsentBanner />
       {/* GlobalFooter removed permanently — user requested no footer nav */}
+      <GlobalVoiceFAB />
       <ContextualHelp />
       <OnboardingTour isOpen={tourOpen} onComplete={completeTour} />
     </>

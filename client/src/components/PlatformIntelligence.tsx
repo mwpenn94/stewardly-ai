@@ -165,6 +165,7 @@ const SOUNDS: Record<string, () => void> = {
   mic_off: () => playTone(440, 0.05, "sine"),
   mode_activate: () => { playTone(440, 0.08, "sine"); setTimeout(() => playTone(660, 0.08, "sine"), 100); setTimeout(() => playTone(880, 0.12, "sine"), 200); },
   mode_deactivate: () => { playTone(880, 0.08, "sine"); setTimeout(() => playTone(660, 0.08, "sine"), 100); setTimeout(() => playTone(440, 0.12, "sine"), 200); },
+  receive: () => { playTone(523, 0.06, "sine"); setTimeout(() => playTone(659, 0.08, "sine"), 80); },
 };
 
 /* ── Web Speech TTS ────────────────────────────────────────────── */

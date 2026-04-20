@@ -7424,3 +7424,20 @@
 - [x] Add "Recently Used" quick-access section at top of sidebar
 - [x] Show visit count badges on frequently used panels
 - [x] Write tests for all 3 features (15/15 passing)
+
+## v8.2 Continuous Build Loop
+
+### v8.2 Pass 1 — PIL Gap Closures (G21, G23, G24)
+- [x] G21: Add haptic fields to all 38 feedback specs (14 were missing)
+- [x] G23: Add earcon sound_effect entries to navigation, chat streaming, calculator results, client twin updates; add 'receive' sound to SOUNDS map
+- [x] G24: Create GlobalVoiceFAB component — floating hands-free button on all non-chat pages with Shift+V hint
+- [x] Write 18 vitest tests for v8.2 Pass 1 (all passing)
+
+### v8.2 Pass 2 — PARITY Gap Closures (G16, G36, G38, G48, G55)
+- [x] G16: Confirm voice command palette already implemented in PlatformIntelligence
+- [x] G36: Confirm role=tablist handled by shadcn Tabs; bespoke tabs verified
+- [x] G38: Add global skip-to-content link in App.tsx (sr-only/focus:not-sr-only pattern)
+- [x] G48: Confirm ::selection styling already implemented in index.css
+- [x] G55: Create useGChordNavigation hook consolidating duplicate g-chord handlers from AppShell.tsx and Chat.tsx
+- [x] Write 12 vitest tests for v8.2 Pass 2 (all passing)
+- [x] Update PARITY.md — mark G16, G21, G23, G24, G36, G38, G48, G55 as done

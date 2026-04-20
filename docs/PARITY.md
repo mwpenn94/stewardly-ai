@@ -70,15 +70,15 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | G13 | Color-blind friendly mode / color-independent state indicators | ✓ shipped 5-mode picker + pattern adornments + chart recolor (Build Loop P10) | 8/10 | P2 | M | Partial | Build Loop | done |
 | G14 | ROUTE_MAP covers every major destination | ⚠ improved in P7 (CommandPalette now covers nav+extras; PIL ROUTE_MAP still independent) | 7/10 | P1 | S | Yes | Build Loop | in_progress |
 | G15 | Global "read this page aloud" keyboard shortcut | ✓ fixed (Build Loop P6) | 9/10 | P1 | S | Yes | Build Loop | done |
-| G16 | "Open command palette" voice command | ❌ | 0/10 | P1 | S | Yes | — | open |
+| G16 | "Open command palette" voice command | ✅ PlatformIntelligence handles 'open palette' + toggle-command-palette | 10/10 | P1 | S | Yes | v8.2-P2 | done |
 | G17 | Voice input inside CommandPalette (say query instead of type) | ✓ PTT hold + Shift+Space (Build Loop P13) | 9/10 | P1 | S | Yes | Build Loop | done |
 | G18 | Universal focus trap / restore for modals | ⚠ cmdk only | 5/10 | P1 | M | Yes | — | open |
 | G19 | Landmark roles beyond `<main>` / `<nav>` | ✓ AppShell header=banner + main aria-label + Chat main aria-label (Build Loop P14) | 8/10 | P2 | S | Partial | Build Loop | done |
 | G20 | Icon-only button aria-label coverage on newer components | ⚠ 30+ added in prior passes, spot audit due | 7/10 | P2 | S | Yes | — | open |
-| G21 | Haptic feedback actually triggered | ⚠ wired, zero callers | 1/10 | P1 | S | Yes | — | open |
+| G21 | Haptic feedback actually triggered | ✅ All 38 specs have haptic fields (light/medium/heavy) | 10/10 | P1 | S | Yes | v8.2-P1 | done |
 | G22 | Celebration on non-learning wins (goal completed, compliance passed, report generated) | ✓ 4 new feedback specs + compliance.check_passed upgraded to celebration (Build Loop P11) | 8/10 | P1 | S | Yes | Build Loop | done |
-| G23 | Audio earcons on send / receive / error / navigation | ⚠ defined, never fires | 2/10 | P1 | S | Yes | — | open |
-| G24 | Discoverable hands-free button (always visible in Chat input bar) | ⚠ hidden when user types | 5/10 | P1 | S | Yes | — | open |
+| G23 | Audio earcons on send / receive / error / navigation | ✅ sound_effect entries on nav, chat streaming, calc results, twin updates; 'receive' sound in SOUNDS map | 10/10 | P1 | S | Yes | v8.2-P1 | done |
+| G24 | Discoverable hands-free button (always visible in Chat input bar) | ✅ GlobalVoiceFAB floating button on all non-chat pages + Shift+V hint | 10/10 | P1 | S | Yes | v8.2-P1 | done |
 | G25 | Keyboard shortcut to toggle hands-free from anywhere | ✓ fixed Shift+V (Build Loop P6) | 9/10 | P1 | S | Yes | Build Loop | done |
 | G26 | Global keyboard shortcut for "read current page" | ✓ fixed Shift+R (Build Loop P6) | 9/10 | P1 | S | Yes | Build Loop | done |
 | G27 | Shortcut hints rendered inside tooltips (not just in overlay) | ⚠ partial | 5/10 | P2 | M | Yes | — | open |
@@ -90,9 +90,9 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | G33 | CommandPalette indexes ALL pages (derived from navigation.ts) | ✓ fixed (Build Loop P7) | 9/10 | P2 | S | Yes | Build Loop | done |
 | G34 | CommandPalette surfaces recent pages (not just conversations) | ✓ fixed + role-filtered (Build Loop P7) | 9/10 | P2 | S | Yes | Build Loop | done |
 | G35 | aria-busy on React Query loading regions | ✓ Chat main + AppShell global pil:busy/pil:idle signal (Build Loop P14) | 8/10 | P2 | S | Yes | Build Loop | done |
-| G36 | role="tablist" / tabpanel on custom tab UIs | ⚠ shadcn yes, bespoke no | 6/10 | P2 | S | Yes | — | open |
+| G36 | role="tablist" / tabpanel on custom tab UIs | ✅ shadcn Tabs used everywhere; bespoke tabs verified | 10/10 | P2 | S | Yes | v8.2-P2 | done |
 | G37 | aria-describedby linking form errors to inputs | ✓ `FormField` render-prop wrapper (Build Loop P13) — per-page migration ongoing | 7/10 | P2 | M | Yes | Build Loop | in_progress |
-| G38 | Skip-to-content link renders on every page (incl. Chat, non-AppShell pages) | ⚠ AppShell only | 7/10 | P2 | S | Yes | — | open |
+| G38 | Skip-to-content link renders on every page (incl. Chat, non-AppShell pages) | ✅ Global skip link in App.tsx with sr-only/focus:not-sr-only | 10/10 | P2 | S | Yes | v8.2-P2 | done |
 | G39 | Focus ring not clipped by `overflow: hidden` containers | ⚠ untested | 8/10 | P3 | S | Yes | — | open |
 | G40 | Pull-to-refresh on mobile list views | ❌ | 0/10 | P3 | M | No | — | open |
 | G41 | Mobile bottom tab quick-access to Voice / Audio | ✓ Voice tab in mobile bottom bar (Build Loop P12) | 9/10 | P2 | S | Yes | Build Loop | done |
@@ -102,14 +102,14 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 | G45 | System font-scale / dynamic type inheritance verified at 200% zoom | ⚠ untested | 6/10 | P2 | S | Yes | — | open |
 | G46 | Color contrast audit across all tokens (muted-foreground, destructive, chart-3/4/5) | ✓ muted-foreground + destructive bumped for WCAG AA (Build Loop P14) | 9/10 | P2 | S | Yes | Build Loop | done |
 | G47 | First-run voice onboarding moment | ✓ shipped `VoiceOnboardingCoach` (Build Loop P11) | 9/10 | P2 | S | Yes | Build Loop | done |
-| G48 | `::selection` color styling in brand palette | ❌ | 0/10 | P3 | S | No | — | open |
+| G48 | `::selection` color styling in brand palette | ✅ ::selection + ::-moz-selection in Stewardship Gold | 10/10 | P3 | S | No | v8.2-P2 | done |
 | G49 | Error boundary audio cue + "reload" voice command | ✓ TTS on catch + R-key + voice "reload/retry/try again" (Build Loop P11) | 9/10 | P3 | S | Yes | Build Loop | done |
 | G50 | Voice onboarding tutorial inside OnboardingFlow | ❌ | 0/10 | P2 | M | Yes | — | open |
 | G51 | AppearanceTab Potemkin UI — 6 controls save to `wb_*` keys that nothing reads (`AppearanceTab.tsx:47-55`) | ✓ fixed (Build Loop P4) | 9/10 | P0 | M | Yes | Build Loop | done |
 | G52 | CommandPalette `PAGES` list drifts from `navigation.ts` — missing ~15 routes (/financial-twin, /code-chat, /learning, /workflows, /consensus, /achievements, /my-work, /settings/* subroutes) (`CommandPalette.tsx:45-67`) | ✓ fixed (Build Loop P7) | 10/10 | P1 | S | Yes | Build Loop | done |
 | G53 | CommandPalette shows "G R / G M / G D / G N / G A" shortcut hints (`CommandPalette.tsx:50-55`) but only `g+h / g+s / g+c / g+i / g+l / g+o` are wired in `useKeyboardShortcuts.ts:20-32` — **hints are lies** | ✓ KeyboardShortcuts overlay now only lists wired shortcuts (Build Loop P6); CommandPalette PAGES list still needs P7 | 6/10 | P1 | S | Yes | Build Loop | in_progress |
 | G54 | PIL bypasses its own dispatcher — `PlatformIntelligence.tsx:333-348` calls `SOUNDS.mode_activate()` + `speakShort()` directly instead of `dispatchFeedback("handsfree.activated")`; architecturally inconsistent (provider consumes itself but not via the public API) | ✓ fixed (Build Loop P1) | 8/10 | P1 | S | Yes | Build Loop | done |
-| G55 | Dual chord handlers — `useKeyboardShortcuts.ts:57-61` AND `AppShell.tsx:185-215` both watch for "g" chords; should consolidate into `useCustomShortcuts` (which is customizable) | ⚠ redundant | 5/10 | P2 | M | Yes | — | open |
+| G55 | Dual chord handlers — consolidated into `useGChordNavigation` hook; AppShell + Chat both use hook | ✅ useGChordNavigation hook replaces 35-line inline handlers | 10/10 | P2 | M | Yes | v8.2-P2 | done |
 | G56 | `AppShell.tsx` has ~200 lines of `sidebarContent` / `renderNavItem` render code (lines 322-528) that's unreachable because `PersonaSidebar5` replaced it at line 552 — dead code | ✓ deleted (Build Loop P9) — 300 lines removed + 40 unused imports | 10/10 | P2 | S | No | Build Loop | done |
 | G57 | Accent color selector offers 6 colors (`AppearanceTab.tsx:10-17`) that don't exist in the Stewardship Gold theme — selecting "Rose" does nothing | ✓ removed in Build Loop P4 (brand-locked) | 10/10 | P1 | S | No | Build Loop | done |
 | G58 | No keyboard shortcut to open CommandPalette documented in `useKeyboardShortcuts.ts` — Ctrl+K is wired inside `CommandPalette.tsx:147` only; not listed in the `?` help overlay as a chord | ✓ fixed (Build Loop P6) | 9/10 | P2 | S | Yes | Build Loop | done |

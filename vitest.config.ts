@@ -59,6 +59,10 @@ export default defineConfig({
       "client/src/hooks/__tests__/useUndoHistory.test.ts",
       // v8 Pass 5: session replay timeline, bulk export, panel analytics
       "client/src/pages/__tests__/v8-pass5-features.test.ts",
+      // v8.2 Pass 1: PIL gap closure (G21 haptic, G23 earcons, G24 GlobalVoiceFAB)
+      "client/src/pages/__tests__/v82-pass1-pil-gaps.test.ts",
+      // v8.2 Pass 2: PARITY gap closures (G16, G36, G38, G48, G55)
+      "client/src/pages/__tests__/v82-pass2-parity.test.ts",
     ],
   },
 });
