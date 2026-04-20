@@ -75,6 +75,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass5-parity.test.ts",
       // v8.3 Pass 6: G29 pause/resume, G30 download audio, G39 focus ring, G43 streaming tick, G1 feedback, G53 shortcuts, G59 Firefox
       "client/src/pages/__tests__/v83-pass6-parity.test.ts",
+      // v8.3 Pass 7: G6 full-duplex voice, G31 i18n framework
+      "client/src/pages/__tests__/v83-pass7-parity.test.ts",
     ],
   },
 });

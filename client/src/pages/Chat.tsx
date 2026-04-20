@@ -52,6 +52,8 @@ import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
 import { useTTS } from "@/hooks/useTTS";
 import { detectStt, type SttCapabilities } from "@/lib/sttSupport";
 import { VoiceSupportBanner } from "@/components/VoiceSupportBanner";
+import { useConversationalVoice } from "@/hooks/useConversationalVoice";
+import { ConversationalVoiceOverlay } from "@/components/ConversationalVoiceOverlay";
 import { useFocusOnRouteChange } from "@/hooks/useFocusOnRouteChange";
 import {
   createAnnouncerState,
@@ -268,6 +270,8 @@ export default function Chat() {
 
   // ─── HANDS-FREE & VOICE STATE ──────────────────────────────────
   const [handsFreeActive, setHandsFreeActive] = useState(false);
+  // G6: Full-duplex conversational voice mode
+  const [conversationalActive, setConversationalActive] = useState(false);
   // Pass 2 (G59 — cross-browser STT silent-fail): probe capabilities on
   // mount so we know whether to offer continuous listening, PTT-only, or
   // nothing at all. Users of Firefox / Safari iOS deserve an actual banner
@@ -388,6 +392,49 @@ export default function Chat() {
     (isStreaming || processingRef.current) ? "processing" :
     voice.isListening ? "listening" :
     "idle";
+
+  // ─── G6: FULL-DUPLEX CONVERSATIONAL VOICE ─────────────────────
+  const conversational = useConversationalVoice({
+    onTranscript: useCallback((text: string) => {
+      // Send the transcript as a chat message
+      handleSendRef.current?.(text);
+    }, []),
+    onBargeIn: useCallback(() => {
+      // Cancel TTS and abort streaming
+      tts.cancel();
+      if (streamAbortRef.current) streamAbortRef.current.abort();
+    }, [tts]),
+    onStateChange: useCallback((s: import("@/hooks/useConversationalVoice").ConversationalState) => {
+      // Sync with PIL
+      if (s === "listening") pil.giveFeedback("voice.listening_started");
+      if (s === "idle") pil.giveFeedback("voice.listening_stopped");
+    }, [pil]),
+    sttSupported: sttAnySupport,
+  });
+
+  // Sync TTS state with conversational mode
+  useEffect(() => {
+    if (!conversationalActive) return;
+    if (tts.isSpeaking) conversational.notifySpeaking();
+    else if (!isStreaming) conversational.notifyDoneSpeaking();
+  }, [conversationalActive, tts.isSpeaking, isStreaming, conversational]);
+
+  const toggleConversational = useCallback(() => {
+    if (conversationalActive) {
+      conversational.stop();
+      setConversationalActive(false);
+      tts.cancel();
+    } else {
+      if (!sttAnySupport) {
+        toast.error("Voice not supported in this browser");
+        return;
+      }
+      setConversationalActive(true);
+      setTtsEnabled(true);
+      conversational.start();
+      toast.success("Conversational voice mode active", { description: "Speak naturally — I'll listen and respond" });
+    }
+  }, [conversationalActive, conversational, sttAnySupport, tts]);
 
   // ─── ANONYMOUS MODE ──────────────────────────────────────────
   // Clear anonymousMode flag once user authenticates to prevent stale anonymous state
@@ -3289,20 +3336,34 @@ export default function Chat() {
                   <PhoneOff className="w-5 h-5" />
                 </Button>
               ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       size="icon"
                       variant="ghost"
                       className="h-10 w-10 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
-                      onClick={toggleHandsFree}
-                      aria-label="Start hands-free voice mode"
+                      aria-label="Voice mode options"
                     >
                       <AudioLines className="w-5 h-5" />
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Start hands-free voice</TooltipContent>
-                </Tooltip>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={toggleHandsFree} className="gap-2">
+                      <AudioLines className="w-4 h-4" />
+                      <div>
+                        <div className="font-medium">Hands-Free</div>
+                        <div className="text-xs text-muted-foreground">Listen → respond → repeat</div>
+                      </div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={toggleConversational} className="gap-2">
+                      <Phone className="w-4 h-4" />
+                      <div>
+                        <div className="font-medium">Conversational</div>
+                        <div className="text-xs text-muted-foreground">Full-duplex — speak anytime</div>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>
@@ -3362,6 +3423,17 @@ export default function Chat() {
 
       {/* Mobile bottom tab bar REMOVED PERMANENTLY — user requested no footer nav.
            Navigation is handled by the sidebar (hamburger menu on mobile). */}
+
+      {/* G6: Full-duplex conversational voice overlay */}
+      {conversationalActive && (
+        <ConversationalVoiceOverlay
+          state={conversational.state}
+          vadLevel={conversational.vadLevel}
+          interimTranscript={conversational.interimTranscript}
+          lastAssistantText={messages.length > 0 ? messages[messages.length - 1]?.content : undefined}
+          onClose={toggleConversational}
+        />
+      )}
     </div>
   );
 }

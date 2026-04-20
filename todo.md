@@ -7519,30 +7519,30 @@
 - [ ] G31: i18n library + translation key extraction
 - [ ] Remaining P3 items as time allows
 - [ ] Pass 6 LVUA: Final comprehensive validation
-- [ ] Pass 6 tests + PARITY update + checkpoint
+- [x] Pass 6 tests: 29 new tests + PARITY updated + checkpoint 9a79f026
 
 ### v8.3 Pass 6 — Close in_progress + P2/P3 aligned gaps
-- [ ] G1: Complete multisensory feedback wiring — audit remaining 28 unused specs, wire top consumers
-- [ ] G53: Fix CommandPalette shortcut hints — sync PAGES list with navigation.ts (P7 leftover)
-- [ ] G59: Firefox/Safari STT compatibility — ensure all voice consumers show VoiceSupportBanner
-- [ ] Edge TTS voice selection — expose voice picker in Settings (Guy, Jenny, Aria, etc.)
-- [ ] G39: Focus ring overflow:hidden audit — test and fix clipped focus rings
-- [ ] G43: Audible token-streaming tick — subtle audio cue during SSE streaming
-- [ ] G29: TTS resume-from-position across page reloads — persist position in sessionStorage
-- [ ] G30: Download TTS audio as MP3 — add download button on TTS player
-- [ ] MOBILE-0016: Final verification — confirm all overlaps resolved
+- [x] G1: Multisensory feedback — wired 4 more specs (achievement_earned, streak_milestone, mastered, flag_raised). 30/39 total, 9 deferred (no trigger point)
+- [x] G53: Confirmed WIRED_G_CHORDS accurate — only wired shortcuts shown
+- [x] G59: All voice consumers handle Firefox gracefully (toast error, silent return, button hidden)
+- [x] Edge TTS voice selection — already fully implemented (VoiceTab, 18+ voices, localStorage+server sync)
+- [x] G39: Verified box-shadow focus rings not clipped by overflow:hidden
+- [x] G43: useSoundCues.playStreaming() with 200ms throttle in SSE handler
+- [x] G29: pause()/resume() in useTTS for Edge audio + browser SpeechSynthesis, UI button in hands-free bar
+- [x] G30: downloadAudio() stores Edge TTS blob, per-message download button
+- [x] MOBILE-0016: Fully closed — touch targets, responsive padding, no duplicate breadcrumb
 - [ ] PARITY-DATA-0003: Document required API keys in admin UI
 - [ ] PARITY-DATA-0004: Improvement engine data signal stubs
 - [ ] PARITY-TYPE-0005: modelEngine.ts double-cast cleanup
-- [ ] Pass 6 LVUA: Live browser validation across personas
-- [ ] Pass 6 tests + PARITY update + checkpoint
+- [x] Pass 6 LVUA: 11/12 passed, 0 JS errors
+- [x] Pass 6 tests: 29 new tests + PARITY updated + checkpoint 9a79f026
 
 ### v8.3 Pass 7 — XL features + convergence
-- [ ] G6: Full-duplex voice mode (WebRTC/WebSocket real-time)
-- [ ] G31: i18n framework + translation key extraction
-- [ ] G32: RTL support (if time allows)
-- [ ] G40: Pull-to-refresh on mobile list views
-- [ ] Pass 7 LVUA + tests + checkpoint
+- [x] G6: Full-duplex voice — useConversationalVoice hook + ConversationalVoiceOverlay (animated orb, VAD, barge-in, state machine). Voice mode dropdown.
+- [x] G31: i18n — i18next + react-i18next + browser language detection. 130+ keys EN + ES. LanguageTab in Settings.
+- [ ] G32: RTL support (deferred — P3, low priority)
+- [ ] G40: Pull-to-refresh (deferred — P3, not aligned)
+- [x] Pass 7 LVUA: 10/10 passed, 0 JS errors + 16 new tests
 
 ### v8.3 Pass 8+ — Convergence passes
 - [ ] Reassess all PARITY items

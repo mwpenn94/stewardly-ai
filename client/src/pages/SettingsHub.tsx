@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Brain, Shield, FileText, Sparkles, User,
-  Loader2, Settings2, Bell, Palette, Mic, Link2, Keyboard,
+  Loader2, Settings2, Bell, Palette, Mic, Link2, Keyboard, Globe,
   PanelLeftClose, PanelLeftOpen, ChevronRight, Home,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
@@ -27,8 +27,9 @@ import DataSharingTab from "./settings/DataSharingTab";
 import VoiceTab from "./settings/VoiceTab";
 import ConnectedAccountsTab from "./settings/ConnectedAccountsTab";
 import ShortcutsTab from "./settings/ShortcutsTab";
+import { LanguageTab } from "./settings/LanguageTab";
 
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts" | "shortcuts";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts" | "shortcuts" | "language";
 
 interface NavItem { id: SettingsTab; label: string; icon: React.ElementType; slug: string; }
 interface NavSection { group: string; items: NavItem[]; }
@@ -49,6 +50,7 @@ const NAV_SECTIONS: NavSection[] = [
     { id: "appearance", label: "Appearance", icon: Palette, slug: "appearance" },
     { id: "guest-prefs", label: "Guest Preferences", icon: Sparkles, slug: "guest-prefs" },
     { id: "shortcuts", label: "Keyboard Shortcuts", icon: Keyboard, slug: "shortcuts" },
+    { id: "language" as SettingsTab, label: "Language", icon: Globe, slug: "language" },
   ]},
   { group: "Privacy", items: [
     { id: "privacy", label: "Privacy & Data", icon: Shield, slug: "privacy" },
@@ -57,7 +59,7 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 const ALL_ITEMS = NAV_SECTIONS.flatMap(s => s.items);
-const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs", "voice", "shortcuts"];
+const ANONYMOUS_TABS: SettingsTab[] = ["appearance", "guest-prefs", "voice", "shortcuts", "language"];
 
 export default function SettingsHub() {
   const { user, loading } = useAuth();
@@ -231,6 +233,7 @@ export default function SettingsHub() {
                 {activeTab === "privacy" && <PrivacyDataTab />}
                 {activeTab === "data-sharing" && <DataSharingTab />}
                 {activeTab === "shortcuts" && <ShortcutsTab />}
+                {activeTab === "language" && <LanguageTab />}
               </>
             )}
           </div>

@@ -12,6 +12,8 @@ import { ServiceStatusProvider } from "@/contexts/ServiceStatusContext";
 import { initErrorTracking } from "@/lib/errorTracking";
 import { initPerformanceMonitor } from "@/lib/performanceMonitor";
 import "./index.css";
+// G31: i18n initialization (must be before App)
+import "@/lib/i18n";
 
 // Initialize global error tracking & performance monitoring
 initErrorTracking();
