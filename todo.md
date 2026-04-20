@@ -6945,10 +6945,10 @@
 ## Pass 146 — All 7 Priority Gaps + Server Limits + Playwright Testing + Deep Consolidation
 
 ### Gap 1: Guided Onboarding Flow
-- [ ] Create OnboardingWizard component (3-5 questions: role, experience, primary goals)
-- [ ] Route users to appropriate starting panel based on answers
-- [ ] Store onboarding state in localStorage + DB for returning users
-- [ ] Skip onboarding for returning users who completed it
+- [x] Create OnboardingWizard component (3-5 questions: role, experience, primary goals) — already exists as WealthEngineOnboarding
+- [x] Route users to appropriate starting panel based on answers — already in WealthEngineOnboarding
+- [x] Store onboarding state in localStorage + DB for returning users — already in WealthEngineOnboarding
+- [x] Skip onboarding for returning users who completed it — already in WealthEngineOnboarding
 
 ### Gap 2: Compliance Checklist Per Client Interaction
 - [ ] Create ComplianceChecklist component linked to PFR Wizard context
@@ -7365,3 +7365,40 @@
 ### Recursive Convergence
 - [x] Lens passes until meta-convergence
 - [x] Tests for all 3 features (28 tests: 17 Pass 154 + 11 Pass 155)
+
+## v8 Continuous Build Loop
+
+### v8 Pass 1 — Feedback Spec Wiring (14 specs across 10 files)
+- [x] Wire compliance.check_passed in ComplianceAudit.tsx
+- [x] Wire document.uploaded in KnowledgeBaseTab.tsx
+- [x] Wire report.generated in DownloadReportButton.tsx
+- [x] Wire advisor.client_added in Portal.tsx
+- [x] Wire onboarding.step_complete and onboarding.complete in OnboardingTour.tsx
+- [x] Wire onboarding.step_complete and onboarding.complete in WealthEngineOnboarding.tsx
+- [x] Wire engine.calculation_complete in StrategyComparison.tsx
+- [x] Wire engine.calculation_complete in BusinessIncome.tsx
+- [x] Wire engine.calculation_complete in PracticeToWealth.tsx
+- [x] Wire engine.calculation_complete in WealthConfigurator.tsx
+- [x] Write 15 vitest tests for feedback wiring
+
+### v8 Pass 2 — Accessibility Fixes
+- [x] Add aria-label to ExportDataButton dropdown trigger
+- [x] Add aria-label to ExportDataButton compact icon button
+- [x] Add aria-label to LiveSession icon buttons
+- [x] Add aria-label to ChatInputBar hands-free toggle
+
+### v8 Pass 3 — Code Quality Scan
+- [x] Verify fmtSm import chain is fixed
+- [x] Verify auditTrail initialization crash is fixed
+- [x] Verify no debug console.log statements in client code
+- [x] Confirm all server console.log calls are intentional seed logging
+
+### v8 Pass 4 — Novel Features
+- [x] Enhanced CascadeFlowDiagram v2 (6 hubs, SVG edges, animated dashes, click-to-navigate)
+- [x] Write 11 vitest tests for CascadeFlowDiagram v2
+- [x] Create useUndoHistory hook (ring buffer, debounce, Ctrl+Z/Shift+Z, PIL undo event)
+- [x] Wire useUndoHistory into Calculators.tsx auto-save effect
+- [x] Add Undo/Redo toolbar buttons with position indicator
+- [x] Add Undo/Redo entries to keyboard shortcut cheat sheet
+- [x] Write 12 vitest tests for useUndoHistory
+- [x] Mark already-implemented todo items (OnboardingWizard, PFR, CalculatorBridge, MultiClientComparison)

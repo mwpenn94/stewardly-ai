@@ -26,6 +26,7 @@ import {
   MessageSquare, FileText, Activity,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 // ─── TYPES ──────────────────────────────────────────────────────────
 
@@ -102,6 +103,7 @@ export default function Portal() {
       setShowAddClient(false);
       setAddClientSearch("");
       toast.success("Client added successfully");
+      sendFeedback("advisor.client_added", { name: "client" });
     },
     onError: (e) => toast.error(e.message),
   });

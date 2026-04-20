@@ -4,6 +4,7 @@
  * with spotlight highlighting and contextual tooltips.
  */
 import { useState, useEffect, useCallback, useRef } from "react";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -225,8 +226,10 @@ export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
 
   const handleNext = useCallback(() => {
     if (currentStep < TOUR_STEPS.length - 1) {
+      sendFeedback("onboarding.step_complete");
       setCurrentStep(c => c + 1);
     } else {
+      sendFeedback("onboarding.complete", { persona: "tour" });
       onComplete();
     }
   }, [currentStep, onComplete]);

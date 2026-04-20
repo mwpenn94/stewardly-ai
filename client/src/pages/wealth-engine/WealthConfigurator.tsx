@@ -25,6 +25,7 @@ import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 
@@ -155,6 +156,7 @@ export default function WealthConfigurator({ embedded = false }: { embedded?: bo
       persistUWEResult(strategy, sim.data);
       setActiveTab("results");
       toast.success(`${strategy.companyName} — ${sim.data.length} year projection complete`);
+      sendFeedback("engine.calculation_complete", { summary: `${strategy.companyName} projection complete` });
     } catch {
       // error handled by mutation onError
     }
@@ -168,6 +170,7 @@ export default function WealthConfigurator({ embedded = false }: { embedded?: bo
       persistUWEResult(strategy, sim.data);
       setActiveTab("results");
       toast.success(`Best Overall — ${sim.data.length} year projection complete`);
+      sendFeedback("engine.calculation_complete", { summary: "Best Overall projection complete" });
     } catch {
       // error handled by mutation onError
     }
@@ -192,6 +195,7 @@ export default function WealthConfigurator({ embedded = false }: { embedded?: bo
       });
       setActiveTab("montecarlo");
       toast.success("Monte Carlo simulation complete — 1,000 trials");
+      sendFeedback("engine.calculation_complete", { summary: "Monte Carlo simulation complete" });
     } catch {
       // error handled by mutation onError
     }

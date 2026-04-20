@@ -126,7 +126,7 @@ export function ExportDataButton({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" disabled={disabled || exporting || !data.length}>
+          <Button variant="outline" size="icon" aria-label="Export data" disabled={disabled || exporting || !data.length}>
             <Download className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

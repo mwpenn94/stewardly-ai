@@ -12,6 +12,7 @@
  * Persists completion in localStorage so it only shows once.
  */
 import { useState, useCallback } from 'react';
+import { sendFeedback } from '@/lib/feedbackSpecs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -222,6 +223,7 @@ export function WealthEngineOnboarding({ onComplete, onSkip }: Props) {
     try { localStorage.setItem('wb-onboarding-complete', 'true'); } catch {}
     try { localStorage.setItem('wb-onboarding-role', role); } catch {}
     try { localStorage.setItem('wb-onboarding-experience', experience); } catch {}
+    sendFeedback('onboarding.complete', { persona: role });
     onComplete({
       role,
       experience,

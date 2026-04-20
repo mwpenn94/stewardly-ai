@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import AppShell from "@/components/AppShell";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
 
@@ -67,8 +68,14 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
   const [channelBudgets, setChannelBudgets] = useState<Record<string, number>>({});
 
   // Mutations
-  const simMutation = trpc.calculatorEngine.bieSimulate.useMutation({ onError: (e) => toast.error(e.message) });
-  const backPlanMutation = trpc.calculatorEngine.bieBackPlan.useMutation({ onError: (e) => toast.error(e.message) });
+  const simMutation = trpc.calculatorEngine.bieSimulate.useMutation({
+    onSuccess: () => sendFeedback("engine.calculation_complete", { summary: "Business income simulation complete" }),
+    onError: (e) => toast.error(e.message),
+  });
+  const backPlanMutation = trpc.calculatorEngine.bieBackPlan.useMutation({
+    onSuccess: () => sendFeedback("engine.calculation_complete", { summary: "Back-plan calculation complete" }),
+    onError: (e) => toast.error(e.message),
+  });
 
   function runSimulation() {
     const team = teamSize > 0

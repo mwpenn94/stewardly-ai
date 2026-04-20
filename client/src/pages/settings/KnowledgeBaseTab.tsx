@@ -13,6 +13,7 @@ import {
   Eye, EyeOff, Shield, Users, Lock, Sparkles,
 } from "lucide-react";
 import { useState, useRef, useCallback, lazy, Suspense } from "react";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 // DocumentAnnotations removed (dead code cleanup Pass 147)
 
 const STATUS_MAP: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
@@ -76,6 +77,7 @@ export default function KnowledgeBaseTab() {
       utils.documents.list.invalidate();
       const catLabel = CATEGORIES.find(c => c.value === data.category)?.label || data.category;
       toast.success(`Uploaded — AI categorized as "${catLabel}"`);
+      sendFeedback("document.uploaded", { filename: data.filename || "document" });
       setUploadCount(prev => {
         const next = prev - 1;
         if (next <= 0) setUploading(false);

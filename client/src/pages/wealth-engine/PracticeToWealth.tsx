@@ -11,6 +11,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { toast } from "sonner";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,8 +65,14 @@ export default function PracticeToWealthPage({ embedded = false }: { embedded?: 
     [age],
   );
 
-  const bizProject = trpc.wealthEngine.projectBizIncome.useMutation({ onError: (e) => toast.error(e.message) });
-  const holisticSim = trpc.wealthEngine.holisticSimulate.useMutation({ onError: (e) => toast.error(e.message) });
+  const bizProject = trpc.wealthEngine.projectBizIncome.useMutation({
+    onSuccess: () => sendFeedback("engine.calculation_complete", { summary: "Business income projection complete" }),
+    onError: (e) => toast.error(e.message),
+  });
+  const holisticSim = trpc.wealthEngine.holisticSimulate.useMutation({
+    onSuccess: () => sendFeedback("engine.calculation_complete", { summary: "Holistic wealth simulation complete" }),
+    onError: (e) => toast.error(e.message),
+  });
 
   const onRun = async () => {
     // recentCalculators tracking removed (dead code cleanup Pass 147)

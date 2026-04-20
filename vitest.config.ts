@@ -51,6 +51,12 @@ export default defineConfig({
       "client/src/pages/__tests__/calculators-pass154.test.ts",
       // Pass 155: drag-reorder, shortcut modal, compare diff highlights
       "client/src/pages/__tests__/calculators-pass155.test.ts",
+      // v8 Pass 1: feedback spec wiring verification
+      "client/src/pages/__tests__/feedback-wiring-v8p1.test.ts",
+      // v8 Pass 4: CascadeFlowDiagram v2 (6-hub SVG)
+      "client/src/pages/__tests__/cascade-flow-v8p4.test.ts",
+      // v8 Pass 4: useUndoHistory ring buffer
+      "client/src/hooks/__tests__/useUndoHistory.test.ts",
     ],
   },
 });

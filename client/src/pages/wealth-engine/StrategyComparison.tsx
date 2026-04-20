@@ -22,6 +22,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { toast } from "sonner";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import AppShell from "@/components/AppShell";
 import { SectionErrorBoundary } from "@/components/SectionErrorBoundary";
 import { trpc } from "@/lib/trpc";
@@ -168,6 +169,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
   );
 
   const compare = trpc.wealthEngine.holisticCompare.useMutation({
+    onSuccess: () => sendFeedback("engine.calculation_complete", { summary: "Strategy comparison complete" }),
     onError: () => toast.error("Strategy comparison failed — please try again"),
   });
 

@@ -17,6 +17,7 @@
  *     with a clarifying tooltip instead of a toast that misleads
  */
 import { useMemo, useState, useCallback } from "react";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 import { SEOHead } from "@/components/SEOHead";
 import { FinancialScoreCard } from "@/components/FinancialScoreCard";
 import AppShell from "@/components/AppShell";
@@ -100,12 +101,14 @@ export default function ComplianceAudit({ embedded = false }: { embedded?: boole
       setReviewContent("");
       setShowReviewForm(false);
       import("sonner").then(m => m.toast.success("Content submitted for compliance review"));
+      sendFeedback("compliance.check_passed");
     },
     onError: (e) => import("sonner").then(m => m.toast.error(e.message)),
   });
   const regBIMutation = trpc.compliance.generateRegBIDoc.useMutation({
     onSuccess: (data) => {
       import("sonner").then(m => m.toast.success("Reg BI document generated"));
+      sendFeedback("compliance.check_passed");
     },
     onError: (e) => import("sonner").then(m => m.toast.error(e.message)),
   });

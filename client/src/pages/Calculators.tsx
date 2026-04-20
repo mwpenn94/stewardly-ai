@@ -28,7 +28,7 @@ import {
   Database, Zap, Sparkles, ShieldCheck,
   ClipboardList, FileBarChart, UsersRound, Search, Star,
   Banknote, Crown, SlidersHorizontal,
-  Home, Columns2, GripVertical, HelpCircle, Keyboard
+  Home, Columns2, GripVertical, HelpCircle, Keyboard, Undo2, Redo2
 } from 'lucide-react';
 
 import {
@@ -63,6 +63,7 @@ import {
 import { SEOHead } from "@/components/SEOHead";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { usePanelOrder } from '@/hooks/usePanelOrder';
+import { useUndoHistory } from '@/hooks/useUndoHistory';
 import { CompareDiffOverlay, type MetricSnapshot } from '@/components/CompareDiffOverlay';
 import { WealthEngineOnboarding, type OnboardingResult } from './calculators/WealthEngineOnboarding';
 import { ComplianceChecklist } from './calculators/ComplianceChecklist';
@@ -287,6 +288,9 @@ export default function Calculators() {
 
   /* ─── KEYBOARD SHORTCUT CHEAT SHEET (Pass 155) ─── */
   const [showShortcuts, setShowShortcuts] = useState(false);
+
+  /* ─── UNDO/REDO HISTORY (v8 Pass 4) ─── */
+  const undoHistory = useUndoHistory<Record<string, any>>({}, { maxDepth: 40, debounceMs: 500, enableKeyboard: true });
 
   /* ─── SESSION MANAGEMENT STATE ─── */
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -588,7 +592,9 @@ export default function Calculators() {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
       try {
-        localStorage.setItem('wb-calc-autosave', JSON.stringify(gatherInputsForSave()));
+        const snapshot = gatherInputsForSave();
+        localStorage.setItem('wb-calc-autosave', JSON.stringify(snapshot));
+        undoHistory.push(snapshot);
       } catch { /* quota exceeded — ignore */ }
     }, 2000);
     // Sync core profile fields to DB every 5s (debounced, only when logged in)
@@ -1570,6 +1576,18 @@ export default function Calculators() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Undo/Redo (v8 Pass 4) */}
+              <Button variant="ghost" size="icon" onClick={() => { const prev = undoHistory.undo(); if (prev) { restoreInputs(prev); toast.info('Undo'); } }}
+                disabled={!undoHistory.canUndo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                title={`Undo (${navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Z)`} aria-label="Undo last change">
+                <Undo2 className="w-3.5 h-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => { const next = undoHistory.redo(); if (next) { restoreInputs(next); toast.info('Redo'); } }}
+                disabled={!undoHistory.canRedo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                title={`Redo (${navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+Z)`} aria-label="Redo last change">
+                <Redo2 className="w-3.5 h-3.5" />
+              </Button>
+              {undoHistory.length > 1 && <span className="text-[9px] text-muted-foreground/50 hidden xl:inline">{undoHistory.position + 1}/{undoHistory.length}</span>}
               {/* Split-View Compare Toggle (Pass 154) */}
               <Button variant={compareMode ? 'default' : 'outline'} size="sm"
                 onClick={() => { setCompareMode(m => !m); if (!compareMode) setShowComparePicker(true); else { setComparePanel(null); setShowComparePicker(false); } }}
@@ -2024,6 +2042,14 @@ export default function Calculators() {
                 <div className="flex items-center justify-between">
                   <span className="text-foreground">Close modal / clear search</span>
                   <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border font-mono">Esc</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Undo last input change</span>
+                  <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border font-mono">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Z</kbd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-foreground">Redo input change</span>
+                  <kbd className="px-2 py-0.5 text-xs bg-muted rounded border border-border font-mono">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+Z</kbd>
                 </div>
               </div>
             </div>

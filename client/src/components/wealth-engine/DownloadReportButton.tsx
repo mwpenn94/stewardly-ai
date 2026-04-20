@@ -17,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 
 export type WealthReportTemplate =
   | "executive_summary"
@@ -83,6 +84,7 @@ export function DownloadReportButton({
       toast.success("Report downloaded", {
         description: `${result.filename} (${(result.sizeBytes / 1024).toFixed(0)} KB)`,
       });
+      sendFeedback("report.generated", { reportName: result.filename });
     } catch (err) {
       toast.error("The report couldn't be generated right now", {
         description:
