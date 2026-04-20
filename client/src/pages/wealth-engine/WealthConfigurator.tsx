@@ -31,6 +31,7 @@ import { useFinancialProfile, profileValue } from "@/hooks/useFinancialProfile";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { fmt, pct } from '@/lib/format';
+import { SliderInput } from "@/pages/calculators/shared-ui";
 
 // ─── UTILITIES ──────────────────────────────────────────────────────
 
@@ -67,29 +68,6 @@ function StatCard({ label, value, sub, positive }: { label: string; value: strin
 }
 
 // ─── SLIDER INPUT ───────────────────────────────────────────────────
-function SliderInput({
-  label, value, onChange, min, max, step = 1, prefix = "", suffix = "", format,
-}: {
-  label: string; value: number; onChange: (v: number) => void;
-  min: number; max: number; step?: number;
-  prefix?: string; suffix?: string; format?: (v: number) => string;
-}) {
-  const display = format ? format(value) : `${prefix}${value.toLocaleString()}${suffix}`;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">{label}</Label>
-        <span className="text-xs font-mono text-foreground">{display}</span>
-      </div>
-      <Slider
-        value={[value]}
-        onValueChange={([v]) => onChange(v)}
-        min={min} max={max} step={step}
-        className="[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
-      />
-    </div>
-  );
-}
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────
 export default function WealthConfigurator({ embedded = false }: { embedded?: boolean } = {}) {

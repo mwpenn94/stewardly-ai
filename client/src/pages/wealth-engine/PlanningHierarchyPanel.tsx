@@ -22,6 +22,7 @@ import {
   Shield, GraduationCap, Heart, DollarSign, Briefcase, GitBranch,
 } from "lucide-react";
 import { toast } from "sonner";
+import { fmt, pct } from "@/lib/format";
 import CascadeAlignmentPanel from "./CascadeAlignmentPanel";
 
 const LEVEL_ICONS: Record<PlanningLevel, React.ElementType> = {
@@ -68,19 +69,15 @@ const TREND_COLOR: Record<string, string> = {
   declining: "text-rose-400",
 };
 
-function formatCurrency(val: string | number | null | undefined): string {
-  if (val == null) return "—";
-  const n = typeof val === "string" ? parseFloat(val) : val;
-  if (isNaN(n)) return "—";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
-}
-
-function formatPct(val: string | number | null | undefined): string {
-  if (val == null) return "—";
-  const n = typeof val === "string" ? parseFloat(val) : val;
-  if (isNaN(n)) return "—";
-  return `${n.toFixed(1)}%`;
-}
+// formatCurrency → fmt(), formatPct → pctVal() from @/lib/format
+// PlanningHierarchy passes string|number|null so we wrap with coercion
+const fmtVal = (val: string | number | null | undefined) =>
+  fmt(val == null ? null : typeof val === 'string' ? parseFloat(val) : val);
+const pctVal = (val: string | number | null | undefined) => {
+  if (val == null) return '—';
+  const n = typeof val === 'string' ? parseFloat(val) : val;
+  return isNaN(n) ? '—' : `${n.toFixed(1)}%`;
+};
 
 // ─── Node Card ──────────────────────────────────────────────────────────
 
@@ -132,8 +129,8 @@ function NodeCard({
         {!compact && target > 0 && (
           <div className="mt-3 space-y-1.5">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{formatCurrency(current)} current</span>
-              <span>{formatCurrency(target)} target</span>
+              <span>{fmtVal(current)} current</span>
+              <span>{fmtVal(target)} target</span>
             </div>
             <Progress value={progressPct} className="h-1.5" />
             <div className="flex justify-between text-xs">
@@ -142,7 +139,7 @@ function NodeCard({
               </span>
               {node.probabilityOfSuccess && (
                 <span className="text-muted-foreground">
-                  {formatPct(node.probabilityOfSuccess)} probability
+                  {pctVal(node.probabilityOfSuccess)} probability
                 </span>
               )}
             </div>
@@ -173,11 +170,11 @@ function GapAnalysisCard({ gapAnalysis }: { gapAnalysis: NonNullable<ReturnType<
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
           <div>
             <p className="text-xs text-muted-foreground">Current</p>
-            <p className="text-lg font-semibold">{formatCurrency(current)}</p>
+            <p className="text-lg font-semibold">{fmtVal(current)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Target</p>
-            <p className="text-lg font-semibold">{formatCurrency(target)}</p>
+            <p className="text-lg font-semibold">{fmtVal(target)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Gap</p>
@@ -190,7 +187,7 @@ function GapAnalysisCard({ gapAnalysis }: { gapAnalysis: NonNullable<ReturnType<
               ) : (
                 <span className="flex items-center justify-center gap-1">
                   <ArrowDownRight className="h-4 w-4" />
-                  {formatCurrency(Math.abs(gap))}
+                  {fmtVal(Math.abs(gap))}
                 </span>
               )}
             </p>
@@ -201,7 +198,7 @@ function GapAnalysisCard({ gapAnalysis }: { gapAnalysis: NonNullable<ReturnType<
             <TrendIcon className={`h-3 w-3 ${trendColor}`} />
             {trend ?? "stable"} trend
           </span>
-          <span>{formatPct(percentage)} gap ratio</span>
+          <span>{pctVal(percentage)} gap ratio</span>
         </div>
       </CardContent>
     </Card>
@@ -223,7 +220,7 @@ function RollUpCard({ rollUp }: { rollUp: { total: number; count: number } }) {
         <div className="grid grid-cols-2 gap-4 text-center">
           <div>
             <p className="text-xs text-muted-foreground">Aggregated Value</p>
-            <p className="text-lg font-semibold">{formatCurrency(rollUp.total)}</p>
+            <p className="text-lg font-semibold">{fmtVal(rollUp.total)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Child Nodes</p>
@@ -425,8 +422,8 @@ export default function PlanningHierarchyPanel() {
                     </div>
                     {(goal.targetAmount || goal.currentAmount) && (
                       <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                        <span>Current: {formatCurrency(goal.currentAmount)}</span>
-                        <span>Target: {formatCurrency(goal.targetAmount)}</span>
+                        <span>Current: {fmtVal(goal.currentAmount)}</span>
+                        <span>Target: {fmtVal(goal.targetAmount)}</span>
                       </div>
                     )}
                   </CardContent>

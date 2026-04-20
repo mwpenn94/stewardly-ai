@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 /* ─── Practice Input ────────────────────────────────────────────── */
 
@@ -129,6 +130,52 @@ export function QuoteScoreRing({ total, max, size = 160, colors }: QuoteScoreRin
           {total}/{max}
         </text>
       </svg>
+    </div>
+  );
+}
+
+/* ─── Slider Input ──────────────────────────────────────────────── */
+
+interface SliderInputProps {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+  /** Prefix shown before value (e.g. "$") */
+  prefix?: string;
+  /** Suffix shown after value (e.g. "%") */
+  suffix?: string;
+  /** Custom format function — overrides prefix/suffix when provided */
+  format?: (v: number) => string;
+  /** Visual variant: 'default' uses standard styling, 'glow' adds warm gold radial glow */
+  variant?: "default" | "glow";
+}
+
+/** Unified slider input used across all calculator pages.
+ *  Supports prefix, suffix, custom format function, and optional glow variant. */
+export function SliderInput({
+  label, value, onChange, min, max, step = 1,
+  prefix = "", suffix = "", format, variant = "default",
+}: SliderInputProps) {
+  const display = format ? format(value) : `${prefix}${value.toLocaleString()}${suffix}`;
+  return (
+    <div className={`space-y-1.5 ${variant === "glow" ? "relative" : ""}`}>
+      {variant === "glow" && (
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
+      )}
+      <div className="flex items-center justify-between">
+        <Label className={variant === "glow" ? "text-[10px] text-muted-foreground uppercase tracking-wide" : "text-xs text-muted-foreground"}>{label}</Label>
+        <span className={variant === "glow" ? "text-xs font-medium tabular-nums" : "text-xs font-mono text-foreground"}>{display}</span>
+      </div>
+      <Slider
+        value={[value]}
+        onValueChange={([v]) => onChange(v)}
+        min={min} max={max} step={step}
+        aria-label={label}
+        className={variant === "glow" ? "py-1" : "[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
   GitBranch, ListOrdered, Shield, ChevronRight, Activity, Workflow,
 } from "lucide-react";
 import { toast } from "sonner";
+import { fmtSm } from "@/lib/format";
 
 interface CascadeAlignmentPanelProps {
   clientId?: number;
@@ -43,11 +44,6 @@ const HEALTH_ICONS = {
   critical: XCircle,
 };
 
-function formatCurrency(val: number): string {
-  if (Math.abs(val) >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(val) >= 1_000) return `$${(val / 1_000).toFixed(0)}K`;
-  return `$${val.toLocaleString()}`;
-}
 
 export default function CascadeAlignmentPanel({ clientId, rootNodeId }: CascadeAlignmentPanelProps) {
   const [activeTab, setActiveTab] = useState("alignment");
@@ -254,7 +250,7 @@ function AlignmentView({ alignment }: { alignment: any }) {
             icon={TrendingDown}
             color="rose"
             items={alignment.underfundedGoals.map((g: any) =>
-              `${g.goalName}: gap ${formatCurrency(g.gap)}`
+              `${g.goalName}: gap ${fmtSm(g.gap)}`
             )}
           />
         )}
@@ -481,16 +477,16 @@ function CascadeNodeCard({ node, isRoot }: { node: any; isRoot?: boolean }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
         <div>
           <span className="text-muted-foreground">Target</span>
-          <p className="font-medium">{formatCurrency(node.forwardTarget)}</p>
+          <p className="font-medium">{fmtSm(node.forwardTarget)}</p>
         </div>
         <div>
           <span className="text-muted-foreground">Current</span>
-          <p className="font-medium">{formatCurrency(node.currentValue)}</p>
+          <p className="font-medium">{fmtSm(node.currentValue)}</p>
         </div>
         <div>
           <span className="text-muted-foreground">Gap</span>
           <p className={`font-medium ${node.gap > 0 ? "text-rose-400" : "text-emerald-400"}`}>
-            {node.gap > 0 ? "-" : "+"}{formatCurrency(Math.abs(node.gap))}
+            {node.gap > 0 ? "-" : "+"}{fmtSm(Math.abs(node.gap))}
           </p>
         </div>
         <div>
@@ -559,7 +555,7 @@ function GoalStrategyMatrixView({ matrix }: { matrix: any }) {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">
-                  {formatCurrency(goal.current)} / {formatCurrency(goal.target)}
+                  {fmtSm(goal.current)} / {fmtSm(goal.target)}
                 </span>
                 <Badge className={
                   goal.coveragePercent >= 90 ? "bg-emerald-500/20 text-emerald-400"
@@ -583,7 +579,7 @@ function GoalStrategyMatrixView({ matrix }: { matrix: any }) {
                         <span className="text-xs font-medium">{strategy.label}</span>
                         <Badge variant="outline" className="text-[10px] capitalize">{strategy.status}</Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground">{formatCurrency(strategy.contribution)}</span>
+                      <span className="text-xs text-muted-foreground">{fmtSm(strategy.contribution)}</span>
                     </div>
                     {/* Implementations */}
                     {strategy.implementations.length > 0 && (
@@ -594,7 +590,7 @@ function GoalStrategyMatrixView({ matrix }: { matrix: any }) {
                               <ChevronRight className="h-2.5 w-2.5" />
                               <span>{impl.label}</span>
                             </div>
-                            <span>{formatCurrency(impl.value)}</span>
+                            <span>{fmtSm(impl.value)}</span>
                           </div>
                         ))}
                       </div>
@@ -632,7 +628,7 @@ function GapAnalysisView({ gapAnalysis }: { gapAnalysis: any }) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Multi-Level Gap Analysis</CardTitle>
           <CardDescription>
-            Overall gap: {formatCurrency(gapAnalysis.overallGap)} ({gapAnalysis.overallGapPercentage}%)
+            Overall gap: {fmtSm(gapAnalysis.overallGap)} ({gapAnalysis.overallGapPercentage}%)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -663,16 +659,16 @@ function GapAnalysisView({ gapAnalysis }: { gapAnalysis: any }) {
             <div className="grid grid-cols-3 gap-2 text-xs mb-2">
               <div>
                 <span className="text-muted-foreground">Target</span>
-                <p className="font-medium">{formatCurrency(level.totalTarget)}</p>
+                <p className="font-medium">{fmtSm(level.totalTarget)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Current</span>
-                <p className="font-medium">{formatCurrency(level.totalCurrent)}</p>
+                <p className="font-medium">{fmtSm(level.totalCurrent)}</p>
               </div>
               <div>
                 <span className="text-muted-foreground">Gap</span>
                 <p className={`font-medium ${level.totalGap > 0 ? "text-rose-400" : "text-emerald-400"}`}>
-                  {formatCurrency(Math.abs(level.totalGap))}
+                  {fmtSm(Math.abs(level.totalGap))}
                 </p>
               </div>
             </div>

@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 import {
   Calculator, Play, Loader2, Plus, Trash2, Users, Layers, Briefcase,
@@ -31,6 +30,7 @@ import BackPlanFunnel from "@/components/BackPlanFunnel";
 import ProductReferencePanel from "@/components/ProductReferencePanel";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
 import { fmt } from '@/lib/format';
+import { SliderInput } from "@/pages/calculators/shared-ui";
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────
 const COMPANY_OPTIONS = [
@@ -60,22 +60,6 @@ const ROLE_OPTIONS = [
 
 const STRATEGY_COLORS = ["#C9A84C", "#2563EB", "#7C3AED", "#06B6D4", "#F59E0B", "#EC4899"];
 // ─── SLIDER INPUT COMPONENT ───────────────────────────────────────
-function SliderInput({ label, value, onChange, min, max, step = 1, suffix = "", format }: {
-  label: string; value: number; onChange: (v: number) => void;
-  min: number; max: number; step?: number; suffix?: string; format?: (n: number) => string;
-}) {
-  return (
-    <div className="relative space-y-1">
-      {/* Warm gold radial glow */}
-      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
-      <div className="flex justify-between items-center">
-        <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</Label>
-        <span className="text-xs font-medium tabular-nums">{format ? format(value) : `${value}${suffix}`}</span>
-      </div>
-      <Slider value={[value]} onValueChange={([v]) => onChange(v)} min={min} max={max} step={step} className="py-1" />
-    </div>
-  );
-}
 
 // ─── STRATEGY TYPE ────────────────────────────────────────────────
 interface StrategyState {
@@ -527,13 +511,13 @@ export default function EngineDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
-              <SliderInput label="Age" value={age} onChange={setAge} min={18} max={85} suffix=" yrs" />
-              <SliderInput label="Income" value={income} onChange={setIncome} min={30000} max={2000000} step={10000} format={fmt} />
-              <SliderInput label="Net Worth" value={netWorth} onChange={setNetWorth} min={0} max={20000000} step={50000} format={fmt} />
-              <SliderInput label="Savings" value={savings} onChange={setSavings} min={0} max={5000000} step={10000} format={fmt} />
-              <SliderInput label="Dependents" value={dependents} onChange={setDependents} min={0} max={10} />
-              <SliderInput label="Mortgage" value={mortgage} onChange={setMortgage} min={0} max={5000000} step={10000} format={fmt} />
-              <SliderInput label="Projection" value={years} onChange={setYears} min={5} max={50} suffix=" yrs" />
+              <SliderInput variant="glow" label="Age" value={age} onChange={setAge} min={18} max={85} suffix=" yrs" />
+              <SliderInput variant="glow" label="Income" value={income} onChange={setIncome} min={30000} max={2000000} step={10000} format={fmt} />
+              <SliderInput variant="glow" label="Net Worth" value={netWorth} onChange={setNetWorth} min={0} max={20000000} step={50000} format={fmt} />
+              <SliderInput variant="glow" label="Savings" value={savings} onChange={setSavings} min={0} max={5000000} step={10000} format={fmt} />
+              <SliderInput variant="glow" label="Dependents" value={dependents} onChange={setDependents} min={0} max={10} />
+              <SliderInput variant="glow" label="Mortgage" value={mortgage} onChange={setMortgage} min={0} max={5000000} step={10000} format={fmt} />
+              <SliderInput variant="glow" label="Projection" value={years} onChange={setYears} min={5} max={50} suffix=" yrs" />
             </div>
           </CardContent>
         </Card>
@@ -609,9 +593,9 @@ export default function EngineDashboard() {
                     Include Business Income (BIE)
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <SliderInput label="Save %" value={Math.round(s.savingsRate * 100)} onChange={(v) => updateStrategy(s.id, { savingsRate: v / 100 })} min={0} max={50} suffix="%" />
-                    <SliderInput label="Return" value={Math.round(s.investmentReturn * 100)} onChange={(v) => updateStrategy(s.id, { investmentReturn: v / 100 })} min={0} max={15} suffix="%" />
-                    <SliderInput label="Tax" value={Math.round(s.taxRate * 100)} onChange={(v) => updateStrategy(s.id, { taxRate: v / 100 })} min={10} max={50} suffix="%" />
+                    <SliderInput variant="glow" label="Save %" value={Math.round(s.savingsRate * 100)} onChange={(v) => updateStrategy(s.id, { savingsRate: v / 100 })} min={0} max={50} suffix="%" />
+                    <SliderInput variant="glow" label="Return" value={Math.round(s.investmentReturn * 100)} onChange={(v) => updateStrategy(s.id, { investmentReturn: v / 100 })} min={0} max={15} suffix="%" />
+                    <SliderInput variant="glow" label="Tax" value={Math.round(s.taxRate * 100)} onChange={(v) => updateStrategy(s.id, { taxRate: v / 100 })} min={10} max={50} suffix="%" />
                   </div>
                 </div>
               ))}
@@ -805,7 +789,7 @@ export default function EngineDashboard() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <SliderInput label="Target Annual Income" value={backPlanTarget} onChange={setBackPlanTarget} min={50000} max={2000000} step={10000} format={fmt} />
+                  <SliderInput variant="glow" label="Target Annual Income" value={backPlanTarget} onChange={setBackPlanTarget} min={50000} max={2000000} step={10000} format={fmt} />
                   <div>
                     <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Role</Label>
                     <Select value={backPlanRole} onValueChange={setBackPlanRole}>

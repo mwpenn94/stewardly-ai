@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calculator, TrendingDown, RefreshCw, DollarSign, Loader2, BarChart3, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { SEOHead } from "@/components/SEOHead";
+import { fmt, pct } from "@/lib/format";
 
 const FILING_STATUSES = [
   { value: "single", label: "Single" },
@@ -67,8 +68,8 @@ export default function TaxProjector() {
   const setField = <K extends keyof typeof yearCtx>(k: K, v: typeof yearCtx[K]) =>
     setYearCtx((p) => ({ ...p, [k]: v }));
 
-  const formatCurrency = (n: number) => `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  const formatPct = (n: number) => `${(n * 100).toFixed(1)}%`;
+  const formatCurrency = fmt;
+  const formatPct = pct;
 
   return (
     <div className="container max-w-5xl py-8 space-y-6">

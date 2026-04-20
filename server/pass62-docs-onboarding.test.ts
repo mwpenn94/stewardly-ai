@@ -215,10 +215,12 @@ describe("Onboarding flow completeness (Pass 62)", () => {
     expect(stepCount).toBeGreaterThanOrEqual(40);
   });
 
-  it("VoiceOnboardingCoach exists for voice-guided onboarding", () => {
+  it("VoiceOnboardingCoach was removed in Pass 147 (dead code cleanup)", () => {
+    // VoiceOnboardingCoach was intentionally deleted in Pass 147 as dead code.
+    // No component imported it. Verify it stays removed.
     expect(
       fs.existsSync(path.join(ROOT, "client/src/components/VoiceOnboardingCoach.tsx"))
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("WhatsNewModal exists for changelog notifications", () => {

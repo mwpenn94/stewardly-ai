@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,32 +23,10 @@ import AppShell from "@/components/AppShell";
 import { persistCalculation } from "@/lib/calculatorContext";
 import { DiscussInChatButton } from "@/components/wealth-engine/DiscussInChatButton";
 import { fmt } from '@/lib/format';
+import { SliderInput } from "@/pages/calculators/shared-ui";
 
 
 
-function SliderInput({
-  label, value, onChange, min, max, step = 1, prefix = "$",
-}: {
-  label: string; value: number; onChange: (v: number) => void;
-  min: number; max: number; step?: number; prefix?: string;
-}) {
-  const display = prefix === "$" ? fmt(value) : `${value.toLocaleString()}${prefix === "" ? "" : prefix}`;
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">{label}</Label>
-        <span className="text-xs font-mono text-foreground">{display}</span>
-      </div>
-      <Slider
-        value={[value]}
-        onValueChange={([v]) => onChange(v)}
-        min={min} max={max} step={step}
-        aria-label={label}
-        className="[&_[role=slider]]:h-3.5 [&_[role=slider]]:w-3.5"
-      />
-    </div>
-  );
-}
 
 type PolicyEntry = {
   id: string;

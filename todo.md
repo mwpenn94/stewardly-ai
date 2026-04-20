@@ -7075,3 +7075,44 @@
 - [x] Each tool now has its own panel: compliance, report, multi-compare, cascade-flow
 - [x] Clean, uncluttered tab content with proper UX hierarchy
 - [x] All 10,029 tests pass, 79/79 Playwright e2e pass, build succeeds
+
+## Pass 149 — Consolidation, Assessment & Convergence
+
+### SliderInput Consolidation
+- [x] Audited all 6 SliderInput definitions across calculator pages
+- [x] Created unified SliderInput in shared-ui.tsx supporting all variants
+- [x] Replaced all local SliderInput definitions with shared import
+- [x] Removed unused Slider imports from 5 files
+- [x] Verified no regressions in calculator UX
+
+### formatCurrency Deduplication
+- [x] Replaced local formatCurrency/formatPct in CascadeAlignmentPanel.tsx with canonical fmt/pct
+- [x] Replaced local formatCurrency/formatPct in PlanningHierarchyPanel.tsx with canonical fmt/pct
+- [x] Replaced local formatCurrency in TaxProjector.tsx with canonical fmt
+
+### Dead Code Cleanup (continuation from Pass 147)
+- [x] Fixed orphaned useGlobalShortcuts import in App.tsx
+- [x] Restored intentParser.ts and useGlobalShortcuts.ts from git (accidentally deleted in Pass 147)
+- [x] Updated stale VoiceOnboardingCoach existence test (file was intentionally deleted in Pass 147)
+
+### Tools & Reports UX Review
+- [x] Evaluated sidebar placement — confirmed intuitive and discoverable
+- [x] Progressive disclosure working correctly for all tools
+
+### Exhaustive Multi-Persona Virtual User Testing
+- [x] Playwright e2e: 79/79 PASS (17 personas, 3 viewports)
+- [x] All sidebar nav items render correctly
+- [x] Tools & Reports section accessible and functional
+- [x] Mobile responsiveness verified (874 responsive breakpoints in pages)
+
+### Recursive Convergence
+- [x] Convergence Pass 1: Fixed orphaned imports, removed unused Slider imports, replaced local formatCurrency (counter reset)
+- [x] Convergence Pass 2: CLEAN — orphaned imports, duplicates, routes, TODOs, SQL parameterization
+- [x] Convergence Pass 3: CLEAN — 117 fetch() calls assessed (114 are .refetch()), 8 dangerouslySetInnerHTML all sanitized, memory leak checks balanced
+- [x] Convergence Pass 4: CLEAN — 33 novel checks across TypeScript quality, security, UX, performance, code hygiene, server validation
+- [x] **3/3 CONSECUTIVE CLEAN PASSES — CONVERGED**
+
+### Final Verification
+- [x] Vitest: 10,029 PASS / 402 files / 0 FAIL (67s)
+- [x] Playwright e2e: 79 PASS / 0 WARN / 0 FAIL
+- [x] Production build succeeds (~40s)
