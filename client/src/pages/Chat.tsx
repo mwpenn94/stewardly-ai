@@ -35,7 +35,7 @@ import {
   Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Calendar, Brain, Shield,
   Copy, RefreshCw, Zap, Scale, Search, HelpCircle,
   Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
-  LogIn, GitBranch, Pencil, Globe, Code2, FileOutput,
+  LogIn, GitBranch, Pencil, Globe, Code2,  FileOutput, Download,
 } from "lucide-react";
 import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
@@ -1214,6 +1214,8 @@ export default function Chat() {
                   resetWatchdog();
                   accumulated += event.content;
                   setStreamingContent(accumulated);
+                  // G43: Subtle audible tick during streaming (throttled to 200ms)
+                  soundCues.playStreaming();
                   // Update the last message in-place
                   setMessages(prev => {
                     const updated = [...prev];
@@ -2474,6 +2476,12 @@ export default function Chat() {
                                   <Volume2 className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
+                              {/* G30: Download last TTS audio as MP3 */}
+                              <Tooltip><TooltipTrigger asChild>
+                                <button type="button" aria-label="Download audio" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-emerald-400 transition-colors" onClick={() => { tts.forceSpeak(msg.content); setTimeout(() => { if (!tts.downloadAudio()) toast.info("Audio not yet available — try again after playback starts"); }, 2000); }}>
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Download audio</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
                                 <button type="button" aria-label="Regenerate response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
                                   <RefreshCw className="w-4 h-4" />
@@ -2619,6 +2627,12 @@ export default function Chat() {
                 />
               )}
             </div>
+            {/* G29: Pause/Resume button during speaking */}
+            {voiceState === "speaking" && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => tts.isPaused ? tts.resume() : tts.pause()} aria-label={tts.isPaused ? "Resume speech" : "Pause speech"}>
+                {tts.isPaused ? <ArrowRight className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+              </Button>
+            )}
             <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={toggleHandsFree}>End</Button>
           </div>
         )}

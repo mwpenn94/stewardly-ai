@@ -483,7 +483,10 @@ export function PILProvider({ children }: { children: React.ReactNode }) {
   const startListening = useCallback(() => {
     if (recognitionRef.current) return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      console.info("[PIL] SpeechRecognition not available in this browser — voice commands disabled");
+      return;
+    }
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;

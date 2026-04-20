@@ -4,7 +4,7 @@
  */
 import { useCallback, useRef } from "react";
 
-type SoundCue = "sent" | "received" | "error" | "success" | "listening" | "thinking";
+type SoundCue = "sent" | "received" | "error" | "success" | "listening" | "thinking" | "streaming";
 
 const FREQUENCIES: Record<SoundCue, { freq: number; duration: number; type: OscillatorType; gain: number }> = {
   sent: { freq: 600, duration: 80, type: "sine", gain: 0.08 },
@@ -13,6 +13,7 @@ const FREQUENCIES: Record<SoundCue, { freq: number; duration: number; type: Osci
   success: { freq: 1000, duration: 60, type: "sine", gain: 0.06 },
   listening: { freq: 500, duration: 150, type: "sine", gain: 0.05 },
   thinking: { freq: 400, duration: 120, type: "triangle", gain: 0.04 },
+  streaming: { freq: 700, duration: 30, type: "sine", gain: 0.015 },
 };
 
 export function useSoundCues() {
@@ -55,5 +56,14 @@ export function useSoundCues() {
     enabled.current = val;
   }, []);
 
-  return { play, setEnabled, isEnabled: () => enabled.current };
+  // G43: Throttled streaming tick — max once per 200ms to avoid audio spam
+  const lastStreamTickRef = useRef(0);
+  const playStreaming = useCallback(() => {
+    const now = Date.now();
+    if (now - lastStreamTickRef.current < 200) return;
+    lastStreamTickRef.current = now;
+    play("streaming");
+  }, [play]);
+
+  return { play, playStreaming, setEnabled, isEnabled: () => enabled.current };
 }

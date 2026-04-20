@@ -4,7 +4,7 @@
  * Pass 116. Gamification that reinforces learning behavior.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Flame, Crown, Award, Calendar, Zap, Star, Loader2,
 } from "lucide-react";
@@ -15,6 +15,7 @@ import { SEOHead } from "@/components/SEOHead";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { sendFeedback } from "@/lib/feedbackSpecs";
 /* ── types ─────────────────────────────────────────────────────── */
 
 interface Achievement {
@@ -141,6 +142,18 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
 
   const earned = d.achievements.filter(a => a.progress >= 100);
   const inProgress = d.achievements.filter(a => a.progress > 0 && a.progress < 100);
+
+  // G1: Fire feedback when new achievements are earned
+  const prevEarnedRef = useRef<number>(0);
+  useEffect(() => {
+    if (earned.length > prevEarnedRef.current && prevEarnedRef.current > 0) {
+      const newest = earned[earned.length - 1];
+      sendFeedback("learning.achievement_earned", { title: newest?.title });
+      if (newest?.category === "mastery") sendFeedback("learning.mastered", { title: newest?.title });
+      if (newest?.category === "streak") sendFeedback("learning.streak_milestone", { streak: d.streak.current });
+    }
+    prevEarnedRef.current = earned.length;
+  }, [earned.length]);
 
   const filtered = filter === "all" ? d.achievements : d.achievements.filter(a => a.category === filter);
 

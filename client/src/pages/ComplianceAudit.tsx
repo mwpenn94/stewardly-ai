@@ -127,6 +127,13 @@ export default function ComplianceAudit({ embedded = false }: { embedded?: boole
   const stats = statsQ.data;
   const reviews = reviewsQ.data ?? [];
 
+  // G1: Fire compliance.flag_raised when flagged reviews exist
+  const prevFlaggedRef = useMemo(() => ({ current: -1 }), []);
+  if (stats && stats.flaggedReviews > 0 && stats.flaggedReviews !== prevFlaggedRef.current) {
+    if (prevFlaggedRef.current >= 0) sendFeedback("compliance.flag_raised", { count: stats.flaggedReviews });
+    prevFlaggedRef.current = stats.flaggedReviews;
+  }
+
   const filtered = useMemo(() => {
     if (!search) return reviews;
     const q = search.toLowerCase();

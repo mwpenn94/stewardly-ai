@@ -7520,3 +7520,31 @@
 - [ ] Remaining P3 items as time allows
 - [ ] Pass 6 LVUA: Final comprehensive validation
 - [ ] Pass 6 tests + PARITY update + checkpoint
+
+### v8.3 Pass 6 — Close in_progress + P2/P3 aligned gaps
+- [ ] G1: Complete multisensory feedback wiring — audit remaining 28 unused specs, wire top consumers
+- [ ] G53: Fix CommandPalette shortcut hints — sync PAGES list with navigation.ts (P7 leftover)
+- [ ] G59: Firefox/Safari STT compatibility — ensure all voice consumers show VoiceSupportBanner
+- [ ] Edge TTS voice selection — expose voice picker in Settings (Guy, Jenny, Aria, etc.)
+- [ ] G39: Focus ring overflow:hidden audit — test and fix clipped focus rings
+- [ ] G43: Audible token-streaming tick — subtle audio cue during SSE streaming
+- [ ] G29: TTS resume-from-position across page reloads — persist position in sessionStorage
+- [ ] G30: Download TTS audio as MP3 — add download button on TTS player
+- [ ] MOBILE-0016: Final verification — confirm all overlaps resolved
+- [ ] PARITY-DATA-0003: Document required API keys in admin UI
+- [ ] PARITY-DATA-0004: Improvement engine data signal stubs
+- [ ] PARITY-TYPE-0005: modelEngine.ts double-cast cleanup
+- [ ] Pass 6 LVUA: Live browser validation across personas
+- [ ] Pass 6 tests + PARITY update + checkpoint
+
+### v8.3 Pass 7 — XL features + convergence
+- [ ] G6: Full-duplex voice mode (WebRTC/WebSocket real-time)
+- [ ] G31: i18n framework + translation key extraction
+- [ ] G32: RTL support (if time allows)
+- [ ] G40: Pull-to-refresh on mobile list views
+- [ ] Pass 7 LVUA + tests + checkpoint
+
+### v8.3 Pass 8+ — Convergence passes
+- [ ] Reassess all PARITY items
+- [ ] Final comprehensive LVUA across 12 personas
+- [ ] Convergence validation (3 consecutive clean passes)

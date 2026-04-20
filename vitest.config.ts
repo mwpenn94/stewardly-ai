@@ -73,6 +73,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass4-parity.test.ts",
       // v8.3 Pass 5: MOBILE-0016, G37 aria-required, G44 barge-in, G50 voice onboarding, G28 TTS highlighting
       "client/src/pages/__tests__/v83-pass5-parity.test.ts",
+      // v8.3 Pass 6: G29 pause/resume, G30 download audio, G39 focus ring, G43 streaming tick, G1 feedback, G53 shortcuts, G59 Firefox
+      "client/src/pages/__tests__/v83-pass6-parity.test.ts",
     ],
   },
 });

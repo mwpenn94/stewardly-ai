@@ -28,12 +28,20 @@ export interface TTSWordHighlight {
 
 export interface TTSReturn {
   isSpeaking: boolean;
+  /** G29: Whether TTS is paused */
+  isPaused: boolean;
   /** Speak text — tries Edge TTS first, falls back to browser. Respects enabled flag. */
   speak: (text: string) => void;
   /** Speak text regardless of enabled flag — for explicit user actions like per-message read aloud */
   forceSpeak: (text: string) => void;
   /** Cancel any current speech */
   cancel: () => void;
+  /** G29: Pause current speech (Edge TTS audio or browser synthesis) */
+  pause: () => void;
+  /** G29: Resume paused speech */
+  resume: () => void;
+  /** G30: Download the last spoken audio as MP3 (Edge TTS only, returns false if unavailable) */
+  downloadAudio: () => boolean;
   /** Guard ref — true while TTS is playing (use to block recognition) */
   guardRef: React.MutableRefObject<boolean>;
   /** Play an audible processing cue */
@@ -170,6 +178,8 @@ export function useTTS({
   onEnd,
 }: TTSOptions): TTSReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // G29: Pause state
+  const [isPaused, setIsPaused] = useState(false);
   // G28: Word-level highlighting state
   const [currentWord, setCurrentWord] = useState<TTSWordHighlight | null>(null);
   const [spokenText, setSpokenText] = useState("");
@@ -180,6 +190,8 @@ export function useTTS({
   const cancelledRef = useRef(false);
   // Track the current object URL so we can revoke it
   const currentUrlRef = useRef<string | null>(null);
+  // G30: Keep last audio blob for download
+  const lastAudioBlobRef = useRef<Blob | null>(null);
 
   useEffect(() => { onStartRef.current = onStart; }, [onStart]);
   useEffect(() => { onEndRef.current = onEnd; }, [onEnd]);
@@ -232,6 +244,63 @@ export function useTTS({
     setCurrentWord(null);
     guardRef.current = false;
     setIsSpeaking(false);
+    setIsPaused(false);
+  }, []);
+
+  /**
+   * G29: Pause current speech (Edge TTS audio element or browser SpeechSynthesis).
+   */
+  const pause = useCallback(() => {
+    if (!isSpeaking || isPaused) return;
+    // Pause Edge TTS audio
+    const audio = getSharedAudio();
+    if (audio.src && !audio.paused) {
+      audio.pause();
+    }
+    // Pause browser SpeechSynthesis
+    if (window.speechSynthesis?.speaking) {
+      window.speechSynthesis.pause();
+    }
+    // Pause word estimation timer
+    if (wordTimerRef.current) {
+      clearInterval(wordTimerRef.current);
+      wordTimerRef.current = null;
+    }
+    setIsPaused(true);
+  }, [isSpeaking, isPaused]);
+
+  /**
+   * G29: Resume paused speech.
+   */
+  const resume = useCallback(() => {
+    if (!isPaused) return;
+    // Resume Edge TTS audio
+    const audio = getSharedAudio();
+    if (audio.src && audio.paused && audio.currentTime > 0) {
+      audio.play().catch(() => { /* ignore */ });
+    }
+    // Resume browser SpeechSynthesis
+    if (window.speechSynthesis?.paused) {
+      window.speechSynthesis.resume();
+    }
+    setIsPaused(false);
+  }, [isPaused]);
+
+  /**
+   * G30: Download the last spoken audio as MP3.
+   * Returns true if download was initiated, false if no audio available.
+   */
+  const downloadAudio = useCallback(() => {
+    if (!lastAudioBlobRef.current) return false;
+    const url = URL.createObjectURL(lastAudioBlobRef.current);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tts-audio-${Date.now()}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return true;
   }, []);
 
   /**
@@ -249,6 +318,8 @@ export function useTTS({
         bytes[i] = binaryStr.charCodeAt(i);
       }
       const blob = new Blob([bytes], { type: "audio/mpeg" });
+      // G30: Store blob for download
+      lastAudioBlobRef.current = blob;
       const url = URL.createObjectURL(blob);
 
       // Revoke previous URL if any
@@ -503,5 +574,5 @@ export function useTTS({
     [doSpeak]
   );
 
-  return { isSpeaking, speak, forceSpeak, cancel, guardRef, playCue, currentWord, spokenText };
+  return { isSpeaking, isPaused, speak, forceSpeak, cancel, pause, resume, downloadAudio, guardRef, playCue, currentWord, spokenText };
 }
