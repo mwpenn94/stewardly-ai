@@ -60,6 +60,8 @@ export interface VoiceRecognitionOptions {
   onTranscript: (text: string) => void;
   onInterim?: (text: string) => void;
   guardRef?: React.MutableRefObject<boolean>;
+  /** G44: Called when user speaks while guard is active (TTS playing). Caller should cancel TTS. */
+  onBargeIn?: () => void;
 }
 
 export interface VoiceRecognitionReturn {
@@ -80,6 +82,7 @@ export function useVoiceRecognition({
   onTranscript,
   onInterim,
   guardRef,
+  onBargeIn,
 }: VoiceRecognitionOptions): VoiceRecognitionReturn {
   const [isListening, setIsListening] = useState(false);
   const [interimText, setInterimText] = useState("");
@@ -96,9 +99,11 @@ export function useVoiceRecognition({
   // Keep callback refs in sync (avoids stale closures)
   const onTranscriptRef = useRef(onTranscript);
   const onInterimRef = useRef(onInterim);
+  const onBargeInRef = useRef(onBargeIn);
   const enabledRef = useRef(enabled);
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { onInterimRef.current = onInterim; }, [onInterim]);
+  useEffect(() => { onBargeInRef.current = onBargeIn; }, [onBargeIn]);
   useEffect(() => { enabledRef.current = enabled; }, [enabled]);
 
   const clearSilenceTimer = useCallback(() => {
@@ -135,6 +140,50 @@ export function useVoiceRecognition({
     finalTranscriptRef.current = "";
   }, [destroyRecognition]);
 
+  // G44: Barge-in listener ref — a lightweight recognition instance that
+  // only listens for any speech onset while the guard is active (TTS playing).
+  // When speech is detected, it fires onBargeIn so the caller can cancel TTS.
+  const bargeInRef = useRef<any>(null);
+
+  const _destroyBargeIn = useCallback(() => {
+    const bi = bargeInRef.current;
+    if (bi) {
+      bi.onresult = null;
+      bi.onerror = null;
+      bi.onend = null;
+      bi.onspeechstart = null;
+      try { bi.abort(); } catch {}
+      bargeInRef.current = null;
+    }
+  }, []);
+
+  const _startBargeInListener = useCallback(() => {
+    _destroyBargeIn();
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const bi = new SR();
+    bi.continuous = false;
+    bi.interimResults = true;
+    bi.lang = "en-US";
+    bi.maxAlternatives = 1;
+    // Fire barge-in on ANY speech detection
+    bi.onspeechstart = () => {
+      console.debug("[Voice] G44 barge-in detected — user spoke during TTS");
+      _destroyBargeIn();
+      onBargeInRef.current?.();
+    };
+    bi.onresult = () => {
+      // Also fire on result in case onspeechstart isn't supported
+      console.debug("[Voice] G44 barge-in result — user spoke during TTS");
+      _destroyBargeIn();
+      onBargeInRef.current?.();
+    };
+    bi.onerror = () => { _destroyBargeIn(); };
+    bi.onend = () => { bargeInRef.current = null; };
+    bargeInRef.current = bi;
+    try { bi.start(); } catch { bargeInRef.current = null; }
+  }, [_destroyBargeIn]);
+
   /**
    * Start listening. Only works if not guarded and enabled.
    * Moves to LISTENING state.
@@ -142,7 +191,14 @@ export function useVoiceRecognition({
   const start = useCallback(() => {
     // Guard checks
     if (guardRef?.current) {
-      console.debug("[Voice] start() blocked by guard");
+      // G44: Don't block entirely — start a barge-in listener that
+      // fires onBargeIn when the user starts speaking during TTS.
+      // This allows the caller to cancel TTS and re-call start().
+      if (onBargeInRef.current && capabilities.mode !== "unsupported") {
+        _startBargeInListener();
+      } else {
+        console.debug("[Voice] start() blocked by guard");
+      }
       return;
     }
     if (!enabledRef.current) {
@@ -152,6 +208,7 @@ export function useVoiceRecognition({
 
     // Clean up any existing instance first
     destroyRecognition();
+    _destroyBargeIn(); // G44: stop barge-in listener if guard was just released
 
     // Pass 2 (G59): every caller gets the capability hint via the return
     // value now, but we still guard here as a defence in depth. If the
@@ -285,15 +342,16 @@ export function useVoiceRecognition({
       stateRef.current = "IDLE";
       setIsListening(false);
     }
-  }, [lang, guardRef, clearSilenceTimer, destroyRecognition, silenceTimeout, capabilities]);
+  }, [lang, guardRef, clearSilenceTimer, destroyRecognition, _destroyBargeIn, silenceTimeout, capabilities, _startBargeInListener]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       stateRef.current = "STOPPED";
       destroyRecognition();
+      _destroyBargeIn();
     };
-  }, [destroyRecognition]);
+  }, [destroyRecognition, _destroyBargeIn]);
 
   // Auto-stop when disabled
   useEffect(() => {

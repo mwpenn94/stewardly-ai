@@ -25,7 +25,6 @@ import { DisclosureSection } from "@/components/DisclosureSection";
 import {
   Loader2, Users, Target, RefreshCw, ShieldCheck, Mail, FolderOpen, Zap,
   LayoutGrid, UserPlus, FileText, Shield, ArrowRight, DollarSign,
-  ChevronRight, Home, ChevronDown,
 } from "lucide-react";
 
 /* ─── Lazy-loaded panels (all existing panels preserved) ─── */
@@ -162,35 +161,7 @@ export default function PeopleHub() {
       <SEOHead title="Command Center" description="Manage your pipeline, marketing, compliance, and operations" />
       <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">
 
-        {/* ─── BREADCRUMB BAR — matches Wealth Engine pattern ─── */}
-        <div className="flex flex-wrap items-center justify-between gap-2 bg-card rounded-lg border border-border px-3 py-2">
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs">
-            <button type="button" onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-              <Home className="w-3 h-3" />
-              <span className="hidden sm:inline">Home</span>
-            </button>
-            <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
-            <span className="text-foreground font-medium flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              Command Center
-            </span>
-            {currentTab && (
-              <>
-                <ChevronRight className="w-3 h-3 text-muted-foreground/50" />
-                <span className="text-foreground font-medium">{currentTab.label}</span>
-              </>
-            )}
-            {currentPanel && currentPanel.id !== currentTab?.panels[0]?.id && (
-              <>
-                <ChevronRight className="w-3 h-3 text-muted-foreground/50 hidden sm:block" />
-                <span className="text-foreground font-medium hidden sm:inline">{currentPanel.label}</span>
-              </>
-            )}
-          </nav>
-          <span className="text-[10px] text-muted-foreground hidden sm:inline">
-            Pipeline · Marketing · Compliance · Operations
-          </span>
-        </div>
+        {/* Breadcrumb provided by AppShell PageBreadcrumb — removed duplicate (MOBILE-0016) */}
 
         {/* ─── TAB BAR ─── */}
         <div className="flex gap-1 p-1 bg-card rounded-lg border border-border overflow-x-auto" role="tablist">
@@ -206,7 +177,7 @@ export default function PeopleHub() {
                   setActiveTab(tab.id);
                   setActivePanel(tab.panels[0]?.id ?? "command-center");
                 }}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-all whitespace-nowrap min-h-[44px] ${
                   isActive
                     ? "bg-primary/10 text-primary border border-primary/30"
                     : "text-muted-foreground hover:bg-background hover:text-foreground border border-transparent"
@@ -386,7 +357,7 @@ export default function PeopleHub() {
                 <button
                   key={panel.id}
                   onClick={() => setActivePanel(panel.id)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[44px] ${
                     isActive
                       ? "bg-accent/10 text-accent border border-accent/30"
                       : "text-muted-foreground hover:bg-background hover:text-foreground border border-border/50"

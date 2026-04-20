@@ -14,6 +14,18 @@ export interface TTSOptions {
   onEnd?: () => void;
 }
 
+/** G28: Word-level highlighting data for karaoke-style TTS display */
+export interface TTSWordHighlight {
+  /** The full text being spoken */
+  text: string;
+  /** Character index of the currently spoken word */
+  charIndex: number;
+  /** Length of the currently spoken word */
+  charLength: number;
+  /** The current word being spoken */
+  word: string;
+}
+
 export interface TTSReturn {
   isSpeaking: boolean;
   /** Speak text — tries Edge TTS first, falls back to browser. Respects enabled flag. */
@@ -26,6 +38,10 @@ export interface TTSReturn {
   guardRef: React.MutableRefObject<boolean>;
   /** Play an audible processing cue */
   playCue: (type: "listening" | "thinking" | "speaking" | "done") => void;
+  /** G28: Current word being spoken (null when not speaking or no boundary data) */
+  currentWord: TTSWordHighlight | null;
+  /** G28: The full cleaned text being spoken (for rendering with highlights) */
+  spokenText: string;
 }
 
 // ─── Audio cue frequencies ──────────────────────────────────────────
@@ -154,6 +170,10 @@ export function useTTS({
   onEnd,
 }: TTSOptions): TTSReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  // G28: Word-level highlighting state
+  const [currentWord, setCurrentWord] = useState<TTSWordHighlight | null>(null);
+  const [spokenText, setSpokenText] = useState("");
+  const wordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const guardRef = useRef(false);
   const onStartRef = useRef(onStart);
   const onEndRef = useRef(onEnd);
@@ -204,6 +224,12 @@ export function useTTS({
       URL.revokeObjectURL(currentUrlRef.current);
       currentUrlRef.current = null;
     }
+    // G28: Clear word highlighting
+    if (wordTimerRef.current) {
+      clearInterval(wordTimerRef.current);
+      wordTimerRef.current = null;
+    }
+    setCurrentWord(null);
     guardRef.current = false;
     setIsSpeaking(false);
   }, []);
@@ -314,29 +340,88 @@ export function useTTS({
       }
 
       const chunks = chunkText(cleaned);
+      // G28: Track cumulative char offset across chunks for word highlighting
+      let chunkOffset = 0;
       chunks.forEach((chunk, i) => {
         const utterance = new SpeechSynthesisUtterance(chunk);
         utterance.rate = rate;
         utterance.pitch = 1.0;
+        const myOffset = chunkOffset;
+
+        // G28: Word boundary event — fires for each word in browser SpeechSynthesis
+        utterance.onboundary = (event) => {
+          if (event.name === "word") {
+            const absIndex = myOffset + event.charIndex;
+            const wordLen = event.charLength || cleaned.slice(absIndex).match(/^\S+/)?.[0]?.length || 1;
+            setCurrentWord({
+              text: cleaned,
+              charIndex: absIndex,
+              charLength: wordLen,
+              word: cleaned.slice(absIndex, absIndex + wordLen),
+            });
+          }
+        };
 
         if (i === chunks.length - 1) {
           utterance.onend = () => {
+            setCurrentWord(null);
             guardRef.current = false;
             setIsSpeaking(false);
             playCue("done");
             onEndRef.current?.();
           };
           utterance.onerror = () => {
+            setCurrentWord(null);
             guardRef.current = false;
             setIsSpeaking(false);
             onEndRef.current?.();
           };
         }
         window.speechSynthesis.speak(utterance);
+        chunkOffset += chunk.length + 1; // +1 for the space between chunks
       });
     },
     [rate, playCue]
   );
+
+  /**
+   * G28: Time-based word estimation for Edge TTS (no native boundary events).
+   * Estimates ~150 words/min at rate=1.0, adjusts by rate.
+   */
+  const _startEdgeWordEstimation = useCallback((text: string, ttsRate: number) => {
+    if (wordTimerRef.current) clearInterval(wordTimerRef.current);
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return;
+    // Average speaking rate: ~150 wpm at rate 1.0
+    const msPerWord = (60_000 / 150) / ttsRate;
+    let wordIdx = 0;
+    let charIdx = 0;
+    // Set first word immediately
+    setCurrentWord({
+      text,
+      charIndex: 0,
+      charLength: words[0].length,
+      word: words[0],
+    });
+    wordTimerRef.current = setInterval(() => {
+      wordIdx++;
+      if (wordIdx >= words.length) {
+        if (wordTimerRef.current) clearInterval(wordTimerRef.current);
+        wordTimerRef.current = null;
+        setCurrentWord(null);
+        return;
+      }
+      // Find char index of this word in the original text
+      charIdx = text.indexOf(words[wordIdx], charIdx + words[wordIdx - 1].length);
+      if (charIdx < 0) charIdx = 0; // fallback
+      setCurrentWord({
+        text,
+        charIndex: charIdx,
+        charLength: words[wordIdx].length,
+        word: words[wordIdx],
+      });
+    }, msPerWord);
+  }, []);
 
   /**
    * Core speak implementation — shared by speak() and forceSpeak()
@@ -352,6 +437,10 @@ export function useTTS({
 
       guardRef.current = true;
       setIsSpeaking(true);
+      // G28: Store the cleaned text for rendering with highlights
+      const cleanedText = cleanForSpeech(text);
+      setSpokenText(cleanedText);
+      setCurrentWord(null);
       onStartRef.current?.();
       playCue("speaking");
 
@@ -362,6 +451,9 @@ export function useTTS({
           onSuccess: (data) => {
             if (cancelledRef.current) return;
             if (data.audio) {
+              // G28: For Edge TTS, use time-based word estimation
+              // since we don't get word boundary events from the audio.
+              _startEdgeWordEstimation(cleanedText, rate);
               playEdgeAudio(data.audio);
             } else {
               // No audio returned — fall back to browser
@@ -377,7 +469,7 @@ export function useTTS({
         }
       );
     },
-    [cancel, voice, speakMutation, playEdgeAudio, speakWithBrowser, playCue]
+    [cancel, voice, speakMutation, playEdgeAudio, speakWithBrowser, playCue, _startEdgeWordEstimation, rate]
   );
 
   /**
@@ -411,5 +503,5 @@ export function useTTS({
     [doSpeak]
   );
 
-  return { isSpeaking, speak, forceSpeak, cancel, guardRef, playCue };
+  return { isSpeaking, speak, forceSpeak, cancel, guardRef, playCue, currentWord, spokenText };
 }

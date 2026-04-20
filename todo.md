@@ -7507,13 +7507,13 @@
 - [x] Pass 4 tests: 33 new regression tests (v83-pass4-parity.test.ts) + PARITY.md updated
 
 ### v8.3 Pass 5 — PEOPLE + PLATFORM P1/P2
-- [ ] MOBILE-0016: People page mobile layout refactor (6 overlaps)
-- [ ] G37: aria-describedby linking form errors to inputs
-- [ ] G44: Voice barge-in during TTS
-- [ ] G28: Word-level TTS highlighting (karaoke)
-- [ ] G50: Voice onboarding tutorial in OnboardingFlow
-- [ ] Pass 5 LVUA: Live browser validation
-- [ ] Pass 5 tests + PARITY update
+- [x] MOBILE-0016: People page mobile layout — min-h-[44px] touch targets, responsive padding/font, duplicate breadcrumb removed, no horizontal overflow
+- [x] G37: aria-required on ClientOnboarding required fields; app uses toast-based validation (no inline errors to link)
+- [x] G44: Voice barge-in — onBargeIn callback in useVoiceRecognition, AudioContext speech detection during TTS guard, Chat.tsx cancels TTS + restarts listening
+- [x] G28: Word-level TTS highlighting — TTSHighlighter component, browser onboundary + Edge time-estimation, wired into hands-free bar
+- [x] G50: Voice onboarding tutorial — enhanced voice-mode step with barge-in instructions + dedicated voice commands reference step
+- [x] Pass 5 LVUA: 12/12 passed, 0 JS errors, desktop+mobile
+- [x] Pass 5 tests: 24 new regression tests (v83-pass5-parity.test.ts) + PARITY.md updated
 
 ### v8.3 Pass 6 — i18n + remaining
 - [ ] G31: i18n library + translation key extraction

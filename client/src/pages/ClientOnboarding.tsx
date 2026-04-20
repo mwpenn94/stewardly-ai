@@ -249,15 +249,15 @@ export default function ClientOnboarding({ embedded = false }: { embedded?: bool
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">First Name <span className="text-destructive">*</span></Label>
-                  <Input value={personal.firstName} onChange={e => updatePersonal("firstName", e.target.value)} placeholder="John" />
+                  <Input value={personal.firstName} onChange={e => updatePersonal("firstName", e.target.value)} placeholder="John" aria-required="true" />
                 </div>
                 <div>
                   <Label className="text-xs">Last Name <span className="text-destructive">*</span></Label>
-                  <Input value={personal.lastName} onChange={e => updatePersonal("lastName", e.target.value)} placeholder="Smith" />
+                  <Input value={personal.lastName} onChange={e => updatePersonal("lastName", e.target.value)} placeholder="Smith" aria-required="true" />
                 </div>
                 <div>
                   <Label className="text-xs">Email <span className="text-destructive">*</span></Label>
-                  <Input type="email" autoComplete="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" />
+                  <Input type="email" autoComplete="email" value={personal.email} onChange={e => updatePersonal("email", e.target.value)} placeholder="john@example.com" aria-required="true" />
                 </div>
                 <div>
                   <Label className="text-xs">Phone</Label>
@@ -303,7 +303,7 @@ export default function ClientOnboarding({ embedded = false }: { embedded?: bool
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Annual Income <span className="text-destructive">*</span></Label>
-                  <Input type="number" value={financial.annualIncome} onChange={e => updateFinancial("annualIncome", e.target.value)} placeholder="150000" />
+                  <Input type="number" value={financial.annualIncome} onChange={e => updateFinancial("annualIncome", e.target.value)} placeholder="150000" aria-required="true" />
                 </div>
                 <div>
                   <Label className="text-xs">Estimated Net Worth</Label>
@@ -329,13 +329,15 @@ export default function ClientOnboarding({ embedded = false }: { embedded?: bool
 
               <div>
                 <Label className="text-xs">Employment Status <span className="text-destructive">*</span></Label>
-                <div className="flex flex-wrap gap-2 mt-1">
+                <div className="flex flex-wrap gap-2 mt-1" role="radiogroup" aria-required="true" aria-label="Employment Status">
                   {EMPLOYMENT_OPTIONS.map(opt => (
                     <Button
                       key={opt}
                       variant={financial.employmentStatus === opt ? "default" : "outline"}
                       size="sm"
                       className="text-xs"
+                      role="radio"
+                      aria-checked={financial.employmentStatus === opt}
                       onClick={() => updateFinancial("employmentStatus", opt)}
                     >
                       {opt}

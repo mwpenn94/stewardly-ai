@@ -71,6 +71,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-stability-lvua.test.ts",
       // v8.3 Pass 4: G8 pilContext, G14 ROUTE_MAP, G1 SRS feedback, G5 voice commands
       "client/src/pages/__tests__/v83-pass4-parity.test.ts",
+      // v8.3 Pass 5: MOBILE-0016, G37 aria-required, G44 barge-in, G50 voice onboarding, G28 TTS highlighting
+      "client/src/pages/__tests__/v83-pass5-parity.test.ts",
     ],
   },
 });

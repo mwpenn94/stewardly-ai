@@ -45,6 +45,7 @@ const StreamingResults = lazy(() => import("@/components/consensus/StreamingResu
 const TimingBreakdown = lazy(() => import("@/components/consensus/TimingBreakdown").then(m => ({ default: m.TimingBreakdown })));
 const ComparisonView = lazy(() => import("@/components/consensus/ComparisonView").then(m => ({ default: m.ComparisonView })));
 import { VoiceOrb } from "@/components/VoiceOrb";
+import { TTSHighlighter } from "@/components/TTSHighlighter";
 import { ProgressiveMessage } from "@/components/ProgressiveMessage";
 import RichMediaEmbed, { type MediaEmbed } from "@/components/RichMediaEmbed";
 import { useVoiceRecognition } from "@/hooks/useVoiceRecognition";
@@ -368,6 +369,17 @@ export default function Chat() {
       }
     },
     guardRef,
+    // G44: Voice barge-in — when user speaks while TTS is playing,
+    // cancel TTS immediately so the user can take over the conversation.
+    onBargeIn: () => {
+      console.debug("[Chat] G44 barge-in — cancelling TTS");
+      tts.cancel();
+      guardRef.current = false;
+      processingRef.current = false;
+      forceUpdate(n => n + 1);
+      // After a brief delay, restart full listening
+      setTimeout(() => { try { voice.start(); } catch {} }, 300);
+    },
   });
 
   // Derive voice state for UI
@@ -2597,6 +2609,14 @@ export default function Chat() {
                 <span className="text-[11px] text-foreground/50 italic max-w-[250px] truncate">
                   "{voice.interimText}"
                 </span>
+              )}
+              {/* G28: Word-level TTS highlighting (karaoke) */}
+              {voiceState === "speaking" && tts.currentWord && (
+                <TTSHighlighter
+                  highlight={tts.currentWord}
+                  maxChars={80}
+                  className="max-w-[300px]"
+                />
               )}
             </div>
             <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={toggleHandsFree}>End</Button>

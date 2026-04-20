@@ -45,10 +45,18 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: "voice-mode",
     title: "Hands-Free Voice Mode",
-    description: "Toggle voice mode for a hands-free experience. The AI listens, responds with natural speech, and automatically continues the conversation. Perfect for multitasking.",
+    description: "Press Shift+V or tap the microphone button to activate hands-free mode. The AI listens to you, responds with natural speech, and automatically continues the conversation. You can interrupt the AI at any time by simply speaking (barge-in). Perfect for multitasking or when your hands are busy.",
     target: "[data-tour='voice-toggle']",
     placement: "bottom",
     icon: <Zap className="w-5 h-5" />,
+    category: "features",
+  },
+  {
+    id: "voice-commands",
+    title: "Voice Commands",
+    description: "In hands-free mode, say: \"stop\" to cancel a response, \"new chat\" to start fresh, \"bookmark\" to save a message, \"open palette\" for the command palette, \"cancel\" to clear input, or \"undo\" to revert. The AI also understands financial terms like IUL, 401(k), EBITDA, and Monte Carlo automatically.",
+    placement: "center",
+    icon: <MessageSquare className="w-5 h-5" />,
     category: "features",
   },
   {
