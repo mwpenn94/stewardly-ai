@@ -63,7 +63,10 @@ import {
 import { SEOHead } from "@/components/SEOHead";
 import { ShareButton } from "@/components/sharing/ShareKit";
 import { usePanelOrder } from '@/hooks/usePanelOrder';
+import { usePanelAnalytics } from '@/hooks/usePanelAnalytics';
 import { useUndoHistory } from '@/hooks/useUndoHistory';
+import { SessionReplayTimeline } from '@/components/SessionReplayTimeline';
+import type { TimelineEntry } from '@/components/SessionReplayTimeline';
 import { CompareDiffOverlay, type MetricSnapshot } from '@/components/CompareDiffOverlay';
 import { WealthEngineOnboarding, type OnboardingResult } from './calculators/WealthEngineOnboarding';
 import { ComplianceChecklist } from './calculators/ComplianceChecklist';
@@ -233,7 +236,8 @@ export default function Calculators() {
     if (tab) urlTabRef.current = tab;
     setCalcSidebarOpen(false);
     setGlobalSearch('');
-  }, []);
+    panelAnalytics.recordVisit(panelId);
+  }, [panelAnalytics]);
 
   /* ─── PANEL COMPARISON SPLIT-VIEW (Pass 154) ─── */
   const [compareMode, setCompareMode] = useState(false);
@@ -285,6 +289,9 @@ export default function Calculators() {
 
   /* ─── DRAG-AND-DROP PANEL REORDERING (Pass 155) ─── */
   const { orderedSections, handleDragStart, handleDragEnter, handleDragEnd, resetOrder, hasCustomOrder, dragItem } = usePanelOrder(NAV_SECTIONS);
+
+  /* ─── PANEL USAGE ANALYTICS (v8 Pass 5) ─── */
+  const panelAnalytics = usePanelAnalytics();
 
   /* ─── KEYBOARD SHORTCUT CHEAT SHEET (Pass 155) ─── */
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -826,6 +833,10 @@ export default function Calculators() {
 
   /* ─── ALSO MY CLIENT → PLANNING HIERARCHY BRIDGE ─── */
   const bridgeMut = trpc.planningHierarchy.bridgeContactToClient.useMutation();
+  const bulkExportMut = trpc.scenarioExport.bulkExport.useMutation({
+    onSuccess: (data) => { window.open(data.url, '_blank'); toast.success(`Exported ${data.sessionCount} scenarios as Excel`); },
+    onError: (err) => { toast.error(err.message || 'No saved sessions found'); },
+  });
   useEffect(() => {
     if (!ppAlsoMyClient || !user) return;
     // When toggled ON, bridge the client profile into the planning hierarchy.
@@ -1487,6 +1498,38 @@ export default function Calculators() {
         )}
         <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
           <nav className="p-2 space-y-3" role="navigation" aria-label="Wealth Engine panels">
+            {/* ─── RECENTLY USED (v8 Pass 5) ─── */}
+            {panelAnalytics.recentPanels.length > 0 && (
+              <div role="group" aria-label="Recently Used">
+                <div className="flex items-center justify-between px-2 mb-1">
+                  <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Recently Used</p>
+                  <span className="text-[9px] text-muted-foreground/40">{panelAnalytics.totalVisits} visits</span>
+                </div>
+                <div role="list">
+                  {panelAnalytics.recentPanels.map(rp => {
+                    const item = allPanelItems.find(i => i.id === rp.id);
+                    if (!item) return null;
+                    return (
+                      <div key={`recent-${rp.id}`} className="flex items-center group">
+                        <button type="button" role="listitem" onClick={() => navigateToPanel(rp.id as any)}
+                          aria-label={`Navigate to ${item.label} panel (visited ${rp.count} times)`}
+                          aria-current={activePanel === rp.id ? 'page' : undefined}
+                          className={`flex-1 flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                            activePanel === rp.id
+                              ? 'bg-primary/10 text-primary border border-primary/30'
+                              : 'text-muted-foreground hover:bg-background hover:text-foreground border border-transparent'
+                          }`}>
+                          {item.icon}
+                          <span className="truncate">{item.label}</span>
+                          <span className="ml-auto text-[9px] text-muted-foreground/40 tabular-nums">{rp.count}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="h-px bg-border/30 mt-2" />
+              </div>
+            )}
             {hasCustomOrder && (
               <div className="flex items-center justify-between px-2 py-1 bg-amber-500/10 rounded text-[9px]">
                 <span className="text-amber-400/80">Custom order active</span>
@@ -1627,6 +1670,13 @@ export default function Calculators() {
                 className="text-xs gap-1 h-7" aria-label="Export as CSV">
                 <Download className="w-3 h-3" /> <span className="hidden sm:inline">CSV</span>
               </Button>
+              {user && (
+                <Button variant="outline" size="sm" onClick={() => bulkExportMut.mutate()}
+                  disabled={bulkExportMut.isPending}
+                  className="text-xs gap-1 h-7 border-emerald-500/30 text-emerald-400 hover:text-emerald-300" aria-label="Export all saved scenarios as Excel workbook">
+                  <Download className={`w-3 h-3 ${bulkExportMut.isPending ? 'animate-spin' : ''}`} /> <span className="hidden sm:inline">{bulkExportMut.isPending ? 'Exporting...' : 'All Scenarios'}</span>
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={() => {
                 const input = document.createElement('input');
                 input.type = 'file'; input.accept = '.json';
@@ -1698,6 +1748,16 @@ export default function Calculators() {
               )}
             </div>
           </div>
+
+          {/* ─── SESSION REPLAY TIMELINE (v8 Pass 5) ─── */}
+          {undoHistory.length > 1 && (
+            <SessionReplayTimeline
+              entries={undoHistory.entries.map(e => ({ state: e.state as Record<string, any>, timestamp: e.timestamp, label: e.label }))}
+              currentPosition={undoHistory.position}
+              onJumpTo={(idx) => { const s = undoHistory.jumpTo(idx); if (s) { restoreInputs(s as Record<string, any>); toast.info(`Jumped to snapshot ${idx + 1}`); } }}
+              className="mb-3"
+            />
+          )}
 
           {/* ─── WELCOME TIP ─── */}
           {showWelcome && (

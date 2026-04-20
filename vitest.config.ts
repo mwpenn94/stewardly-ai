@@ -57,6 +57,8 @@ export default defineConfig({
       "client/src/pages/__tests__/cascade-flow-v8p4.test.ts",
       // v8 Pass 4: useUndoHistory ring buffer
       "client/src/hooks/__tests__/useUndoHistory.test.ts",
+      // v8 Pass 5: session replay timeline, bulk export, panel analytics
+      "client/src/pages/__tests__/v8-pass5-features.test.ts",
     ],
   },
 });

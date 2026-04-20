@@ -207,6 +207,108 @@ function generateExcel(
 }
 
 export const scenarioExportRouter = router({
+  /** Bulk export all saved calculator sessions as a multi-sheet Excel workbook (v8 Pass 5) */
+  bulkExport: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const { listCalculatorSessions, getCalculatorSession } = await import("../db");
+      const sessions = await listCalculatorSessions(ctx.user.id);
+      if (!sessions || sessions.length === 0) {
+        throw new Error("No saved sessions found");
+      }
+
+      const wb = XLSX.utils.book_new();
+
+      // Fetch full session data for each
+      const fullSessions: { name: string; type: string; inputs: Record<string, any>; results: Record<string, any>; createdAt: any; updatedAt: any }[] = [];
+      for (const s of sessions) {
+        const full = await getCalculatorSession(s.id, ctx.user.id);
+        if (full) {
+          fullSessions.push({
+            name: full.name,
+            type: full.calculatorType || 'general',
+            inputs: (typeof full.inputsJson === 'object' && full.inputsJson ? full.inputsJson : {}) as Record<string, any>,
+            results: (typeof full.resultsJson === 'object' && full.resultsJson ? full.resultsJson : {}) as Record<string, any>,
+            createdAt: full.createdAt,
+            updatedAt: full.updatedAt,
+          });
+        }
+      }
+
+      // ─── Summary Sheet ───
+      const summaryHeaders = ["#", "Session Name", "Calculator Type", "Created", "Last Updated", "Input Fields", "Result Fields"];
+      const summaryRows: (string | number)[][] = [summaryHeaders];
+      fullSessions.forEach((s, i) => {
+        const inputFlat = flattenScenario(s.inputs);
+        const resultFlat = flattenScenario(s.results);
+        summaryRows.push([
+          i + 1,
+          s.name,
+          s.type,
+          s.createdAt ? new Date(s.createdAt).toLocaleDateString() : 'N/A',
+          s.updatedAt ? new Date(s.updatedAt).toLocaleDateString() : 'N/A',
+          Object.keys(inputFlat).length,
+          Object.keys(resultFlat).length,
+        ]);
+      });
+      const summaryWs = XLSX.utils.aoa_to_sheet(summaryRows);
+      summaryWs["!cols"] = [{ wch: 4 }, { wch: 30 }, { wch: 20 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+
+      // ─── Comparison Sheet (all sessions side-by-side) ───
+      const allFlattened = fullSessions.map(s => {
+        const combined = { ...flattenScenario(s.inputs), ...flattenScenario(s.results) };
+        return combined;
+      });
+      const allKeys = [...new Set(allFlattened.flatMap(f => Object.keys(f)))].sort();
+      const numericKeys = allKeys.filter(k => allFlattened.some(f => typeof f[k] === 'number'));
+
+      const compHeaders = ["Metric", ...fullSessions.map(s => s.name)];
+      const compRows: (string | number)[][] = [compHeaders];
+      for (const key of numericKeys) {
+        const label = humanize(key);
+        const values = allFlattened.map(f => {
+          const v = f[key];
+          return typeof v === 'number' ? Math.round(v * 100) / 100 : 0;
+        });
+        compRows.push([label, ...values]);
+      }
+      const compWs = XLSX.utils.aoa_to_sheet(compRows);
+      compWs["!cols"] = [{ wch: 35 }, ...fullSessions.map(() => ({ wch: 18 }))];
+      XLSX.utils.book_append_sheet(wb, compWs, "Comparison");
+
+      // ─── Individual Session Sheets ───
+      fullSessions.forEach((session, idx) => {
+        const flat = { ...flattenScenario(session.inputs), ...flattenScenario(session.results) };
+        const sRows: (string | number | string)[][] = [
+          ["Section", "Metric", "Value"],
+        ];
+
+        // Inputs section
+        const inputFlat = flattenScenario(session.inputs);
+        for (const [k, v] of Object.entries(inputFlat)) {
+          sRows.push(["Input", humanize(k), typeof v === 'number' ? Math.round(v * 100) / 100 : String(v)]);
+        }
+
+        // Results section
+        const resultFlat = flattenScenario(session.results);
+        for (const [k, v] of Object.entries(resultFlat)) {
+          sRows.push(["Result", humanize(k), typeof v === 'number' ? Math.round(v * 100) / 100 : String(v)]);
+        }
+
+        const sWs = XLSX.utils.aoa_to_sheet(sRows);
+        sWs["!cols"] = [{ wch: 10 }, { wch: 35 }, { wch: 20 }];
+        // Sheet names must be <= 31 chars and unique
+        const sheetName = `${idx + 1}. ${session.name}`.slice(0, 31);
+        XLSX.utils.book_append_sheet(wb, sWs, sheetName);
+      });
+
+      const buffer = Buffer.from(XLSX.write(wb, { type: "buffer", bookType: "xlsx" }));
+      const suffix = crypto.randomBytes(6).toString("hex");
+      const fileKey = `exports/${ctx.user.id}/all-scenarios-${suffix}.xlsx`;
+      const { url } = await storagePut(fileKey, buffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      return { url, filename: `WealthBridge-All-Scenarios-${new Date().toISOString().slice(0, 10)}.xlsx`, sessionCount: fullSessions.length };
+    }),
+
   /** Export scenarios as PDF or Excel */
   export: protectedProcedure
     .input(exportInputSchema)

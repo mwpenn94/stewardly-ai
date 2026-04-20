@@ -7402,3 +7402,25 @@
 - [x] Add Undo/Redo entries to keyboard shortcut cheat sheet
 - [x] Write 12 vitest tests for useUndoHistory
 - [x] Mark already-implemented todo items (OnboardingWizard, PFR, CalculatorBridge, MultiClientComparison)
+
+### v8 Pass 5 — 3 Recommended Features
+
+#### Feature 1: Session Replay Timeline
+- [x] Create SessionReplayTimeline component with visual scrubber
+- [x] Show all undo/redo snapshots with timestamps on a horizontal timeline
+- [x] Allow clicking any point to jump to that snapshot
+- [x] Show current position indicator on the timeline
+- [x] Wire into Calculators.tsx toolbar area
+
+#### Feature 2: Bulk Scenario Export (Excel)
+- [x] Create server-side Excel workbook generator for saved calculator sessions (bulkExport endpoint)
+- [x] One sheet per saved scenario with all inputs and calculated outputs
+- [x] Add "Export All Scenarios" button to session management area (emerald-accented toolbar button)
+- [x] Include summary sheet with scenario comparison table
+
+#### Feature 3: Panel Usage Analytics with Recently Used
+- [x] Create usePanelAnalytics hook to track panel visits with timestamps
+- [x] Persist analytics data in localStorage
+- [x] Add "Recently Used" quick-access section at top of sidebar
+- [x] Show visit count badges on frequently used panels
+- [x] Write tests for all 3 features (15/15 passing)
