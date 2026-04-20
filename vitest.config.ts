@@ -69,6 +69,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass3-lvua.test.ts",
       // v8.3 Stability LVUA: scores.map crash, onboarding persistence, legacy redirects, panel structure
       "client/src/pages/__tests__/v83-stability-lvua.test.ts",
+      // v8.3 Pass 4: G8 pilContext, G14 ROUTE_MAP, G1 SRS feedback, G5 voice commands
+      "client/src/pages/__tests__/v83-pass4-parity.test.ts",
     ],
   },
 });

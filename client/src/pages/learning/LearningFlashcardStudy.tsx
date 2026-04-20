@@ -134,6 +134,7 @@ export default function LearningFlashcardStudy() {
 
     // Pass 16 — PIL feedback dispatch (G1/G8).
     sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
+    sendFeedback("learning.srs_rating", { rating: correct ? "good" : "again" });
 
     if (correct) {
       setCorrectCount((c) => c + 1);

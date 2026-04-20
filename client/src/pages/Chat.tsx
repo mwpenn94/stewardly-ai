@@ -1320,6 +1320,11 @@ export default function Chat() {
             mode,
             focus: focusSerialized,
             model: selectedModel || undefined,
+            pilContext: {
+              modalityPref: pil.modalityPref,
+              handsFreeActive: pil.handsFreeActive,
+              deviceType: pil.deviceType,
+            },
           });
           const assistantMsg = {
             id: result.id,
@@ -1348,6 +1353,11 @@ export default function Chat() {
           mode,
           focus: focusSerialized,
           model: selectedModel || undefined,
+          pilContext: {
+            modalityPref: pil.modalityPref,
+            handsFreeActive: pil.handsFreeActive,
+            deviceType: pil.deviceType,
+          },
         });
 
         const assistantMsg = {

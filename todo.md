@@ -7495,3 +7495,28 @@
 - [x] Comprehensive LVUA: Mobile viewport — 0 horizontal overflow on all 5 tested pages (390×844)
 - [x] Fix ALL P0 issues found (scores.map crash, TDZ crashes, 404 route, natural URL aliases)
 - [x] Re-verified all fixes — 0 P0 crashes, 154 tests passing, 0 regressions
+
+### v8.3 Pass 4 — PLATFORM P0 fixes
+- [x] G59: Firefox SpeechRecognition compatibility banner — determined NOT needed (CodeChat has no voice features; Chat already has VoiceSupportBanner)
+- [x] G1: Wire multisensory feedback — learning.srs_rating wired in FlashcardStudy + navigate.success wired in PIL processIntent
+- [x] G5: Voice command dispatch — all 7 commands confirmed wired (send/new_chat/bookmark/palette/cancel/stop/undo)
+- [x] G8: PIL context consumed — pilContext flows Chat.tsx → tRPC → buildSystemPrompt with <interaction_context> injection
+- [x] G14: ROUTE_MAP — both intentParser.ts and PlatformIntelligence.tsx synced with App.tsx routes (31 missing routes added)
+- [x] G53: CommandPalette shortcut hints — already fixed in prior pass (KeyboardShortcuts overlay only lists wired shortcuts)
+- [x] Pass 4 LVUA: 12/12 tests passed, 0 JS errors, all pages load on desktop+mobile
+- [x] Pass 4 tests: 33 new regression tests (v83-pass4-parity.test.ts) + PARITY.md updated
+
+### v8.3 Pass 5 — PEOPLE + PLATFORM P1/P2
+- [ ] MOBILE-0016: People page mobile layout refactor (6 overlaps)
+- [ ] G37: aria-describedby linking form errors to inputs
+- [ ] G44: Voice barge-in during TTS
+- [ ] G28: Word-level TTS highlighting (karaoke)
+- [ ] G50: Voice onboarding tutorial in OnboardingFlow
+- [ ] Pass 5 LVUA: Live browser validation
+- [ ] Pass 5 tests + PARITY update
+
+### v8.3 Pass 6 — i18n + remaining
+- [ ] G31: i18n library + translation key extraction
+- [ ] Remaining P3 items as time allows
+- [ ] Pass 6 LVUA: Final comprehensive validation
+- [ ] Pass 6 tests + PARITY update + checkpoint

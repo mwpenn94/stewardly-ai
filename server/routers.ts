@@ -247,6 +247,11 @@ const chatRouter = router({
       mode: z.enum(["client", "coach", "manager"]).default("client"),
       focus: z.string().default("general,financial"),
       model: z.string().optional(),
+      pilContext: z.object({
+        modalityPref: z.string().optional(),
+        handsFreeActive: z.boolean().optional(),
+        deviceType: z.string().optional(),
+      }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const conversation = await getConversation(input.conversationId, ctx.user.id);
@@ -353,6 +358,7 @@ const chatRouter = router({
         productContext: productContext || undefined,
         integrationContext: integrationContext || undefined,
         insightContext: insightContext || undefined,
+        pilContext: input.pilContext || undefined,
       });
 
       // Combine: system prompt + layer overlays + exponential engine + deep context

@@ -55,20 +55,20 @@ Legend: Priority P0 (ship-blocker) → P3 (polish). Effort: S (≤1 day) / M (1�
 
 | ID | Feature | Present? | Depth | Priority | Effort | Aligned | Owner | Status |
 |----|---------|----------|-------|----------|--------|---------|-------|--------|
-| G1 | Multisensory feedback layer actually triggered | ⚠ Chat + PIL + 10 learning/engine/onboarding consumers wired (Build Loop P1 + P16) | 7/10 | P0 | M | Yes | Build Loop | in_progress |
+| G1 | Multisensory feedback layer actually triggered | ⚠ Chat + PIL + 10 learning/engine/onboarding consumers wired (Build Loop P1 + P16); learning.srs_rating wired in FlashcardStudy + navigate.success wired in PIL processIntent (v8.3 P4) | 8/10 | P0 | M | Yes | Build Loop | in_progress |
 | G2 | Theme actually switchable (light / dark / system) | ✓ fixed (Build Loop P4) | 9/10 | P0 | M | Yes | Build Loop | done |
 | G3 | aria-live announces actual streamed content (not just "AI is responding") | ✓ fixed (Build Loop P5) | 9/10 | P0 | S | Yes | Build Loop | done |
 | G4 | Captions / visible transcript during TTS playback (WCAG 1.2.1-A) | ✓ fixed (Build Loop P5) | 8/10 | P0 | S | Yes | Build Loop | done |
-| G5 | Voice command dispatch beyond navigation (send, new chat, bookmark, open palette, cancel, stop, undo) | ⚠ partial — send/new_chat/palette/cancel/stop/undo shipped, bookmark still open | 7/10 | P0 | M | Yes | Build Loop | in_progress |
+| G5 | Voice command dispatch beyond navigation (send, new chat, bookmark, open palette, cancel, stop, undo) | ✓ All 7 voice commands shipped: send, new_chat, bookmark, open_palette, cancel, stop, undo — PIL dispatches + Chat.tsx listeners fully wired (v8.3 P4 confirmed) | 10/10 | P0 | M | Yes | v8.3-P4 | done |
 | G6 | Realtime conversational voice mode (full-duplex, interruptible) | ❌ | 0/10 | P1 | XL | Yes | — | open |
 | G7 | Push-to-talk / hold-to-dictate one-shot mode | ✓ shipped `usePushToTalk` + `PushToTalkButton` (Build Loop P10) | 9/10 | P1 | S | Yes | Build Loop | done |
-| G8 | PIL context consumed anywhere in app | ⚠ 10 new consumers via sendFeedback helper (Build Loop P16) — Chat, PIL, PTT, Quiz, Flashcard, DueReview, Exam, CaseStudy, Onboarding, AudioPrefs, CodeChat, Retirement, FinancialTwin | 7/10 | P0 | S | Yes | Build Loop | in_progress |
+| G8 | PIL context consumed anywhere in app | ✓ pilContext (modalityPref, handsFreeActive, deviceType) flows Chat.tsx → tRPC chat.send → server buildSystemPrompt; injects <interaction_context> block for hands-free/audio/mobile modes (v8.3 P4) | 9/10 | P0 | S | Yes | v8.3-P4 | done |
 | G9 | Light theme CSS tokens | ✓ fixed (Build Loop P4) | 9/10 | P1 | M | Yes | Build Loop | done |
 | G10 | `@media (prefers-contrast: more)` override | ✓ fixed (Build Loop P4) | 7/10 | P1 | S | Yes | Build Loop | done |
 | G11 | `@media (forced-colors: active)` override (Windows HC mode) | ✓ fixed (Build Loop P4) | 7/10 | P1 | S | Yes | Build Loop | done |
 | G12 | User-adjustable text size / zoom / density | ✓ fixed (Build Loop P4) | 8/10 | P1 | M | Yes | Build Loop | done |
 | G13 | Color-blind friendly mode / color-independent state indicators | ✓ shipped 5-mode picker + pattern adornments + chart recolor (Build Loop P10) | 8/10 | P2 | M | Partial | Build Loop | done |
-| G14 | ROUTE_MAP covers every major destination | ⚠ improved in P7 (CommandPalette now covers nav+extras; PIL ROUTE_MAP still independent) | 7/10 | P1 | S | Yes | Build Loop | in_progress |
+| G14 | ROUTE_MAP covers every major destination | ✓ Both intentParser.ts and PlatformIntelligence.tsx ROUTE_MAPs synced with App.tsx routes — 31 missing routes added, stale routes fixed (v8.3 P4) | 10/10 | P1 | S | Yes | v8.3-P4 | done |
 | G15 | Global "read this page aloud" keyboard shortcut | ✓ fixed (Build Loop P6) | 9/10 | P1 | S | Yes | Build Loop | done |
 | G16 | "Open command palette" voice command | ✅ PlatformIntelligence handles 'open palette' + toggle-command-palette | 10/10 | P1 | S | Yes | v8.2-P2 | done |
 | G17 | Voice input inside CommandPalette (say query instead of type) | ✓ PTT hold + Shift+Space (Build Loop P13) | 9/10 | P1 | S | Yes | Build Loop | done |
@@ -1176,6 +1176,8 @@ Pass 7 · angle: mobile bottom nav consistency + touch UX · commit SHA: 488be3f
 Pass 8 · angle: WCAG accessibility — aria-labels on icon buttons · commit SHA: dd68e83 · shipped: 7 Chat.tsx message action button aria-labels · deferred: LearningHome Card toggle a11y
 
 Pass 9 · angle: integration UX + data pipeline discoverability · commit SHA: (pending) · shipped: DynamicIntegrations back link fixed from /intelligence-hub to /integrations (correct section context) + hidden on mobile where AppShell nav covers it · deferred: none
+
+v8.3 Pass 4 · angle: MULTI (PLANS+PEOPLE+PLATFORM) · lens: A · pillar focus: PLATFORM · personas observed: A1 RIA (desktop 1440×900) + mobile 375×812 · queue: G8 pilContext wiring, G14 ROUTE_MAP sync, G1 SRS feedback, G5 voice commands confirmation · shipped: (1) G8 DONE — pilContext (modalityPref, handsFreeActive, deviceType) flows from Chat.tsx → tRPC chat.send → server buildSystemPrompt with <interaction_context> injection; (2) G14 DONE — both intentParser.ts and PlatformIntelligence.tsx ROUTE_MAPs synced with 31 missing routes added; (3) G1 partial — learning.srs_rating feedback wired in LearningFlashcardStudy + navigate.success in PIL processIntent; (4) G5 DONE — all 7 voice commands confirmed wired (send/new_chat/bookmark/palette/cancel/stop/undo) · LVUA: 12/12 tests passed, 0 JS errors, all major pages load on desktop+mobile · tests: 33 new regression tests (v83-pass4-parity.test.ts), all passing · deferred: MOBILE-0016, G37, G28, G44, G50, G31
 
 ## Angle Glossary
 | Angle ID | Description | Disjoint from |

@@ -104,6 +104,52 @@ export const ROUTE_MAP: Record<string, string> = {
   "leads": "/leads",
   "lead pipeline": "/leads",
   "pipeline": "/leads",
+
+  // People
+  "people": "/people",
+  "people hub": "/people",
+  "contacts": "/people",
+
+  // Financial tools
+  "tax planning": "/tax-planning",
+  "taxes": "/tax-planning",
+  "insurance": "/insurance-analysis",
+  "insurance analysis": "/insurance-analysis",
+  "estate planning": "/estate",
+  "estate": "/estate",
+  "social security": "/social-security",
+  "medicare": "/medicare",
+  "risk assessment": "/risk-assessment",
+  "risk": "/risk-assessment",
+  "income projection": "/income-projection",
+  "income": "/income-projection",
+  "financial planning": "/financial-planning",
+  "protection score": "/protection-score",
+  "protection": "/protection-score",
+
+  // Learning sub-pages
+  "study buddy": "/learning/study-buddy",
+  "flashcard review": "/learning/review",
+  "due review": "/learning/review",
+  "learning search": "/learning/search",
+
+  // CRM & onboarding
+  "crm sync": "/crm-sync",
+  "crm": "/crm-sync",
+  "client onboarding": "/client-onboarding",
+  "onboarding": "/client-onboarding",
+  "client dashboard": "/client-dashboard",
+  "community": "/community",
+  "import data": "/import",
+  "import": "/import",
+
+  // Admin
+  "admin billing": "/admin/billing",
+  "billing": "/admin/billing",
+  "api keys": "/admin/api-keys",
+  "webhooks": "/admin/webhooks",
+  "team management": "/admin/team",
+  "system health": "/admin/system-health",
 };
 
 /** Every distinct destination the intent parser can reach. */

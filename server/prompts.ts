@@ -22,6 +22,11 @@ export function buildSystemPrompt(opts: {
   affiliatedShelf?: string;
   integrationContext?: string;
   insightContext?: string;
+  pilContext?: {
+    modalityPref?: string;
+    handsFreeActive?: boolean;
+    deviceType?: string;
+  };
 }): string {
   const {
     userName = "the user",
@@ -41,6 +46,7 @@ export function buildSystemPrompt(opts: {
     affiliatedShelf,
     integrationContext,
     insightContext,
+    pilContext,
   } = opts;
 
   // Derive active focus modes from array or single focus
@@ -353,6 +359,23 @@ RICH MEDIA:
   - Direct document URLs ending in .pdf/.doc/.docx/.xls/.xlsx render as previewable document cards.
 - Prefer trustworthy sources (IRS, SEC, FINRA, FRED, major publications, official educational channels). Only include media URLs that are genuinely relevant. Do not fabricate URLs.
 </guidelines>`);
+
+  // G8: Inject PIL context so the LLM adapts responses to the user's
+  // interaction modality (voice/visual/both) and device type.
+  if (pilContext) {
+    const pilParts: string[] = [];
+    if (pilContext.handsFreeActive) {
+      pilParts.push("The user is in HANDS-FREE mode (voice-only interaction). Keep responses concise (2-3 sentences max), use natural spoken language, avoid markdown formatting, tables, or code blocks. Prefer numbered lists spoken aloud. End with a clear question or action prompt.");
+    } else if (pilContext.modalityPref === "audio_only") {
+      pilParts.push("The user prefers AUDIO responses. Keep responses concise and conversational. Avoid complex tables or code blocks that don't translate well to speech.");
+    }
+    if (pilContext.deviceType === "mobile") {
+      pilParts.push("The user is on a MOBILE device. Prefer shorter responses, avoid wide tables, and use compact formatting.");
+    }
+    if (pilParts.length > 0) {
+      parts.push(`<interaction_context>\n${pilParts.join("\n")}\n</interaction_context>`);
+    }
+  }
 
   return parts.join("\n\n");
 }
