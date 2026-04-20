@@ -64,7 +64,7 @@ const en = {
   "nav.searchPages": "Search pages...",
 
   // ── Chat ────────────────────────────────────────────────────
-  "chat.greeting": "Good {{timeOfDay}}, {{name}}",
+  "chat.greeting": "{{timeOfDay}}, {{name}}",
   "chat.greetingAnon": "Welcome to Stewardly",
   "chat.howCanIHelp": "How can I help you today?",
   "chat.input.placeholder": "Ask about platform management, analytics, or financial strategies...",

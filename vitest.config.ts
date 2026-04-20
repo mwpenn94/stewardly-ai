@@ -79,6 +79,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass7-parity.test.ts",
       // v8.3 Pass 9: i18n wiring, G32 RTL, G40 pull-to-refresh, documentation
       "client/src/pages/__tests__/v83-pass9-parity.test.ts",
+      // v8.3 Pass 10: Convergence validation — greeting fix, translation consistency, RTL/voice/P2R intact
+      "client/src/pages/__tests__/v83-pass10-convergence.test.ts",
     ],
   },
 });

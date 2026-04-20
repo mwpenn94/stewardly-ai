@@ -7563,3 +7563,12 @@
 - [x] PARITY.md updated — G32/G40 closed, Pass 9 entry added to Build Loop Pass Log
 - [x] Pass 9 LVUA: 11/12 passed, 0 JS errors (T5 RTL CSS cross-origin false negative)
 - [x] Pass 9 tests: 27/27 passed (v83-pass9-parity.test.ts) + PARITY.md updated + checkpoint saved
+
+### v8.3 Pass 10 — Convergence Validation
+- [x] Fixed P0 "Good Good" greeting duplication bug (chat.greeting key had redundant "Good" prefix)
+- [x] PARITY assessment: 3 remaining open items all infrastructure/external-dependency (DATA-0003/0004/0005)
+- [x] LVUA Pass 10: 15/16 passed (T3 sidebar selector false negative), 0 JS errors, 0 horizontal overflow
+- [x] Pass 10 convergence tests: 24/24 passed (v83-pass10-convergence.test.ts)
+- [x] Combined Pass 9+10 tests: 51/51 passed, 0 regressions
+- [x] PARITY.md updated with Pass 10 entry + Pass 9 checkpoint SHA
+- [x] CONVERGED — No new actionable gaps found. Only infrastructure/external-dependency items remain.
