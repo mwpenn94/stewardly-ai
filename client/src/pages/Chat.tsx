@@ -2677,6 +2677,7 @@ export default function Chat() {
                         showAddMenu ? "bg-accent/20 text-accent rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                       }`}
                       onClick={() => setShowAddMenu(!showAddMenu)}
+                      aria-label={showAddMenu ? "Close context menu" : "Add context"}
                     >
                       <Plus className="w-5 h-5 transition-transform" />
                     </button>
@@ -3206,6 +3207,7 @@ export default function Chat() {
                       data-tour="voice-toggle"
                       className="p-2 rounded-full bg-accent/15 text-accent transition-all"
                       onClick={() => { setTtsEnabled(false); tts.cancel(); }}
+                      aria-label="Mute audio"
                     >
                       <Volume2 className="w-4 h-4" />
                     </button>

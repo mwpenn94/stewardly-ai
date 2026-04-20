@@ -57,7 +57,7 @@ export function CascadeFlowIndicator({
   compact = false,
 }: CascadeFlowIndicatorProps) {
   return (
-    <div className={`flex items-center gap-1 overflow-x-auto ${className}`} role="list" aria-label="Cascade data flow">
+    <div className={`flex items-center gap-1 overflow-x-auto flex-wrap sm:flex-nowrap ${className}`} role="list" aria-label="Cascade data flow">
       {stages.map((stage, idx) => {
         const style = STATUS_STYLES[stage.status];
         const Icon = stage.icon;

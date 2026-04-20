@@ -193,12 +193,21 @@ function PFRWizardPanel({ onNavigateToPanel, weData }: { onNavigateToPanel: (pan
 
 export default function Calculators() {
   const { user } = useAuth();
-  // Pass 110: Support ?panel= query param for deep-linking (e.g. /calculators?panel=myplan&tab=funnel)
+  // Pass 110: Support ?panel= query param AND /wealth-engine/:panel path param for deep-linking
   const urlTabRef = useRef<string | null>(null);
   const [activePanel, setActivePanel] = useState<PanelId>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       let p = params.get('panel');
+      // Also support path-based deep linking: /wealth-engine/retirement or /calculators/retirement
+      if (!p) {
+        const pathParts = window.location.pathname.split('/');
+        // /wealth-engine/retirement → pathParts = ['', 'wealth-engine', 'retirement']
+        // /calculators/retirement → pathParts = ['', 'calculators', 'retirement']
+        if (pathParts.length >= 3 && (pathParts[1] === 'wealth-engine' || pathParts[1] === 'calculators')) {
+          p = pathParts[2];
+        }
+      }
       urlTabRef.current = params.get('tab');
       // Legacy panel ID redirects (Pass 150/151 consolidation)
       const LEGACY_REDIRECTS: Record<string, PanelId> = { recruitfunnel: 'recruiting', pnlbizecon: 'pnl', gdcoverride: 'gdcbrackets', aumpipeline: 'aumoverride', monthlyproduction: 'goaltracker', chandivers: 'prodopt', mktgroi: 'prodopt', compare: 'costben', impl_timeline: 'timeline', 'unified-client-plan': 'planning-hierarchy', ilitrust: 'trusteng', 'cascade-flow': 'cascade-alerts' };
@@ -221,6 +230,9 @@ export default function Calculators() {
     });
   }, []);
 
+  /* ─── PANEL USAGE ANALYTICS (v8 Pass 5) ─── */
+  const panelAnalytics = usePanelAnalytics();
+
   /* ─── GLOBAL SEARCH (Pass 152) ─── */
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [globalSearch, setGlobalSearch] = useState('');
@@ -239,6 +251,9 @@ export default function Calculators() {
     setGlobalSearch('');
     panelAnalytics.recordVisit(panelId);
   }, [panelAnalytics]);
+
+  /* ─── KEYBOARD SHORTCUT CHEAT SHEET (Pass 155) ─── */
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   /* ─── PANEL COMPARISON SPLIT-VIEW (Pass 154) ─── */
   const [compareMode, setCompareMode] = useState(false);
@@ -290,12 +305,6 @@ export default function Calculators() {
 
   /* ─── DRAG-AND-DROP PANEL REORDERING (Pass 155) ─── */
   const { orderedSections, handleDragStart, handleDragEnter, handleDragEnd, resetOrder, hasCustomOrder, dragItem } = usePanelOrder(NAV_SECTIONS);
-
-  /* ─── PANEL USAGE ANALYTICS (v8 Pass 5) ─── */
-  const panelAnalytics = usePanelAnalytics();
-
-  /* ─── KEYBOARD SHORTCUT CHEAT SHEET (Pass 155) ─── */
-  const [showShortcuts, setShowShortcuts] = useState(false);
 
   /* ─── UNDO/REDO HISTORY (v8 Pass 4) ─── */
   const undoHistory = useUndoHistory<Record<string, any>>({}, { maxDepth: 40, debounceMs: 500, enableKeyboard: true });

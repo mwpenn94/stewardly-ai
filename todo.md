@@ -7454,3 +7454,20 @@
 - [x] G45: CSS fixes for 200% zoom breakage (PLATFORM)
 - [x] Write tests for v8.3 Pass 3 (26 tests passing)
 - [x] Update PARITY.md bidirectionally + append Pass Log
+
+### v8.3 Pass 3 — LVUA Remediation (skipped items)
+- [x] LVUA: Run live browser observation with 1 pillar-aligned persona (A1 RIA Fiduciary, desktop 1440×900)
+- [x] LVUA: Capture Stream D findings from persona observation (2×P0, 1×P1, 2×P2, 2×P3)
+- [x] LVUA: Triage findings into work queue + build fixes
+- [x] LVUA: Add LVUA-found gaps to PARITY.md (7 new rows: CRASH-0001, CRASH-0002, NAV-0012, A11Y-0005, DATA-0008, MOBILE-0015, MOBILE-0016)
+- [x] LVUA: Write regression tests for LVUA findings (10 tests passing)
+- [x] Pass Log: Append full-schema pass log entry with LVUA results
+- [x] Angle/Lens: Formally declared — novel feature + DX, A-Surface lens
+
+### v8.3 Pass 3 — LVUA Stream D Findings (A1 RIA)
+- [x] P1-FIX: panelAnalytics + showShortcuts TDZ crashes in Calculators (PLANS)
+- [x] P1-FIX: /wealth-engine/retirement 404 route (PLANS)
+- [x] P2-FIX: CascadeFlowIndicator flex-wrap for mobile (PEOPLE+PLATFORM) — 6 overlaps remain (MOBILE-0016 deferred)
+- [x] P2-FIX: 2 unlabeled buttons in Chat fixed (Add context + Mute audio)
+- [x] P3-FIX: People stats "--" → "0" with dimmed styling (PEOPLE)
+- [x] LVUA regression tests for P1 fixes (10 tests passing)

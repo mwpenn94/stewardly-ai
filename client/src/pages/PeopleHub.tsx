@@ -228,28 +228,28 @@ export default function PeopleHub() {
               <Card className="border-l-4 border-l-blue-500">
                 <CardContent className="p-3 text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active Leads</p>
-                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-xl font-bold text-muted-foreground/50">0</p>
                   <p className="text-[9px] text-muted-foreground">Connect CRM to populate</p>
                 </CardContent>
               </Card>
               <Card className="border-l-4 border-l-amber-500">
                 <CardContent className="p-3 text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">In Onboarding</p>
-                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-xl font-bold text-muted-foreground/50">0</p>
                   <p className="text-[9px] text-muted-foreground">Pending conversions</p>
                 </CardContent>
               </Card>
               <Card className="border-l-4 border-l-emerald-500">
                 <CardContent className="p-3 text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Active Clients</p>
-                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-xl font-bold text-muted-foreground/50">0</p>
                   <p className="text-[9px] text-muted-foreground">Under management</p>
                 </CardContent>
               </Card>
               <Card className="border-l-4 border-l-purple-500">
                 <CardContent className="p-3 text-center">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Due for Review</p>
-                  <p className="text-xl font-bold text-foreground">--</p>
+                  <p className="text-xl font-bold text-muted-foreground/50">0</p>
                   <p className="text-[9px] text-muted-foreground">Annual reviews pending</p>
                 </CardContent>
               </Card>

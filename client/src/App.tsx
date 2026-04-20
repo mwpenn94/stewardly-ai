@@ -181,9 +181,11 @@ function Router() {
 
         {/* Core app routes */}
         <Route path="/chat/:id?">{() => <SectionErrorBoundary sectionName="Chat"><Chat /></SectionErrorBoundary>}</Route>
+        <Route path="/calculators/:panel">{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path={"/calculators"}>{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path="/my-plan">{() => { window.location.replace('/wealth-engine?panel=myplan'); return null; }}</Route>
         {/* ── Wealth Engine — Unified Wealth Engine (comprehensive calculator + advisory + data hub) ─── */}
+        <Route path="/wealth-engine/:panel">{() => <SectionErrorBoundary sectionName="Wealth Engine"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path="/wealth-engine">{() => <SectionErrorBoundary sectionName="Wealth Engine"><Calculators /></SectionErrorBoundary>}</Route>
         {/* Unified AI Surface (Chat + Code + Agent) */}
         <Route path={"/ai"} component={UnifiedAI} />
