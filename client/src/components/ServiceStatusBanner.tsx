@@ -2,10 +2,11 @@
  * ServiceStatusBanner — Shows a non-intrusive banner when services are degraded or down.
  * Placed at the top of the app layout. Only visible when there's an issue.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useServiceStatus, type ServiceInfo } from "@/contexts/ServiceStatusContext";
 import { AlertTriangle, XCircle, RefreshCw, ChevronDown, ChevronUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 function formatTimeSince(timestamp: number): string {
   if (!timestamp) return "unknown";
@@ -38,8 +39,20 @@ function ServiceRow({ svc }: { svc: ServiceInfo }) {
 
 export default function ServiceStatusBanner() {
   const { services, isAnyDegraded, isAnyDown, refreshHealth } = useServiceStatus();
+  const { isAuthenticated } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+
+  // Auto-dismiss for non-authenticated users after 8 seconds
+  // They don't need to see infrastructure status
+  // Use empty deps so the timer only fires once on mount
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const timer = setTimeout(() => setDismissed(true), 8_000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Only show when there's an issue
   if ((!isAnyDegraded && !isAnyDown) || dismissed) return null;

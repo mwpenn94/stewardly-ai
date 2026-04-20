@@ -87,6 +87,8 @@ export default defineConfig({
       "client/src/pages/__tests__/v83-pass12-bugfix.test.ts",
       // v8.3 Pass 12b: P0 blank screen root cause — splitLink, deferred serviceHealth, timeout wrapper
       "client/src/pages/__tests__/v83-pass12b-blankscreen.test.ts",
+      // v8.3 Pass 13: Sign-in CTA, degraded banner auto-dismiss, People Engine gating
+      "client/src/pages/__tests__/v83-pass13-signin.test.ts",
     ],
   },
 });

@@ -20,7 +20,9 @@ import {
   MessageSquare,
   Clock,
   ArrowRight,
+  LogIn,
 } from "lucide-react";
+import { getLoginUrl } from "@/const";
 
 // ── Types ───────────────────────────────────────────────────────────
 export interface RecentConversation {
@@ -221,6 +223,20 @@ export default function ChatGreetingV2({
               </button>
             ))}
           </div>
+        </motion.div>
+      )}
+
+      {/* Sign-in CTA for unauthenticated users */}
+      {!isAuthenticated && (
+        <motion.div className="w-full flex justify-center" initial="hidden" animate="visible" variants={variant} custom={2.5}>
+          <button
+            type="button"
+            onClick={() => { window.location.href = getLoginUrl(); }}
+            className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 transition-all focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <LogIn className="w-4 h-4" />
+            Sign in to save conversations & unlock all features
+          </button>
         </motion.div>
       )}
 

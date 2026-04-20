@@ -7597,3 +7597,10 @@
 - [x] P12b-4: handleUnauthorizedGracefully skips invalidateQueries for first-visit users
 - [x] P12b-LVUA: Page renders in 9s even with DB down (confirmed via Playwright timing test)
 - [x] P12b-TESTS: 10/10 passed (v83-pass12b-blankscreen.test.ts), combined 25/25 with Pass 12
+
+### v8.3 Pass 13 — User-Reported Issues (degraded banner, sign-in, People Engine)
+- [x] P13-1: ServiceStatusBanner auto-dismisses after 8s for non-auth users (mount-once useEffect with ref guard)
+- [x] P13-2: Sign-in CTA added to ChatGreeting (emerald pill), mobile header (green outline button), sidebar (guest sign-in section)
+- [x] P13-3: People Engine confirmed in PersonaSidebar5 gated behind professional tier (label: "People", path: /people/clients)
+- [x] P13-LVUA: Confirmed via Playwright — sign-in CTA visible on desktop + mobile, degraded banner present
+- [x] P13-TESTS: 13/13 passed (v83-pass13-signin.test.ts) + PARITY.md updated

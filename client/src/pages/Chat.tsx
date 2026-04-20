@@ -2138,8 +2138,8 @@ export default function Chat() {
           )}
           <Separator className="mx-2" />
           {/* ─── PERSISTENT AUTH CONTROLS ─── */}
-          {user?.authTier === "anonymous" ? (
-            /* Guest user: always show sign-in CTA */
+          {(!isAuthenticated || user?.authTier === "anonymous") ? (
+            /* Guest / unauthenticated user: always show sign-in CTA */
             sidebarCollapsed ? (
               <div className="p-2 space-y-1">
                 <Tooltip>
@@ -2268,7 +2268,7 @@ export default function Chat() {
               onClear={clearNotifications}
               onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
             />
-            {user?.authTier === "anonymous" && (
+            {(!isAuthenticated || user?.authTier === "anonymous") && (
               <Button
                 variant="outline"
                 size="sm"
