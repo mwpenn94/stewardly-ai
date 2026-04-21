@@ -18,7 +18,8 @@ import {
 import { eq, and, desc, sql, lte } from "drizzle-orm";
 import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
 import { firstOrNull } from "../services/dbResilience";
-import { reconcile, getSyncAggregation } from "../services/syncReconciliation";
+import { reconcile, getSyncAggregation, persistReconcileStats } from "../services/syncReconciliation";
+import { getRawPool } from "../db";
 import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
@@ -1198,14 +1199,90 @@ export const integrationsRouter = router({
   // ─── GHL Sync Reconciliation ──────────────────────────────────────────
 
   /** Run full bidirectional reconciliation between Stewardly and GHL */
-  reconcileGHL: protectedProcedure.mutation(async () => {
-    const stats = await reconcile();
-    return stats;
-  }),
+  reconcileGHL: protectedProcedure
+    .input(z.object({
+      maxGHLContacts: z.number().optional().default(0),
+      pushOrphans: z.boolean().optional().default(true),
+      resumeCursor: z.string().nullable().optional(),
+    }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const pool = await getRawPool();
+      const startedAt = Date.now();
+      let runId: number | null = null;
+
+      // Insert run history record
+      if (pool) {
+        try {
+          const [result] = await pool.query(
+            `INSERT INTO sync_run_history (run_type, status, triggered_by, started_at) VALUES (?, 'running', ?, ?)`,
+            [input?.resumeCursor ? 'resume' : 'manual', ctx.user?.name || 'unknown', startedAt]
+          );
+          runId = (result as any).insertId;
+        } catch { /* non-fatal */ }
+      }
+
+      try {
+        const stats = await reconcile({
+          maxGHLContacts: input?.maxGHLContacts ?? 0,
+          pushOrphans: input?.pushOrphans ?? true,
+          resumeCursor: input?.resumeCursor ?? null,
+        });
+
+        // Persist stats
+        await persistReconcileStats(stats);
+
+        // Update run history
+        if (pool && runId) {
+          try {
+            await pool.query(
+              `UPDATE sync_run_history SET status = ?, ghl_total = ?, stewardly_total = ?, matched = ?,
+               created_in_stewardly = ?, created_in_ghl = ?, updated_in_stewardly = ?, updated_in_ghl = ?,
+               conflicts_resolved = ?, orphans_fixed = ?, errors = ?, duration_ms = ?,
+               resume_cursor = ?, complete = ?, completed_at = ? WHERE id = ?`,
+              [
+                stats.complete ? 'completed' : 'interrupted',
+                stats.ghlTotal, stats.stewardlyTotal, stats.matched,
+                stats.createdInStewardly, stats.createdInGHL,
+                stats.updatedInStewardly, stats.updatedInGHL,
+                stats.conflictsResolved, stats.orphansFixed, stats.errors,
+                stats.duration_ms, stats.resumeCursor, stats.complete, Date.now(), runId,
+              ]
+            );
+          } catch { /* non-fatal */ }
+        }
+
+        return stats;
+      } catch (err: any) {
+        // Mark run as failed
+        if (pool && runId) {
+          try {
+            await pool.query(
+              `UPDATE sync_run_history SET status = 'failed', errors = 1, duration_ms = ?, completed_at = ? WHERE id = ?`,
+              [Date.now() - startedAt, Date.now(), runId]
+            );
+          } catch { /* non-fatal */ }
+        }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
+      }
+    }),
 
   /** Get current sync aggregation stats (no side effects) */
   getSyncAggregation: protectedProcedure.query(async () => {
     const agg = await getSyncAggregation();
     return agg;
+  }),
+
+  /** Get sync run history (last 50 runs) */
+  getSyncRunHistory: protectedProcedure.query(async () => {
+    const pool = await getRawPool();
+    if (!pool) return [];
+    try {
+      const [rows] = await pool.query(
+        `SELECT * FROM sync_run_history ORDER BY started_at DESC LIMIT 50`
+      );
+      return rows as any[];
+    } catch {
+      return [];
+    }
   }),
 });

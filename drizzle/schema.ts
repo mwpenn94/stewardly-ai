@@ -7361,3 +7361,40 @@ export const wealthHubAllocations = mysqlTable("wealth_hub_allocations", {
 }));
 export type WealthHubAllocationRow = typeof wealthHubAllocations.$inferSelect;
 export type InsertWealthHubAllocation = typeof wealthHubAllocations.$inferInsert;
+
+
+// ── Pass 27: Platform KV Store (lightweight key-value for sync stats, configs) ──
+export const platformKv = mysqlTable("platform_kv", {
+  key: varchar("key", { length: 255 }).primaryKey(),
+  value: text("value").notNull(),
+  updated_at: bigint("updated_at", { mode: "number" }).notNull(),
+});
+export type PlatformKvRow = typeof platformKv.$inferSelect;
+
+// ── Pass 27: Sync Run History (audit trail for reconciliation runs) ──
+export const syncRunHistory = mysqlTable("sync_run_history", {
+  id: int("id").autoincrement().primaryKey(),
+  runType: varchar("run_type", { length: 64 }).notNull(), // 'manual' | 'scheduled' | 'resume'
+  status: varchar("status", { length: 32 }).notNull(), // 'running' | 'completed' | 'failed' | 'interrupted'
+  ghlTotal: int("ghl_total").default(0),
+  stewardlyTotal: int("stewardly_total").default(0),
+  matched: int("matched").default(0),
+  createdInStewardly: int("created_in_stewardly").default(0),
+  createdInGHL: int("created_in_ghl").default(0),
+  updatedInStewardly: int("updated_in_stewardly").default(0),
+  updatedInGHL: int("updated_in_ghl").default(0),
+  conflictsResolved: int("conflicts_resolved").default(0),
+  orphansFixed: int("orphans_fixed").default(0),
+  errors: int("errors").default(0),
+  durationMs: int("duration_ms").default(0),
+  resumeCursor: varchar("resume_cursor", { length: 255 }),
+  complete: mysqlBoolean("complete").default(false),
+  triggeredBy: varchar("triggered_by", { length: 128 }), // userId or 'scheduler'
+  startedAt: bigint("started_at", { mode: "number" }).notNull(),
+  completedAt: bigint("completed_at", { mode: "number" }),
+}, (table) => ({
+  statusIdx: index("idx_srh_status").on(table.status),
+  startedIdx: index("idx_srh_started").on(table.startedAt),
+}));
+export type SyncRunHistoryRow = typeof syncRunHistory.$inferSelect;
+export type InsertSyncRunHistory = typeof syncRunHistory.$inferInsert;

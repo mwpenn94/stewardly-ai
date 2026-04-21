@@ -391,7 +391,82 @@ export function initScheduler(): void {
   registerJob("daily_crm_sync", DAYS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("daily_crm_sync", async () => {
-      logger.info({ operation: "scheduler" }, "Daily CRM sync — stub (requires GHL_API_TOKEN)");
+      const { reconcile, persistReconcileStats } = await import("./syncReconciliation");
+      const { getRawPool } = await import("../db");
+      const pool = await getRawPool();
+      const startedAt = Date.now();
+      let runId: number | null = null;
+
+      // Record run start
+      if (pool) {
+        try {
+          const [result] = await pool.query(
+            `INSERT INTO sync_run_history (run_type, status, triggered_by, started_at) VALUES ('scheduled', 'running', 'scheduler', ?)`,
+            [startedAt]
+          );
+          runId = (result as any).insertId;
+        } catch { /* non-fatal */ }
+      }
+
+      try {
+        // Run reconciliation with no limit (cursor-based, processes all contacts)
+        const stats = await reconcile({ maxGHLContacts: 0, pushOrphans: true, resumeCursor: null });
+        await persistReconcileStats(stats);
+
+        // Record completion
+        if (pool && runId) {
+          try {
+            await pool.query(
+              `UPDATE sync_run_history SET status = ?, ghl_total = ?, stewardly_total = ?, matched = ?,
+               created_in_stewardly = ?, created_in_ghl = ?, updated_in_stewardly = ?, updated_in_ghl = ?,
+               conflicts_resolved = ?, orphans_fixed = ?, errors = ?, duration_ms = ?,
+               resume_cursor = ?, complete = ?, completed_at = ? WHERE id = ?`,
+              [
+                stats.complete ? 'completed' : 'interrupted',
+                stats.ghlTotal, stats.stewardlyTotal, stats.matched,
+                stats.createdInStewardly, stats.createdInGHL,
+                stats.updatedInStewardly, stats.updatedInGHL,
+                stats.conflictsResolved, stats.orphansFixed, stats.errors,
+                stats.duration_ms, stats.resumeCursor, stats.complete, Date.now(), runId,
+              ]
+            );
+          } catch { /* non-fatal */ }
+        }
+
+        logger.info({ operation: "scheduler" }, `Daily CRM reconciliation complete: ${stats.ghlTotal} GHL, ${stats.matched} matched, ${stats.errors} errors, ${stats.duration_ms}ms`);
+
+        // Alert admins if there were errors or low link rate
+        if (stats.errors > 0) {
+          alertAdmins(
+            `CRM Sync Alert: ${stats.errors} error(s) during daily reconciliation`,
+            `Daily CRM reconciliation completed with errors:\n\n` +
+            `• GHL contacts processed: ${stats.ghlTotal}\n` +
+            `• Matched: ${stats.matched}\n` +
+            `• Created (Stewardly): ${stats.createdInStewardly}\n` +
+            `• Created (GHL): ${stats.createdInGHL}\n` +
+            `• Errors: ${stats.errors}\n` +
+            `• Duration: ${Math.round(stats.duration_ms / 1000)}s\n\n` +
+            `Check the Sync Dashboard for details.`,
+            "high"
+          );
+        }
+      } catch (err: any) {
+        // Record failure
+        if (pool && runId) {
+          try {
+            await pool.query(
+              `UPDATE sync_run_history SET status = 'failed', errors = 1, duration_ms = ?, completed_at = ? WHERE id = ?`,
+              [Date.now() - startedAt, Date.now(), runId]
+            );
+          } catch { /* non-fatal */ }
+        }
+        logger.error({ operation: "scheduler" }, `Daily CRM reconciliation failed: ${err.message}`);
+        alertAdmins(
+          "CRM Sync Failed",
+          `Daily CRM reconciliation failed with error: ${err.message}\n\nCheck the Sync Dashboard for details.`,
+          "critical"
+        );
+      }
     });
   });
 

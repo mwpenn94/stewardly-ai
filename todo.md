@@ -7837,3 +7837,48 @@
   - URL: https://stewardly.manus.space/api/webhooks/ghl
   - Events: ContactCreate, ContactUpdate, ContactDelete, OpportunityCreate, OpportunityStatusUpdate
 - [x] P26-FINAL: todo.md updated, checkpoint saved
+
+### v8.12 Pass 27 — GHL Webhook Registration + Sync Dashboard + Scheduled Reconciliation (Continuous Scale)
+- [x] P27-1: Refactored reconciliation engine for continuous scaling
+  - Removed all artificial caps — maxGHLContacts=0 means unlimited
+  - Cursor-based GHL pagination with startAfterId (no offset drift)
+  - buildLocalIndexes() streams local leads in 5K chunks from DB
+  - Orphan processing streams in 1K chunks with configurable maxOrphanPush
+  - Linear memory: only current chunk + index maps in memory
+  - Configurable rateLimitMs (default 50ms) between GHL API calls
+  - resumeCursor support for interrupted runs to resume where they left off
+  - onProgress callback for real-time streaming progress updates
+  - New DB tables: platform_kv (key-value store), sync_run_history (run tracking)
+  - persistReconcileStats() stores results in platform_kv for dashboard reads
+- [x] P27-2: GHL webhook UI registration deferred — browser unavailable
+  - Webhook endpoint fully functional at /api/webhooks/ghl
+  - User must register manually: GHL Settings > Webhooks > Add Webhook
+  - URL: https://stewardly.manus.space/api/webhooks/ghl
+  - Events: ContactCreate, ContactUpdate, ContactDelete, OpportunityCreate, OpportunityStatusUpdate
+- [x] P27-3: Built Sync Dashboard UI page (client/src/pages/SyncDashboard.tsx)
+  - Real-time aggregation stats (total leads, linked/unlinked, link rate percentage)
+  - By-status and by-source breakdowns with visual bars
+  - "Run Reconciliation" button with live progress indicator
+  - Sync run history table (type, status, stats, duration)
+  - Conflict log viewer with field-level resolution details
+  - Last reconcile timestamp display
+  - Added to sidebar navigation under Integrations section
+  - Route: /sync-dashboard
+- [x] P27-4: Implemented scheduled automatic reconciliation
+  - Replaced stub daily_crm_sync job with full reconciliation engine
+  - Runs daily via scheduler with maxGHLContacts=0 (unlimited)
+  - Records run start/completion in sync_run_history table
+  - Persists stats to platform_kv for dashboard reads
+  - Admin alerts on errors or failures via alertAdmins()
+  - Graceful error handling with failure recording
+- [x] P27-5: Enhanced vitest suite — 28 sync-reconciliation tests + 35 others
+  - Added persistReconcileStats tests (3): persist, empty conflicts, DB error survival
+  - Added enhanced getSyncAggregation test: reads from platform_kv
+  - Added continuous scale reconcile tests (2): unlimited mode, max limit
+  - Fixed all existing reconcile tests for new buildLocalIndexes flow
+  - Fixed getSyncAggregation mocks for 7-query flow (was 5)
+- [x] P27-6: 3 consecutive clean LVUA passes — 63/63 tests across all 3 suites
+  - sync-reconciliation.test.ts: 28/28
+  - ghl-outbound-sync.test.ts: 9/9
+  - ghl-webhook-inbound.test.ts: 26/26
+- [x] P27-FINAL: todo.md updated, checkpoint saved

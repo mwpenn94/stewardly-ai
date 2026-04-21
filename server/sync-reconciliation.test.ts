@@ -290,6 +290,9 @@ describe("dedupSafePush — dedup-safe outbound push", () => {
 
 describe("getSyncAggregation", () => {
   it("returns correct totals and breakdowns", async () => {
+    // getSyncAggregation now makes 7 queries:
+    // 1. total leads, 2. linked count, 3. by status, 4. by source,
+    // 5. last reconcile from notesJson, 6. platform_kv stats, 7. platform_kv conflicts
     mockQuery.mockResolvedValueOnce([[{ cnt: 150 }]]);
     mockQuery.mockResolvedValueOnce([[{ cnt: 120 }]]);
     mockQuery.mockResolvedValueOnce([
@@ -309,6 +312,10 @@ describe("getSyncAggregation", () => {
     mockQuery.mockResolvedValueOnce([
       [{ notesJson: JSON.stringify({ lastReconcileAt: "2026-04-20T12:00:00Z" }) }],
     ]);
+    // platform_kv: last_reconcile_stats
+    mockQuery.mockResolvedValueOnce([[]]);
+    // platform_kv: recent_sync_conflicts
+    mockQuery.mockResolvedValueOnce([[]]);
 
     const agg = await getSyncAggregation();
 
@@ -325,6 +332,10 @@ describe("getSyncAggregation", () => {
     mockQuery.mockResolvedValueOnce([[{ cnt: 0 }]]);
     mockQuery.mockResolvedValueOnce([[]]);
     mockQuery.mockResolvedValueOnce([[]]);
+    mockQuery.mockResolvedValueOnce([[]]);
+    // platform_kv: last_reconcile_stats
+    mockQuery.mockResolvedValueOnce([[]]);
+    // platform_kv: recent_sync_conflicts
     mockQuery.mockResolvedValueOnce([[]]);
 
     const agg = await getSyncAggregation();
@@ -344,6 +355,10 @@ describe("getSyncAggregation", () => {
 
 describe("reconcile — full bidirectional sync", () => {
   it("creates local leads for GHL contacts with no local match", async () => {
+    // buildLocalIndexes: first chunk returns empty (no local leads)
+    mockQuery.mockResolvedValueOnce([[]]);
+
+    // GHL page 1: 1 contact
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -353,10 +368,11 @@ describe("reconcile — full bidirectional sync", () => {
         meta: {},
       }),
     });
-    mockQuery.mockResolvedValueOnce([[]]);
+
+    // INSERT new local lead
     mockQuery.mockResolvedValueOnce([{ insertId: 1 }]);
 
-    const stats = await reconcile();
+    const stats = await reconcile({ pushOrphans: false });
 
     expect(stats.ghlTotal).toBe(1);
     expect(stats.stewardlyTotal).toBe(0);
@@ -367,23 +383,7 @@ describe("reconcile — full bidirectional sync", () => {
   it("matches and reconciles existing contacts by email", async () => {
     const localUpdated = Date.now() - 86400000;
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        contacts: [
-          {
-            id: "ghl-existing",
-            firstName: "Updated",
-            lastName: "Name",
-            email: "shared@test.com",
-            phone: "+15551234567",
-            dateUpdated: "2026-04-20T12:00:00Z",
-          },
-        ],
-        meta: {},
-      }),
-    });
-
+    // buildLocalIndexes: 1 local lead
     mockQuery.mockResolvedValueOnce([
       [
         {
@@ -402,9 +402,28 @@ describe("reconcile — full bidirectional sync", () => {
       ],
     ]);
 
+    // GHL page 1: 1 contact matching by email
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        contacts: [
+          {
+            id: "ghl-existing",
+            firstName: "Updated",
+            lastName: "Name",
+            email: "shared@test.com",
+            phone: "+15551234567",
+            dateUpdated: "2026-04-20T12:00:00Z",
+          },
+        ],
+        meta: {},
+      }),
+    });
+
+    // UPDATE local lead
     mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]);
 
-    const stats = await reconcile();
+    const stats = await reconcile({ pushOrphans: false });
 
     expect(stats.ghlTotal).toBe(1);
     expect(stats.stewardlyTotal).toBe(1);
@@ -414,11 +433,7 @@ describe("reconcile — full bidirectional sync", () => {
   });
 
   it("pushes local orphans to GHL", async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ contacts: [], meta: {} }),
-    });
-
+    // buildLocalIndexes: 1 orphan lead (no crmExternalId)
     mockQuery.mockResolvedValueOnce([
       [
         {
@@ -437,13 +452,40 @@ describe("reconcile — full bidirectional sync", () => {
       ],
     ]);
 
-    // findGHLMatch for orphan: email search returns no match
+    // GHL page 1: empty (no GHL contacts)
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ contact: null }),
+      json: async () => ({ contacts: [], meta: {} }),
     });
 
-    // Create in GHL
+    // Orphan processing: query for unlinked leads (Step 3)
+    mockQuery.mockResolvedValueOnce([
+      [
+        {
+          id: 99,
+          firstName: "Orphan",
+          lastName: "Lead",
+          email: "orphan@test.com",
+          phone: null,
+          source: "manual",
+          status: "new",
+          crmExternalId: null,
+          notesJson: "{}",
+          created_at: Date.now(),
+          updated_at: Date.now(),
+        },
+      ],
+    ]);
+
+    // findGHLMatch for orphan: lookup by crmExternalId (null, skip)
+    // findGHLMatch: email search returns no match
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ contacts: [] }),
+    });
+
+    // No phone to search, so findGHLMatch returns null
+    // Now reconcile creates in GHL directly (POST)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ contact: { id: "ghl-new-orphan" } }),
@@ -452,7 +494,10 @@ describe("reconcile — full bidirectional sync", () => {
     // Update local with new crmExternalId
     mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]);
 
-    const stats = await reconcile();
+    // End of orphan chunks (empty)
+    mockQuery.mockResolvedValueOnce([[]]);
+
+    const stats = await reconcile({ pushOrphans: true });
 
     expect(stats.ghlTotal).toBe(0);
     expect(stats.stewardlyTotal).toBe(1);
@@ -460,13 +505,16 @@ describe("reconcile — full bidirectional sync", () => {
   });
 
   it("handles GHL API errors gracefully", async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+    // buildLocalIndexes: empty
     mockQuery.mockResolvedValueOnce([[]]);
 
-    const stats = await reconcile();
+    // GHL API returns error
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 500 });
+
+    const stats = await reconcile({ pushOrphans: false });
 
     expect(stats.ghlTotal).toBe(0);
-    // No errors because the GHL fetch just breaks the loop, no contacts to process
+    expect(stats.errors).toBeGreaterThanOrEqual(1);
     expect(stats.duration_ms).toBeGreaterThanOrEqual(0);
   });
 
@@ -474,23 +522,7 @@ describe("reconcile — full bidirectional sync", () => {
     const ghlUpdated = "2026-04-21T00:00:00Z";
     const localUpdated = new Date("2026-04-19T00:00:00Z").getTime();
 
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        contacts: [
-          {
-            id: "ghl-conflict",
-            firstName: "GHL-First",
-            lastName: "GHL-Last",
-            email: "conflict@test.com",
-            phone: "+15559999999",
-            dateUpdated: ghlUpdated,
-          },
-        ],
-        meta: {},
-      }),
-    });
-
+    // buildLocalIndexes: 1 lead with crmExternalId matching the GHL contact
     mockQuery.mockResolvedValueOnce([
       [
         {
@@ -509,10 +541,28 @@ describe("reconcile — full bidirectional sync", () => {
       ],
     ]);
 
+    // GHL page 1: 1 contact with newer data
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        contacts: [
+          {
+            id: "ghl-conflict",
+            firstName: "GHL-First",
+            lastName: "GHL-Last",
+            email: "conflict@test.com",
+            phone: "+15559999999",
+            dateUpdated: ghlUpdated,
+          },
+        ],
+        meta: {},
+      }),
+    });
+
     // UPDATE local (GHL wins because newer)
     mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]);
 
-    const stats = await reconcile();
+    const stats = await reconcile({ pushOrphans: false });
 
     expect(stats.matched).toBe(1);
     expect(stats.conflictsResolved).toBeGreaterThan(0);
@@ -546,5 +596,195 @@ describe("outbound sync integration", () => {
     expect(result.success).toBe(true);
     expect(result.ghlContactId).toBe("new-via-dedup");
     expect(result.mode).toBe("live");
+  });
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// persistReconcileStats — platform_kv persistence
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("persistReconcileStats", () => {
+  it("persists stats to platform_kv table", async () => {
+    const { persistReconcileStats } = await import("./services/syncReconciliation");
+
+    mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]); // upsert last_reconcile_stats
+    mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]); // upsert recent_sync_conflicts
+
+    const stats = {
+      ghlTotal: 500,
+      stewardlyTotal: 100,
+      matched: 95,
+      createdInStewardly: 3,
+      createdInGHL: 2,
+      updatedInStewardly: 5,
+      updatedInGHL: 3,
+      conflictsResolved: 1,
+      orphansFixed: 2,
+      errors: 0,
+      duration_ms: 28000,
+      complete: true,
+      resumeCursor: null,
+      conflicts: [
+        { field: "firstName", stewardlyValue: "John", ghlValue: "Jon", resolution: "ghl_wins", reason: "GHL newer" },
+      ],
+    };
+
+    await persistReconcileStats(stats as any);
+
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.stringContaining("platform_kv"),
+      expect.arrayContaining([expect.stringContaining("ghlTotal")])
+    );
+  });
+
+  it("handles empty conflicts gracefully", async () => {
+    const { persistReconcileStats } = await import("./services/syncReconciliation");
+
+    mockQuery.mockResolvedValueOnce([{ affectedRows: 1 }]); // only stats, no conflicts
+
+    const stats = {
+      ghlTotal: 10,
+      stewardlyTotal: 5,
+      matched: 5,
+      createdInStewardly: 0,
+      createdInGHL: 0,
+      updatedInStewardly: 0,
+      updatedInGHL: 0,
+      conflictsResolved: 0,
+      orphansFixed: 0,
+      errors: 0,
+      duration_ms: 1000,
+      complete: true,
+      resumeCursor: null,
+      conflicts: [],
+    };
+
+    await persistReconcileStats(stats as any);
+
+    // Only 1 query (stats), no conflicts query
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("survives DB errors without throwing", async () => {
+    const { persistReconcileStats } = await import("./services/syncReconciliation");
+
+    mockQuery.mockRejectedValueOnce(new Error("DB connection lost"));
+
+    const stats = {
+      ghlTotal: 0,
+      stewardlyTotal: 0,
+      matched: 0,
+      createdInStewardly: 0,
+      createdInGHL: 0,
+      updatedInStewardly: 0,
+      updatedInGHL: 0,
+      conflictsResolved: 0,
+      orphansFixed: 0,
+      errors: 0,
+      duration_ms: 0,
+      complete: true,
+      resumeCursor: null,
+      conflicts: [],
+    };
+
+    // Should not throw
+    await expect(persistReconcileStats(stats as any)).resolves.toBeUndefined();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// getSyncAggregation — reads from platform_kv + lead_pipeline
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("getSyncAggregation — enhanced", () => {
+  it("reads lastReconcileStats from platform_kv", async () => {
+    const storedStats = {
+      ghlTotal: 500,
+      matched: 95,
+      complete: true,
+      duration_ms: 28000,
+    };
+
+    // Total leads
+    mockQuery.mockResolvedValueOnce([[{ cnt: 100 }]]);
+    // Linked count
+    mockQuery.mockResolvedValueOnce([[{ cnt: 95 }]]);
+    // By status
+    mockQuery.mockResolvedValueOnce([[
+      { status: "new", cnt: 50 },
+      { status: "qualified", cnt: 30 },
+      { status: "converted", cnt: 20 },
+    ]]);
+    // By source
+    mockQuery.mockResolvedValueOnce([[
+      { source: "ghl", cnt: 60 },
+      { source: "manual", cnt: 40 },
+    ]]);
+    // Last reconcile from notesJson
+    mockQuery.mockResolvedValueOnce([[{ notesJson: JSON.stringify({ lastReconcileAt: "2026-04-20T12:00:00Z" }) }]]);
+    // platform_kv: last_reconcile_stats
+    mockQuery.mockResolvedValueOnce([[{ value: JSON.stringify(storedStats) }]]);
+    // platform_kv: recent_sync_conflicts
+    mockQuery.mockResolvedValueOnce([[{ value: "[]" }]]);
+
+    const agg = await getSyncAggregation();
+
+    expect(agg.stewardlyTotal).toBe(100);
+    expect(agg.ghlLinked).toBe(95);
+    expect(agg.ghlUnlinked).toBe(5);
+    expect(agg.linkRate).toBe(95);
+    expect(agg.lastReconcileStats).toBeDefined();
+    expect(agg.lastReconcileStats?.ghlTotal).toBe(500);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// reconcile — cursor-based pagination (continuous scale)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("reconcile — continuous scale features", () => {
+  it("respects maxGHLContacts=0 as unlimited (processes until API returns no more)", async () => {
+    // buildLocalIndexes: 1 local lead
+    mockQuery.mockResolvedValueOnce([[
+      { id: 1, firstName: "A", email: "a@test.com", phone: "555-111-1111", crmExternalId: "ghl-1", status: "new", source: "ghl", notesJson: "{}", created_at: Date.now(), updated_at: Date.now() },
+    ]]);
+
+    // GHL page 1: 1 contact
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        contacts: [{ id: "ghl-1", firstName: "A", email: "a@test.com", phone: "+15551111111" }],
+        meta: {},
+      }),
+    });
+
+    const stats = await reconcile({ maxGHLContacts: 0, pushOrphans: false, resumeCursor: null });
+
+    expect(stats.ghlTotal).toBe(1);
+    expect(stats.matched).toBe(1);
+    expect(stats.complete).toBe(true);
+  });
+
+  it("stops at maxGHLContacts limit", async () => {
+    // buildLocalIndexes: 1 local lead
+    mockQuery.mockResolvedValueOnce([[
+      { id: 1, firstName: "A", email: "a@test.com", phone: "555-111-1111", crmExternalId: "ghl-1", status: "new", source: "ghl", notesJson: "{}", created_at: Date.now(), updated_at: Date.now() },
+    ]]);
+
+    // GHL page 1: 1 contact
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        contacts: [{ id: "ghl-1", firstName: "A", email: "a@test.com", phone: "+15551111111" }],
+        meta: { startAfterId: "ghl-1" },
+      }),
+    });
+
+    const stats = await reconcile({ maxGHLContacts: 1, pushOrphans: false, resumeCursor: null });
+
+    expect(stats.ghlTotal).toBe(1);
+    expect(stats.ghlTotal).toBeGreaterThanOrEqual(1);
   });
 });

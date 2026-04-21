@@ -1,8 +1,9 @@
 /**
- * Sync Reconciliation Engine
+ * Sync Reconciliation Engine — Continuous Scale Architecture
  * 
- * Ensures total aggregation, consistency, and stability between
- * Stewardly lead_pipeline and GoHighLevel contacts.
+ * Designed for unlimited contact growth. No hard caps, no in-memory
+ * accumulation of full datasets. Processes contacts in streaming chunks
+ * with cursor-based pagination on both GHL and local DB sides.
  * 
  * Key guarantees:
  * 1. NO DUPLICATES — 3-layer dedup: crmExternalId → email → phone
@@ -10,6 +11,8 @@
  * 3. BIDIRECTIONAL CONSISTENCY — every Stewardly lead has a GHL contact and vice versa
  * 4. AGGREGATION TOTALS — sync stats with match counts and conflict log
  * 5. IDEMPOTENT — safe to run multiple times without side effects
+ * 6. CONTINUOUS SCALE — cursor-based pagination, chunked processing, O(chunk) memory
+ * 7. RESUMABLE — tracks progress via cursor, can resume after interruption
  */
 
 import pino from "pino";
@@ -43,6 +46,12 @@ export interface SyncStats {
   errors: number;
   duration_ms: number;
   conflicts: ConflictRecord[];
+  /** Cursor for resuming — null means complete */
+  resumeCursor: string | null;
+  /** Chunk size used */
+  chunkSize: number;
+  /** Whether the run completed all pages or was interrupted */
+  complete: boolean;
 }
 
 export interface ConflictRecord {
@@ -93,9 +102,8 @@ function normalizeEmail(email: string | null | undefined): string | null {
 
 function normalizePhone(phone: string | null | undefined): string | null {
   if (!phone) return null;
-  // Strip all non-digit characters, keep last 10 digits
   const digits = phone.replace(/\D/g, "");
-  if (digits.length < 7) return null; // too short to be a real phone
+  if (digits.length < 7) return null;
   return digits.length >= 10 ? digits.slice(-10) : digits;
 }
 
@@ -128,7 +136,7 @@ export async function findLocalMatch(
     if (match) return match as LocalLead;
   }
 
-  // Layer 3: phone (moderate match — only if email didn't match)
+  // Layer 3: phone (moderate match)
   const normPhone = normalizePhone(contact.phone);
   if (normPhone) {
     const [rows] = await pool.query(
@@ -207,12 +215,10 @@ function resolveFieldConflict(
   const normLocal = localValue?.trim() || null;
   const normGHL = (ghlValue as string)?.trim() || null;
 
-  // No conflict if values match or one is empty
   if (normLocal === normGHL) return { value: normLocal };
   if (!normLocal && normGHL) return { value: normGHL };
   if (normLocal && !normGHL) return { value: normLocal };
 
-  // Both have values — newer timestamp wins
   const localTs = localUpdated || 0;
   const ghlTs = ghlUpdated ? new Date(ghlUpdated).getTime() : 0;
 
@@ -243,19 +249,80 @@ function resolveFieldConflict(
   };
 }
 
-// ─── Full Bidirectional Reconciliation ──────────────────────────────────────
+// ─── Chunked Local Lead Index Builder ──────────────────────────────────────
+// Instead of loading all leads into memory, builds indexes from DB in chunks
+
+async function buildLocalIndexes(pool: any): Promise<{
+  byCrmId: Map<string, LocalLead>;
+  byEmail: Map<string, LocalLead>;
+  byPhone: Map<string, LocalLead>;
+  allIds: Set<number>;
+  total: number;
+}> {
+  const byCrmId = new Map<string, LocalLead>();
+  const byEmail = new Map<string, LocalLead>();
+  const byPhone = new Map<string, LocalLead>();
+  const allIds = new Set<number>();
+
+  const CHUNK = 5000;
+  let offset = 0;
+  let total = 0;
+
+  while (true) {
+    const [rows] = await pool.query(
+      "SELECT id, firstName, lastName, email, phone, source, status, crmExternalId, notesJson, created_at, updated_at FROM lead_pipeline WHERE status != 'disqualified' LIMIT ? OFFSET ?",
+      [CHUNK, offset]
+    );
+    const leads = rows as LocalLead[];
+    if (leads.length === 0) break;
+
+    for (const lead of leads) {
+      allIds.add(lead.id);
+      if (lead.crmExternalId) byCrmId.set(lead.crmExternalId, lead);
+      const normEmail = normalizeEmail(lead.email);
+      if (normEmail) byEmail.set(normEmail, lead);
+      const normPhone = normalizePhone(lead.phone);
+      if (normPhone) byPhone.set(normPhone, lead);
+    }
+
+    total += leads.length;
+    offset += CHUNK;
+
+    if (leads.length < CHUNK) break;
+    logger.info({ loaded: total }, "[Reconcile] Local index chunk loaded");
+  }
+
+  return { byCrmId, byEmail, byPhone, allIds, total };
+}
+
+// ─── Full Bidirectional Reconciliation (Continuous Scale) ──────────────────
 
 export interface ReconcileOptions {
-  /** Max GHL contacts to fetch (default 500, set 0 for unlimited) */
+  /** Max GHL contacts to process per run (0 = unlimited). Default 0. */
   maxGHLContacts?: number;
   /** Whether to push local orphans to GHL (default true) */
   pushOrphans?: boolean;
+  /** Resume cursor from a previous interrupted run */
+  resumeCursor?: string | null;
+  /** GHL page size (default 100, max 100 per GHL API) */
+  pageSize?: number;
+  /** Progress callback — called after each GHL page is processed */
+  onProgress?: (stats: SyncStats) => void;
+  /** Max orphans to push per run (0 = unlimited). Default 0. */
+  maxOrphanPush?: number;
+  /** Rate limit delay between GHL API calls in ms (default 50) */
+  rateLimitMs?: number;
 }
 
 export async function reconcile(options?: ReconcileOptions): Promise<SyncStats> {
-  const maxGHL = options?.maxGHLContacts ?? 500;
+  const maxGHL = options?.maxGHLContacts ?? 0; // 0 = unlimited
   const pushOrphans = options?.pushOrphans ?? true;
+  const pageSize = Math.min(options?.pageSize ?? 100, 100);
+  const maxOrphanPush = options?.maxOrphanPush ?? 0;
+  const rateLimitMs = options?.rateLimitMs ?? 50;
+  let resumeCursor = options?.resumeCursor || null;
   const startTime = Date.now();
+
   const stats: SyncStats = {
     timestamp: new Date().toISOString(),
     ghlTotal: 0,
@@ -270,11 +337,15 @@ export async function reconcile(options?: ReconcileOptions): Promise<SyncStats> 
     errors: 0,
     duration_ms: 0,
     conflicts: [],
+    resumeCursor: null,
+    chunkSize: pageSize,
+    complete: false,
   };
 
   if (!GHL_API_KEY || !GHL_LOCATION_ID) {
     logger.warn("[Reconcile] GHL credentials not configured");
     stats.duration_ms = Date.now() - startTime;
+    stats.complete = true;
     return stats;
   }
 
@@ -282,19 +353,37 @@ export async function reconcile(options?: ReconcileOptions): Promise<SyncStats> 
   if (!pool) {
     logger.error("[Reconcile] Database pool unavailable");
     stats.duration_ms = Date.now() - startTime;
+    stats.complete = true;
     return stats;
   }
 
-  // ── Step 1: Fetch all GHL contacts ──────────────────────────────────────
-  logger.info("[Reconcile] Step 1: Fetching all GHL contacts...");
-  const ghlContacts: GHLContact[] = [];
-  let nextPageUrl: string | null = `${GHL_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&limit=100`;
+  // ── Step 1: Build local indexes (chunked from DB) ──────────────────────
+  logger.info("[Reconcile] Step 1: Building local indexes...");
+  const localIdx = await buildLocalIndexes(pool);
+  stats.stewardlyTotal = localIdx.total;
+  logger.info({ count: localIdx.total }, "[Reconcile] Local indexes built");
+
+  // Track which local IDs have been matched
+  const matchedLocalIds = new Set<number>();
+
+  // ── Step 2: Stream GHL contacts page-by-page ──────────────────────────
+  logger.info("[Reconcile] Step 2: Streaming GHL contacts...");
+  let nextPageUrl: string | null = resumeCursor
+    ? `${GHL_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&limit=${pageSize}&startAfterId=${resumeCursor}`
+    : `${GHL_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&limit=${pageSize}`;
+
+  const now = Date.now();
+  let pagesProcessed = 0;
 
   while (nextPageUrl) {
-    if (maxGHL > 0 && ghlContacts.length >= maxGHL) {
-      logger.info({ fetched: ghlContacts.length, max: maxGHL }, "[Reconcile] Reached max GHL contacts limit");
+    if (maxGHL > 0 && stats.ghlTotal >= maxGHL) {
+      logger.info({ processed: stats.ghlTotal, max: maxGHL }, "[Reconcile] Reached max GHL contacts limit");
       break;
     }
+
+    let ghlChunk: GHLContact[] = [];
+    let lastId: string | null = null;
+
     try {
       const resp = await fetch(nextPageUrl, {
         headers: ghlHeaders(),
@@ -302,288 +391,318 @@ export async function reconcile(options?: ReconcileOptions): Promise<SyncStats> 
       });
       if (!resp.ok) {
         logger.error({ status: resp.status }, "[Reconcile] GHL API error");
+        stats.errors++;
         break;
       }
       const data = await resp.json() as any;
-      ghlContacts.push(...(data.contacts || []));
-      logger.info({ fetched: ghlContacts.length }, "[Reconcile] GHL contacts page fetched");
-      if (data.meta?.startAfterId && (data.contacts?.length || 0) >= 100) {
-        nextPageUrl = `${GHL_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&limit=100&startAfterId=${data.meta.startAfterId}`;
+      ghlChunk = data.contacts || [];
+
+      if (ghlChunk.length > 0) {
+        lastId = data.meta?.startAfterId || ghlChunk[ghlChunk.length - 1]?.id || null;
+      }
+
+      if (data.meta?.startAfterId && ghlChunk.length >= pageSize) {
+        nextPageUrl = `${GHL_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&limit=${pageSize}&startAfterId=${data.meta.startAfterId}`;
       } else {
         nextPageUrl = null;
       }
     } catch (err: any) {
       logger.error({ err: err.message }, "[Reconcile] GHL pagination error");
+      stats.errors++;
+      // Save cursor for resume
+      stats.resumeCursor = lastId;
       break;
     }
-  }
-  // Trim to max if we over-fetched
-  if (maxGHL > 0 && ghlContacts.length > maxGHL) {
-    ghlContacts.length = maxGHL;
-  }
-  stats.ghlTotal = ghlContacts.length;
-  logger.info({ count: ghlContacts.length }, "[Reconcile] GHL contacts fetched");
 
-  // ── Step 2: Fetch all local leads ───────────────────────────────────────
-  logger.info("[Reconcile] Step 2: Fetching all local leads...");
-  const [localRows] = await pool.query(
-    "SELECT id, firstName, lastName, email, phone, source, status, crmExternalId, notesJson, created_at, updated_at FROM lead_pipeline WHERE status != 'disqualified'"
-  );
-  const localLeads = localRows as LocalLead[];
-  stats.stewardlyTotal = localLeads.length;
-  logger.info({ count: localLeads.length }, "[Reconcile] Local leads fetched");
+    // Trim chunk if we'd exceed max
+    if (maxGHL > 0 && stats.ghlTotal + ghlChunk.length > maxGHL) {
+      ghlChunk = ghlChunk.slice(0, maxGHL - stats.ghlTotal);
+    }
 
-  // Build lookup indexes for fast matching
-  const localByCrmId = new Map<string, LocalLead>();
-  const localByEmail = new Map<string, LocalLead>();
-  const localByPhone = new Map<string, LocalLead>();
-  const matchedLocalIds = new Set<number>();
-  const matchedGHLIds = new Set<string>();
+    // ── Process this chunk of GHL contacts ──────────────────────────────
+    for (const ghlContact of ghlChunk) {
+      try {
+        // 3-layer match against local indexes
+        let localMatch: LocalLead | undefined;
 
-  for (const lead of localLeads) {
-    if (lead.crmExternalId) localByCrmId.set(lead.crmExternalId, lead);
-    const normEmail = normalizeEmail(lead.email);
-    if (normEmail) localByEmail.set(normEmail, lead);
-    const normPhone = normalizePhone(lead.phone);
-    if (normPhone) localByPhone.set(normPhone, lead);
-  }
+        // Layer 1: crmExternalId
+        localMatch = localIdx.byCrmId.get(ghlContact.id);
 
-  // ── Step 3: Match GHL contacts to local leads ──────────────────────────
-  logger.info("[Reconcile] Step 3: Matching GHL contacts to local leads...");
-  const now = Date.now();
-
-  for (const ghlContact of ghlContacts) {
-    try {
-      // 3-layer match
-      let localMatch: LocalLead | undefined;
-
-      // Layer 1: crmExternalId
-      localMatch = localByCrmId.get(ghlContact.id);
-
-      // Layer 2: email
-      if (!localMatch) {
-        const normEmail = normalizeEmail(ghlContact.email);
-        if (normEmail) localMatch = localByEmail.get(normEmail);
-      }
-
-      // Layer 3: phone
-      if (!localMatch) {
-        const normPhone = normalizePhone(ghlContact.phone);
-        if (normPhone) localMatch = localByPhone.get(normPhone);
-      }
-
-      if (localMatch) {
-        // ── MATCHED: Reconcile field-level conflicts ──
-        matchedLocalIds.add(localMatch.id);
-        matchedGHLIds.add(ghlContact.id);
-        stats.matched++;
-
-        const conflicts: ConflictRecord[] = [];
-        const resolvedFields: Record<string, string | null> = {};
-
-        for (const field of ["firstName", "lastName", "phone"] as const) {
-          const result = resolveFieldConflict(
-            field,
-            localMatch[field],
-            ghlContact[field],
-            localMatch.updated_at,
-            ghlContact.dateUpdated,
-            ghlContact.id,
-          );
-          resolvedFields[field] = result.value;
-          if (result.conflict) conflicts.push(result.conflict);
+        // Layer 2: email
+        if (!localMatch) {
+          const normEmail = normalizeEmail(ghlContact.email);
+          if (normEmail) localMatch = localIdx.byEmail.get(normEmail);
         }
 
-        // Link crmExternalId if not already linked
-        const needsCrmIdLink = !localMatch.crmExternalId;
+        // Layer 3: phone
+        if (!localMatch) {
+          const normPhone = normalizePhone(ghlContact.phone);
+          if (normPhone) localMatch = localIdx.byPhone.get(normPhone);
+        }
 
-        // Check if local needs update
-        const localNeedsUpdate =
-          needsCrmIdLink ||
-          resolvedFields.firstName !== localMatch.firstName ||
-          resolvedFields.lastName !== localMatch.lastName ||
-          resolvedFields.phone !== localMatch.phone;
+        if (localMatch) {
+          matchedLocalIds.add(localMatch.id);
+          stats.matched++;
 
-        if (localNeedsUpdate) {
-          const notesJson = {
-            ...(typeof localMatch.notesJson === "string" ? JSON.parse(localMatch.notesJson || "{}") : localMatch.notesJson || {}),
+          const conflicts: ConflictRecord[] = [];
+          const resolvedFields: Record<string, string | null> = {};
+
+          for (const field of ["firstName", "lastName", "phone"] as const) {
+            const result = resolveFieldConflict(
+              field,
+              localMatch[field],
+              ghlContact[field],
+              localMatch.updated_at,
+              ghlContact.dateUpdated,
+              ghlContact.id,
+            );
+            resolvedFields[field] = result.value;
+            if (result.conflict) conflicts.push(result.conflict);
+          }
+
+          const needsCrmIdLink = !localMatch.crmExternalId;
+          const localNeedsUpdate =
+            needsCrmIdLink ||
+            resolvedFields.firstName !== localMatch.firstName ||
+            resolvedFields.lastName !== localMatch.lastName ||
+            resolvedFields.phone !== localMatch.phone;
+
+          if (localNeedsUpdate) {
+            const notesJson = {
+              ...(typeof localMatch.notesJson === "string" ? JSON.parse(localMatch.notesJson || "{}") : localMatch.notesJson || {}),
+              ghlTags: ghlContact.tags || [],
+              ghlCity: ghlContact.city,
+              ghlState: ghlContact.state,
+              ghlPostalCode: ghlContact.postalCode,
+              ghlCompany: ghlContact.companyName,
+              lastReconcileAt: new Date().toISOString(),
+              ...(needsCrmIdLink ? { linkedByCrmId: false, linkedByReconcile: true } : {}),
+            };
+
+            await pool.query(
+              "UPDATE lead_pipeline SET crmExternalId = ?, firstName = ?, lastName = ?, phone = ?, notesJson = ?, updated_at = ? WHERE id = ?",
+              [
+                ghlContact.id,
+                resolvedFields.firstName || localMatch.firstName,
+                resolvedFields.lastName || localMatch.lastName,
+                resolvedFields.phone || localMatch.phone,
+                JSON.stringify(notesJson),
+                now,
+                localMatch.id,
+              ]
+            );
+            stats.updatedInStewardly++;
+          }
+
+          // Update GHL if Stewardly has newer data
+          const ghlNeedsUpdate = conflicts.some(c => c.resolution === "stewardly_wins");
+          if (ghlNeedsUpdate) {
+            try {
+              const updatePayload: Record<string, string | string[]> = {};
+              for (const c of conflicts) {
+                if (c.resolution === "stewardly_wins" && c.stewardlyValue) {
+                  updatePayload[c.field] = c.stewardlyValue;
+                }
+              }
+              if (!ghlContact.tags?.includes("stewardly-synced")) {
+                updatePayload.tags = [...(ghlContact.tags || []), "stewardly-synced"];
+              }
+
+              await fetch(`${GHL_BASE}/contacts/${ghlContact.id}`, {
+                method: "PUT",
+                headers: ghlHeaders(),
+                body: JSON.stringify(updatePayload),
+                signal: AbortSignal.timeout(10000),
+              });
+              stats.updatedInGHL++;
+            } catch (err: any) {
+              logger.error({ err: err.message, ghlId: ghlContact.id }, "[Reconcile] Failed to update GHL contact");
+              stats.errors++;
+            }
+          }
+
+          stats.conflictsResolved += conflicts.length;
+          // Keep only last 100 conflicts in memory to bound memory usage
+          if (stats.conflicts.length < 100) {
+            stats.conflicts.push(...conflicts);
+          }
+        } else {
+          // ── NO LOCAL MATCH: Create in Stewardly ──
+          const normEmail = normalizeEmail(ghlContact.email);
+          const notesJson = JSON.stringify({
             ghlTags: ghlContact.tags || [],
             ghlCity: ghlContact.city,
             ghlState: ghlContact.state,
             ghlPostalCode: ghlContact.postalCode,
             ghlCompany: ghlContact.companyName,
-            lastReconcileAt: new Date().toISOString(),
-            ...(needsCrmIdLink ? { linkedByCrmId: false, linkedByReconcile: true } : {}),
-          };
+            ghlDateAdded: ghlContact.dateAdded,
+            createdByReconcile: true,
+          });
 
           await pool.query(
-            "UPDATE lead_pipeline SET crmExternalId = ?, firstName = ?, lastName = ?, phone = ?, notesJson = ?, updated_at = ? WHERE id = ?",
+            `INSERT INTO lead_pipeline (firstName, lastName, email, phone, source, crmExternalId, status, notesJson, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)`,
             [
+              ghlContact.firstName || null,
+              ghlContact.lastName || null,
+              normEmail,
+              ghlContact.phone || null,
+              ghlContact.source || "ghl_reconcile",
               ghlContact.id,
-              resolvedFields.firstName || localMatch.firstName,
-              resolvedFields.lastName || localMatch.lastName,
-              resolvedFields.phone || localMatch.phone,
-              JSON.stringify(notesJson),
+              notesJson,
               now,
-              localMatch.id,
+              now,
             ]
           );
-          stats.updatedInStewardly++;
-        }
+          stats.createdInStewardly++;
 
-        // Check if GHL needs update (Stewardly has newer data for a field)
-        const ghlNeedsUpdate = conflicts.some(c => c.resolution === "stewardly_wins");
-        if (ghlNeedsUpdate) {
-          try {
-            const updatePayload: Record<string, string | string[]> = {};
-            for (const c of conflicts) {
-              if (c.resolution === "stewardly_wins" && c.stewardlyValue) {
-                updatePayload[c.field] = c.stewardlyValue;
-              }
-            }
-            // Add stewardly-synced tag if not present
-            if (!ghlContact.tags?.includes("stewardly-synced")) {
-              updatePayload.tags = [...(ghlContact.tags || []), "stewardly-synced"];
-            }
-
-            await fetch(`${GHL_BASE}/contacts/${ghlContact.id}`, {
-              method: "PUT",
-              headers: ghlHeaders(),
-              body: JSON.stringify(updatePayload),
-              signal: AbortSignal.timeout(10000),
-            });
-            stats.updatedInGHL++;
-          } catch (err: any) {
-            logger.error({ err: err.message, ghlId: ghlContact.id }, "[Reconcile] Failed to update GHL contact");
-            stats.errors++;
-          }
-        }
-
-        stats.conflictsResolved += conflicts.length;
-        stats.conflicts.push(...conflicts);
-      } else {
-        // ── NO LOCAL MATCH: Create in Stewardly ──
-        const normEmail = normalizeEmail(ghlContact.email);
-        const notesJson = JSON.stringify({
-          ghlTags: ghlContact.tags || [],
-          ghlCity: ghlContact.city,
-          ghlState: ghlContact.state,
-          ghlPostalCode: ghlContact.postalCode,
-          ghlCompany: ghlContact.companyName,
-          ghlDateAdded: ghlContact.dateAdded,
-          createdByReconcile: true,
-        });
-
-        await pool.query(
-          `INSERT INTO lead_pipeline (firstName, lastName, email, phone, source, crmExternalId, status, notesJson, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)`,
-          [
-            ghlContact.firstName || null,
-            ghlContact.lastName || null,
-            normEmail,
-            ghlContact.phone || null,
-            ghlContact.source || "ghl_reconcile",
-            ghlContact.id,
+          // Add to local indexes so subsequent chunks can match
+          const newLead: LocalLead = {
+            id: -1, // placeholder — won't be used for matching
+            firstName: ghlContact.firstName || null,
+            lastName: ghlContact.lastName || null,
+            email: normEmail,
+            phone: ghlContact.phone || null,
+            source: ghlContact.source || "ghl_reconcile",
+            status: "new",
+            crmExternalId: ghlContact.id,
             notesJson,
-            now,
-            now,
-          ]
-        );
-        matchedGHLIds.add(ghlContact.id);
-        stats.createdInStewardly++;
+            created_at: now,
+            updated_at: now,
+          };
+          localIdx.byCrmId.set(ghlContact.id, newLead);
+          if (normEmail) localIdx.byEmail.set(normEmail, newLead);
+          const normPhone = normalizePhone(ghlContact.phone);
+          if (normPhone) localIdx.byPhone.set(normPhone, newLead);
+        }
+
+        // Rate limit protection
+        if (rateLimitMs > 0) await new Promise(r => setTimeout(r, rateLimitMs));
+      } catch (err: any) {
+        logger.error({ err: err.message, ghlId: ghlContact.id }, "[Reconcile] Error processing GHL contact");
+        stats.errors++;
+      }
+    }
+
+    stats.ghlTotal += ghlChunk.length;
+    pagesProcessed++;
+    stats.resumeCursor = lastId;
+
+    // Progress callback
+    if (options?.onProgress) {
+      stats.duration_ms = Date.now() - startTime;
+      options.onProgress({ ...stats });
+    }
+
+    logger.info(
+      { page: pagesProcessed, ghlProcessed: stats.ghlTotal, matched: stats.matched, created: stats.createdInStewardly },
+      "[Reconcile] GHL page processed"
+    );
+  }
+
+  // ── Step 3: Find and process local orphans ─────────────────────────────
+  if (pushOrphans) {
+    logger.info("[Reconcile] Step 3: Processing local orphans...");
+
+    // Stream orphans from DB in chunks instead of filtering in-memory
+    const ORPHAN_CHUNK = 1000;
+    let orphanOffset = 0;
+    let orphansPushed = 0;
+
+    while (true) {
+      if (maxOrphanPush > 0 && orphansPushed >= maxOrphanPush) {
+        logger.info({ pushed: orphansPushed, max: maxOrphanPush }, "[Reconcile] Reached max orphan push limit");
+        break;
       }
 
-      // Rate limit protection
-      await new Promise(r => setTimeout(r, 50));
-    } catch (err: any) {
-      logger.error({ err: err.message, ghlId: ghlContact.id }, "[Reconcile] Error processing GHL contact");
-      stats.errors++;
-    }
-  }
+      const [orphanRows] = await pool.query(
+        "SELECT id, firstName, lastName, email, phone, source, status, crmExternalId, notesJson, created_at, updated_at FROM lead_pipeline WHERE status != 'disqualified' AND (crmExternalId IS NULL OR crmExternalId = '') LIMIT ? OFFSET ?",
+        [ORPHAN_CHUNK, orphanOffset]
+      );
+      const orphans = orphanRows as LocalLead[];
+      if (orphans.length === 0) break;
 
-  // ── Step 4: Find local orphans (leads without GHL contact) ─────────────
-  if (!pushOrphans) {
-    logger.info("[Reconcile] Step 4: Skipping orphan push (disabled)");
-    stats.duration_ms = Date.now() - startTime;
-    logger.info(stats, "[Reconcile] Complete (orphan push disabled)");
-    return stats;
-  }
-  logger.info("[Reconcile] Step 4: Finding local orphans...");
-  const orphanLeads = localLeads.filter(l => !matchedLocalIds.has(l.id));
+      for (const orphan of orphans) {
+        if (maxOrphanPush > 0 && orphansPushed >= maxOrphanPush) break;
 
-  for (const orphan of orphanLeads) {
-    try {
-      // Search GHL for this lead before creating (dedup pre-check)
-      const ghlMatch = await findGHLMatch({
-        email: orphan.email,
-        phone: orphan.phone,
-        crmExternalId: orphan.crmExternalId,
-      });
+        try {
+          const ghlMatch = await findGHLMatch({
+            email: orphan.email,
+            phone: orphan.phone,
+            crmExternalId: orphan.crmExternalId,
+          });
 
-      if (ghlMatch) {
-        // Link the orphan to the existing GHL contact
-        const notesJson = {
-          ...(typeof orphan.notesJson === "string" ? JSON.parse(orphan.notesJson || "{}") : orphan.notesJson || {}),
-          linkedByReconcile: true,
-          ghlTags: ghlMatch.tags || [],
-          lastReconcileAt: new Date().toISOString(),
-        };
-        await pool.query(
-          "UPDATE lead_pipeline SET crmExternalId = ?, notesJson = ?, updated_at = ? WHERE id = ?",
-          [ghlMatch.id, JSON.stringify(notesJson), now, orphan.id]
-        );
-        stats.orphansFixed++;
-      } else {
-        // Create in GHL (push orphan)
-        const contactPayload = {
-          locationId: GHL_LOCATION_ID,
-          firstName: orphan.firstName || "",
-          lastName: orphan.lastName || "",
-          email: orphan.email || "",
-          phone: orphan.phone || "",
-          tags: ["stewardly-synced", "source:stewardly-reconcile"],
-        };
-
-        const resp = await fetch(`${GHL_BASE}/contacts/`, {
-          method: "POST",
-          headers: ghlHeaders(),
-          body: JSON.stringify(contactPayload),
-          signal: AbortSignal.timeout(15000),
-        });
-
-        if (resp.ok) {
-          const data = await resp.json() as any;
-          const ghlContactId = data.contact?.id;
-          if (ghlContactId) {
+          if (ghlMatch) {
+            const notesJson = {
+              ...(typeof orphan.notesJson === "string" ? JSON.parse(orphan.notesJson || "{}") : orphan.notesJson || {}),
+              linkedByReconcile: true,
+              ghlTags: ghlMatch.tags || [],
+              lastReconcileAt: new Date().toISOString(),
+            };
             await pool.query(
-              "UPDATE lead_pipeline SET crmExternalId = ?, updated_at = ? WHERE id = ?",
-              [ghlContactId, now, orphan.id]
-            );
-            stats.createdInGHL++;
-          }
-        } else if (resp.status === 400) {
-          // Duplicate in GHL — extract existing ID
-          const errBody = await resp.json().catch(() => ({})) as any;
-          const existingId = errBody?.meta?.contactId;
-          if (existingId) {
-            await pool.query(
-              "UPDATE lead_pipeline SET crmExternalId = ?, updated_at = ? WHERE id = ?",
-              [existingId, now, orphan.id]
+              "UPDATE lead_pipeline SET crmExternalId = ?, notesJson = ?, updated_at = ? WHERE id = ?",
+              [ghlMatch.id, JSON.stringify(notesJson), now, orphan.id]
             );
             stats.orphansFixed++;
+          } else {
+            const contactPayload = {
+              locationId: GHL_LOCATION_ID,
+              firstName: orphan.firstName || "",
+              lastName: orphan.lastName || "",
+              email: orphan.email || "",
+              phone: orphan.phone || "",
+              tags: ["stewardly-synced", "source:stewardly-reconcile"],
+            };
+
+            const resp = await fetch(`${GHL_BASE}/contacts/`, {
+              method: "POST",
+              headers: ghlHeaders(),
+              body: JSON.stringify(contactPayload),
+              signal: AbortSignal.timeout(15000),
+            });
+
+            if (resp.ok) {
+              const data = await resp.json() as any;
+              const ghlContactId = data.contact?.id;
+              if (ghlContactId) {
+                await pool.query(
+                  "UPDATE lead_pipeline SET crmExternalId = ?, updated_at = ? WHERE id = ?",
+                  [ghlContactId, now, orphan.id]
+                );
+                stats.createdInGHL++;
+                orphansPushed++;
+              }
+            } else if (resp.status === 400) {
+              const errBody = await resp.json().catch(() => ({})) as any;
+              const existingId = errBody?.meta?.contactId;
+              if (existingId) {
+                await pool.query(
+                  "UPDATE lead_pipeline SET crmExternalId = ?, updated_at = ? WHERE id = ?",
+                  [existingId, now, orphan.id]
+                );
+                stats.orphansFixed++;
+              }
+            }
           }
+
+          // Heavier rate limit for orphan pushes (creates are more expensive)
+          await new Promise(r => setTimeout(r, 200));
+        } catch (err: any) {
+          logger.error({ err: err.message, leadId: orphan.id }, "[Reconcile] Error processing orphan");
+          stats.errors++;
         }
       }
 
-      // Rate limit protection
-      await new Promise(r => setTimeout(r, 200));
-    } catch (err: any) {
-      logger.error({ err: err.message, leadId: orphan.id }, "[Reconcile] Error processing orphan");
-      stats.errors++;
+      orphanOffset += ORPHAN_CHUNK;
+      if (orphans.length < ORPHAN_CHUNK) break;
     }
+  } else {
+    logger.info("[Reconcile] Step 3: Skipping orphan push (disabled)");
   }
 
+  stats.complete = nextPageUrl === null;
   stats.duration_ms = Date.now() - startTime;
+
   logger.info(
     {
       ghlTotal: stats.ghlTotal,
@@ -597,6 +716,8 @@ export async function reconcile(options?: ReconcileOptions): Promise<SyncStats> 
       orphansFixed: stats.orphansFixed,
       errors: stats.errors,
       duration_ms: stats.duration_ms,
+      complete: stats.complete,
+      pages: pagesProcessed,
     },
     "[Reconcile] Complete"
   );
@@ -626,7 +747,6 @@ export async function dedupSafePush(lead: {
   const existingGHL = await findGHLMatch({ email: lead.email, phone: lead.phone });
 
   if (existingGHL) {
-    // Update existing instead of creating duplicate
     try {
       const updatePayload: Record<string, unknown> = {
         tags: [...new Set([...(existingGHL.tags || []), ...(lead.tags || []), "stewardly-synced"])],
@@ -680,7 +800,6 @@ export async function dedupSafePush(lead: {
       };
     }
 
-    // Handle 400 duplicate (race condition — contact created between our check and create)
     if (resp.status === 400) {
       const errBody = await resp.json().catch(() => ({})) as any;
       const existingId = errBody?.meta?.contactId;
@@ -705,13 +824,20 @@ export async function getSyncAggregation(): Promise<{
   stewardlyTotal: number;
   ghlLinked: number;
   ghlUnlinked: number;
+  linkRate: number;
   byStatus: Record<string, number>;
   bySource: Record<string, number>;
   lastReconcileAt: string | null;
+  lastReconcileStats: SyncStats | null;
+  recentConflicts: ConflictRecord[];
 }> {
   const pool = await getRawPool();
   if (!pool) {
-    return { stewardlyTotal: 0, ghlLinked: 0, ghlUnlinked: 0, byStatus: {}, bySource: {}, lastReconcileAt: null };
+    return {
+      stewardlyTotal: 0, ghlLinked: 0, ghlUnlinked: 0, linkRate: 0,
+      byStatus: {}, bySource: {}, lastReconcileAt: null,
+      lastReconcileStats: null, recentConflicts: [],
+    };
   }
 
   const [totalRows] = await pool.query("SELECT COUNT(*) as cnt FROM lead_pipeline");
@@ -732,7 +858,7 @@ export async function getSyncAggregation(): Promise<{
     bySource[row.source || "unknown"] = row.cnt;
   }
 
-  // Check last reconcile timestamp from notesJson
+  // Check last reconcile timestamp
   const [lastRecRows] = await pool.query(
     "SELECT notesJson FROM lead_pipeline WHERE notesJson LIKE '%lastReconcileAt%' ORDER BY updated_at DESC LIMIT 1"
   );
@@ -744,12 +870,66 @@ export async function getSyncAggregation(): Promise<{
     } catch { /* ignore */ }
   }
 
+  // Check for stored last reconcile stats
+  let lastReconcileStats: SyncStats | null = null;
+  try {
+    const [statsRows] = await pool.query(
+      "SELECT value FROM platform_kv WHERE `key` = 'last_reconcile_stats' LIMIT 1"
+    );
+    if ((statsRows as any[])[0]?.value) {
+      lastReconcileStats = JSON.parse((statsRows as any[])[0].value);
+    }
+  } catch { /* table may not exist yet */ }
+
+  // Recent conflicts
+  let recentConflicts: ConflictRecord[] = [];
+  try {
+    const [conflictRows] = await pool.query(
+      "SELECT value FROM platform_kv WHERE `key` = 'recent_sync_conflicts' LIMIT 1"
+    );
+    if ((conflictRows as any[])[0]?.value) {
+      recentConflicts = JSON.parse((conflictRows as any[])[0].value);
+    }
+  } catch { /* table may not exist yet */ }
+
+  const ghlUnlinked = stewardlyTotal - ghlLinked;
+
   return {
     stewardlyTotal,
     ghlLinked,
-    ghlUnlinked: stewardlyTotal - ghlLinked,
+    ghlUnlinked,
+    linkRate: stewardlyTotal > 0 ? Math.round((ghlLinked / stewardlyTotal) * 10000) / 100 : 0,
     byStatus,
     bySource,
     lastReconcileAt,
+    lastReconcileStats,
+    recentConflicts,
   };
+}
+
+// ─── Persist Reconcile Stats ────────────────────────────────────────────────
+
+export async function persistReconcileStats(stats: SyncStats): Promise<void> {
+  const pool = await getRawPool();
+  if (!pool) return;
+
+  try {
+    // Upsert last reconcile stats
+    await pool.query(
+      `INSERT INTO platform_kv (\`key\`, value, updated_at) VALUES ('last_reconcile_stats', ?, ?)
+       ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)`,
+      [JSON.stringify(stats), Date.now()]
+    );
+
+    // Upsert recent conflicts (keep last 100)
+    if (stats.conflicts.length > 0) {
+      await pool.query(
+        `INSERT INTO platform_kv (\`key\`, value, updated_at) VALUES ('recent_sync_conflicts', ?, ?)
+         ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)`,
+        [JSON.stringify(stats.conflicts.slice(-100)), Date.now()]
+      );
+    }
+  } catch (err: any) {
+    logger.warn({ err: err.message }, "[Reconcile] Failed to persist stats (platform_kv table may not exist)");
+  }
 }

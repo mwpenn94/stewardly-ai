@@ -161,6 +161,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
   { iconName: "Plug", label: "Dynamic Integrations", href: "/dynamic-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
+  { iconName: "ArrowLeftRight", label: "Sync Dashboard", href: "/sync-dashboard", minRole: "advisor", section: "relationships" },
   { iconName: "Link", label: "My Integrations", href: "/my-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor", section: "relationships" },
 
