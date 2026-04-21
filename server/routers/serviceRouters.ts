@@ -182,9 +182,10 @@ export const crmRouter = router({
     if (!db) return [];
     const { crmSyncLog } = await import("../../drizzle/schema");
     const { sql } = await import("drizzle-orm");
+    // Use GROUP_CONCAT with ORDER BY to get the latest status per provider
     const rows = await db.select({
       provider: crmSyncLog.crmProvider,
-      lastStatus: crmSyncLog.status,
+      lastStatus: sql<string>`SUBSTRING_INDEX(GROUP_CONCAT(${crmSyncLog.status} ORDER BY ${crmSyncLog.createdAt} DESC), ',', 1)`,
       lastSync: sql<string>`MAX(${crmSyncLog.createdAt})`,
       totalSynced: sql<number>`COALESCE(SUM(${crmSyncLog.recordsSynced}), 0)`,
     }).from(crmSyncLog).groupBy(crmSyncLog.crmProvider);

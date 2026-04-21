@@ -23,7 +23,7 @@ export default function AdvisorIntegrations() {
   const { data: providers, isLoading: _pageLoading } = trpc.integrations.listProviders.useQuery(undefined, { enabled: isAuthenticated });
   const connections = trpc.integrations.listConnections.useQuery(undefined, { enabled: isAuthenticated });
 
-  const providerList = (providers.data as any)?.providers || providers.data || [];
+  const providerList = (providers as any)?.providers || (Array.isArray(providers) ? providers : []);
   const availableProviders = (Array.isArray(providerList) ? providerList : []).filter((p: any) => p.status === "active");
   const myConnections = connections.data || [];
 

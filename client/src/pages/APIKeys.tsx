@@ -51,7 +51,7 @@ export default function APIKeys({ embedded = false }: { embedded?: boolean } = {
       </div>
 
       {(webhooksQ.error || integrationsQ.error) && (
-        <QueryErrorBanner error={webhooksQ.error || integrationsQ.error} />
+        <QueryErrorBanner query={{ isError: !!(webhooksQ.error || integrationsQ.error), error: webhooksQ.error || integrationsQ.error, refetch: undefined }} />
       )}
 
       {/* Summary Stats */}

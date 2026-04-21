@@ -70,7 +70,7 @@ export default function AdminFeaturePermissions({ embedded = false }: { embedded
       <>
         <SEOHead title="Feature Permissions" description="Manage feature access and permissions across the platform." />
     <div className="space-y-6">
-      <QueryErrorBanner error={registryError || permsError} />
+      <QueryErrorBanner query={{ isError: !!(registryError || permsError), error: registryError || permsError, refetch: undefined }} />
       {/* Back + Header */}
       {!embedded && (
         <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="-ml-2 text-muted-foreground hover:text-foreground">

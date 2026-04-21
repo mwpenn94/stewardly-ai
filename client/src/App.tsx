@@ -160,6 +160,7 @@ const EnrichmentAdmin = lazy(() => import("./pages/EnrichmentAdmin"));
 const PortalAnalytics = lazy(() => import("./pages/PortalAnalytics"));
 const SovereignStudy = lazy(() => import("./pages/SovereignStudy"));
 const SharedPlanView = lazy(() => import("./pages/SharedPlanView"));
+const ClientSegmentation = lazy(() => import("./pages/ClientSegmentation"));
 // Hub pages with internal sidebars (Phase 3 — sidebar simplification)
 const PeopleHub = lazy(() => import("./pages/PeopleHub"));
 const IntelligenceHubV2 = lazy(() => import("./pages/IntelligenceHubV2"));
@@ -362,6 +363,7 @@ function Router() {
         <Route path={"/enrichment-admin"} component={EnrichmentAdmin} />
         <Route path={"/portal-analytics"} component={PortalAnalytics} />
         <Route path={"/sovereign-study"} component={SovereignStudy} />
+        <Route path={"/client-segmentation"} component={ClientSegmentation} />
         <Route path={"/professionals"}><Redirect to="/relationships" /></Route>
 
         <Route path={"/404"} component={NotFound} />

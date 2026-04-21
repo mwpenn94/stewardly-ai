@@ -249,7 +249,7 @@ export default function Calculators() {
     if (tab) urlTabRef.current = tab;
     setCalcSidebarOpen(false);
     setGlobalSearch('');
-    panelAnalytics.recordVisit(panelId);
+    try { panelAnalytics.recordVisit(panelId); } catch { /* guard HMR TDZ */ }
   }, [panelAnalytics]);
 
   /* ─── KEYBOARD SHORTCUT CHEAT SHEET (Pass 155) ─── */

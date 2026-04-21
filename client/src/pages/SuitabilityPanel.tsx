@@ -20,10 +20,11 @@ export default function SuitabilityPanel() {
 
   const [tab, setTab] = useState("overview");
 
-  const { data: suitability, isLoading: _pageLoading } = trpc.suitability.get.useQuery(undefined, { enabled: isAuthenticated });
+  const suitabilityQ = trpc.suitability.get.useQuery(undefined, { enabled: isAuthenticated });
   const products = trpc.products.list.useQuery(undefined, { enabled: isAuthenticated });
 
-  const profile = suitability.data;
+  const _pageLoading = suitabilityQ.isLoading;
+  const profile = suitabilityQ.data;
   const productList = products.data || [];
 
   const riskTolerance = profile?.riskTolerance || "moderate";
@@ -45,7 +46,7 @@ export default function SuitabilityPanel() {
   return (
     <AppShell title="Suitability">
       <SEOHead title="Suitability" description="Suitability assessment and questionnaire" />
-    <QueryErrorBanner query={suitability} label="suitability data" />
+    <QueryErrorBanner query={suitabilityQ} label="suitability data" />
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

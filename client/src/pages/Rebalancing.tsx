@@ -219,18 +219,18 @@ export default function RebalancingPage({ embedded = false }: { embedded?: boole
             trade proposals, and optional tax-aware sell ordering. Pure
             compute — no data is saved.
           </p>
-          {result && result.trades.length > 0 && (
+          {result && (result.proposals?.length ?? 0) > 0 && (
             <ExportDataButton
-              data={result.trades.map((t: any) => ({
-                ticker: t.ticker,
-                action: t.action,
-                shares: String(t.shares),
-                value: String(t.value),
-                driftPct: String(t.driftPct),
+              data={result.proposals.map((p: any) => ({
+                sleeve: p.sleeve,
+                action: p.action,
+                amountUSD: String(p.amountUSD),
+                fromPct: String(p.fromPct),
+                toPct: String(p.toPct),
               }))}
               filename="rebalancing-trades"
-              columns={["ticker", "action", "shares", "value", "driftPct"]}
-              headers={["Ticker", "Action", "Shares", "Value", "Drift %"]}
+              columns={["sleeve", "action", "amountUSD", "fromPct", "toPct"]}
+              headers={["Sleeve", "Action", "Amount ($)", "From %", "To %"]}
               compact
             />
           )}

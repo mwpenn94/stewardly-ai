@@ -146,19 +146,21 @@ export default function Workflows() {
     } catch { return []; }
   });
 
-  const { data: instancesQ, isLoading: _pageLoading } = trpc.workflow.listInstances.useQuery(undefined, {
+  const instancesQuery = trpc.workflow.listInstances.useQuery(undefined, {
     // Don't hammer the server — rely on mutations to refresh.
     refetchOnWindowFocus: true,
     retry: false,
   });
+  const instancesQ = instancesQuery.data;
+  const _pageLoading = instancesQuery.isLoading;
   const saveInstanceMut = trpc.workflow.saveInstance.useMutation({ onError: (e) => toast.error(e.message) });
   const deleteInstanceMut = trpc.workflow.deleteInstance.useMutation({ onError: (e) => toast.error(e.message) });
 
   // Reconcile the server snapshot into local state on first load.
   useEffect(() => {
-    if (instancesQ.isError || !instancesQ.data) return;
-    if (instancesQ.data.length === 0) return;
-    const reconciled: WorkflowInstance[] = instancesQ.data.map((row) => {
+    if (instancesQuery.isError || !instancesQ) return;
+    if (instancesQ.length === 0) return;
+    const reconciled: WorkflowInstance[] = instancesQ.map((row) => {
       const state = (row.state ?? {}) as Partial<WorkflowInstance>;
       return {
         id: row.id,
@@ -173,7 +175,7 @@ export default function Workflows() {
     });
     setSavedWorkflows(reconciled);
     safeSetItem("wb_workflows", JSON.stringify(reconciled));
-  }, [instancesQ.data]);
+  }, [instancesQ]);
 
   const saveWorkflows = (workflows: WorkflowInstance[]) => {
     setSavedWorkflows(workflows);

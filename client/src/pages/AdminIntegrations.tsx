@@ -27,7 +27,7 @@ export default function AdminIntegrations({ embedded = false }: { embedded?: boo
   const { data: providers, isLoading: _pageLoading } = trpc.integrations.listProviders.useQuery(undefined, { enabled: isAuthenticated });
   const connections = trpc.integrations.listConnections.useQuery(undefined, { enabled: isAuthenticated });
 
-  const providerList = (providers.data as any)?.providers || providers.data || [];
+  const providerList = (providers as any)?.providers || (Array.isArray(providers) ? providers : []);
   const filteredProviders = (Array.isArray(providerList) ? providerList : []).filter((p: any) =>
     p.name?.toLowerCase().includes(search.toLowerCase()) ||
     p.category?.toLowerCase().includes(search.toLowerCase())
