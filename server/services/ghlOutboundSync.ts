@@ -5,6 +5,7 @@
  * with graceful degradation if GHL credentials are not configured.
  */
 import pino from "pino";
+import { dedupSafePush } from "./syncReconciliation";
 
 const logger = pino({ name: "ghl-outbound-sync" });
 
@@ -30,7 +31,9 @@ export interface SyncResult {
 }
 
 /**
- * Push a lead/contact to GHL. Gracefully skips if credentials are not configured.
+ * Push a lead/contact to GHL using dedup-safe push.
+ * Pre-checks GHL for existing contacts by email/phone before creating,
+ * preventing duplicates even in race conditions.
  */
 export async function pushLeadToGHL(lead: LeadToSync): Promise<SyncResult> {
   if (!GHL_API_KEY || !GHL_LOCATION_ID) {
@@ -38,75 +41,32 @@ export async function pushLeadToGHL(lead: LeadToSync): Promise<SyncResult> {
     return { success: false, message: "GHL not configured", mode: "skipped" };
   }
 
-  const BASE = "https://services.leadconnectorhq.com";
-  const headers = {
-    Authorization: `Bearer ${GHL_API_KEY}`,
-    Version: "2021-07-28",
-    "Content-Type": "application/json",
-  };
-
-  const contactPayload = {
-    locationId: GHL_LOCATION_ID,
-    firstName: lead.firstName || "",
-    lastName: lead.lastName || "",
-    email: lead.email || "",
-    phone: lead.phone || "",
-    tags: [
-      ...(lead.tags || []),
-      "stewardly-synced",
-      lead.source ? `source:${lead.source}` : "source:stewardly",
-    ],
-  };
-
   try {
-    const resp = await fetch(`${BASE}/contacts/`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(contactPayload),
-      signal: AbortSignal.timeout(15000),
+    // Use dedup-safe push from reconciliation engine
+    const result = await dedupSafePush({
+      firstName: lead.firstName,
+      lastName: lead.lastName,
+      email: lead.email,
+      phone: lead.phone,
+      tags: lead.tags,
+      source: lead.source,
     });
 
-    if (resp.ok) {
-      const data = await resp.json() as any;
-      const ghlContactId = data.contact?.id;
-      logger.info({ ghlContactId, email: lead.email }, "Lead pushed to GHL");
-      return { success: true, ghlContactId, message: "Contact synced to GoHighLevel", mode: "live" };
+    if (result.action === "skipped") {
+      return { success: false, message: result.message, mode: "skipped" };
     }
 
-    // Handle duplicate contact — GHL returns 400 with contactId in meta
-    if (resp.status === 400) {
-      const errBody = await resp.json().catch(() => ({})) as any;
-      const existingId = errBody?.meta?.contactId;
+    logger.info(
+      { ghlContactId: result.ghlContactId, email: lead.email, action: result.action },
+      `Lead pushed to GHL via dedup-safe push (${result.action})`
+    );
 
-      if (existingId && errBody?.message?.includes("duplicate")) {
-        // Update existing contact with new tags
-        try {
-          const updateResp = await fetch(`${BASE}/contacts/${existingId}`, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify({
-              tags: contactPayload.tags,
-              firstName: contactPayload.firstName || undefined,
-              lastName: contactPayload.lastName || undefined,
-            }),
-            signal: AbortSignal.timeout(15000),
-          });
-          if (updateResp.ok) {
-            logger.info({ ghlContactId: existingId, email: lead.email }, "Duplicate detected — updated existing GHL contact");
-            return { success: true, ghlContactId: existingId, message: "Duplicate detected — updated existing contact", mode: "live" };
-          }
-        } catch { /* fall through */ }
-      }
-
-      // Still a success if the contact exists
-      if (existingId) {
-        return { success: true, ghlContactId: existingId, message: "Contact already exists in GoHighLevel", mode: "live" };
-      }
-
-      return { success: false, message: `GHL 400: ${errBody?.message || "Bad Request"}`, mode: "error" };
-    }
-
-    return { success: false, message: `GHL HTTP ${resp.status}`, mode: "error" };
+    return {
+      success: true,
+      ghlContactId: result.ghlContactId,
+      message: result.message,
+      mode: "live",
+    };
   } catch (err: any) {
     logger.error({ err: err.message, email: lead.email }, "Failed to push lead to GHL");
     return { success: false, message: `GHL sync error: ${err.message}`, mode: "error" };

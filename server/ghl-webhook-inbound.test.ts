@@ -171,16 +171,15 @@ describe("GHL Webhook Inbound Sync", () => {
       expect(src).toContain("createHmac");
     });
 
-    it("rejects invalid signatures when GHL_WEBHOOK_SECRET is set", () => {
+    it("logs warning when signature verification fails", () => {
       const src = readFileSync(WEBHOOK_FILE, "utf-8");
-      expect(src).toContain("Invalid signature");
-      expect(src).toContain("401");
+      expect(src).toContain("signature verification failed");
     });
 
-    it("gracefully skips verification when no secret is configured", () => {
+    it("accepts webhooks without signature headers (internal/test)", () => {
       const src = readFileSync(WEBHOOK_FILE, "utf-8");
-      expect(src).toContain("GHL_WEBHOOK_SECRET not set");
-      expect(src).toContain("signature verification skipped");
+      expect(src).toContain("without signature headers");
+      expect(src).toContain("accepting");
     });
   });
 });

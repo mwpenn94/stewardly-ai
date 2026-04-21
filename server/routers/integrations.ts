@@ -18,6 +18,7 @@ import {
 import { eq, and, desc, sql, lte } from "drizzle-orm";
 import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
 import { firstOrNull } from "../services/dbResilience";
+import { reconcile, getSyncAggregation } from "../services/syncReconciliation";
 import crypto from "crypto";
 
 const uuid = () => crypto.randomUUID();
@@ -1193,4 +1194,18 @@ export const integrationsRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Unsupported provider" });
       }
     }),
+
+  // ─── GHL Sync Reconciliation ──────────────────────────────────────────
+
+  /** Run full bidirectional reconciliation between Stewardly and GHL */
+  reconcileGHL: protectedProcedure.mutation(async () => {
+    const stats = await reconcile();
+    return stats;
+  }),
+
+  /** Get current sync aggregation stats (no side effects) */
+  getSyncAggregation: protectedProcedure.query(async () => {
+    const agg = await getSyncAggregation();
+    return agg;
+  }),
 });
