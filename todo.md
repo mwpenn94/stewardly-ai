@@ -8056,3 +8056,15 @@
 - [x] P30-10: Fixed build errors — LocationAnalytics.tsx toast import (use-toast → sonner)
 - [x] P30-11: Fixed duplicate aria-label warnings in ContextualHelp.tsx, UnifiedAI.tsx, Rebalancing.tsx, LiveSession.tsx
 - [x] P30-FINAL: todo.md updated, checkpoint saved
+
+## Pass 31 — Audit Logging + Location Onboarding Wizard
+- [x] P31-1: GHL webhook registration — browser extension unavailable (deferred to manual step)
+  - URL: https://stewardly.manus.space/api/webhooks/ghl
+  - Events: ContactCreate, ContactUpdate, ContactDelete, OpportunityCreate, OpportunityStatusUpdate
+- [x] P31-2: Implement audit logging service (server/services/auditLog.ts) with DB table crm_audit_log
+- [x] P31-3: Add audit log tRPC procedures (getCrmAuditLog, getCrmAuditSummary) + wire into updateLocationMemberRole, bulkAssign, bulkUnassign
+- [x] P31-4: Build location onboarding wizard UI — 5-step guided flow (Discover → Configure → Team → Sync → Complete)
+- [x] P31-5: Add onboarding wizard tRPC procedures (onboardingDiscoverLocations, onboardingConfigureLocation, onboardingAssignMembers, onboardingRunReconciliation, getOnboardingStatus)
+- [x] P31-6: Write vitest tests — 19 tests all passing (audit log service, convenience loggers, onboarding backend, tRPC procedures)
+- [x] P31-7: 3 consecutive clean LVUA passes — server 200, route loads, 19/19 tests, 7 tRPC procedures confirmed
+- [x] P31-FINAL: Update todo.md, save checkpoint

@@ -1643,13 +1643,31 @@ export const integrationsRouter = router({
       locationDbId: z.number(),
       role: z.enum(["viewer", "editor", "admin"]),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const pool = await getRawPool();
       if (!pool) return { success: false };
+      // Get previous role for audit trail
+      const [prevRows] = await pool.query(
+        "SELECT role FROM user_locations WHERE user_id = ? AND location_id = ?",
+        [input.userId, input.locationDbId]
+      );
+      const previousRole = (prevRows as any[])[0]?.role || "unknown";
       const [result] = await pool.query(
         "UPDATE user_locations SET role = ? WHERE user_id = ? AND location_id = ?",
         [input.role, input.userId, input.locationDbId]
       );
+      if ((result as any).affectedRows > 0) {
+        const { logRoleUpdate } = await import("../services/auditLog");
+        logRoleUpdate({
+          actorId: ctx.user.id,
+          actorName: ctx.user.name || ctx.user.email || "Unknown",
+          actorRole: ctx.user.role || "user",
+          userId: input.userId,
+          locationId: input.locationDbId,
+          previousRole,
+          newRole: input.role,
+        }).catch(() => {});
+      }
       return { success: (result as any).affectedRows > 0 };
     }),
 
@@ -1660,14 +1678,28 @@ export const integrationsRouter = router({
       locationDbId: z.number(),
       role: z.enum(["viewer", "editor", "admin"]).default("editor"),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { assignUser } = await import("../services/locationAutoProvisioning");
+      const { logAuditEvent } = await import("../services/auditLog");
       let assigned = 0;
       let skipped = 0;
       for (const userId of input.userIds) {
         const success = await assignUser(userId, input.locationDbId, input.role);
         if (success) assigned++; else skipped++;
       }
+      // Log bulk assign audit event
+      logAuditEvent({
+        actorId: ctx.user.id,
+        actorName: ctx.user.name || ctx.user.email || "Unknown",
+        actorRole: ctx.user.role || "user",
+        action: "bulk_assign",
+        category: "permission",
+        targetType: "location",
+        targetId: String(input.locationDbId),
+        locationId: input.locationDbId,
+        afterState: { userIds: input.userIds, role: input.role },
+        metadata: { assigned, skipped, total: input.userIds.length },
+      }).catch(() => {});
       return { assigned, skipped, total: input.userIds.length };
     }),
 
@@ -1677,13 +1709,27 @@ export const integrationsRouter = router({
       userIds: z.array(z.number()),
       locationDbId: z.number(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { unassignUser } = await import("../services/locationAutoProvisioning");
+      const { logAuditEvent } = await import("../services/auditLog");
       let removed = 0;
       for (const userId of input.userIds) {
         const success = await unassignUser(userId, input.locationDbId);
         if (success) removed++;
       }
+      // Log bulk unassign audit event
+      logAuditEvent({
+        actorId: ctx.user.id,
+        actorName: ctx.user.name || ctx.user.email || "Unknown",
+        actorRole: ctx.user.role || "user",
+        action: "bulk_unassign",
+        category: "permission",
+        targetType: "location",
+        targetId: String(input.locationDbId),
+        locationId: input.locationDbId,
+        beforeState: { userIds: input.userIds },
+        metadata: { removed, total: input.userIds.length },
+      }).catch(() => {});
       return { removed, total: input.userIds.length };
     }),
 
@@ -1796,5 +1842,226 @@ export const integrationsRouter = router({
       } catch (err) {
         return { statusBreakdown: [], conversions: [], velocity: [], syncHealth: [], timeSeries: [], totals: {}, dateRange: { start: rangeStart, end: rangeEnd } };
       }
+    }),
+
+  // ─── CRM Audit Log Procedures ──────────────────────────────────────────
+
+  /** Query CRM audit log with filters and pagination */
+  getCrmAuditLog: protectedProcedure
+    .input(z.object({
+      actorId: z.number().optional(),
+      action: z.string().optional(),
+      category: z.string().optional(),
+      locationId: z.number().optional(),
+      targetType: z.string().optional(),
+      startDate: z.number().optional(),
+      endDate: z.number().optional(),
+      limit: z.number().min(1).max(500).default(50),
+      offset: z.number().min(0).default(0),
+    }).optional())
+    .query(async ({ input }) => {
+      const { queryAuditLog } = await import("../services/auditLog");
+      return queryAuditLog(input ?? {});
+    }),
+
+  /** Get CRM audit log summary statistics */
+  getCrmAuditSummary: protectedProcedure
+    .input(z.object({
+      startDate: z.number().optional(),
+      endDate: z.number().optional(),
+      locationId: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const { getAuditSummary } = await import("../services/auditLog");
+      return getAuditSummary(input?.startDate, input?.endDate, input?.locationId);
+    }),
+
+  // ─── Location Onboarding Wizard Procedures ─────────────────────────────
+
+  /** Step 1: Discover GHL sub-accounts */
+  onboardingDiscoverLocations: protectedProcedure
+    .query(async () => {
+      const { discoverAndProvisionLocations } = await import("../services/locationAutoProvisioning");
+      const pool = await getRawPool();
+      if (!pool) return { discovered: [], existing: [] };
+      // Get existing locations
+      const [existingRows] = await pool.query(
+        "SELECT id, name, ghl_location_id, is_active, sync_direction, sync_frequency FROM ghl_locations ORDER BY name"
+      );
+      // Attempt discovery
+      try {
+        const discovered = await discoverAndProvisionLocations();
+        return { discovered, existing: existingRows as any[] };
+      } catch {
+        return { discovered: [], existing: existingRows as any[] };
+      }
+    }),
+
+  /** Step 2: Configure sync settings for a location */
+  onboardingConfigureLocation: protectedProcedure
+    .input(z.object({
+      locationDbId: z.number(),
+      syncDirection: z.enum(["bidirectional", "pull_only", "push_only", "disabled"]).default("bidirectional"),
+      syncFrequency: z.enum(["realtime", "hourly", "daily", "manual"]).default("daily"),
+      conflictPolicy: z.enum(["ghl_wins", "stewardly_wins", "newest_wins", "manual"]).default("newest_wins"),
+      rateLimitPerMinute: z.number().min(1).max(100).default(30),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const pool = await getRawPool();
+      if (!pool) return { success: false };
+      // Get before state for audit
+      const [beforeRows] = await pool.query(
+        "SELECT sync_direction, sync_frequency, conflict_policy, rate_limit_per_minute FROM ghl_locations WHERE id = ?",
+        [input.locationDbId]
+      );
+      const before = (beforeRows as any[])[0] || {};
+      const [result] = await pool.query(
+        `UPDATE ghl_locations SET sync_direction = ?, sync_frequency = ?, conflict_policy = ?, rate_limit_per_minute = ?
+         WHERE id = ?`,
+        [input.syncDirection, input.syncFrequency, input.conflictPolicy, input.rateLimitPerMinute, input.locationDbId]
+      );
+      // Audit log
+      const { logLocationConfigChange } = await import("../services/auditLog");
+      logLocationConfigChange({
+        actorId: ctx.user.id,
+        actorName: ctx.user.name || ctx.user.email || "Unknown",
+        actorRole: ctx.user.role || "user",
+        locationId: input.locationDbId,
+        beforeConfig: {
+          syncDirection: before.sync_direction,
+          syncFrequency: before.sync_frequency,
+          conflictPolicy: before.conflict_policy,
+          rateLimitPerMinute: before.rate_limit_per_minute,
+        },
+        afterConfig: {
+          syncDirection: input.syncDirection,
+          syncFrequency: input.syncFrequency,
+          conflictPolicy: input.conflictPolicy,
+          rateLimitPerMinute: input.rateLimitPerMinute,
+        },
+      }).catch(() => {});
+      return { success: (result as any).affectedRows > 0 };
+    }),
+
+  /** Step 3: Assign team members during onboarding */
+  onboardingAssignMembers: protectedProcedure
+    .input(z.object({
+      locationDbId: z.number(),
+      assignments: z.array(z.object({
+        userId: z.number(),
+        role: z.enum(["viewer", "editor", "admin"]).default("editor"),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { assignUser } = await import("../services/locationAutoProvisioning");
+      const { logAuditEvent } = await import("../services/auditLog");
+      let assigned = 0;
+      let skipped = 0;
+      for (const a of input.assignments) {
+        const success = await assignUser(a.userId, input.locationDbId, a.role);
+        if (success) assigned++; else skipped++;
+      }
+      logAuditEvent({
+        actorId: ctx.user.id,
+        actorName: ctx.user.name || ctx.user.email || "Unknown",
+        actorRole: ctx.user.role || "user",
+        action: "bulk_assign",
+        category: "permission",
+        targetType: "location",
+        targetId: String(input.locationDbId),
+        locationId: input.locationDbId,
+        metadata: { assigned, skipped, source: "onboarding_wizard" },
+      }).catch(() => {});
+      return { assigned, skipped };
+    }),
+
+  /** Step 4: Run first reconciliation for a location */
+  onboardingRunReconciliation: protectedProcedure
+    .input(z.object({
+      locationDbId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const pool = await getRawPool();
+      if (!pool) return { success: false, error: "Database unavailable" };
+      // Get location config
+      const [locRows] = await pool.query(
+        "SELECT ghl_location_id, name, sync_direction, api_key, conflict_policy, rate_limit_per_minute FROM ghl_locations WHERE id = ?",
+        [input.locationDbId]
+      );
+      const loc = (locRows as any[])[0];
+      if (!loc) return { success: false, error: "Location not found" };
+      const { logReconciliationEvent } = await import("../services/auditLog");
+      logReconciliationEvent({
+        action: "reconciliation_started",
+        locationId: input.locationDbId,
+        locationName: loc.name,
+        actorId: ctx.user.id,
+        actorName: ctx.user.name || ctx.user.email || "Unknown",
+        metadata: { source: "onboarding_wizard" },
+      }).catch(() => {});
+      try {
+        const { reconcile } = await import("../services/syncReconciliation");
+        const stats = await reconcile({
+          locationId: loc.ghl_location_id,
+          locationDbId: input.locationDbId,
+          apiKey: loc.api_key || undefined,
+          syncDirection: loc.sync_direction || "bidirectional",
+          conflictPolicy: loc.conflict_policy || "newest_wins",
+          rateLimitPerMinute: loc.rate_limit_per_minute || 30,
+        });
+        logReconciliationEvent({
+          action: "reconciliation_completed",
+          locationId: input.locationDbId,
+          locationName: loc.name,
+          actorId: ctx.user.id,
+          actorName: ctx.user.name || ctx.user.email || "Unknown",
+          metadata: { source: "onboarding_wizard", ...stats },
+        }).catch(() => {});
+        return { success: true, stats };
+      } catch (err: any) {
+        logReconciliationEvent({
+          action: "reconciliation_failed",
+          locationId: input.locationDbId,
+          locationName: loc.name,
+          actorId: ctx.user.id,
+          actorName: ctx.user.name || ctx.user.email || "Unknown",
+          metadata: { source: "onboarding_wizard", error: err?.message },
+        }).catch(() => {});
+        return { success: false, error: err?.message || "Reconciliation failed" };
+      }
+    }),
+
+  /** Get onboarding status for all locations */
+  getOnboardingStatus: protectedProcedure
+    .query(async () => {
+      const pool = await getRawPool();
+      if (!pool) return { locations: [] };
+      const [rows] = await pool.query(
+        `SELECT gl.id, gl.name, gl.ghl_location_id, gl.is_active,
+                gl.sync_direction, gl.sync_frequency, gl.conflict_policy,
+                gl.rate_limit_per_minute,
+                COUNT(DISTINCT ul.user_id) as member_count,
+                (SELECT COUNT(*) FROM sync_run_history srh WHERE srh.triggered_by LIKE CONCAT('%', gl.ghl_location_id, '%') AND srh.status = 'completed') as completed_syncs
+         FROM ghl_locations gl
+         LEFT JOIN user_locations ul ON ul.location_id = gl.id
+         GROUP BY gl.id ORDER BY gl.name`
+      );
+      return {
+        locations: (rows as any[]).map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          ghlLocationId: r.ghl_location_id,
+          isActive: r.is_active,
+          syncDirection: r.sync_direction,
+          syncFrequency: r.sync_frequency,
+          conflictPolicy: r.conflict_policy,
+          rateLimitPerMinute: r.rate_limit_per_minute,
+          memberCount: Number(r.member_count),
+          completedSyncs: Number(r.completed_syncs),
+          isConfigured: r.sync_direction !== "disabled" && r.sync_direction != null,
+          hasMembers: Number(r.member_count) > 0,
+          hasSynced: Number(r.completed_syncs) > 0,
+        })),
+      };
     }),
 });
