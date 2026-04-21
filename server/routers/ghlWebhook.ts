@@ -1,25 +1,32 @@
 /**
  * GoHighLevel (GHL) Webhook Router
  * Receives contact/opportunity events from GHL CRM and ingests them into the platform.
- * Uses integrationWebhookEvents + leadPipeline tables from actual schema.
+ *
+ * IMPORTANT: Uses raw SQL because the Drizzle schema definition for lead_pipeline
+ * does not match the actual database columns. Actual DB columns:
+ *   id, firmId, professionalId, firstName, lastName, email, phone, source,
+ *   status, propensityScore, primaryInterest, estimatedIncome, protectionScore,
+ *   notesJson, crmExternalId, created_at, updated_at
+ *
+ * crmExternalId = GHL contact ID
  */
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
-import { getDb } from "../db";
+import { getDb, getRawPool } from "../db";
 import { eq, sql } from "drizzle-orm";
-import {
-  integrationWebhookEvents,
-  leadPipeline,
-} from "../../drizzle/schema";
+import { integrationWebhookEvents } from "../../drizzle/schema";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
+import type { Express, Request, Response } from "express";
 
 const GHL_EVENT_TYPES = [
   "contact.create", "contact.update", "contact.delete",
   "contact.tag.create", "contact.tag.delete", "contact.note.create",
   "opportunity.create", "opportunity.update", "opportunity.status_change",
   "appointment.create", "appointment.update",
+  "ContactCreate", "ContactUpdate", "ContactDelete",
+  "OpportunityCreate", "OpportunityStatusUpdate",
 ] as const;
 
 function verifyGHLSignature(payload: string, signature: string | undefined, secret: string): boolean {
@@ -32,6 +39,7 @@ function verifyGHLSignature(payload: string, signature: string | undefined, secr
   }
 }
 
+// ─── tRPC Router (management) ──────────────────────────────────────────────
 export const ghlWebhookRouter = router({
   /** List recent GHL webhook events */
   recentEvents: protectedProcedure
@@ -47,9 +55,144 @@ export const ghlWebhookRouter = router({
         .limit(input.limit);
       return rows;
     }),
+
+  /** Trigger bulk inbound sync from GHL */
+  bulkSync: protectedProcedure.mutation(async () => {
+    return bulkInboundSync();
+  }),
 });
 
-/** Express handler for incoming GHL webhooks */
+// ─── Contact Upsert Logic (raw SQL matching actual DB) ────────────────────
+
+interface GHLContact {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  companyName?: string;
+  tags?: string[];
+  source?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  dateAdded?: string;
+}
+
+async function upsertContactToLeadPipeline(
+  contact: GHLContact,
+  eventType: string,
+): Promise<{ action: string; leadPipelineId?: number }> {
+  const pool = await getRawPool();
+  if (!pool) return { action: "skip_no_db" };
+
+  const now = Date.now();
+
+  // Check if contact already exists by crmExternalId (= GHL contact ID)
+  const [existingRows] = await pool.query(
+    "SELECT id, firstName, lastName, phone, source, notesJson FROM lead_pipeline WHERE crmExternalId = ? LIMIT 1",
+    [contact.id]
+  );
+  const existing = (existingRows as any[])[0];
+
+  if (existing) {
+    // Update existing record
+    const notesJson = {
+      ...(typeof existing.notesJson === "string" ? JSON.parse(existing.notesJson) : existing.notesJson || {}),
+      ghlTags: contact.tags || [],
+      ghlCity: contact.city,
+      ghlState: contact.state,
+      ghlPostalCode: contact.postalCode,
+      ghlCompany: contact.companyName,
+      lastSyncEvent: eventType,
+      lastSyncAt: new Date().toISOString(),
+    };
+
+    await pool.query(
+      "UPDATE lead_pipeline SET firstName = ?, lastName = ?, phone = ?, source = ?, notesJson = ?, updated_at = ? WHERE id = ?",
+      [
+        contact.firstName || existing.firstName,
+        contact.lastName || existing.lastName,
+        contact.phone || existing.phone,
+        contact.source || existing.source,
+        JSON.stringify(notesJson),
+        now,
+        existing.id,
+      ]
+    );
+
+    return { action: "updated", leadPipelineId: existing.id };
+  }
+
+  // Also check by email
+  if (contact.email) {
+    const [byEmailRows] = await pool.query(
+      "SELECT id, firstName, lastName, phone, source, notesJson FROM lead_pipeline WHERE email = ? LIMIT 1",
+      [contact.email.toLowerCase().trim()]
+    );
+    const byEmail = (byEmailRows as any[])[0];
+
+    if (byEmail) {
+      const notesJson = {
+        ...(typeof byEmail.notesJson === "string" ? JSON.parse(byEmail.notesJson) : byEmail.notesJson || {}),
+        ghlTags: contact.tags || [],
+        ghlCity: contact.city,
+        ghlState: contact.state,
+        ghlPostalCode: contact.postalCode,
+        ghlCompany: contact.companyName,
+        linkedByEmail: true,
+        lastSyncEvent: eventType,
+        lastSyncAt: new Date().toISOString(),
+      };
+
+      await pool.query(
+        "UPDATE lead_pipeline SET crmExternalId = ?, firstName = ?, lastName = ?, phone = ?, source = ?, notesJson = ?, updated_at = ? WHERE id = ?",
+        [
+          contact.id,
+          contact.firstName || byEmail.firstName,
+          contact.lastName || byEmail.lastName,
+          contact.phone || byEmail.phone,
+          contact.source || byEmail.source,
+          JSON.stringify(notesJson),
+          now,
+          byEmail.id,
+        ]
+      );
+
+      return { action: "linked_by_email", leadPipelineId: byEmail.id };
+    }
+  }
+
+  // Create new lead pipeline record
+  const [insertResult] = await pool.query(
+    `INSERT INTO lead_pipeline (firstName, lastName, email, phone, source, crmExternalId, status, notesJson, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)`,
+    [
+      contact.firstName || null,
+      contact.lastName || null,
+      contact.email?.toLowerCase().trim() || null,
+      contact.phone || null,
+      contact.source || "ghl_webhook",
+      contact.id,
+      JSON.stringify({
+        ghlTags: contact.tags || [],
+        ghlCity: contact.city,
+        ghlState: contact.state,
+        ghlPostalCode: contact.postalCode,
+        ghlCompany: contact.companyName,
+        ghlDateAdded: contact.dateAdded,
+        inboundEvent: eventType,
+      }),
+      now,
+      now,
+    ]
+  );
+
+  return { action: "created", leadPipelineId: (insertResult as any).insertId };
+}
+
+// ─── Express Handler ───────────────────────────────────────────────────────
+
 export async function handleGHLWebhook(
   rawBody: string,
   headers: Record<string, string | undefined>,
@@ -61,12 +204,12 @@ export async function handleGHLWebhook(
   const eventId = nanoid();
 
   try {
-    // CBL17 security hardening: verify webhook signature before processing
+    // Verify webhook signature
     const ghlSecret = process.env.GHL_WEBHOOK_SECRET || "";
     const signature = headers["x-ghl-signature"] || headers["x-hook-signature"];
     const signatureValid = ghlSecret
       ? verifyGHLSignature(rawBody, signature, ghlSecret)
-      : true; // no secret configured = skip verification (log warning)
+      : true;
 
     if (ghlSecret && !signatureValid) {
       logger.warn({ eventId }, "GHL webhook rejected: invalid signature");
@@ -79,7 +222,7 @@ export async function handleGHLWebhook(
     const payload = JSON.parse(rawBody) as Record<string, unknown>;
     const eventType = (payload.event || payload.type || "unknown") as string;
 
-    // Log the event
+    // Log the event to integration_webhook_events (Drizzle schema matches actual DB for this table)
     await db.insert(integrationWebhookEvents).values({
       id: eventId,
       connectionId: connectionId || "default-ghl",
@@ -90,20 +233,85 @@ export async function handleGHLWebhook(
       processingStatus: "pending",
     });
 
-    // Process contact events → match to leadPipeline
-    if (eventType.startsWith("contact.")) {
+    // Process contact events → upsert to leadPipeline via raw SQL
+    let upsertResult: { action: string; leadPipelineId?: number } | null = null;
+
+    if (eventType.includes("contact") || eventType.includes("Contact")) {
       const contact = (payload.contact || payload) as Record<string, unknown>;
-      const email = (contact.email || "") as string;
       const ghlContactId = (contact.id || contact.contactId || "") as string;
 
-      if (email) {
-        const emailHash = crypto.createHash("sha256").update(email.toLowerCase().trim()).digest("hex");
-        const [existing] = await db.select().from(leadPipeline).where(eq(leadPipeline.emailHash, emailHash)).limit(1);
+      if (ghlContactId) {
+        if (eventType.includes("delete") || eventType.includes("Delete")) {
+          // Soft-delete: mark as disqualified
+          const pool = await getRawPool();
+          if (pool) {
+            const [existingRows] = await pool.query(
+              "SELECT id, notesJson FROM lead_pipeline WHERE crmExternalId = ? LIMIT 1",
+              [ghlContactId]
+            );
+            const existing = (existingRows as any[])[0];
+            if (existing) {
+              const notesJson = {
+                ...(typeof existing.notesJson === "string" ? JSON.parse(existing.notesJson) : existing.notesJson || {}),
+                deletedFromGHL: true,
+                deletedAt: new Date().toISOString(),
+              };
+              await pool.query(
+                "UPDATE lead_pipeline SET status = 'disqualified', notesJson = ?, updated_at = ? WHERE id = ?",
+                [JSON.stringify(notesJson), Date.now(), existing.id]
+              );
+              upsertResult = { action: "soft_deleted", leadPipelineId: existing.id };
+            } else {
+              upsertResult = { action: "no_local_record" };
+            }
+          }
+        } else {
+          // Create or update
+          upsertResult = await upsertContactToLeadPipeline({
+            id: ghlContactId,
+            firstName: contact.firstName as string | undefined,
+            lastName: contact.lastName as string | undefined,
+            email: contact.email as string | undefined,
+            phone: contact.phone as string | undefined,
+            companyName: contact.companyName as string | undefined,
+            tags: contact.tags as string[] | undefined,
+            source: contact.source as string | undefined,
+            city: contact.city as string | undefined,
+            state: contact.state as string | undefined,
+            postalCode: contact.postalCode as string | undefined,
+            dateAdded: contact.dateAdded as string | undefined,
+          }, eventType);
+        }
+      }
+    }
 
-        if (existing && ghlContactId) {
-          await db.update(leadPipeline)
-            .set({ ghlContactId })
-            .where(eq(leadPipeline.id, existing.id));
+    // Process opportunity events → link to lead
+    if (eventType.includes("opportunity") || eventType.includes("Opportunity")) {
+      const opp = (payload.opportunity || payload) as Record<string, unknown>;
+      const oppId = (opp.id || "") as string;
+      const contactId = (opp.contactId || "") as string;
+
+      if (oppId && contactId) {
+        const pool = await getRawPool();
+        if (pool) {
+          const [existingRows] = await pool.query(
+            "SELECT id, status, notesJson FROM lead_pipeline WHERE crmExternalId = ? LIMIT 1",
+            [contactId]
+          );
+          const existing = (existingRows as any[])[0];
+          if (existing) {
+            const notesJson = {
+              ...(typeof existing.notesJson === "string" ? JSON.parse(existing.notesJson) : existing.notesJson || {}),
+              ghlOpportunityId: oppId,
+              opportunityLinkedAt: new Date().toISOString(),
+            };
+            const newStatus = existing.status === "new" ? "qualified" : existing.status;
+            await pool.query(
+              "UPDATE lead_pipeline SET status = ?, notesJson = ?, updated_at = ? WHERE id = ?",
+              [newStatus, JSON.stringify(notesJson), Date.now(), existing.id]
+            );
+            upsertResult = { action: "opportunity_linked", leadPipelineId: existing.id };
+          }
         }
       }
     }
@@ -113,8 +321,16 @@ export async function handleGHLWebhook(
       .set({ processingStatus: "processed", processedAt: new Date() })
       .where(eq(integrationWebhookEvents.id, eventId));
 
-    logger.info({ eventId, eventType }, "GHL webhook processed");
-    return { status: 200, body: { received: true, eventId } };
+    logger.info({ eventId, eventType, upsertResult }, "GHL webhook processed");
+    return {
+      status: 200,
+      body: {
+        received: true,
+        eventId,
+        eventType,
+        ...(upsertResult || {}),
+      },
+    };
   } catch (err) {
     logger.error({ eventId, err }, "GHL webhook processing failed");
     await db.update(integrationWebhookEvents)
@@ -123,4 +339,116 @@ export async function handleGHLWebhook(
       .catch(() => {});
     return { status: 500, body: { error: "Processing failed" } };
   }
+}
+
+// ─── Express Route Registration ────────────────────────────────────────────
+
+export function registerGHLWebhookRoutes(app: Express) {
+  app.post("/api/webhooks/ghl", async (req: Request, res: Response) => {
+    const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+    const headers: Record<string, string | undefined> = {
+      "x-ghl-signature": req.headers["x-ghl-signature"] as string | undefined,
+      "x-hook-signature": req.headers["x-hook-signature"] as string | undefined,
+    };
+
+    const result = await handleGHLWebhook(rawBody, headers);
+    res.status(result.status).json(result.body);
+  });
+
+  app.get("/api/webhooks/ghl/health", (_req: Request, res: Response) => {
+    res.status(200).json({
+      status: "ok",
+      provider: "gohighlevel",
+      supportedEvents: [...GHL_EVENT_TYPES],
+      timestamp: Date.now(),
+    });
+  });
+
+  logger.info("[GHL Webhook] Routes registered at /api/webhooks/ghl");
+}
+
+// ─── Bulk Inbound Sync (pull all contacts from GHL into lead pipeline) ─────
+
+export async function bulkInboundSync(): Promise<{
+  total: number;
+  created: number;
+  updated: number;
+  linked: number;
+  errors: number;
+}> {
+  const GHL_API_KEY = process.env.GHL_API_KEY || "";
+  const GHL_LOCATION_ID = process.env.GHL_LOCATION_ID || "";
+
+  if (!GHL_API_KEY || !GHL_LOCATION_ID) {
+    logger.warn("[GHL Bulk Sync] No credentials configured");
+    return { total: 0, created: 0, updated: 0, linked: 0, errors: 0 };
+  }
+
+  const headers = {
+    Authorization: `Bearer ${GHL_API_KEY}`,
+    Version: "2021-07-28",
+    "Content-Type": "application/json",
+  };
+
+  let allContacts: any[] = [];
+  let nextPageUrl: string | null = `https://services.leadconnectorhq.com/contacts/?locationId=${GHL_LOCATION_ID}&limit=100`;
+
+  // Paginate through all contacts
+  while (nextPageUrl) {
+    try {
+      const resp = await fetch(nextPageUrl, { headers, signal: AbortSignal.timeout(30000) });
+      if (!resp.ok) {
+        logger.error({ status: resp.status }, "[GHL Bulk Sync] API error");
+        break;
+      }
+      const data = await resp.json() as any;
+      const contacts = data.contacts || [];
+      allContacts = allContacts.concat(contacts);
+
+      // GHL pagination
+      if (data.meta?.nextPageUrl) {
+        nextPageUrl = data.meta.nextPageUrl;
+      } else if (data.meta?.startAfterId && contacts.length >= 100) {
+        nextPageUrl = `https://services.leadconnectorhq.com/contacts/?locationId=${GHL_LOCATION_ID}&limit=100&startAfterId=${data.meta.startAfterId}`;
+      } else {
+        nextPageUrl = null;
+      }
+    } catch (err: any) {
+      logger.error({ err: err.message }, "[GHL Bulk Sync] Pagination error");
+      break;
+    }
+  }
+
+  logger.info({ total: allContacts.length }, "[GHL Bulk Sync] Fetched contacts from GHL");
+
+  let created = 0, updated = 0, linked = 0, errors = 0;
+
+  for (const ghlContact of allContacts) {
+    try {
+      const result = await upsertContactToLeadPipeline({
+        id: ghlContact.id,
+        firstName: ghlContact.firstName,
+        lastName: ghlContact.lastName,
+        email: ghlContact.email,
+        phone: ghlContact.phone,
+        companyName: ghlContact.companyName,
+        tags: ghlContact.tags,
+        source: ghlContact.source,
+        city: ghlContact.city,
+        state: ghlContact.state,
+        postalCode: ghlContact.postalCode,
+        dateAdded: ghlContact.dateAdded,
+      }, "bulk_sync");
+
+      if (result.action === "created") created++;
+      else if (result.action === "updated") updated++;
+      else if (result.action === "linked_by_email") linked++;
+    } catch (err: any) {
+      errors++;
+      logger.error({ err: err.message, ghlId: ghlContact.id }, "[GHL Bulk Sync] Error processing contact");
+    }
+  }
+
+  logger.info({ total: allContacts.length, created, updated, linked, errors }, "[GHL Bulk Sync] Complete");
+  return { total: allContacts.length, created, updated, linked, errors };
 }

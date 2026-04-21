@@ -7759,3 +7759,27 @@
   - Empty batch handling
 - [x] P23-5: Fixed GHL 400 duplicate handling — direct fetch with response body parsing instead of auditedFetch (which strips error body)
 - [x] P23-FINAL: todo.md updated, checkpoint saved
+
+### v8.9 Pass 24 — GHL Inbound Webhook + Contact Sync Validation
+- [x] P24-1: Assessed existing webhook infrastructure — found webhookIngestion.ts pattern, Dripify handler, Express route registration in _core/index.ts
+- [x] P24-2: Implemented /api/webhooks/ghl endpoint + /api/webhooks/ghl/health (ghlWebhook.ts)
+  - POST handler: receives GHL events, verifies HMAC-SHA256 signature, processes contact/opportunity events
+  - GET health: returns status, supported events list, timestamp
+  - Registered BEFORE generic webhook routes to prevent path collision (/api/webhooks/:webhookId matching 'ghl')
+- [x] P24-3: Full event handling:
+  - ContactCreate → creates new lead_pipeline record with GHL metadata in notesJson
+  - ContactUpdate → updates existing record by crmExternalId
+  - ContactDelete → soft-deletes (status='disqualified', deletedFromGHL=true)
+  - OpportunityCreate → links opportunity to contact, upgrades status to 'qualified'
+  - Duplicate detection: by crmExternalId first, then by email (linked_by_email)
+- [x] P24-4: Raw SQL mapping to actual DB columns (crmExternalId, firstName, lastName, email, phone, source, notesJson, status)
+  - Bypasses Drizzle ORM due to schema/DB column name mismatch
+  - Added getRawPool() export to db.ts for direct mysql2 access
+- [x] P24-5: Webhook URL ready for GHL registration at /api/webhooks/ghl (GHL_WEBHOOK_SECRET env var for signature verification)
+- [x] P24-6: Inbound sync validated end-to-end:
+  - Webhook E2E: 8/8 pass (health, create, update, duplicate email link, opportunity link, soft-delete, second contact, events logged)
+  - Bulk sync: 100 contacts pulled from GHL location → 100 created in lead_pipeline (0 errors)
+  - DB verified: 103 total leads (100 bulk + 3 E2E), 110 webhook events logged, all with crmExternalId
+- [x] P24-7: Vitest: 26/26 pass (file structure, handler logic, raw SQL, Express routes, bulk sync, security)
+- [x] P24-8: Fixed: getRawPool null (added export to db.ts), route collision (GHL before generic), import path, test assertion (call position vs import position)
+- [x] P24-FINAL: todo.md updated, checkpoint saved

@@ -18,6 +18,12 @@ import { normalizeQualityScore } from './shared/intelligence/types';
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
 
+/** Get the raw mysql2 pool for direct SQL queries */
+export async function getRawPool(): Promise<mysql.Pool | null> {
+  await getDb(); // ensure pool is initialized
+  return _pool;
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
