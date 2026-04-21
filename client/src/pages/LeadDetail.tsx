@@ -29,7 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 /* ---------- Score History Sparkline ---------- */
 function ScoreHistoryChart({ history }: { history: Array<{ score: number; model: string; scoredAt: string | Date }> }) {
-  if (!history || history.length === 0) {
+  if (!history || !Array.isArray(history) || history.length === 0) {
     return (
       <div className="text-center py-4 text-muted-foreground text-xs">
         <Activity className="h-5 w-5 mx-auto mb-1 opacity-40" />
@@ -260,13 +260,13 @@ export default function LeadDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.info("Email compose coming soon")}>
+          <Button variant="outline" size="sm" onClick={() => { if (email) { window.open(`mailto:${email}?subject=Follow-up from Stewardly`, '_blank'); toast.info('Opening email client'); } else { toast.info('No email on file'); } }}>
             <Mail className="h-3.5 w-3.5 mr-1" /> Email
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Call dialer coming soon")}>
+          <Button variant="outline" size="sm" onClick={() => { if (phone) { window.open(`tel:${phone}`, '_self'); toast.info('Opening dialer'); } else { toast.info('No phone on file'); } }}>
             <Phone className="h-3.5 w-3.5 mr-1" /> Call
           </Button>
-          <Button size="sm" onClick={() => toast.info("Schedule meeting coming soon")}>
+          <Button size="sm" onClick={() => navigate('/outreach-automation')}>
             <Calendar className="h-3.5 w-3.5 mr-1" /> Schedule
           </Button>
         </div>
@@ -453,7 +453,7 @@ export default function LeadDetail() {
                 <CardContent className="p-8 text-center text-muted-foreground">
                   <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No documents attached yet</p>
-                  <Button variant="outline" size="sm" className="mt-3" onClick={() => toast.info("Document upload coming soon")}>
+                  <Button variant="outline" size="sm" className="mt-3" onClick={() => navigate('/import')}>
                     Upload Document
                   </Button>
                 </CardContent>
@@ -479,16 +479,16 @@ export default function LeadDetail() {
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Quick Actions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info("Coming soon")}>
+              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => navigate('/outreach-automation')}>
                 <MessageSquare className="h-4 w-4 mr-2" /> Send Follow-up
               </Button>
-              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info("Coming soon")}>
+              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => navigate('/wealth-engine?panel=quickQuote')}>
                 <DollarSign className="h-4 w-4 mr-2" /> Create Proposal
               </Button>
               <Button variant="outline" className="w-full justify-start text-sm" onClick={() => navigate(`/wealth-engine?panel=clientProfile`)}>
                 <BarChart3 className="h-4 w-4 mr-2" /> Open in Wealth Engine
               </Button>
-              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => toast.info("Coming soon")}>
+              <Button variant="outline" className="w-full justify-start text-sm" onClick={() => navigate('/wealth-engine?panel=engineDashboard')}>
                 <FileText className="h-4 w-4 mr-2" /> Generate Report
               </Button>
             </CardContent>

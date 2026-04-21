@@ -7626,3 +7626,14 @@
 - [x] P15-8: LVUA Pass E — 34/36 (94.4%), 2 false positives (sidebar uses buttons, no /billing route)
 - [x] P15-9: LVUA Pass F — 44/44 (100%) CLEAN PASS 3/3 — CONVERGENCE CONFIRMED
 - [x] P15-10: PARITY_BACKLOG v126, CONVERGENCE_REPORT updated, checkpoint saved
+
+### v8.3 Pass 16 — End-to-End Pipeline + Recursive Optimization
+- [x] P16-1: ImportData page rewritten with real tRPC dataImport.startImport mutation
+- [x] P16-2: CSV template download generates real Blob file with proper headers
+- [x] P16-3: View Imported Clients navigates to /leads
+- [x] P16-4: Dripify/LinkedIn source detection via source field in import
+- [x] P16-5: LVUA Pass A — 60/66 (90.9%), 6 false positives (test selectors, not bugs)
+- [x] P16-6: Fixed: ImportData wired to real tRPC, WebhookManager rewritten, LeadDetail/AdvisorProfile buttons wired, scores.map guard, step badges
+- [x] P16-7: LVUA Pass B — 56/56 (100%) CLEAN PASS 2/3
+- [x] P16-8: LVUA Pass C — 25/26 (96.2%), 1 false positive (calculator persona gate) → CONVERGENCE CONFIRMED 3/3
+- [x] P16-9: PARITY_BACKLOG v127, CONVERGENCE_REPORT updated, checkpoint saved

@@ -1,11 +1,17 @@
 /**
  * WebhookManager — Webhook endpoint management and delivery logs.
+ * Pass 16: Wired "Add Endpoint" to real trpc.webhooks.register mutation.
  */
+import { useState } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Webhook, Plus, CheckCircle2, XCircle, Clock, RotateCcw, Loader2, Trash2, ToggleLeft, ToggleRight, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { ArrowLeft, Webhook, Plus, CheckCircle2, XCircle, Clock, RotateCcw, Loader2, Trash2, ToggleLeft, ToggleRight, RefreshCw, Copy } from "lucide-react";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -13,11 +19,27 @@ import AppShell from "@/components/AppShell";
 import { QueryErrorBanner } from "@/components/QueryErrorBanner";
 import { trpc } from "@/lib/trpc";
 
+const RECORD_TYPES = [
+  { value: "customer_profile", label: "Customer Profile" },
+  { value: "organization", label: "Organization" },
+  { value: "product", label: "Product" },
+  { value: "market_price", label: "Market Price" },
+  { value: "regulatory_update", label: "Regulatory Update" },
+  { value: "news_article", label: "News Article" },
+  { value: "competitor_intel", label: "Competitor Intel" },
+  { value: "document_extract", label: "Document Extract" },
+  { value: "entity", label: "Entity" },
+  { value: "metric", label: "Metric" },
+] as const;
+
 export default function WebhookManager({ embedded = false }: { embedded?: boolean } = {}) {
   const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
-
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newRecordType, setNewRecordType] = useState<string>("customer_profile");
 
   // Real data from webhookIngestion router
   const webhooksQ = trpc.webhooks.list.useQuery();
@@ -27,20 +49,53 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
   const { data: eventLog, isLoading: loadingLog } = eventLogQ;
   const { data: stats } = statsQ;
 
+  const registerMut = trpc.webhooks.register.useMutation({
+    onSuccess: (result: any) => {
+      utils.webhooks.list.invalidate();
+      utils.webhooks.stats.invalidate();
+      setAddOpen(false);
+      setNewName("");
+      setNewDescription("");
+      const webhookUrl = `${window.location.origin}/api/webhooks/${result.webhookId || result.id}`;
+      toast.success(
+        <div className="space-y-1">
+          <p className="font-medium">Webhook endpoint created</p>
+          <p className="text-xs font-mono break-all">{webhookUrl}</p>
+          <p className="text-xs text-muted-foreground">Configure this URL in your integration settings</p>
+        </div>,
+        { duration: 10000 }
+      );
+    },
+    onError: (e) => toast.error("Failed to create webhook: " + e.message),
+  });
+
   const toggleMut = trpc.webhooks.toggle.useMutation({
     onSuccess: () => { utils.webhooks.list.invalidate(); toast.success("Webhook toggled"); },
     onError: (e) => toast.error(e.message),
   });
   const deleteMut = trpc.webhooks.delete.useMutation({
-    onSuccess: () => { utils.webhooks.list.invalidate(); toast.success("Webhook deleted"); },
+    onSuccess: () => { utils.webhooks.list.invalidate(); utils.webhooks.stats.invalidate(); toast.success("Webhook deleted"); },
     onError: (e) => toast.error(e.message),
   });
+
+  const handleRegister = () => {
+    if (!newName.trim()) { toast.error("Name is required"); return; }
+    registerMut.mutate({
+      name: newName.trim(),
+      description: newDescription.trim() || undefined,
+      defaultRecordType: newRecordType as any,
+    });
+  };
+
+  const copyUrl = (wh: any) => {
+    const url = `${window.location.origin}/api/webhooks/${wh.webhookId || wh.id}`;
+    navigator.clipboard.writeText(url).then(() => toast.success("Webhook URL copied"));
+  };
 
   return (
     <Shell title="Webhooks">
     <div className="container max-w-4xl py-8 space-y-6">
       <SEOHead title="Webhooks" description="Manage webhook endpoints and delivery logs" />
-
       <QueryErrorBanner query={webhooksQ} label="webhooks" />
       <QueryErrorBanner query={eventLogQ} label="event log" />
 
@@ -60,9 +115,52 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
             filename="webhook-deliveries"
             columns={["eventType", "statusCode", "status", "createdAt"]}
           />
-          <Button size="sm" onClick={() => toast.info("Webhook registration form coming soon")}>
-            <Plus className="h-3.5 w-3.5 mr-1" /> Add Endpoint
-          </Button>
+          <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Endpoint
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Register Webhook Endpoint</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label htmlFor="wh-name">Name</Label>
+                  <Input id="wh-name" placeholder="e.g., GoHighLevel Contacts" value={newName} onChange={e => setNewName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="wh-desc">Description (optional)</Label>
+                  <Input id="wh-desc" placeholder="e.g., Receives contact updates from GHL" value={newDescription} onChange={e => setNewDescription(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Default Record Type</Label>
+                  <Select value={newRecordType} onValueChange={setNewRecordType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {RECORD_TYPES.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">How it works:</p>
+                  <p>1. Register the endpoint here to get a unique webhook URL</p>
+                  <p>2. Copy the URL and paste it into your integration settings (GoHighLevel, Dripify, Workable, etc.)</p>
+                  <p>3. Incoming events will be processed and routed to the lead pipeline automatically</p>
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                <Button onClick={handleRegister} disabled={registerMut.isPending}>
+                  {registerMut.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+                  Create Endpoint
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -94,6 +192,7 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
             <div className="text-center py-8 text-muted-foreground">
               <Webhook className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No webhook endpoints configured</p>
+              <p className="text-xs mt-1">Click "Add Endpoint" to create your first webhook URL</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -101,7 +200,7 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
                 <div key={wh.id} className="p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono truncate max-w-xs">{wh.url}</span>
+                      <span className="text-sm font-medium">{wh.name || wh.url}</span>
                       {wh.active !== false ? (
                         <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">Active</Badge>
                       ) : (
@@ -109,6 +208,9 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
                       )}
                     </div>
                     <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" aria-label="Copy URL" className="h-7 w-7" onClick={() => copyUrl(wh)}>
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
                       <Button variant="ghost" size="icon" aria-label="Toggle" className="h-7 w-7" onClick={() => toggleMut.mutate({ id: wh.id })}>
                         {wh.active !== false ? <ToggleRight className="h-4 w-4 text-emerald-400" /> : <ToggleLeft className="h-4 w-4" />}
                       </Button>
@@ -117,8 +219,11 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
                       </Button>
                     </div>
                   </div>
+                  <p className="text-xs font-mono text-muted-foreground truncate">
+                    {window.location.origin}/api/webhooks/{wh.webhookId || wh.id}
+                  </p>
                   {wh.events && (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 mt-2">
                       {(Array.isArray(wh.events) ? wh.events : []).slice(0, 4).map((e: string) => (
                         <Badge key={e} variant="secondary" className="text-[10px] font-mono">{e}</Badge>
                       ))}
@@ -145,6 +250,7 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
             <div className="text-center py-8 text-muted-foreground">
               <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No delivery events yet</p>
+              <p className="text-xs mt-1">Events will appear here once your integrations start sending data</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -168,11 +274,6 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
                       <Badge variant="outline" className={`text-[10px] font-mono ${d.statusCode < 300 ? "text-emerald-400" : "text-red-400"}`}>
                         {d.statusCode}
                       </Badge>
-                    )}
-                    {d.status === "failed" && (
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toast.info("Retry coming soon")}>
-                        <RotateCcw className="h-3 w-3" />
-                      </Button>
                     )}
                   </div>
                 </div>

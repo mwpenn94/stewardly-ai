@@ -107,8 +107,8 @@ export default function AdvisorProfile() {
                 {email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {email}</span>}
               </div>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => toast.info("Booking coming soon")}><Calendar className="h-3.5 w-3.5 mr-1" /> Book Consultation</Button>
-                <Button size="sm" variant="outline" onClick={() => toast.info("Contact form coming soon")}><Mail className="h-3.5 w-3.5 mr-1" /> Message</Button>
+                <Button size="sm" onClick={() => navigate('/outreach-automation')}><Calendar className="h-3.5 w-3.5 mr-1" /> Book Consultation</Button>
+                <Button size="sm" variant="outline" onClick={() => { if (email) { window.open(`mailto:${email}?subject=Inquiry via Stewardly`, '_blank'); toast.info('Opening email client'); } else { toast.info('No email on file'); } }}><Mail className="h-3.5 w-3.5 mr-1" /> Message</Button>
               </div>
             </div>
           </div>
@@ -153,12 +153,12 @@ export default function AdvisorProfile() {
           </div>
           <h3 className="text-sm font-semibold pt-2">Regulatory</h3>
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <button type="button" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toast.info("BrokerCheck link coming soon")}>
+            <a href="https://brokercheck.finra.org/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-foreground transition-colors">
               <ExternalLink className="h-3 w-3" /> FINRA BrokerCheck
-            </button>
-            <button type="button" className="flex items-center gap-1 hover:text-foreground transition-colors" onClick={() => toast.info("SEC link coming soon")}>
+            </a>
+            <a href="https://adviserinfo.sec.gov/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-foreground transition-colors">
               <ExternalLink className="h-3 w-3" /> SEC IAPD
-            </button>
+            </a>
           </div>
         </CardContent>
       </Card>
