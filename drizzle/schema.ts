@@ -7398,3 +7398,54 @@ export const syncRunHistory = mysqlTable("sync_run_history", {
 }));
 export type SyncRunHistoryRow = typeof syncRunHistory.$inferSelect;
 export type InsertSyncRunHistory = typeof syncRunHistory.$inferInsert;
+
+
+// ─── GHL Locations (Multi-Location CRM Sync) ──────────────────────────────
+// DB table: ghl_locations
+export const ghlLocations = mysqlTable("ghl_locations", {
+  id: int("id").autoincrement().primaryKey(),
+  locationId: varchar("location_id", { length: 100 }).notNull().unique(), // GHL location ID
+  name: varchar("name", { length: 256 }).notNull(),
+  region: varchar("region", { length: 128 }),
+  organizationId: int("organization_id"), // FK to organizations
+  isActive: mysqlBoolean("is_active").default(true),
+  // Per-location sync configuration
+  syncDirection: mysqlEnum("sync_direction", ["bidirectional", "pull_only", "push_only", "disabled"]).default("bidirectional"),
+  syncFrequency: mysqlEnum("sync_frequency", ["hourly", "every_6h", "daily", "weekly", "manual"]).default("daily"),
+  conflictPolicy: mysqlEnum("conflict_policy", ["ghl_wins", "stewardly_wins", "newest_wins", "manual_review"]).default("newest_wins"),
+  maxContactsPerRun: int("max_contacts_per_run").default(0), // 0 = unlimited
+  rateLimitMs: int("rate_limit_ms").default(50),
+  // API credentials (encrypted, per-location override — null = use global)
+  apiKeyEncrypted: text("api_key_encrypted"),
+  // Sync state
+  lastSyncAt: bigint("last_sync_at", { mode: "number" }),
+  lastSyncCursor: varchar("last_sync_cursor", { length: 255 }),
+  lastSyncStatus: mysqlEnum("last_sync_status", ["success", "partial", "failed", "running"]),
+  totalContacts: int("total_contacts").default(0),
+  linkedContacts: int("linked_contacts").default(0),
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  locationIdIdx: index("idx_ghl_locations_location_id").on(table.locationId),
+  orgIdx: index("idx_ghl_locations_org").on(table.organizationId),
+  activeIdx: index("idx_ghl_locations_active").on(table.isActive),
+}));
+export type GHLLocation = typeof ghlLocations.$inferSelect;
+export type InsertGHLLocation = typeof ghlLocations.$inferInsert;
+
+// ─── User-Location Access (Many-to-many: which users can see which locations) ─
+// DB table: user_locations
+export const userLocations = mysqlTable("user_locations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  ghlLocationId: int("ghl_location_id").notNull(), // FK to ghl_locations.id
+  accessLevel: mysqlEnum("access_level", ["view", "manage", "admin"]).default("view"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_user_locations_user").on(table.userId),
+  locationIdx: index("idx_user_locations_location").on(table.ghlLocationId),
+  uniquePair: index("idx_user_locations_unique").on(table.userId, table.ghlLocationId),
+}));
+export type UserLocation = typeof userLocations.$inferSelect;
+export type InsertUserLocation = typeof userLocations.$inferInsert;

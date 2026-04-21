@@ -7882,3 +7882,66 @@
   - ghl-outbound-sync.test.ts: 9/9
   - ghl-webhook-inbound.test.ts: 26/26
 - [x] P27-FINAL: todo.md updated, checkpoint saved
+
+### v8.13 Pass 28 — Multi-Location Tenant-Isolated Sync + Webhook Activity Feed + Per-Account Config
+- [x] P28-1: Designed and implemented multi-location schema
+  - ghl_locations table: id, ghl_location_id, name, api_key_encrypted, sync_direction (enum: bidirectional/pull_only/push_only/disabled), sync_frequency_hours, conflict_policy (enum: newest_wins/ghl_wins/stewardly_wins/manual), max_contacts_per_run, rate_limit_ms, last_sync_cursor, last_sync_at, is_active, created_at, updated_at
+  - user_locations junction table: user_id, location_id, role (enum: viewer/editor/admin), created_at
+  - location_id column added to lead_pipeline (nullable INT, indexed)
+  - location_id column added to integration_webhook_events
+  - Default location seeded from GHL_LOCATION_ID env var
+- [x] P28-2: Applied schema migration (9 SQL statements, all successful)
+- [x] P28-3: Rewrote sync engine for full multi-location support
+  - ReconcileOptions.location accepts LocationConfig with per-location settings
+  - buildLocalIndexes() scopes to location_id (+ unassigned NULL)
+  - GHL API calls use per-location API key and locationId
+  - New leads get location_id stamped on INSERT
+  - reconcileAllLocations() iterates active locations sequentially
+  - getActiveLocations() returns all active locations with their config
+  - getSyncAggregation() accepts optional locationDbId filter
+  - getSyncRunHistory() accepts optional locationDbId filter
+  - getWebhookActivityFeed() accepts optional locationDbId filter
+  - ghlHeadersForLocation() supports per-location API key override
+- [x] P28-4: Wired webhook event logging with location resolution
+  - resolveLocationDbId() maps GHL locationId to internal DB id
+  - Every webhook event tagged with resolved location_id
+  - Lead upserts stamp location_id on the lead record
+  - integration_webhook_events already existed — added location_id column
+- [x] P28-5: Rewrote Sync Dashboard UI with multi-location support
+  - Location selector dropdown (filter all stats/history/activity by location)
+  - "All Locations" roll-up view for cross-location aggregation
+  - Webhook Activity Feed tab with live event stream (type, contact, timestamp, status)
+  - Location Management tab — add/edit/deactivate locations, configure per-location settings
+  - Per-location sync config: direction, frequency, conflict policy, max contacts, rate limit
+  - Run Reconciliation button scoped to selected location
+  - Sync run history table scoped to selected location
+  - Stats cards: total leads, linked, unlinked, link rate — all location-aware
+- [x] P28-6: Implemented tenant-isolated access control
+  - locationAccess.ts service: getUserLocationIds(), getUserLocationFilter()
+  - Admin users bypass location filtering (see all locations)
+  - Non-admin users only see leads from their assigned locations
+  - leadPipeline.ts router updated with location-scoped queries
+  - getPipeline, getLeadDetail, updateLead, deleteLead — all location-filtered
+  - user_locations junction table controls access grants
+- [x] P28-7: Updated scheduled reconciliation for multi-location
+  - daily_crm_sync job calls reconcileAllLocations()
+  - Iterates through all active locations sequentially
+  - Per-location sync config respected (direction, frequency, conflict policy)
+  - Each location gets its own sync_run_history entry
+  - Failures isolated per location — one failure doesn't block others
+  - Admin alerts on any location sync failure
+- [x] P28-8: Wrote vitest tests — 18 new tests in location-access.test.ts
+  - getActiveLocations: returns active locations with config (1 test)
+  - getUserLocationIds: admin gets all, user gets assigned, unassigned gets none (3 tests)
+  - getUserLocationFilter: admin gets no filter, user gets IN clause (2 tests)
+  - reconcile with location: scopes to location, respects pull_only direction (4 tests)
+  - reconcileAllLocations: processes multiple locations, skips disabled (2 tests)
+  - getSyncAggregation with location filter: applies location filter to queries (1 test)
+  - Location management CRUD: create, update, deactivate, list (4 tests)
+  - Webhook activity feed: returns events filtered by location (1 test)
+- [x] P28-9: 3 consecutive clean LVUA passes — 81/81 tests across 4 suites
+  - sync-reconciliation.test.ts: 28/28
+  - ghl-webhook-inbound.test.ts: 26/26
+  - location-access.test.ts: 18/18
+  - ghl-outbound-sync.test.ts: 9/9 (live API, run separately to avoid rate limits)
+- [x] P28-FINAL: todo.md updated, checkpoint saved

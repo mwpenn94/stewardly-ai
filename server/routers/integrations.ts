@@ -18,7 +18,8 @@ import {
 import { eq, and, desc, sql, lte } from "drizzle-orm";
 import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
 import { firstOrNull } from "../services/dbResilience";
-import { reconcile, getSyncAggregation, persistReconcileStats } from "../services/syncReconciliation";
+import { reconcile, reconcileAllLocations, getSyncAggregation, persistReconcileStats, getActiveLocations } from "../services/syncReconciliation";
+import type { LocationConfig } from "../services/syncReconciliation";
 import { getRawPool } from "../db";
 import crypto from "crypto";
 
@@ -1198,91 +1199,316 @@ export const integrationsRouter = router({
 
   // ─── GHL Sync Reconciliation ──────────────────────────────────────────
 
-  /** Run full bidirectional reconciliation between Stewardly and GHL */
+  /** Run full bidirectional reconciliation (single location or all) */
   reconcileGHL: protectedProcedure
     .input(z.object({
       maxGHLContacts: z.number().optional().default(0),
       pushOrphans: z.boolean().optional().default(true),
       resumeCursor: z.string().nullable().optional(),
+      locationDbId: z.number().optional(), // scope to specific location
     }).optional())
     .mutation(async ({ ctx, input }) => {
       const pool = await getRawPool();
       const startedAt = Date.now();
-      let runId: number | null = null;
 
-      // Insert run history record
-      if (pool) {
+      // If locationDbId provided, reconcile single location
+      if (input?.locationDbId) {
+        const locations = await getActiveLocations();
+        const loc = locations.find(l => l.dbId === input.locationDbId);
+        if (!loc) throw new TRPCError({ code: 'NOT_FOUND', message: 'Location not found or inactive' });
+
+        let runId: number | null = null;
+        if (pool) {
+          try {
+            const [result] = await pool.query(
+              `INSERT INTO sync_run_history (run_type, status, triggered_by, location_id, started_at) VALUES (?, 'running', ?, ?, ?)`,
+              [input?.resumeCursor ? 'resume' : 'manual', ctx.user?.name || 'unknown', input.locationDbId, startedAt]
+            );
+            runId = (result as any).insertId;
+          } catch { /* non-fatal */ }
+        }
+
         try {
-          const [result] = await pool.query(
-            `INSERT INTO sync_run_history (run_type, status, triggered_by, started_at) VALUES (?, 'running', ?, ?)`,
-            [input?.resumeCursor ? 'resume' : 'manual', ctx.user?.name || 'unknown', startedAt]
-          );
-          runId = (result as any).insertId;
-        } catch { /* non-fatal */ }
+          const stats = await reconcile({
+            maxGHLContacts: input?.maxGHLContacts ?? 0,
+            pushOrphans: input?.pushOrphans ?? true,
+            resumeCursor: input?.resumeCursor ?? null,
+            location: loc,
+          });
+          await persistReconcileStats(stats, loc.dbId);
+
+          if (pool && runId) {
+            try {
+              await pool.query(
+                `UPDATE sync_run_history SET status = ?, ghl_total = ?, stewardly_total = ?, matched = ?,
+                 created_in_stewardly = ?, created_in_ghl = ?, updated_in_stewardly = ?, updated_in_ghl = ?,
+                 conflicts_resolved = ?, orphans_fixed = ?, errors = ?, duration_ms = ?,
+                 resume_cursor = ?, complete = ?, completed_at = ? WHERE id = ?`,
+                [
+                  stats.complete ? 'completed' : 'interrupted',
+                  stats.ghlTotal, stats.stewardlyTotal, stats.matched,
+                  stats.createdInStewardly, stats.createdInGHL,
+                  stats.updatedInStewardly, stats.updatedInGHL,
+                  stats.conflictsResolved, stats.orphansFixed, stats.errors,
+                  stats.duration_ms, stats.resumeCursor, stats.complete, Date.now(), runId,
+                ]
+              );
+            } catch { /* non-fatal */ }
+          }
+          return stats;
+        } catch (err: any) {
+          if (pool && runId) {
+            await pool.query(
+              `UPDATE sync_run_history SET status = 'failed', errors = 1, duration_ms = ?, completed_at = ? WHERE id = ?`,
+              [Date.now() - startedAt, Date.now(), runId]
+            ).catch(() => {});
+          }
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
+        }
       }
 
+      // No locationDbId — reconcile all active locations
       try {
-        const stats = await reconcile({
+        const { results, totalDuration } = await reconcileAllLocations({
           maxGHLContacts: input?.maxGHLContacts ?? 0,
           pushOrphans: input?.pushOrphans ?? true,
           resumeCursor: input?.resumeCursor ?? null,
         });
 
-        // Persist stats
-        await persistReconcileStats(stats);
-
-        // Update run history
-        if (pool && runId) {
-          try {
-            await pool.query(
-              `UPDATE sync_run_history SET status = ?, ghl_total = ?, stewardly_total = ?, matched = ?,
-               created_in_stewardly = ?, created_in_ghl = ?, updated_in_stewardly = ?, updated_in_ghl = ?,
-               conflicts_resolved = ?, orphans_fixed = ?, errors = ?, duration_ms = ?,
-               resume_cursor = ?, complete = ?, completed_at = ? WHERE id = ?`,
-              [
-                stats.complete ? 'completed' : 'interrupted',
-                stats.ghlTotal, stats.stewardlyTotal, stats.matched,
-                stats.createdInStewardly, stats.createdInGHL,
-                stats.updatedInStewardly, stats.updatedInGHL,
-                stats.conflictsResolved, stats.orphansFixed, stats.errors,
-                stats.duration_ms, stats.resumeCursor, stats.complete, Date.now(), runId,
-              ]
-            );
-          } catch { /* non-fatal */ }
-        }
-
-        return stats;
+        // Return the first result for backward compat, or a summary
+        if (results.length === 1) return results[0];
+        return {
+          timestamp: new Date().toISOString(),
+          locationId: 'all',
+          locationName: `${results.length} locations`,
+          ghlTotal: results.reduce((s, r) => s + r.ghlTotal, 0),
+          stewardlyTotal: results.reduce((s, r) => s + r.stewardlyTotal, 0),
+          matched: results.reduce((s, r) => s + r.matched, 0),
+          createdInStewardly: results.reduce((s, r) => s + r.createdInStewardly, 0),
+          createdInGHL: results.reduce((s, r) => s + r.createdInGHL, 0),
+          updatedInStewardly: results.reduce((s, r) => s + r.updatedInStewardly, 0),
+          updatedInGHL: results.reduce((s, r) => s + r.updatedInGHL, 0),
+          conflictsResolved: results.reduce((s, r) => s + r.conflictsResolved, 0),
+          orphansFixed: results.reduce((s, r) => s + r.orphansFixed, 0),
+          errors: results.reduce((s, r) => s + r.errors, 0),
+          duration_ms: totalDuration,
+          conflicts: results.flatMap(r => r.conflicts).slice(-100),
+          resumeCursor: null,
+          chunkSize: 100,
+          complete: results.every(r => r.complete),
+        };
       } catch (err: any) {
-        // Mark run as failed
-        if (pool && runId) {
-          try {
-            await pool.query(
-              `UPDATE sync_run_history SET status = 'failed', errors = 1, duration_ms = ?, completed_at = ? WHERE id = ?`,
-              [Date.now() - startedAt, Date.now(), runId]
-            );
-          } catch { /* non-fatal */ }
-        }
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
       }
     }),
 
-  /** Get current sync aggregation stats (no side effects) */
-  getSyncAggregation: protectedProcedure.query(async () => {
-    const agg = await getSyncAggregation();
-    return agg;
-  }),
+  /** Get current sync aggregation stats (optional location filter) */
+  getSyncAggregation: protectedProcedure
+    .input(z.object({ locationDbId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const agg = await getSyncAggregation(input?.locationDbId);
+      return agg;
+    }),
 
-  /** Get sync run history (last 50 runs) */
-  getSyncRunHistory: protectedProcedure.query(async () => {
+  /** Get sync run history (optional location filter) */
+  getSyncRunHistory: protectedProcedure
+    .input(z.object({ locationDbId: z.number().optional(), limit: z.number().optional().default(50) }).optional())
+    .query(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) return [];
+      try {
+        const locationFilter = input?.locationDbId != null ? " WHERE location_id = ?" : "";
+        const params: any[] = input?.locationDbId != null ? [input.locationDbId] : [];
+        const [rows] = await pool.query(
+          `SELECT * FROM sync_run_history${locationFilter} ORDER BY started_at DESC LIMIT ?`,
+          [...params, input?.limit ?? 50]
+        );
+        return rows as any[];
+      } catch {
+        return [];
+      }
+    }),
+
+  // ─── Location Management ──────────────────────────────────────────────
+
+  /** List all GHL locations */
+  listLocations: protectedProcedure.query(async () => {
     const pool = await getRawPool();
     if (!pool) return [];
     try {
       const [rows] = await pool.query(
-        `SELECT * FROM sync_run_history ORDER BY started_at DESC LIMIT 50`
+        "SELECT * FROM ghl_locations ORDER BY is_active DESC, name ASC"
       );
       return rows as any[];
     } catch {
       return [];
     }
   }),
+
+  /** Create a new GHL location */
+  createLocation: protectedProcedure
+    .input(z.object({
+      locationId: z.string().min(1),
+      name: z.string().min(1),
+      region: z.string().optional(),
+      syncDirection: z.enum(["bidirectional", "pull_only", "push_only", "disabled"]).default("bidirectional"),
+      syncFrequency: z.enum(["hourly", "every_6h", "daily", "weekly", "manual"]).default("daily"),
+      conflictPolicy: z.enum(["ghl_wins", "stewardly_wins", "newest_wins", "manual_review"]).default("newest_wins"),
+      maxContactsPerRun: z.number().default(0),
+      rateLimitMs: z.number().default(50),
+    }))
+    .mutation(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+
+      try {
+        const [result] = await pool.query(
+          `INSERT INTO ghl_locations (location_id, name, region, sync_direction, sync_frequency, conflict_policy, max_contacts_per_run, rate_limit_ms)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [input.locationId, input.name, input.region || null, input.syncDirection, input.syncFrequency, input.conflictPolicy, input.maxContactsPerRun, input.rateLimitMs]
+        );
+        return { id: (result as any).insertId, ...input };
+      } catch (err: any) {
+        if (err.code === 'ER_DUP_ENTRY') {
+          throw new TRPCError({ code: 'CONFLICT', message: 'Location with this GHL ID already exists' });
+        }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
+      }
+    }),
+
+  /** Update a GHL location's sync config */
+  updateLocation: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      region: z.string().optional(),
+      isActive: z.boolean().optional(),
+      syncDirection: z.enum(["bidirectional", "pull_only", "push_only", "disabled"]).optional(),
+      syncFrequency: z.enum(["hourly", "every_6h", "daily", "weekly", "manual"]).optional(),
+      conflictPolicy: z.enum(["ghl_wins", "stewardly_wins", "newest_wins", "manual_review"]).optional(),
+      maxContactsPerRun: z.number().optional(),
+      rateLimitMs: z.number().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (input.name !== undefined) { updates.push("name = ?"); params.push(input.name); }
+      if (input.region !== undefined) { updates.push("region = ?"); params.push(input.region); }
+      if (input.isActive !== undefined) { updates.push("is_active = ?"); params.push(input.isActive ? 1 : 0); }
+      if (input.syncDirection !== undefined) { updates.push("sync_direction = ?"); params.push(input.syncDirection); }
+      if (input.syncFrequency !== undefined) { updates.push("sync_frequency = ?"); params.push(input.syncFrequency); }
+      if (input.conflictPolicy !== undefined) { updates.push("conflict_policy = ?"); params.push(input.conflictPolicy); }
+      if (input.maxContactsPerRun !== undefined) { updates.push("max_contacts_per_run = ?"); params.push(input.maxContactsPerRun); }
+      if (input.rateLimitMs !== undefined) { updates.push("rate_limit_ms = ?"); params.push(input.rateLimitMs); }
+
+      if (updates.length === 0) return { success: true };
+
+      updates.push("updated_at = CURRENT_TIMESTAMP");
+      params.push(input.id);
+
+      await pool.query(`UPDATE ghl_locations SET ${updates.join(", ")} WHERE id = ?`, params);
+      return { success: true };
+    }),
+
+  /** Delete a GHL location (soft: sets is_active = false) */
+  deactivateLocation: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+      await pool.query("UPDATE ghl_locations SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [input.id]);
+      return { success: true };
+    }),
+
+  // ─── User-Location Access Management ──────────────────────────────────
+
+  /** List user-location assignments */
+  listUserLocations: protectedProcedure
+    .input(z.object({ userId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) return [];
+      try {
+        const filter = input?.userId ? " WHERE ul.user_id = ?" : "";
+        const params = input?.userId ? [input.userId] : [];
+        const [rows] = await pool.query(
+          `SELECT ul.*, gl.location_id AS ghl_location_id_str, gl.name AS location_name, gl.region
+           FROM user_locations ul
+           JOIN ghl_locations gl ON ul.ghl_location_id = gl.id${filter}
+           ORDER BY gl.name`,
+          params
+        );
+        return rows as any[];
+      } catch {
+        return [];
+      }
+    }),
+
+  /** Assign a user to a location */
+  assignUserLocation: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      ghlLocationId: z.number(),
+      accessLevel: z.enum(["view", "manage", "admin"]).default("view"),
+    }))
+    .mutation(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+      try {
+        await pool.query(
+          `INSERT INTO user_locations (user_id, ghl_location_id, access_level) VALUES (?, ?, ?)
+           ON DUPLICATE KEY UPDATE access_level = VALUES(access_level)`,
+          [input.userId, input.ghlLocationId, input.accessLevel]
+        );
+        return { success: true };
+      } catch (err: any) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
+      }
+    }),
+
+  /** Remove a user-location assignment */
+  removeUserLocation: protectedProcedure
+    .input(z.object({ userId: z.number(), ghlLocationId: z.number() }))
+    .mutation(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+      await pool.query(
+        "DELETE FROM user_locations WHERE user_id = ? AND ghl_location_id = ?",
+        [input.userId, input.ghlLocationId]
+      );
+      return { success: true };
+    }),
+
+  /** Get webhook activity feed (recent events with optional location filter) */
+  getWebhookActivityFeed: protectedProcedure
+    .input(z.object({
+      locationDbId: z.number().optional(),
+      limit: z.number().optional().default(50),
+    }).optional())
+    .query(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) return [];
+      try {
+        const locationFilter = input?.locationDbId != null ? " AND location_id = ?" : "";
+        const params: any[] = input?.locationDbId != null ? [input.locationDbId] : [];
+        const [rows] = await pool.query(
+          `SELECT id, event_type, provider_slug, processing_status, processing_error, location_id,
+                  received_at, processed_at,
+                  JSON_EXTRACT(payload_json, '$.contact.firstName') as contact_first_name,
+                  JSON_EXTRACT(payload_json, '$.contact.lastName') as contact_last_name,
+                  JSON_EXTRACT(payload_json, '$.contact.email') as contact_email
+           FROM integration_webhook_events
+           WHERE provider_slug = 'ghl'${locationFilter}
+           ORDER BY received_at DESC LIMIT ?`,
+          [...params, input?.limit ?? 50]
+        );
+        return rows as any[];
+      } catch {
+        return [];
+      }
+    }),
 });

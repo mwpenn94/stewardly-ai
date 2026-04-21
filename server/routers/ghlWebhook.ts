@@ -135,11 +135,29 @@ interface GHLContact {
   state?: string;
   postalCode?: string;
   dateAdded?: string;
+  locationId?: string;
+}
+
+/** Resolve GHL locationId to internal ghl_locations.id */
+async function resolveLocationDbId(ghlLocationId: string | undefined): Promise<number | null> {
+  if (!ghlLocationId) return null;
+  const pool = await getRawPool();
+  if (!pool) return null;
+  try {
+    const [rows] = await pool.query(
+      "SELECT id FROM ghl_locations WHERE location_id = ? LIMIT 1",
+      [ghlLocationId]
+    );
+    return (rows as any[])[0]?.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function upsertContactToLeadPipeline(
   contact: GHLContact,
   eventType: string,
+  locationDbId?: number | null,
 ): Promise<{ action: string; leadPipelineId?: number }> {
   const pool = await getRawPool();
   if (!pool) return { action: "skip_no_db" };
@@ -221,10 +239,10 @@ async function upsertContactToLeadPipeline(
     }
   }
 
-  // Create new lead pipeline record
+  // Create new lead pipeline record (with location_id)
   const [insertResult] = await pool.query(
-    `INSERT INTO lead_pipeline (firstName, lastName, email, phone, source, crmExternalId, status, notesJson, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)`,
+    `INSERT INTO lead_pipeline (firstName, lastName, email, phone, source, crmExternalId, status, notesJson, location_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?, ?)`,
     [
       contact.firstName || null,
       contact.lastName || null,
@@ -241,6 +259,7 @@ async function upsertContactToLeadPipeline(
         ghlDateAdded: contact.dateAdded,
         inboundEvent: eventType,
       }),
+      locationDbId ?? null,
       now,
       now,
     ]
@@ -277,7 +296,11 @@ export async function handleGHLWebhook(
     const payload = JSON.parse(rawBody) as Record<string, unknown>;
     const eventType = (payload.event || payload.type || "unknown") as string;
 
-    // Log the event to integration_webhook_events (Drizzle schema matches actual DB for this table)
+    // Resolve GHL location from payload
+    const payloadLocationId = (payload.locationId || (payload.contact as any)?.locationId || (payload.opportunity as any)?.locationId) as string | undefined;
+    const locationDbId = await resolveLocationDbId(payloadLocationId);
+
+    // Log the event to integration_webhook_events (with location_id)
     await db.insert(integrationWebhookEvents).values({
       id: eventId,
       connectionId: connectionId || "default-ghl",
@@ -287,6 +310,14 @@ export async function handleGHLWebhook(
       signatureValid,
       processingStatus: "pending",
     });
+
+    // Also set location_id on the webhook event row via raw SQL (Drizzle schema may not have it yet)
+    if (locationDbId != null) {
+      const pool = await getRawPool();
+      if (pool) {
+        await pool.query("UPDATE integration_webhook_events SET location_id = ? WHERE id = ?", [locationDbId, eventId]).catch(() => {});
+      }
+    }
 
     // Process contact events → upsert to leadPipeline via raw SQL
     let upsertResult: { action: string; leadPipelineId?: number } | null = null;
@@ -335,7 +366,8 @@ export async function handleGHLWebhook(
             state: contact.state as string | undefined,
             postalCode: contact.postalCode as string | undefined,
             dateAdded: contact.dateAdded as string | undefined,
-          }, eventType);
+            locationId: contact.locationId as string | undefined,
+          }, eventType, locationDbId);
         }
       }
     }

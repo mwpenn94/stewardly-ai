@@ -391,79 +391,84 @@ export function initScheduler(): void {
   registerJob("daily_crm_sync", DAYS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");
     await runMonitoredCron("daily_crm_sync", async () => {
-      const { reconcile, persistReconcileStats } = await import("./syncReconciliation");
+      const { reconcileAllLocations, persistReconcileStats } = await import("./syncReconciliation");
       const { getRawPool } = await import("../db");
       const pool = await getRawPool();
       const startedAt = Date.now();
-      let runId: number | null = null;
-
-      // Record run start
-      if (pool) {
-        try {
-          const [result] = await pool.query(
-            `INSERT INTO sync_run_history (run_type, status, triggered_by, started_at) VALUES ('scheduled', 'running', 'scheduler', ?)`,
-            [startedAt]
-          );
-          runId = (result as any).insertId;
-        } catch { /* non-fatal */ }
-      }
 
       try {
-        // Run reconciliation with no limit (cursor-based, processes all contacts)
-        const stats = await reconcile({ maxGHLContacts: 0, pushOrphans: true, resumeCursor: null });
-        await persistReconcileStats(stats);
+        // Multi-location reconciliation — iterates all active GHL locations
+        const { results, totalDuration } = await reconcileAllLocations({
+          maxGHLContacts: 0,
+          pushOrphans: true,
+          resumeCursor: null,
+        });
 
-        // Record completion
-        if (pool && runId) {
-          try {
-            await pool.query(
-              `UPDATE sync_run_history SET status = ?, ghl_total = ?, stewardly_total = ?, matched = ?,
-               created_in_stewardly = ?, created_in_ghl = ?, updated_in_stewardly = ?, updated_in_ghl = ?,
-               conflicts_resolved = ?, orphans_fixed = ?, errors = ?, duration_ms = ?,
-               resume_cursor = ?, complete = ?, completed_at = ? WHERE id = ?`,
-              [
-                stats.complete ? 'completed' : 'interrupted',
-                stats.ghlTotal, stats.stewardlyTotal, stats.matched,
-                stats.createdInStewardly, stats.createdInGHL,
-                stats.updatedInStewardly, stats.updatedInGHL,
-                stats.conflictsResolved, stats.orphansFixed, stats.errors,
-                stats.duration_ms, stats.resumeCursor, stats.complete, Date.now(), runId,
-              ]
-            );
-          } catch { /* non-fatal */ }
+        // Record each location's run in sync_run_history
+        for (const stats of results) {
+          if (pool) {
+            try {
+              // Find location DB id
+              let locationId: number | null = null;
+              const [locRows] = await pool.query(
+                "SELECT id FROM ghl_locations WHERE location_id = ? LIMIT 1",
+                [stats.locationId]
+              );
+              if ((locRows as any[])[0]) locationId = (locRows as any[])[0].id;
+
+              await pool.query(
+                `INSERT INTO sync_run_history (run_type, status, triggered_by, location_id, ghl_total, stewardly_total, matched,
+                 created_in_stewardly, created_in_ghl, updated_in_stewardly, updated_in_ghl,
+                 conflicts_resolved, orphans_fixed, errors, duration_ms,
+                 resume_cursor, complete, started_at, completed_at)
+                 VALUES ('scheduled', ?, 'scheduler', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  stats.complete ? 'completed' : 'interrupted',
+                  locationId,
+                  stats.ghlTotal, stats.stewardlyTotal, stats.matched,
+                  stats.createdInStewardly, stats.createdInGHL,
+                  stats.updatedInStewardly, stats.updatedInGHL,
+                  stats.conflictsResolved, stats.orphansFixed, stats.errors,
+                  stats.duration_ms, stats.resumeCursor, stats.complete,
+                  startedAt, Date.now(),
+                ]
+              );
+            } catch { /* non-fatal */ }
+          }
         }
 
-        logger.info({ operation: "scheduler" }, `Daily CRM reconciliation complete: ${stats.ghlTotal} GHL, ${stats.matched} matched, ${stats.errors} errors, ${stats.duration_ms}ms`);
+        const totalErrors = results.reduce((sum, s) => sum + s.errors, 0);
+        const totalMatched = results.reduce((sum, s) => sum + s.matched, 0);
+        const totalGHL = results.reduce((sum, s) => sum + s.ghlTotal, 0);
 
-        // Alert admins if there were errors or low link rate
-        if (stats.errors > 0) {
+        logger.info(
+          { operation: "scheduler" },
+          `Daily multi-location CRM sync complete: ${results.length} locations, ${totalGHL} GHL contacts, ${totalMatched} matched, ${totalErrors} errors, ${totalDuration}ms`
+        );
+
+        if (totalErrors > 0) {
+          const locationSummary = results
+            .filter(s => s.errors > 0)
+            .map(s => `• ${s.locationName || s.locationId}: ${s.errors} error(s)`)
+            .join("\n");
           alertAdmins(
-            `CRM Sync Alert: ${stats.errors} error(s) during daily reconciliation`,
-            `Daily CRM reconciliation completed with errors:\n\n` +
-            `• GHL contacts processed: ${stats.ghlTotal}\n` +
-            `• Matched: ${stats.matched}\n` +
-            `• Created (Stewardly): ${stats.createdInStewardly}\n` +
-            `• Created (GHL): ${stats.createdInGHL}\n` +
-            `• Errors: ${stats.errors}\n` +
-            `• Duration: ${Math.round(stats.duration_ms / 1000)}s\n\n` +
+            `CRM Sync Alert: ${totalErrors} error(s) across ${results.length} locations`,
+            `Daily multi-location CRM reconciliation completed with errors:\n\n` +
+            `Locations synced: ${results.length}\n` +
+            `Total GHL contacts: ${totalGHL}\n` +
+            `Total matched: ${totalMatched}\n` +
+            `Total errors: ${totalErrors}\n` +
+            `Duration: ${Math.round(totalDuration / 1000)}s\n\n` +
+            `Locations with errors:\n${locationSummary}\n\n` +
             `Check the Sync Dashboard for details.`,
             "high"
           );
         }
       } catch (err: any) {
-        // Record failure
-        if (pool && runId) {
-          try {
-            await pool.query(
-              `UPDATE sync_run_history SET status = 'failed', errors = 1, duration_ms = ?, completed_at = ? WHERE id = ?`,
-              [Date.now() - startedAt, Date.now(), runId]
-            );
-          } catch { /* non-fatal */ }
-        }
         logger.error({ operation: "scheduler" }, `Daily CRM reconciliation failed: ${err.message}`);
         alertAdmins(
           "CRM Sync Failed",
-          `Daily CRM reconciliation failed with error: ${err.message}\n\nCheck the Sync Dashboard for details.`,
+          `Daily multi-location CRM reconciliation failed: ${err.message}\n\nCheck the Sync Dashboard for details.`,
           "critical"
         );
       }
