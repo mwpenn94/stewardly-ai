@@ -8068,3 +8068,11 @@
 - [x] P31-6: Write vitest tests — 19 tests all passing (audit log service, convenience loggers, onboarding backend, tRPC procedures)
 - [x] P31-7: 3 consecutive clean LVUA passes — server 200, route loads, 19/19 tests, 7 tRPC procedures confirmed
 - [x] P31-FINAL: Update todo.md, save checkpoint
+
+## Pass 32 — Admin Audit Trail UI + GHL Webhook Registration + SSE Streaming
+- [x] P32-1: Rewrite AdminAuditTrail.tsx — wire to getCrmAuditLog/getCrmAuditSummary with summary stats, category/action/location/date filters, timeline view, before/after state diffs, CSV export
+- [x] P32-2: GHL webhook registration — API requires OAuth2 (not location key), browser requires login session. Built in-app webhook setup guide + verification endpoint instead. Manual step deferred to user.
+- [x] P32-3: Add real-time SSE streaming to onboarding wizard reconciliation step — wired emitReconcileProgress/emitReconcileComplete/emitSyncError into onboardingRunReconciliation, updated Step 4 UI with live progress bar, stats grid, and SSE event feed
+- [x] P32-4: Write vitest tests for Admin Audit Trail and SSE streaming — 17/17 tests passing (SSE event bus, client management, location scoping, audit log queries, summary, onboarding SSE wiring)
+- [x] P32-5: 3 consecutive clean LVUA passes — server 200, all routes load, 17/17 + 19/19 tests, SSE wiring confirmed, no console errors
+- [x] P32-FINAL: Update todo.md, save checkpoint

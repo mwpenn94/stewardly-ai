@@ -8,7 +8,7 @@
  * 4. Run first reconciliation
  * 5. Review completion summary
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
+import { useSyncEvents, type SyncEvent } from "@/hooks/useSyncEvents";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -88,6 +89,34 @@ export default function LocationOnboarding() {
   const [memberAssignments, setMemberAssignments] = useState<MemberAssignment[]>([]);
   const [reconcileResult, setReconcileResult] = useState<any>(null);
   const [isReconciling, setIsReconciling] = useState(false);
+  const [liveProgress, setLiveProgress] = useState<{
+    processed: number; total: number; matched: number; created: number; errors: number; pct: number;
+  } | null>(null);
+
+  // SSE for real-time reconciliation streaming
+  const { events: sseEvents, connected: sseConnected } = useSyncEvents({
+    autoConnect: currentStep === 4 && isReconciling,
+    eventTypes: ["reconcile_progress", "reconcile_complete", "sync_error"],
+  });
+
+  // Update live progress from SSE events
+  useEffect(() => {
+    if (sseEvents.length === 0) return;
+    const latest = sseEvents[0]; // newest first
+    if (latest.type === "reconcile_progress" && latest.data) {
+      setLiveProgress({
+        processed: latest.data.processed ?? 0,
+        total: latest.data.total ?? 0,
+        matched: latest.data.matched ?? 0,
+        created: latest.data.created ?? 0,
+        errors: latest.data.errors ?? 0,
+        pct: latest.data.pct ?? 0,
+      });
+    }
+    if (latest.type === "reconcile_complete" && latest.data) {
+      setLiveProgress(null);
+    }
+  }, [sseEvents]);
 
   // ─── Queries ─────────────────────────────────────────────────────────
   const discoverQ = trpc.integrations.onboardingDiscoverLocations.useQuery(undefined, {
@@ -549,6 +578,11 @@ export default function LocationOnboarding() {
         <CardTitle className="flex items-center gap-2">
           <Play className="w-5 h-5 text-blue-400" />
           Run First Sync
+          {isReconciling && sseConnected && (
+            <Badge variant="outline" className="text-[10px] gap-1 text-emerald-400 border-emerald-400/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live
+            </Badge>
+          )}
         </CardTitle>
         <CardDescription>
           Run the initial reconciliation to sync contacts between GHL and Stewardly for{" "}
@@ -561,9 +595,62 @@ export default function LocationOnboarding() {
             <>
               <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto mb-4" />
               <p className="text-lg font-medium mb-2">Syncing contacts...</p>
-              <p className="text-sm text-muted-foreground">
-                This may take a few minutes depending on the number of contacts.
-              </p>
+              {liveProgress ? (
+                <div className="max-w-md mx-auto space-y-4">
+                  {/* Progress bar */}
+                  <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${Math.min(liveProgress.pct, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {liveProgress.pct}% — {liveProgress.processed.toLocaleString()} contacts processed
+                  </p>
+                  {/* Live stats grid */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-xl font-bold tabular-nums">{liveProgress.processed.toLocaleString()}</p>
+                      <p className="text-[10px] text-muted-foreground">Processed</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-xl font-bold tabular-nums text-emerald-400">{liveProgress.matched.toLocaleString()}</p>
+                      <p className="text-[10px] text-muted-foreground">Matched</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-xl font-bold tabular-nums text-blue-400">{liveProgress.created.toLocaleString()}</p>
+                      <p className="text-[10px] text-muted-foreground">Created</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-muted/50">
+                      <p className="text-xl font-bold tabular-nums text-red-400">{liveProgress.errors}</p>
+                      <p className="text-[10px] text-muted-foreground">Errors</p>
+                    </div>
+                  </div>
+                  {/* SSE event feed */}
+                  {sseEvents.length > 0 && (
+                    <div className="mt-3 max-h-32 overflow-y-auto rounded-lg bg-muted/20 border border-border/30 p-2 text-left">
+                      {sseEvents.slice(0, 8).map((evt, i) => (
+                        <div key={i} className="text-[11px] font-mono text-muted-foreground py-0.5 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                          <span className="truncate">
+                            {evt.type === "reconcile_progress"
+                              ? `Page processed — ${evt.data?.processed ?? 0} contacts (${evt.data?.matched ?? 0} matched, ${evt.data?.created ?? 0} new)`
+                              : evt.type === "reconcile_complete"
+                              ? `Reconciliation complete in ${((evt.data?.durationMs ?? 0) / 1000).toFixed(1)}s`
+                              : evt.type === "sync_error"
+                              ? `Error: ${evt.data?.error ?? "unknown"}`
+                              : evt.type}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Connecting to live stream... This may take a few minutes.
+                </p>
+              )}
             </>
           ) : reconcileResult ? (
             <>
@@ -587,6 +674,11 @@ export default function LocationOnboarding() {
                   <p className="text-xs text-muted-foreground">Errors</p>
                 </div>
               </div>
+              {reconcileResult.duration_ms && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  Completed in {(reconcileResult.duration_ms / 1000).toFixed(1)}s
+                </p>
+              )}
             </>
           ) : (
             <>
@@ -594,6 +686,7 @@ export default function LocationOnboarding() {
               <p className="text-lg font-medium mb-2">Ready to Sync</p>
               <p className="text-sm text-muted-foreground mb-6">
                 Click the button below to start the initial contact reconciliation.
+                You'll see real-time progress as contacts are synced.
                 You can also skip this step and run it later from the Sync Dashboard.
               </p>
               <Button size="lg" onClick={handleRunReconciliation}>

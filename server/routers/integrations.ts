@@ -2001,13 +2001,29 @@ export const integrationsRouter = router({
       }).catch(() => {});
       try {
         const { reconcile } = await import("../services/syncReconciliation");
+        const { emitReconcileProgress, emitReconcileComplete, emitSyncError } = await import("../services/syncEventBus");
         const stats = await reconcile({
-          locationId: loc.ghl_location_id,
-          locationDbId: input.locationDbId,
-          apiKey: loc.api_key || undefined,
-          syncDirection: loc.sync_direction || "bidirectional",
-          conflictPolicy: loc.conflict_policy || "newest_wins",
-          rateLimitPerMinute: loc.rate_limit_per_minute || 30,
+          location: {
+            dbId: input.locationDbId,
+            locationId: loc.ghl_location_id,
+            name: loc.name,
+            syncDirection: loc.sync_direction || "bidirectional",
+            conflictPolicy: loc.conflict_policy || "newest_wins",
+            maxContactsPerRun: 0,
+            rateLimitMs: loc.rate_limit_per_minute ? Math.round(60000 / loc.rate_limit_per_minute) : 50,
+            apiKey: loc.api_key || undefined,
+          },
+          onProgress: (progressStats) => {
+            emitReconcileProgress({
+              locationId: input.locationDbId,
+              locationName: loc.name,
+              processed: progressStats.ghlTotal,
+              total: progressStats.ghlTotal + 100, // estimate; grows as we page
+              matched: progressStats.matched,
+              created: progressStats.createdInStewardly,
+              errors: progressStats.errors,
+            });
+          },
         });
         logReconciliationEvent({
           action: "reconciliation_completed",
@@ -2017,6 +2033,23 @@ export const integrationsRouter = router({
           actorName: ctx.user.name || ctx.user.email || "Unknown",
           metadata: { source: "onboarding_wizard", ...stats },
         }).catch(() => {});
+        // Emit SSE reconcile complete event
+        emitReconcileComplete({
+          locationId: input.locationDbId,
+          locationName: loc.name,
+          stats: {
+            ghlTotal: stats.ghlTotal,
+            matched: stats.matched,
+            createdInStewardly: stats.createdInStewardly,
+            createdInGHL: stats.createdInGHL,
+            updatedInStewardly: stats.updatedInStewardly,
+            updatedInGHL: stats.updatedInGHL,
+            conflictsResolved: stats.conflictsResolved,
+            orphansFixed: stats.orphansFixed,
+            errors: stats.errors,
+          },
+          durationMs: stats.duration_ms,
+        });
         return { success: true, stats };
       } catch (err: any) {
         logReconciliationEvent({
@@ -2027,6 +2060,13 @@ export const integrationsRouter = router({
           actorName: ctx.user.name || ctx.user.email || "Unknown",
           metadata: { source: "onboarding_wizard", error: err?.message },
         }).catch(() => {});
+        // Emit SSE sync error event
+        emitSyncError({
+          locationId: input.locationDbId,
+          locationName: loc.name,
+          error: err?.message || "Reconciliation failed",
+          context: "onboarding_wizard",
+        });
         return { success: false, error: err?.message || "Reconciliation failed" };
       }
     }),
