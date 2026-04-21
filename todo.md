@@ -7993,3 +7993,15 @@
   - auto-provisioning.test.ts: 17/17
   - ghl-outbound-sync.test.ts: 9/9 (live API, run separately)
 - [x] P29-FINAL: todo.md updated, checkpoint saved
+
+### v8.15 Pass 30 — Real-Time SSE Streaming + Location Permission Management UI
+- [ ] P30-1: Attempt GHL webhook registration via browser UI
+- [ ] P30-2: Implement SSE server endpoint for real-time sync event streaming (webhook events, reconciliation progress, sync status changes)
+- [ ] P30-3: Create SSE event bus (in-memory pub/sub for broadcasting events to connected clients)
+- [ ] P30-4: Wire SSE into Sync Dashboard for live webhook activity feed and reconciliation progress
+- [ ] P30-5: Wire SSE into Location Analytics for live metric updates
+- [ ] P30-6: Build Location Permission Management page (admin-only) — assign/revoke users per location, set per-user roles (viewer/editor/admin), configure auto-assignment rules
+- [ ] P30-7: Add tRPC procedures for permission management CRUD (list users per location, assign user, update role, revoke access, get auto-assignment config, update auto-assignment config)
+- [ ] P30-8: Write vitest tests for SSE streaming and permission management
+- [ ] P30-9: 3 consecutive clean LVUA passes
+- [ ] P30-FINAL: Update todo.md, save checkpoint

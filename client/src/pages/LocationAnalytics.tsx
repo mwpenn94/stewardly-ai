@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   BarChart3, TrendingUp, Activity, Globe, RefreshCw, MapPin,
   ArrowUpRight, ArrowDownRight, Minus, Shield, Zap, Users, Target,
@@ -78,7 +78,7 @@ function ProgressBar({ value, max, color = "bg-primary" }: { value: number; max:
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function LocationAnalytics() {
-  const { toast } = useToast();
+  // toast imported from sonner at top level
   const [dateRange, setDateRange] = useState("30d");
   const [selectedLocation, setSelectedLocation] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("overview");
@@ -98,10 +98,10 @@ export default function LocationAnalytics() {
 
   const discoverMutation = trpc.integrations.discoverLocations.useMutation({
     onSuccess: (data) => {
-      toast({ title: "Discovery Complete", description: `Found ${data.total} locations (${data.created} new, ${data.existing} existing)` });
+      toast.success(`Discovery Complete: Found ${data.total} locations (${data.created} new, ${data.existing} existing)`);
       refetch();
     },
-    onError: (err) => toast({ title: "Discovery Failed", description: err.message, variant: "destructive" }),
+    onError: (err) => toast.error(`Discovery Failed: ${err.message}`),
   });
 
   const { data: provisionLog } = trpc.integrations.getProvisioningLog.useQuery({});
