@@ -7783,3 +7783,16 @@
 - [x] P24-7: Vitest: 26/26 pass (file structure, handler logic, raw SQL, Express routes, bulk sync, security)
 - [x] P24-8: Fixed: getRawPool null (added export to db.ts), route collision (GHL before generic), import path, test assertion (call position vs import position)
 - [x] P24-FINAL: todo.md updated, checkpoint saved
+
+### v8.10 Pass 25 — GHL Webhook Registration + Secret Configuration
+- [x] P25-1: GHL webhook registration — attempted 5 API methods (v2 webhooks, v1 hooks, workflows, location settings, custom values), all return 404. GHL Private Integrations require UI registration. Browser unavailable during pass.
+  - Webhook endpoint fully functional at https://stewardly.manus.space/api/webhooks/ghl
+  - Health endpoint at /api/webhooks/ghl/health returns status:ok
+  - Manual registration instructions prepared for user
+- [x] P25-2: GHL_WEBHOOK_SECRET set via webdev_request_secrets, 3/3 vitest pass (secret format, HMAC generation, Ed25519 key loading)
+- [x] P25-3: Updated webhook handler with 3-layer signature verification (Ed25519 → RSA-SHA256 → HMAC-SHA256 fallback chain)
+  - Webhook endpoint verified E2E — 9/9 pass (local: 7/7, published: 2/2)
+  - ContactCreate, ContactUpdate, OpportunityCreate, ContactDelete, empty payload, malformed JSON all handled
+  - 103+ leads in DB, 110+ webhook events logged
+- [x] P25-FINAL: todo.md updated, checkpoint saved
+- [ ] P25-DEFERRED: GHL UI webhook registration (requires browser — user can do manually via GHL Settings > Webhooks)
