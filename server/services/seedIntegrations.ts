@@ -1,5 +1,6 @@
 import { requireDb } from "../db";
 import { integrationProviders, carrierImportTemplates } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 import crypto from "crypto";
 import { logger } from "../_core/logger";
 
@@ -383,10 +384,16 @@ const CARRIER_TEMPLATES = [
 export async function seedIntegrationProviders() {
   const db = await requireDb();
   logger.info( { operation: "seed" },"[Seed] Seeding integration providers...");
+  // First, get existing providers by slug to handle upsert correctly
+  const existing = await db.select({ id: integrationProviders.id, slug: integrationProviders.slug }).from(integrationProviders);
+  const slugToId = new Map(existing.map(e => [e.slug, e.id]));
+  let inserted = 0, updated = 0;
   for (const provider of PROVIDERS) {
     try {
-      await db.insert(integrationProviders).values(provider).onDuplicateKeyUpdate({
-        set: {
+      const existingId = slugToId.get(provider.slug);
+      if (existingId) {
+        // Update existing provider (keep the same ID)
+        await db.update(integrationProviders).set({
           name: provider.name,
           description: provider.description,
           category: provider.category,
@@ -397,13 +404,19 @@ export async function seedIntegrationProviders() {
           signupUrl: provider.signupUrl,
           freeTierDescription: provider.freeTierDescription,
           freeTierLimit: provider.freeTierLimit,
-        },
-      });
+          isActive: true,
+        }).where(eq(integrationProviders.slug, provider.slug));
+        updated++;
+      } else {
+        // Insert new provider
+        await db.insert(integrationProviders).values(provider);
+        inserted++;
+      }
     } catch (e) {
       logger.error( { operation: "seed", err: e },`[Seed] Failed to seed provider ${provider.slug}:`, e);
     }
   }
-  logger.info( { operation: "seed" },`[Seed] Seeded ${PROVIDERS.length} integration providers.`);
+  logger.info( { operation: "seed" },`[Seed] Seeded ${PROVIDERS.length} integration providers (${inserted} new, ${updated} updated).`);
 }
 
 export async function seedCarrierTemplates() {
