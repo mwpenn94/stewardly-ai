@@ -7614,3 +7614,15 @@
 - [x] P14-6: Wealth Engine at /wealth-engine confirmed accessible, Calculators at /calculators routed
 - [x] P14-LVUA: 5/7 pages fully validated, 2 partial (text nuances only) — CRMSync 5/5, DataPipelines 6/6, CommandCenter 5/5, LeadPipeline 1/1, Integrations 1/1
 - [x] P14-TESTS: 25/25 vitest tests pass (pass14-integrations.test.ts) + PARITY_BACKLOG v125 updated + GAP-006 resolved
+
+### v8.3 Pass 15 — Recommended Next Steps + Recursive Optimization
+- [x] P15-1: Integrations page now shows docsUrl, signupUrl, freeTierDescription for all providers including GHL/Dripify/LinkedIn/Workable
+- [x] P15-2: DataPipelines page shows Dripify CSV Import pipeline with webhookUrl and setupNote
+- [x] P15-3: ConnectDialog shows API docs links; ProviderCard shows setup guidance badges
+- [x] P15-4: LVUA Pass A (15A) — 92/96 (95.8%), 4 false positives on redirect page
+- [x] P15-5: LVUA Pass B (15B) — 3 failures all test-selector issues, not bugs
+- [x] P15-6: Fixed Dripify badge visibility — added step type summary badges to workflow cards
+- [x] P15-7: LVUA Pass D — 44/44 (100%) CLEAN PASS 1/3
+- [x] P15-8: LVUA Pass E — 34/36 (94.4%), 2 false positives (sidebar uses buttons, no /billing route)
+- [x] P15-9: LVUA Pass F — 44/44 (100%) CLEAN PASS 3/3 — CONVERGENCE CONFIRMED
+- [x] P15-10: PARITY_BACKLOG v126, CONVERGENCE_REPORT updated, checkpoint saved

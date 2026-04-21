@@ -28,6 +28,8 @@ interface DataPipeline {
   lastRun: string;
   recordsProcessed: number;
   description: string;
+  webhookUrl?: string;
+  setupNote?: string;
 }
 
 const INITIAL_PIPELINES: DataPipeline[] = [
@@ -107,6 +109,8 @@ const INITIAL_PIPELINES: DataPipeline[] = [
     lastRun: new Date(Date.now() - 7200000).toISOString(),
     recordsProcessed: 128,
     description: "Receives webhook events from GoHighLevel for new leads, form submissions, and appointment bookings.",
+    webhookUrl: "/api/trpc/ghlWebhook.ingest",
+    setupNote: "In GHL Settings > Webhooks, add this URL as the endpoint. Events: contact.create, contact.update, opportunity.create, appointment.create.",
   },
   {
     id: "pl-8",
@@ -414,6 +418,15 @@ export default function DataPipelines({ embedded = false }: { embedded?: boolean
                           <ArrowRight className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{pipeline.destination}</span>
                         </div>
+                        {pipeline.webhookUrl && (
+                          <div className="mt-1.5 text-xs">
+                            <span className="text-muted-foreground">Endpoint: </span>
+                            <code className="bg-muted px-1.5 py-0.5 rounded text-[10px] font-mono">{window.location.origin}{pipeline.webhookUrl}</code>
+                          </div>
+                        )}
+                        {pipeline.setupNote && (
+                          <p className="mt-1 text-[11px] text-muted-foreground/70 italic">{pipeline.setupNote}</p>
+                        )}
                       </div>
                     </div>
 

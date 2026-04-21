@@ -310,6 +310,20 @@ export default function OutreachAutomation({ embedded = false }: { embedded?: bo
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {triggerLabel}</span>
                           <span>{wf.steps.length} steps</span>
                         </div>
+                        {/* Step type summary badges — shows integrations at a glance */}
+                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                          {[...new Set(wf.steps.map((s) => s.type))].filter((t) => t !== "wait" && t !== "condition").map((t) => {
+                            const labels: Record<string, string> = {
+                              email: "Email", sms: "SMS", call: "Call", task: "Task",
+                              linkedin_inmail: "LinkedIn InMail", dripify_sequence: "Dripify",
+                            };
+                            return (
+                              <span key={t} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                                {labels[t] ?? t}
+                              </span>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
 

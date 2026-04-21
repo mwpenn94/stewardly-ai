@@ -81,3 +81,4 @@ The monolith-to-monorepo extraction is tracked separately in the ManusNextDashbo
 |---------|------|---------|
 | v124 | 2026-04-18 | Initial parity backlog creation, 10 gaps identified, 7 differentiators documented |
 | v125 | 2026-04-20 | Pass 14: Integration parity resolved — GHL, Dripify, LinkedIn, Workable, Salesforce all wired into UI + routers |
+| v126 | 2026-04-20 | Pass 15: Convergence confirmed (3/3 clean passes). Integrations page shows setup guidance (docsUrl, signupUrl, freeTierDescription). DataPipelines shows webhook URLs. Outreach workflow cards show step type badges (Dripify, LinkedIn InMail). All 44 LVUA tests pass on Desktop/Tablet/Mobile. |

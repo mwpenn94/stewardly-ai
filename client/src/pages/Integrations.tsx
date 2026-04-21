@@ -13,7 +13,7 @@ import {
   Link2, Unlink, RefreshCw, Search, Database, Building2, Briefcase, User,
   Globe, CheckCircle2, XCircle, Clock, AlertTriangle, ChevronRight,
   Shield, Activity, Settings2, Loader2, Plus, ArrowUpDown, FileUp, ArrowLeft,
-  TrendingUp, TrendingDown, Minus, ArrowLeftRight,
+  TrendingUp, TrendingDown, Minus, ArrowLeftRight, ExternalLink, BookOpen,
 } from "lucide-react";
 import { Link } from "wouter";
 import { getLoginUrl } from "@/const";
@@ -34,6 +34,10 @@ type Provider = {
   logoUrl: string | null;
   authMethod: string;
   isActive: boolean;
+  docsUrl?: string | null;
+  signupUrl?: string | null;
+  freeTierDescription?: string | null;
+  baseUrl?: string | null;
 };
 
 type Connection = {
@@ -162,9 +166,28 @@ function ProviderCard({
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">
+        <p className="text-sm text-muted-foreground mb-3">
           {provider.description || `Connect your ${provider.name} account to sync data automatically.`}
         </p>
+        {(provider.docsUrl || provider.signupUrl || provider.freeTierDescription) && (
+          <div className="mb-4 rounded-lg border border-dashed border-muted-foreground/20 p-2.5 space-y-1.5">
+            {provider.freeTierDescription && (
+              <p className="text-xs text-muted-foreground">{provider.freeTierDescription}</p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {provider.docsUrl && (
+                <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                  <BookOpen className="h-3 w-3" /> API Docs
+                </a>
+              )}
+              {provider.signupUrl && (
+                <a href={provider.signupUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                  <ExternalLink className="h-3 w-3" /> Sign Up
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {connection && (
           <div className="mb-4 rounded-lg bg-muted/50 p-3 space-y-1">
@@ -441,6 +464,13 @@ function ConnectDialog({
           <DialogTitle>Connect {provider.name}</DialogTitle>
           <DialogDescription>
             Enter your {provider.name} credentials to establish a secure connection.
+          {provider.docsUrl && (
+            <> Get your credentials from{" "}
+              <a href={provider.docsUrl} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                the API documentation
+              </a>.
+            </>
+          )}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
