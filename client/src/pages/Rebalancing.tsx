@@ -315,7 +315,7 @@ export default function RebalancingPage({ embedded = false }: { embedded?: boole
                   </div>
                   <div className="col-span-1 flex justify-end">
                     <Button
-                      size="icon" aria-label="Remove holding"
+                      size="icon"
                       variant="ghost"
                       onClick={() => removeHolding(i)}
                       aria-label={`Remove holding ${h.id || i + 1}`}
@@ -389,7 +389,7 @@ export default function RebalancingPage({ embedded = false }: { embedded?: boole
                   </div>
                   <div className="col-span-1 flex justify-end">
                     <Button
-                      size="icon" aria-label="Remove target"
+                      size="icon"
                       variant="ghost"
                       onClick={() => removeTarget(i)}
                       aria-label={`Remove target ${t.id || i + 1}`}

@@ -1583,6 +1583,138 @@ export const integrationsRouter = router({
       return getProvisioningLog(input?.ghlLocationId, input?.limit);
     }),
 
+  /** List all users (admin only) for permission management */
+  listUsers: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const { users } = await import("../../drizzle/schema");
+      const allUsers = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        avatarUrl: users.avatarUrl,
+        lastSignedIn: users.lastSignedIn,
+      }).from(users).orderBy(users.name);
+      return allUsers;
+    }),
+
+  /** Get users assigned to a specific location */
+  getLocationMembers: protectedProcedure
+    .input(z.object({ locationDbId: z.number() }))
+    .query(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) return [];
+      const [rows] = await pool.query(
+        `SELECT ul.user_id, ul.role as location_role, ul.created_at as assigned_at,
+                u.name, u.email, u.role as global_role, u.avatarUrl
+         FROM user_locations ul
+         JOIN users u ON u.id = ul.user_id
+         WHERE ul.location_id = ?
+         ORDER BY ul.role DESC, u.name ASC`,
+        [input.locationDbId]
+      );
+      return rows as any[];
+    }),
+
+  /** Get all location assignments for a specific user */
+  getUserLocationAssignments: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) return [];
+      const [rows] = await pool.query(
+        `SELECT ul.location_id, ul.role as location_role, ul.created_at as assigned_at,
+                gl.name as location_name, gl.ghl_location_id, gl.is_active
+         FROM user_locations ul
+         JOIN ghl_locations gl ON gl.id = ul.location_id
+         WHERE ul.user_id = ?
+         ORDER BY gl.name ASC`,
+        [input.userId]
+      );
+      return rows as any[];
+    }),
+
+  /** Update a user's role within a specific location */
+  updateLocationMemberRole: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      locationDbId: z.number(),
+      role: z.enum(["viewer", "editor", "admin"]),
+    }))
+    .mutation(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) return { success: false };
+      const [result] = await pool.query(
+        "UPDATE user_locations SET role = ? WHERE user_id = ? AND location_id = ?",
+        [input.role, input.userId, input.locationDbId]
+      );
+      return { success: (result as any).affectedRows > 0 };
+    }),
+
+  /** Bulk assign users to a location */
+  bulkAssignUsersToLocation: protectedProcedure
+    .input(z.object({
+      userIds: z.array(z.number()),
+      locationDbId: z.number(),
+      role: z.enum(["viewer", "editor", "admin"]).default("editor"),
+    }))
+    .mutation(async ({ input }) => {
+      const { assignUser } = await import("../services/locationAutoProvisioning");
+      let assigned = 0;
+      let skipped = 0;
+      for (const userId of input.userIds) {
+        const success = await assignUser(userId, input.locationDbId, input.role);
+        if (success) assigned++; else skipped++;
+      }
+      return { assigned, skipped, total: input.userIds.length };
+    }),
+
+  /** Bulk unassign users from a location */
+  bulkUnassignUsersFromLocation: protectedProcedure
+    .input(z.object({
+      userIds: z.array(z.number()),
+      locationDbId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const { unassignUser } = await import("../services/locationAutoProvisioning");
+      let removed = 0;
+      for (const userId of input.userIds) {
+        const success = await unassignUser(userId, input.locationDbId);
+        if (success) removed++;
+      }
+      return { removed, total: input.userIds.length };
+    }),
+
+  /** Get permission summary across all locations */
+  getPermissionSummary: protectedProcedure
+    .query(async () => {
+      const pool = await getRawPool();
+      if (!pool) return { locations: [], unassignedUsers: 0, totalAssignments: 0 };
+      const [locationRows] = await pool.query(
+        `SELECT gl.id, gl.name, gl.ghl_location_id, gl.is_active,
+                COUNT(ul.user_id) as member_count,
+                SUM(CASE WHEN ul.role = 'admin' THEN 1 ELSE 0 END) as admin_count,
+                SUM(CASE WHEN ul.role = 'editor' THEN 1 ELSE 0 END) as editor_count,
+                SUM(CASE WHEN ul.role = 'viewer' THEN 1 ELSE 0 END) as viewer_count
+         FROM ghl_locations gl
+         LEFT JOIN user_locations ul ON ul.location_id = gl.id
+         GROUP BY gl.id ORDER BY gl.name`
+      );
+      const [unassignedRows] = await pool.query(
+        `SELECT COUNT(DISTINCT u.id) as cnt FROM users u
+         LEFT JOIN user_locations ul ON ul.user_id = u.id
+         WHERE ul.user_id IS NULL AND u.role != 'admin'`
+      );
+      const [totalRows] = await pool.query("SELECT COUNT(*) as cnt FROM user_locations");
+      return {
+        locations: locationRows as any[],
+        unassignedUsers: (unassignedRows as any[])[0]?.cnt || 0,
+        totalAssignments: (totalRows as any[])[0]?.cnt || 0,
+      };
+    }),
+
   /** Cross-location analytics: pipeline metrics by location */
   getCrossLocationAnalytics: protectedProcedure
     .input(z.object({

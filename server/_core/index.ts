@@ -270,6 +270,36 @@ async function startServer() {
     } else { next(); }
   });
 
+  // ─── Sync Events SSE endpoint (real-time sync streaming) ────────────
+  app.get("/api/sync/events", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+      const { addClient } = await import("../services/syncEventBus");
+      const { getUserLocationIds } = await import("../services/locationAccess");
+      const { getRawPool } = await import("../db");
+      const pool = getRawPool();
+      // Get user's location access scope
+      const locationIds = pool
+        ? await getUserLocationIds(pool, user.id, (user as any).role || "user")
+        : [];
+      addClient(res, user.id, locationIds);
+    } catch (err) {
+      console.error("[SSE] Sync events connection error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "SSE connection failed" });
+    }
+  });
+
+  // ─── Sync Events SSE stats endpoint ─────────────────────────────────
+  app.get("/api/sync/events/stats", async (req, res) => {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+      const { getSSEStats } = await import("../services/syncEventBus");
+      res.json(getSSEStats());
+    } catch { res.status(401).json({ error: "Unauthorized" }); }
+  });
+
   // ─── SSE Streaming endpoint ──────────────────────────────────────────
   app.post("/api/chat/stream", generalLimiter, async (req, res) => {
     try {

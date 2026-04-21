@@ -262,7 +262,7 @@ export function ContextualHelp() {
       {!isHidden && (
         <Button
           variant="outline"
-          size="icon" aria-label="Toggle help"
+          size="icon"
           className="fixed bottom-6 right-6 z-50 h-10 w-10 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 border-0"
           onClick={() => setIsOpen(true)}
           title="Help & Tips (Ctrl+/)"

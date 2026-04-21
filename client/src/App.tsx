@@ -71,6 +71,7 @@ const AdvisorIntegrations = lazy(() => import("./pages/AdvisorIntegrations"));
 const IntegrationHealth = lazy(() => import("./pages/IntegrationHealth"));
 const SyncDashboard = lazy(() => import("./pages/SyncDashboard"));
 const LocationAnalytics = lazy(() => import("./pages/LocationAnalytics"));
+const PermissionManagement = lazy(() => import("./pages/PermissionManagement"));
 const SuitabilityPanel = lazy(() => import("./pages/SuitabilityPanel"));
 const ProficiencyDashboard = lazy(() => import("./pages/ProficiencyDashboard"));
 const ProductIntelligence = lazy(() => import("./pages/ProductIntelligence"));
@@ -222,6 +223,7 @@ function Router() {
         <Route path={"/integration-health"} component={IntegrationHealth} />
         <Route path={"/sync-dashboard"} component={SyncDashboard} />
         <Route path={"/location-analytics"} component={LocationAnalytics} />
+        <Route path={"/permissions"} component={PermissionManagement} />
         <Route path={"/dynamic-integrations"} component={DynamicIntegrations} />
         <Route path={"/suitability-panel"} component={SuitabilityPanel} />
         <Route path={"/proficiency"} component={ProficiencyDashboard} />

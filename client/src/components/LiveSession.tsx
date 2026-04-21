@@ -495,7 +495,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
 
           <Button
             variant="ghost"
-            size="icon" aria-label="Toggle text-to-speech"
+            size="icon"
             onClick={() => setTtsEnabled(!ttsEnabled)}
             title={ttsEnabled ? "Mute AI voice" : "Enable AI voice"}
             aria-label={ttsEnabled ? "Mute AI voice" : "Enable AI voice"}
@@ -505,7 +505,7 @@ export function LiveSession({ conversationId, onConversationCreated, focus, mode
 
           <Button
             variant="ghost"
-            size="icon" aria-label="End session"
+            size="icon"
             onClick={() => {
               if (liveMode === "camera") {
                 stopStream();

@@ -422,6 +422,32 @@ export async function handleGHLWebhook(
       .set({ processingStatus: "processed", processedAt: new Date() })
       .where(eq(integrationWebhookEvents.id, eventId));
 
+    // Emit SSE events for real-time streaming
+    try {
+      const { emitWebhookReceived, emitContactSynced } = await import("../services/syncEventBus");
+      const contactData = (payload.contact || payload) as Record<string, unknown>;
+      const contactName = [contactData.firstName, contactData.lastName].filter(Boolean).join(" ") || undefined;
+      emitWebhookReceived({
+        locationId: locationDbId ?? undefined,
+        ghlLocationId: payloadLocationId,
+        eventType,
+        contactId: (contactData.id || contactData.contactId) as string | undefined,
+        contactName,
+      });
+      if (upsertResult?.action && upsertResult.action !== "no_local_record") {
+        const actionMap: Record<string, "created" | "updated" | "linked" | "deleted"> = {
+          created: "created", updated: "updated", linked: "linked",
+          soft_deleted: "deleted", opportunity_linked: "linked",
+        };
+        emitContactSynced({
+          locationId: locationDbId ?? undefined,
+          action: actionMap[upsertResult.action] || "updated",
+          contactName,
+          direction: "inbound",
+        });
+      }
+    } catch { /* SSE emit is best-effort */ }
+
     logger.info({ eventId, eventType, upsertResult }, "GHL webhook processed");
     return {
       status: 200,

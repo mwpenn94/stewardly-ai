@@ -12,6 +12,7 @@
  * - Location management (add, edit, deactivate)
  */
 import { useState, useMemo } from "react";
+import { useSyncEvents, type SyncEvent } from "@/hooks/useSyncEvents";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -529,6 +530,12 @@ export default function SyncDashboard() {
   const [isReconciling, setIsReconciling] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
 
+  // ─── SSE Live Stream ──────────────────────────────────────────────────
+  const { events: sseEvents, connected: sseConnected } = useSyncEvents({
+    maxEvents: 50,
+    autoConnect: true,
+  });
+
   // ─── Queries ──────────────────────────────────────────────────────────
   const locationsQuery = trpc.integrations.listLocations.useQuery();
   const locations = locationsQuery.data || [];
@@ -950,9 +957,9 @@ export default function SyncDashboard() {
                     Webhook Activity Feed
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs gap-1">
-                      <Radio className="h-3 w-3 text-emerald-400 animate-pulse" />
-                      Live
+                    <Badge variant={sseConnected ? "outline" : "destructive"} className="text-xs gap-1">
+                      <Radio className={`h-3 w-3 ${sseConnected ? "text-emerald-400 animate-pulse" : "text-red-400"}`} />
+                      {sseConnected ? "Live" : "Disconnected"}
                     </Badge>
                     <Button
                       variant="ghost"
@@ -967,6 +974,7 @@ export default function SyncDashboard() {
                 <CardDescription>
                   Real-time inbound webhook events from GoHighLevel
                   {selectedLocation && ` — filtered to ${selectedLocation.name}`}
+                  {sseEvents.length > 0 && ` • ${sseEvents.length} live event${sseEvents.length !== 1 ? "s" : ""}`}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1115,11 +1123,51 @@ export default function SyncDashboard() {
               </div>
             )}
           </TabsContent>
+          {/* ═══ ACTIVITY TAB ═══ */}
+          <TabsContent value="activity" className="space-y-4 mt-4">
+            {/* Live SSE Event Stream */}
+            {sseEvents.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-amber-400" />
+                      Live Event Stream
+                    </CardTitle>
+                    <Badge variant="outline" className="text-xs gap-1">
+                      <Radio className={`h-3 w-3 ${sseConnected ? "text-emerald-400 animate-pulse" : "text-red-400"}`} />
+                      {sseEvents.length} event{sseEvents.length !== 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                  <CardDescription>Real-time events streaming via SSE</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-[300px] overflow-y-auto space-y-1">
+                    {sseEvents.map((evt, i) => (
+                      <div key={`${evt.timestamp}-${i}`} className="flex items-center gap-3 px-3 py-2 rounded-md bg-secondary/20 hover:bg-secondary/40 transition-colors text-xs">
+                        <span className="text-muted-foreground w-16 shrink-0 font-mono">
+                          {new Date(evt.timestamp).toLocaleTimeString()}
+                        </span>
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          {evt.type.replace(/_/g, " ")}
+                        </Badge>
+                        {evt.locationName && (
+                          <span className="text-muted-foreground shrink-0">
+                            <MapPin className="h-3 w-3 inline mr-0.5" />
+                            {evt.locationName}
+                          </span>
+                        )}
+                        <span className="truncate text-foreground/80">
+                          {evt.data.contactName || evt.data.eventType || evt.data.action || evt.data.error || JSON.stringify(evt.data).slice(0, 80)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-          {/* ═══ HISTORY TAB ═══ */}
-          <TabsContent value="history" className="space-y-4 mt-4">
-            <Card>
-              <CardHeader>
+            <Card>              <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
                     <History className="h-4 w-4 text-primary" />

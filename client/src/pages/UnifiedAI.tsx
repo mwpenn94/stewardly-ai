@@ -812,7 +812,7 @@ function AutoPanel() {
                     {agent.status === "running" ? (
                       <Button
                         type="button"
-                        size="icon" aria-label="Delete item"
+                        size="icon"
                         variant="ghost"
                         className="h-7 w-7 text-red-400 hover:bg-red-500/10"
                         onClick={e => { e.stopPropagation(); stopMutation.mutate({ agentId: agent.id }); }}
@@ -824,7 +824,7 @@ function AutoPanel() {
                     ) : (
                       <Button
                         type="button"
-                        size="icon" aria-label="Approve item"
+                        size="icon"
                         variant="ghost"
                         className="h-7 w-7 text-emerald-400 hover:bg-emerald-500/10"
                         onClick={e => { e.stopPropagation(); launchMutation.mutate({ agentId: agent.id }); }}
@@ -836,7 +836,7 @@ function AutoPanel() {
                     )}
                     <Button
                       type="button"
-                      size="icon" aria-label="More options"
+                      size="icon"
                       variant="ghost"
                       className="h-7 w-7 text-muted-foreground hover:text-red-400"
                       onClick={e => { e.stopPropagation(); deleteMutation.mutate({ agentId: agent.id }); }}
