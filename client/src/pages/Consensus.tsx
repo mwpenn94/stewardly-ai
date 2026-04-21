@@ -222,7 +222,7 @@ export default function ConsensusPage({ embedded = false }: { embedded?: boolean
             </div>
 
             {/* Round C4 — preset picker */}
-            {presets.data && (presets.data.presets ?? []).length > 0 && (
+            {presets && (presets.presets ?? []).length > 0 && (
               <div className="space-y-2">
                 <Label>Weight preset</Label>
                 <div className="flex flex-wrap gap-2">
@@ -237,7 +237,7 @@ export default function ConsensusPage({ embedded = false }: { embedded?: boolean
                   >
                     No preset
                   </button>
-                  {(presets.data.presets ?? []).map((p) => (
+                  {(presets.presets ?? []).map((p) => (
                     <button type="button"
                       key={`${p.id ?? p.name}`}
                       title={p.description}

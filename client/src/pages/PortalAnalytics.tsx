@@ -63,7 +63,11 @@ export default function PortalAnalytics({ embedded = false }: { embedded?: boole
   });
 
   // ── Derived metrics ──────────────────────────────────────────────
-  const engagementData = engagementQ.data as any[] | undefined;
+  const engagementRaw = engagementQ.data as any;
+  const engagementData = (engagementRaw?.recentEvents ?? engagementRaw) as any[] | undefined;
+  const engagementScore = engagementRaw?.score;
+  const adoptionStage = engagementRaw?.stage;
+  const recommendations = engagementRaw?.recommendations;
   const healthData = healthQ.data as any;
 
   const eventTypeCounts = useMemo(() => {
