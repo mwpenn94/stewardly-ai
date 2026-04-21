@@ -1511,4 +1511,158 @@ export const integrationsRouter = router({
         return [];
       }
     }),
+
+  /** Discover and auto-provision all GHL locations via API */
+  discoverLocations: protectedProcedure
+    .input(z.object({
+      defaultSyncDirection: z.enum(["bidirectional", "pull_only", "push_only", "disabled"]).optional(),
+      defaultConflictPolicy: z.enum(["ghl_wins", "stewardly_wins", "newest_wins", "manual_review"]).optional(),
+      autoAssignAdmins: z.boolean().optional(),
+    }).optional())
+    .mutation(async ({ input }) => {
+      const { discoverAndProvisionLocations } = await import("../services/locationAutoProvisioning");
+      const results = await discoverAndProvisionLocations(input || undefined);
+      return {
+        total: results.length,
+        created: results.filter(r => r.action === "created").length,
+        existing: results.filter(r => r.action === "already_exists").length,
+        reactivated: results.filter(r => r.action === "reactivated").length,
+        results,
+      };
+    }),
+
+  /** Manually provision a single location */
+  provisionLocation: protectedProcedure
+    .input(z.object({
+      ghlLocationId: z.string().min(1),
+      name: z.string().optional(),
+      syncDirection: z.enum(["bidirectional", "pull_only", "push_only", "disabled"]).optional(),
+      conflictPolicy: z.enum(["ghl_wins", "stewardly_wins", "newest_wins", "manual_review"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { provisionLocation } = await import("../services/locationAutoProvisioning");
+      return provisionLocation(input.ghlLocationId, input.name, {
+        defaultSyncDirection: input.syncDirection,
+        defaultConflictPolicy: input.conflictPolicy,
+      });
+    }),
+
+  /** Assign a user to a location */
+  assignUserToLocation: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      locationDbId: z.number(),
+      role: z.enum(["viewer", "editor", "admin"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { assignUser } = await import("../services/locationAutoProvisioning");
+      const success = await assignUser(input.userId, input.locationDbId, input.role || "editor");
+      return { success };
+    }),
+
+  /** Remove a user from a location */
+  unassignUserFromLocation: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      locationDbId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const { unassignUser } = await import("../services/locationAutoProvisioning");
+      const success = await unassignUser(input.userId, input.locationDbId);
+      return { success };
+    }),
+
+  /** Get provisioning audit log */
+  getProvisioningLog: protectedProcedure
+    .input(z.object({
+      ghlLocationId: z.string().optional(),
+      limit: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const { getProvisioningLog } = await import("../services/locationAutoProvisioning");
+      return getProvisioningLog(input?.ghlLocationId, input?.limit);
+    }),
+
+  /** Cross-location analytics: pipeline metrics by location */
+  getCrossLocationAnalytics: protectedProcedure
+    .input(z.object({
+      locationDbId: z.number().optional(),
+      dateRangeStart: z.number().optional(),
+      dateRangeEnd: z.number().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const pool = await getRawPool();
+      if (!pool) return { statusBreakdown: [], conversions: [], velocity: [], syncHealth: [], timeSeries: [], totals: {}, dateRange: { start: 0, end: 0 } };
+
+      const now = Date.now();
+      const rangeStart = input?.dateRangeStart ?? (now - 30 * 24 * 60 * 60 * 1000);
+      const rangeEnd = input?.dateRangeEnd ?? now;
+
+      try {
+        const locationFilter = input?.locationDbId != null ? " AND lp.location_id = ?" : "";
+        const params: any[] = [rangeStart, rangeEnd];
+        if (input?.locationDbId != null) params.push(input.locationDbId);
+
+        const [statusRows] = await pool.query(
+          `SELECT COALESCE(lp.location_id, 0) as location_id, gl.name as location_name, lp.status, COUNT(*) as count
+           FROM lead_pipeline lp LEFT JOIN ghl_locations gl ON gl.id = lp.location_id
+           WHERE lp.created_at >= ? AND lp.created_at <= ?${locationFilter}
+           GROUP BY lp.location_id, lp.status ORDER BY lp.location_id, lp.status`, params);
+
+        const [conversionRows] = await pool.query(
+          `SELECT COALESCE(lp.location_id, 0) as location_id, gl.name as location_name,
+             COUNT(*) as total_leads,
+             SUM(CASE WHEN lp.status IN ('qualified','converted','proposal','negotiation') THEN 1 ELSE 0 END) as qualified,
+             SUM(CASE WHEN lp.status = 'converted' THEN 1 ELSE 0 END) as converted,
+             AVG(lp.propensityScore) as avg_propensity
+           FROM lead_pipeline lp LEFT JOIN ghl_locations gl ON gl.id = lp.location_id
+           WHERE lp.created_at >= ? AND lp.created_at <= ?${locationFilter}
+           GROUP BY lp.location_id ORDER BY total_leads DESC`, params);
+
+        const [velocityRows] = await pool.query(
+          `SELECT COALESCE(lp.location_id, 0) as location_id, gl.name as location_name,
+             COUNT(*) as total_leads, MIN(lp.created_at) as earliest_lead, MAX(lp.created_at) as latest_lead,
+             AVG(lp.updated_at - lp.created_at) as avg_lifecycle_ms
+           FROM lead_pipeline lp LEFT JOIN ghl_locations gl ON gl.id = lp.location_id
+           WHERE lp.created_at >= ? AND lp.created_at <= ?${locationFilter}
+           GROUP BY lp.location_id`, params);
+
+        const syncFilter = input?.locationDbId != null ? " AND gl.id = ?" : "";
+        const [syncRows] = await pool.query(
+          `SELECT gl.id as location_id, gl.name as location_name, gl.location_id as ghl_location_id,
+             gl.sync_direction, gl.last_sync_at, gl.is_active,
+             (SELECT COUNT(*) FROM lead_pipeline lp WHERE lp.location_id = gl.id AND lp.crmExternalId IS NOT NULL) as linked_leads,
+             (SELECT COUNT(*) FROM lead_pipeline lp WHERE lp.location_id = gl.id AND (lp.crmExternalId IS NULL OR lp.crmExternalId = '')) as unlinked_leads,
+             (SELECT COUNT(*) FROM sync_run_history srh WHERE srh.location_id = gl.id AND srh.status = 'completed') as completed_syncs,
+             (SELECT COUNT(*) FROM sync_run_history srh WHERE srh.location_id = gl.id AND srh.status = 'failed') as failed_syncs
+           FROM ghl_locations gl WHERE gl.is_active = 1${syncFilter} ORDER BY gl.name`,
+          input?.locationDbId != null ? [input.locationDbId] : []);
+
+        const [timeSeriesRows] = await pool.query(
+          `SELECT DATE(FROM_UNIXTIME(lp.created_at / 1000)) as date, COALESCE(lp.location_id, 0) as location_id, COUNT(*) as leads_created
+           FROM lead_pipeline lp WHERE lp.created_at >= ? AND lp.created_at <= ?${locationFilter}
+           GROUP BY date, lp.location_id ORDER BY date ASC`, params);
+
+        const totalLeads = (conversionRows as any[]).reduce((s: number, r: any) => s + Number(r.total_leads), 0);
+        const totalQualified = (conversionRows as any[]).reduce((s: number, r: any) => s + Number(r.qualified), 0);
+        const totalConverted = (conversionRows as any[]).reduce((s: number, r: any) => s + Number(r.converted), 0);
+
+        return {
+          statusBreakdown: statusRows as any[],
+          conversions: conversionRows as any[],
+          velocity: velocityRows as any[],
+          syncHealth: syncRows as any[],
+          timeSeries: timeSeriesRows as any[],
+          totals: {
+            totalLeads, totalQualified, totalConverted,
+            qualificationRate: totalLeads > 0 ? (totalQualified / totalLeads * 100).toFixed(1) : "0.0",
+            conversionRate: totalLeads > 0 ? (totalConverted / totalLeads * 100).toFixed(1) : "0.0",
+            locationCount: (syncRows as any[]).length,
+          },
+          dateRange: { start: rangeStart, end: rangeEnd },
+        };
+      } catch (err) {
+        return { statusBreakdown: [], conversions: [], velocity: [], syncHealth: [], timeSeries: [], totals: {}, dateRange: { start: rangeStart, end: rangeEnd } };
+      }
+    }),
 });

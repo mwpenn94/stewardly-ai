@@ -148,7 +148,21 @@ async function resolveLocationDbId(ghlLocationId: string | undefined): Promise<n
       "SELECT id FROM ghl_locations WHERE location_id = ? LIMIT 1",
       [ghlLocationId]
     );
-    return (rows as any[])[0]?.id ?? null;
+    const existingId = (rows as any[])[0]?.id;
+    if (existingId != null) return existingId;
+
+    // Auto-provision: unknown location detected from webhook
+    try {
+      const { autoProvisionFromWebhook } = await import("../services/locationAutoProvisioning");
+      const newId = await autoProvisionFromWebhook(ghlLocationId);
+      if (newId != null) {
+        logger.info({ ghlLocationId, newLocationDbId: newId }, "Auto-provisioned new location from webhook");
+      }
+      return newId;
+    } catch (provErr) {
+      logger.warn({ ghlLocationId, err: provErr }, "Auto-provision failed — continuing without location");
+      return null;
+    }
   } catch {
     return null;
   }

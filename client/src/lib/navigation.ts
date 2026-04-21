@@ -162,6 +162,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Plug", label: "Dynamic Integrations", href: "/dynamic-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
   { iconName: "ArrowLeftRight", label: "Sync Dashboard", href: "/sync-dashboard", minRole: "advisor", section: "relationships" },
+  { iconName: "Globe", label: "Location Analytics", href: "/location-analytics", minRole: "admin", section: "relationships" },
   { iconName: "Link", label: "My Integrations", href: "/my-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor", section: "relationships" },
 

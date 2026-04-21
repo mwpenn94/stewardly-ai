@@ -7945,3 +7945,51 @@
   - location-access.test.ts: 18/18
   - ghl-outbound-sync.test.ts: 9/9 (live API, run separately to avoid rate limits)
 - [x] P28-FINAL: todo.md updated, checkpoint saved
+
+### v8.14 Pass 29 — Auto-Provisioning + Cross-Location Analytics Dashboard
+- [x] P29-1: GHL webhook registration deferred — browser unavailable
+  - Webhook endpoint fully functional at /api/webhooks/ghl
+  - User must register manually: GHL Settings > Webhooks > Add Webhook
+  - URL: https://stewardly.manus.space/api/webhooks/ghl
+  - Events: ContactCreate, ContactUpdate, ContactDelete, OpportunityCreate, OpportunityStatusUpdate
+- [x] P29-2: Built location auto-provisioning service (server/services/locationAutoProvisioning.ts)
+  - provisionLocation(): idempotent — creates new, returns existing, or reactivates deactivated
+  - autoProvisionFromWebhook(): lightweight webhook-triggered provisioning
+  - discoverAndProvisionLocations(): bulk GHL API discovery with cursor pagination
+  - autoAssignUsers(): configurable rules — auto-assign admins, org members, specific user IDs
+  - assignUser() / unassignUser(): public API for tRPC router
+  - getProvisioningLog(): audit trail queries from platform_kv
+  - ProvisioningConfig: defaultSyncDirection, defaultConflictPolicy, defaultMaxContacts, defaultRateLimitMs, autoAssignAdmins, autoAssignOrgMembers, alwaysAssignUserIds
+  - Idempotent and safe to call multiple times — skips already-provisioned locations
+- [x] P29-3: Wired auto-provisioning into webhook handler and integrations router
+  - resolveLocationDbId() in ghlWebhook.ts now calls autoProvisionFromWebhook() for unknown locations
+  - New tRPC procedures: discoverLocations, assignUserToLocation, getProvisioningLog, getCrossLocationAnalytics
+  - All procedures are protected (require auth)
+- [x] P29-4: Built Cross-Location Analytics Dashboard (client/src/pages/LocationAnalytics.tsx)
+  - Global metrics cards: total leads, qualification rate, conversion rate, active locations, sync health
+  - Location comparison table: leads, qualified, converted, rates, sync status — sortable
+  - Pipeline velocity chart: leads over time by location (line chart)
+  - Sync health overview: per-location sync status, last sync time, link rate
+  - Location discovery panel: discover and auto-provision new GHL sub-accounts
+  - Provisioning audit log: timestamped events with action, location, users assigned
+  - Admin-only access (minRole: admin in navigation)
+  - Route: /location-analytics
+  - Added to sidebar navigation under Relationships section
+- [x] P29-5: Analytics tRPC procedures wired into integrations router
+  - getCrossLocationAnalytics: aggregated totals, per-location breakdown, sync health
+  - discoverLocations: triggers discoverAndProvisionLocations() with config
+  - getProvisioningLog: returns audit trail with parsed JSON values
+- [x] P29-6: Wrote vitest tests — 17 tests in auto-provisioning.test.ts
+  - provisionLocation: create new (1), already_exists (1), reactivate (1)
+  - autoProvisionFromWebhook: new location (1), existing location (1)
+  - assignUser/unassignUser: assign (1), skip duplicate (1), unassign (1), not-assigned (1)
+  - getProvisioningLog: parsed events (1), empty (1), filtered by locationId (1)
+  - discoverAndProvisionLocations: bulk discovery (1), empty response (1), API error (1)
+  - getCrossLocationAnalytics: aggregated totals (1), empty data (1)
+- [x] P29-7: 3 consecutive clean LVUA passes — 98/98 tests across 5 suites
+  - sync-reconciliation.test.ts: 28/28
+  - ghl-webhook-inbound.test.ts: 26/26
+  - location-access.test.ts: 18/18
+  - auto-provisioning.test.ts: 17/17
+  - ghl-outbound-sync.test.ts: 9/9 (live API, run separately)
+- [x] P29-FINAL: todo.md updated, checkpoint saved
