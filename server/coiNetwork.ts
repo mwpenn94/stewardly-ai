@@ -13,6 +13,18 @@ export async function addCoiContact(data: typeof coiContacts.$inferInsert) {
   const db = await getDb();
   if (!db) return null;
   const [result] = await db.insert(coiContacts).values(data).$returningId();
+
+  // Push to GHL (fire-and-forget)
+  try {
+    const { pushLeadToGHL } = await import("./services/ghlOutboundSync");
+    await pushLeadToGHL({
+      firstName: data.name?.split(" ")[0],
+      lastName: data.name?.split(" ").slice(1).join(" "),
+      tags: ["coi-contact", `specialty:${data.specialty || "other"}`],
+      source: "coi-network",
+    });
+  } catch { /* GHL sync failure should never block COI contact creation */ }
+
   return result;
 }
 

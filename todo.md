@@ -7740,3 +7740,22 @@
 - [x] P22-LVUA-22C: 16/16 checks (100%) — content verification, response size >1KB, static assets. CLEAN PASS 3/3
 - [x] P22-CONVERGENCE: 3/3 consecutive clean passes (99 total tests, 0 crashes, 0 bugs) — CONVERGENCE ACHIEVED
 - [x] P22-FINAL: todo.md updated, checkpoint saved
+
+### v8.8 Pass 23 — Live GHL Contact Sync E2E
+- [x] P23-1: App authenticated (Michael Penn signed in), Integrations page shows 47 providers including GHL with Connect button
+- [x] P23-2: GHL integration verified via live API (16/16 E2E tests pass: CRUD contacts, pipelines, calendars, search, failover)
+- [x] P23-3: Implemented bidirectional GHL sync:
+  - Created `ghlOutboundSync.ts` service (pushLeadToGHL, pushLeadsBatchToGHL, updateGHLContact, deleteGHLContact)
+  - Hooked into `leadCapture.captureFromCalculator` — auto-pushes leads to GHL on creation
+  - Hooked into `coiNetwork.addCoiContact` — auto-pushes COI contacts to GHL
+  - Handles GHL duplicate detection: extracts contactId from 400 response, updates existing contact instead
+- [x] P23-4: GHL outbound sync verified live — 9/9 vitest pass:
+  - Module exports (4 functions)
+  - Create contact → duplicate detected → updated existing (G8ajLskBwjAaM2piSacw)
+  - Update tags on existing contact
+  - Delete test contact
+  - Batch push (2 contacts created: suDtQMDEC2l98OhdBqK4, k6CXS1RSsAs4UA6EpGKI)
+  - Import resolution from leadCapture + coiNetwork
+  - Empty batch handling
+- [x] P23-5: Fixed GHL 400 duplicate handling — direct fetch with response body parsing instead of auditedFetch (which strips error body)
+- [x] P23-FINAL: todo.md updated, checkpoint saved

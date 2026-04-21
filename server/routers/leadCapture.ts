@@ -28,7 +28,7 @@ export const leadCaptureRouter = router({
     .mutation(async ({ input }) => {
       const { getDb } = await import("../db");
       const db = await getDb();
-      if (!db) return { success: false };
+      if (!db) return { success: false, ghlSync: null };
       const { leadPipeline } = await import("../../drizzle/schema");
       await db.insert(leadPipeline).values({
         emailHash: input.emailHash,
@@ -37,7 +37,22 @@ export const leadCaptureRouter = router({
         segmentData: input.results as any,
         status: "new",
       });
-      return { success: true };
+
+      // Push to GHL asynchronously (fire-and-forget, don't block lead capture)
+      let ghlSync = null;
+      try {
+        const { pushLeadToGHL } = await import("../services/ghlOutboundSync");
+        ghlSync = await pushLeadToGHL({
+          firstName: input.firstName,
+          email: input.emailHash, // emailHash may be the actual email in some flows
+          tags: ["calculator-lead", `calc:${input.calculatorType}`],
+          source: `calculator:${input.calculatorType}`,
+        });
+      } catch (err) {
+        // GHL sync failure should never block lead capture
+      }
+
+      return { success: true, ghlSync };
     }),
 
   configureGate: protectedProcedure
