@@ -24,7 +24,7 @@ import { CascadeFlowIndicator, type CascadeStage } from "@/components/CascadeFlo
 import { DisclosureSection } from "@/components/DisclosureSection";
 import {
   Loader2, Users, Target, RefreshCw, ShieldCheck, Mail, FolderOpen, Zap,
-  LayoutGrid, UserPlus, FileText, Shield, ArrowRight, DollarSign,
+  LayoutGrid, UserPlus, FileText, Shield, ArrowRight, DollarSign, Home, ChevronRight,
 } from "lucide-react";
 
 /* ─── Lazy-loaded panels (all existing panels preserved) ─── */
@@ -161,7 +161,13 @@ export default function PeopleHub() {
       <SEOHead title="Command Center" description="Manage your pipeline, marketing, compliance, and operations" />
       <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">
 
-        {/* Breadcrumb provided by AppShell PageBreadcrumb — removed duplicate (MOBILE-0016) */}
+        {/* Breadcrumb — Home > Command Center */}
+        <nav className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Home className="w-3 h-3" />
+          <span className="cursor-pointer hover:text-foreground" onClick={() => navigate('/')}>Home</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-foreground font-medium">Command Center</span>
+        </nav>
 
         {/* ─── TAB BAR ─── */}
         <div className="flex gap-1 p-1 bg-card rounded-lg border border-border overflow-x-auto" role="tablist">

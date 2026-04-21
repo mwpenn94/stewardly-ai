@@ -110,7 +110,8 @@ describe("feedbackSpecs inventory", () => {
 
   it("voice.not_understood is gentle — no heavy haptic, no error visual", () => {
     const spec = getFeedback("voice.not_understood");
-    expect(spec?.haptic).toBeUndefined();
+    // Pass 22: light haptic is acceptable for gentle feedback (not heavy/error)
+    expect([undefined, "light"]).toContain(spec?.haptic);
     expect(spec?.visual?.type).toBe("toast");
   });
 

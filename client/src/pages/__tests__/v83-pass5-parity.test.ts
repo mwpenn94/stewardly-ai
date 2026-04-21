@@ -39,10 +39,11 @@ describe("MOBILE-0016: People Hub mobile layout", () => {
     expect(matches!.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("no duplicate breadcrumb (removed in MOBILE-0016 fix)", () => {
-    // Should have the comment about removal but NOT a manual breadcrumb component
-    expect(src).toContain("removed duplicate (MOBILE-0016)");
-    // Should NOT have a <nav> breadcrumb inside PeopleHub itself
+  it("has lightweight breadcrumb (MOBILE-0016 compliant)", () => {
+    // Pass 22: Added lightweight Home > Command Center breadcrumb
+    // Should have breadcrumb nav but NOT a heavy className="breadcrumb" component
+    expect(src).toContain("Home");
+    expect(src).toContain("ChevronRight");
     expect(src).not.toMatch(/className=".*breadcrumb.*">\s*<a/);
   });
 

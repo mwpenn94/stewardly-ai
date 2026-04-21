@@ -108,7 +108,7 @@ export default function AdvisorProfile() {
               </div>
               <div className="flex gap-2">
                 <Button size="sm" onClick={() => navigate('/outreach-automation')}><Calendar className="h-3.5 w-3.5 mr-1" /> Book Consultation</Button>
-                <Button size="sm" variant="outline" onClick={() => { if (email) { window.open(`mailto:${email}?subject=Inquiry via Stewardly`, '_blank'); toast.info('Opening email client'); } else { toast.info('No email on file'); } }}><Mail className="h-3.5 w-3.5 mr-1" /> Message</Button>
+                <Button size="sm" variant="outline" onClick={() => { if (email) { window.open(`mailto:${email}?subject=Inquiry via Stewardly`, '_blank', 'noopener,noreferrer'); toast.info('Opening email client'); } else { toast.info('No email on file'); } }}><Mail className="h-3.5 w-3.5 mr-1" /> Message</Button>
               </div>
             </div>
           </div>

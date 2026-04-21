@@ -25,7 +25,7 @@ import {
   Users, UserPlus, Search, Plus, Trash2, Mail, Send, Briefcase, Layers,
   TrendingUp, BarChart3, Shield, RefreshCw, Database, ExternalLink,
   CheckCircle2, AlertTriangle, ArrowRight, Zap, Calendar, Image,
-  Linkedin, Copy, Edit, Loader2, Sparkles,
+  Linkedin, Copy, Edit, Loader2, Sparkles, Home, ChevronRight,
 } from "lucide-react";
 import { fmt } from '@/lib/format';
 
@@ -782,6 +782,13 @@ export default function CommandCenter({ embedded = false }: { embedded?: boolean
       <SEOHead title="Command Center" description="Unified CRM, campaigns, ATS, LinkedIn, segmentation, and marketing asset library" />
       <div className="container max-w-7xl py-4">
         {!embedded && (
+          <>
+          <nav className="flex items-center gap-1 text-xs text-muted-foreground mb-3">
+            <Home className="w-3 h-3" />
+            <span className="cursor-pointer hover:text-foreground" onClick={() => navigate('/')}>Home</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-foreground font-medium">Command Center</span>
+          </nav>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-lg font-bold">Command Center</h1>
@@ -792,6 +799,7 @@ export default function CommandCenter({ embedded = false }: { embedded?: boolean
               <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => navigate("/data-pipelines")}><Database className="w-3 h-3 mr-1" /> Data Pipelines</Button>
             </div>
           </div>
+          </>
         )}
 
         {embedded ? (

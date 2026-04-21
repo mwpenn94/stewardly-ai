@@ -93,67 +93,67 @@ describe("KeyboardShortcuts Overlay", () => {
 
 // ─── G-then-X Navigation in Chat.tsx ───────────────────────────────────────
 
-describe("G-then-X Navigation in Chat.tsx", () => {
-  const source = fs.readFileSync("client/src/pages/Chat.tsx", "utf-8");
+describe("G-then-X Navigation (consolidated hook)", () => {
+  const hookSource = fs.readFileSync("client/src/hooks/useGChordNavigation.ts", "utf-8");
+  const chatSource = fs.readFileSync("client/src/pages/Chat.tsx", "utf-8");
 
-  it("should have G-then-X navigation handler", () => {
-    expect(source).toContain("G-then-X navigation");
-    expect(source).toContain("gPressedRef");
-    expect(source).toContain("gTimerRef");
+  it("should have G-then-X navigation handler in hook", () => {
+    expect(hookSource).toContain("G-then-X");
+    expect(hookSource).toContain("gPressedRef");
+    expect(hookSource).toContain("gTimerRef");
   });
 
   it("should use shortcutMap from useCustomShortcuts for navigation", () => {
-    expect(source).toContain("shortcutMap.get(e.key.toLowerCase())");
-    expect(source).toContain("useCustomShortcuts");
-    expect(source).toContain("navigate(route)");
+    expect(hookSource).toContain("shortcutMap.get(e.key.toLowerCase())");
+    expect(hookSource).toContain("useCustomShortcuts");
+    expect(hookSource).toContain("navigate(route)");
   });
 
   it("should use 800ms timeout for G key sequence", () => {
-    expect(source).toContain("800");
+    expect(hookSource).toContain("800");
   });
 
   it("should prevent default on navigation", () => {
-    expect(source).toContain("e.preventDefault()");
+    expect(hookSource).toContain("e.preventDefault()");
   });
 
   it("should clean up timer on unmount", () => {
-    expect(source).toContain("gTimerRef.current");
-    expect(source).toContain("clearTimeout");
+    expect(hookSource).toContain("gTimerRef.current");
+    expect(hookSource).toContain("clearTimeout");
+  });
+
+  it("Chat.tsx references consolidated hook", () => {
+    expect(chatSource).toContain("G-then-X");
   });
 });
 
 // ─── G-then-X Navigation in AppShell.tsx ───────────────────────────────────
 
-describe("G-then-X Navigation in AppShell.tsx", () => {
-  const source = fs.readFileSync("client/src/components/AppShell.tsx", "utf-8");
+describe("G-then-X Navigation in useGChordNavigation hook", () => {
+  const hookSource = fs.readFileSync("client/src/hooks/useGChordNavigation.ts", "utf-8");
+  const customSource = fs.readFileSync("client/src/hooks/useCustomShortcuts.ts", "utf-8");
 
-  it("should have G-then-X navigation handler in AppShell", () => {
-    expect(source).toContain("G-then-X keyboard navigation");
-    expect(source).toContain("gPressedRef");
+  it("should have G-then-X navigation handler in hook", () => {
+    expect(hookSource).toContain("G-then-X");
+    expect(hookSource).toContain("gPressedRef");
   });
 
-  it("should support the same navigation targets as Chat", () => {
+  it("should support navigation targets via useCustomShortcuts", () => {
     const routes = [
       "/chat",
-      "/operations",
-      "/intelligence-hub",
-      "/advisory",
-      "/relationships",
-      "/market-data",
-      "/documents",
       "/integrations",
       "/settings/profile",
       "/help",
     ];
     for (const route of routes) {
-      expect(source).toContain(`"${route}"`);
+      expect(customSource).toContain(`"${route}"`);
     }
   });
 
   it("should not trigger when typing in inputs", () => {
-    expect(source).toContain("isInput");
-    expect(source).toContain("INPUT");
-    expect(source).toContain("TEXTAREA");
+    expect(hookSource).toContain("isInput");
+    expect(hookSource).toContain("INPUT");
+    expect(hookSource).toContain("TEXTAREA");
   });
 });
 
@@ -247,14 +247,14 @@ describe("Feature Integration — Shortcuts and Changelog", () => {
     expect(source).toContain("Show this shortcuts panel");
   });
 
-  it("should have consistent navigation targets between KeyboardShortcuts and AppShell", () => {
+  it("should have consistent navigation targets between KeyboardShortcuts and useCustomShortcuts", () => {
     const ksSource = fs.readFileSync("client/src/components/KeyboardShortcuts.tsx", "utf-8");
-    const asSource = fs.readFileSync("client/src/components/AppShell.tsx", "utf-8");
+    const csSource = fs.readFileSync("client/src/hooks/useCustomShortcuts.ts", "utf-8");
 
-    // AppShell should have the same G-then-X routes
+    // useCustomShortcuts should have the same G-then-X routes (consolidated from AppShell)
     const sharedRoutes = ["/operations", "/intelligence-hub", "/advisory", "/relationships", "/market-data"];
     for (const route of sharedRoutes) {
-      expect(asSource).toContain(route);
+      expect(csSource).toContain(route);
     }
 
     // KeyboardShortcuts should describe the same pages

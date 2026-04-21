@@ -244,40 +244,43 @@ describe("SettingsHub includes ShortcutsTab", () => {
 
 // ── 6. AppShell uses custom shortcuts ──────────────────────────────
 
-describe("AppShell uses custom shortcuts", () => {
-  const filePath = path.resolve(__dirname, "../client/src/components/AppShell.tsx");
-  const src = fs.readFileSync(filePath, "utf-8");
+describe("AppShell uses custom shortcuts (via consolidated hook)", () => {
+  const hookPath = path.resolve(__dirname, "../client/src/hooks/useGChordNavigation.ts");
+  const hookSrc = fs.readFileSync(hookPath, "utf-8");
+  const shellPath = path.resolve(__dirname, "../client/src/components/AppShell.tsx");
+  const shellSrc = fs.readFileSync(shellPath, "utf-8");
 
   it("imports useCustomShortcuts", () => {
-    expect(src).toContain('import { useCustomShortcuts }');
+    // Consolidated into useGChordNavigation hook which imports useCustomShortcuts
+    expect(hookSrc).toContain('import { useCustomShortcuts }');
   });
 
   it("uses shortcutMap for navigation", () => {
-    expect(src).toContain("shortcutMap.get(e.key.toLowerCase())");
+    expect(hookSrc).toContain("shortcutMap.get(e.key.toLowerCase())");
   });
 
   it("no longer has hardcoded route if-chains", () => {
-    // Should NOT have the old pattern
-    expect(src).not.toContain('if (k === "c") { e.preventDefault(); navigate("/chat")');
+    expect(shellSrc).not.toContain('if (k === "c") { e.preventDefault(); navigate("/chat")');
   });
 });
 
 // ── 7. Chat.tsx uses custom shortcuts ──────────────────────────────
 
-describe("Chat.tsx uses custom shortcuts", () => {
-  const filePath = path.resolve(__dirname, "../client/src/pages/Chat.tsx");
-  const src = fs.readFileSync(filePath, "utf-8");
+describe("Chat.tsx uses custom shortcuts (via consolidated hook)", () => {
+  const hookPath = path.resolve(__dirname, "../client/src/hooks/useGChordNavigation.ts");
+  const hookSrc = fs.readFileSync(hookPath, "utf-8");
 
   it("imports useCustomShortcuts", () => {
-    expect(src).toContain('import { useCustomShortcuts }');
+    // Consolidated into useGChordNavigation hook
+    expect(hookSrc).toContain('import { useCustomShortcuts }');
   });
 
   it("uses shortcutMap for navigation", () => {
-    expect(src).toContain("shortcutMap.get(e.key.toLowerCase())");
+    expect(hookSrc).toContain("shortcutMap.get(e.key.toLowerCase())");
   });
 
   it("includes shortcutMap in useEffect deps", () => {
-    expect(src).toContain("shortcutMap]");
+    expect(hookSrc).toContain("shortcutMap]");
   });
 });
 

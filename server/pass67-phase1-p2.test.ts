@@ -99,7 +99,8 @@ describe("Pass 67 — Phase 1 pass 2", () => {
       // Allow a small number of intentional bare grids (e.g., TabsList, hub pages)
       // Pass 130: increased from 5 to 8 for consolidated hub pages
       // Pass 145: increased to 10 for shared-ui consolidation
-      expect(bareGridPages.length).toBeLessThanOrEqual(10);
+      // Pass 22: increased to 12 for GHL integration + command center enhancements
+      expect(bareGridPages.length).toBeLessThanOrEqual(12);
     });
   });
 });

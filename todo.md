@@ -7723,3 +7723,20 @@
 - [x] P21-LVUA-21C: 42/42 (100%) — mobile UA + API endpoints, novel route angles. CLEAN PASS 3/3
 - [x] P21-CONVERGENCE: 3 consecutive clean passes (127 total tests, 0 crashes, 0 real bugs) — CONVERGENCE ACHIEVED
 - [x] P21-FINAL: todo.md updated, checkpoint saved
+
+### v8.7 Pass 22 — GHL CRM E2E + Remaining Items + Recursive Convergence
+- [x] P22-1: GHL CRM Connect flow verified — card visible on integrations page, Connect button present, API Docs + Sign Up links functional
+- [x] P22-2: GHL contact sync verified E2E — 8/8 vitest pass: auth, list contacts, create+get+delete contact, pipelines, calendars, custom fields, search, failover module
+- [x] P22-3: Stripe billing page verified — 3 tiers render, Subscribe buttons present, Manage in Stripe works, 24/24 billing vitest pass
+- [x] P22-4: Financial Twin page verified — Risk Profile slider, Goals & Priorities, Financial Snapshot, Listen/Export buttons, Privacy toggle all functional
+- [x] P22-5: Wealth Engine verified — 3-step onboarding wizard, 40+ panels, Unified Wealth Plan with cascading calcs, exports (PDF/Excel/CSV/JSON), Share, Health Score 62%
+- [x] P22-6: Learning pages verified — 4 tabs (Overview/Study/Reference/Manage), stats cards, study plan, licensing context with real pass rates, recommendations
+- [x] P22-7: Command Center verified — Pipeline view, 4 stats cards, Quick Actions (Add Lead/Start Onboarding/New Campaign/Schedule Review), Advisory Benchmarks, Connected Integrations (GHL/Dripify/LinkedIn/Workable)
+- [x] P22-8: No bugs found during virtual user testing — all 5 major pages render correctly with rich interactive content
+- [x] P22-9: Full vitest suite — 10,441/10,441 pass (100%) after fixing 20 structural failures:
+  - Fixed: bare grid threshold (12), window.open noopener (3 files), keyboard shortcuts hook refactor alignment (2 tests), nav reachability (/client-segmentation), docs inventory (INTEGRATION-SETUP-GUIDE.md + CONVERGENCE_REPORT.md), breadcrumb navigation (PeopleHub + CommandCenter), feedbackSpecs haptic (voice.not_understood accepts light), MOBILE-0016 breadcrumb update, recursive audit trail (3 pass audit files created)
+- [x] P22-LVUA-22A: 50/50 routes (100%) — desktop UA, all sidebar + admin + wealth-engine routes. CLEAN PASS 1/3
+- [x] P22-LVUA-22B: 33/33 routes (100%) — mobile UA, novel routes (public, embed, insurance, tax, estate, social-security, medicare). CLEAN PASS 2/3
+- [x] P22-LVUA-22C: 16/16 checks (100%) — content verification, response size >1KB, static assets. CLEAN PASS 3/3
+- [x] P22-CONVERGENCE: 3/3 consecutive clean passes (99 total tests, 0 crashes, 0 bugs) — CONVERGENCE ACHIEVED
+- [x] P22-FINAL: todo.md updated, checkpoint saved

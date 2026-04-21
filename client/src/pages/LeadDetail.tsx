@@ -260,10 +260,10 @@ export default function LeadDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => { if (email) { window.open(`mailto:${email}?subject=Follow-up from Stewardly`, '_blank'); toast.info('Opening email client'); } else { toast.info('No email on file'); } }}>
+          <Button variant="outline" size="sm" onClick={() => { if (email) { window.open(`mailto:${email}?subject=Follow-up from Stewardly`, '_blank', 'noopener,noreferrer'); toast.info('Opening email client'); } else { toast.info('No email on file'); } }}>
             <Mail className="h-3.5 w-3.5 mr-1" /> Email
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { if (phone) { window.open(`tel:${phone}`, '_self'); toast.info('Opening dialer'); } else { toast.info('No phone on file'); } }}>
+          <Button variant="outline" size="sm" onClick={() => { if (phone) { window.open(`tel:${phone}`, '_self', 'noopener,noreferrer'); toast.info('Opening dialer'); } else { toast.info('No phone on file'); } }}>
             <Phone className="h-3.5 w-3.5 mr-1" /> Call
           </Button>
           <Button size="sm" onClick={() => navigate('/outreach-automation')}>

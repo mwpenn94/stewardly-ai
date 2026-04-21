@@ -845,7 +845,7 @@ export default function Calculators() {
   /* ─── ALSO MY CLIENT → PLANNING HIERARCHY BRIDGE ─── */
   const bridgeMut = trpc.planningHierarchy.bridgeContactToClient.useMutation();
   const bulkExportMut = trpc.scenarioExport.bulkExport.useMutation({
-    onSuccess: (data) => { window.open(data.url, '_blank'); toast.success(`Exported ${data.sessionCount} scenarios as Excel`); },
+    onSuccess: (data) => { window.open(data.url, '_blank', 'noopener,noreferrer'); toast.success(`Exported ${data.sessionCount} scenarios as Excel`); },
     onError: (err) => { toast.error(err.message || 'No saved sessions found'); },
   });
   useEffect(() => {
