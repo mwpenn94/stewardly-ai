@@ -7711,3 +7711,15 @@
 - [x] P20-LVUA-20C: 60/60 (100%) — ALL TESTS PASSED. 30 novel routes on desktop + mobile. CLEAN PASS 3/3
 - [x] P20-CONVERGENCE: 3 consecutive clean passes (172 tests across 90+ unique routes, 0 crashes) — CONVERGENCE ACHIEVED
 - [x] P20-FINAL: todo.md updated, checkpoint saved
+
+### v8.6 Pass 21 — Execute Remaining Next Steps
+- [x] P21-1: Stripe sandbox claim — sandbox already provisioned and claimed in previous pass
+- [x] P21-2: GoHighLevel credentials — GHL_API_KEY (pit-c251435a...) + GHL_LOCATION_ID (yUVrjyvzf0txCiJXuYGn) set via webdev_request_secrets, all 142 scopes, vitest verified (3/3 pass)
+- [x] P21-3: GoHighLevel CRM — visible on integrations page with Connect button, API key verified live (3/3 vitest pass)
+- [x] P21-4: All sidebar nav links verified — 45 routes tested, 100% pass rate (corrected /learn→/learning)
+- [x] P21-5: No real bugs found — only test path corrections (/learn→/learning)
+- [x] P21-LVUA-21A: 40/40 (100%) — all routes pass, API endpoints verified
+- [x] P21-LVUA-21B: 45/45 (100%) — corrected routes, deeper page checks, browser rendering verified
+- [x] P21-LVUA-21C: 42/42 (100%) — mobile UA + API endpoints, novel route angles. CLEAN PASS 3/3
+- [x] P21-CONVERGENCE: 3 consecutive clean passes (127 total tests, 0 crashes, 0 real bugs) — CONVERGENCE ACHIEVED
+- [x] P21-FINAL: todo.md updated, checkpoint saved
