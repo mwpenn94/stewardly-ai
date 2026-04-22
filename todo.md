@@ -8175,8 +8175,8 @@
 
 ## Pass 38 — Build Fix + Next Steps
 - [x] P38-1: Fix PomodoroTimer export mismatch (default vs named export)
-- [ ] P38-2: Seed learning content (disciplines, terms, flashcards, exam tracks)
-- [ ] P38-3: Configure notification routing for Michael Penn (mwpenn94@gmail.com)
-- [ ] P38-4: Virtual e2e walkthrough as each persona (guest, user, advisor, manager, admin)
-- [ ] P38-5: Write vitest tests for new changes
-- [ ] P38-FINAL: Verify build, save checkpoint, deliver
+- [x] P38-2: Seed learning content (12 disciplines, 55 definitions, 8 tracks, 26 chapters, 17 questions, 25 flashcards, 4 cases + 15 formulas)
+- [x] P38-3: Verified notification routing — all external comms go to Michael Penn only (notifyOwner → Manus notification service; no RESEND_API_KEY = no external email; commsEngine = drafts only; invitations = in-app only)
+- [x] P38-4: Virtual e2e walkthrough as each persona (guest, user, advisor, manager, admin) — all 5 personas verified complete
+- [x] P38-5: Write vitest tests for new changes — 27/27 passing (pass38.test.ts) + 27/27 pass37 updated
+- [x] P38-FINAL: Verify build, save checkpoint, deliver

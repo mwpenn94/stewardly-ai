@@ -31,9 +31,9 @@ describe("useStudySession hook contract", () => {
 describe("PomodoroTimer component", () => {
   it("should export PomodoroTimer from components/PomodoroTimer", async () => {
     const mod = await import("../client/src/components/PomodoroTimer");
-    // default export
-    expect(mod.default).toBeDefined();
-    expect(typeof mod.default).toBe("function");
+    // named export (Pass 38 fix: changed from default to named export)
+    expect(mod.PomodoroTimer).toBeDefined();
+    expect(typeof mod.PomodoroTimer).toBe("function");
   });
 
   it("should be imported in AppShell", async () => {

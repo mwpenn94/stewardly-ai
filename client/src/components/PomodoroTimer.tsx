@@ -1,8 +1,11 @@
 /**
  * PomodoroTimer.tsx — Floating Pomodoro timer widget
  *
- * Pass 36. A draggable floating timer that supports work/break cycles.
+ * Pass 36 / Pass 38 fix. A draggable floating timer that supports work/break cycles.
  * Can be toggled from any learning page. Persists across navigation.
+ *
+ * When used globally (no onClose prop), manages its own visibility state.
+ * When used with onClose prop, delegates close behavior to parent.
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +16,8 @@ import {
 } from "lucide-react";
 
 interface PomodoroTimerProps {
-  onClose: () => void;
+  /** Optional close handler. If omitted, the timer manages its own visibility. */
+  onClose?: () => void;
 }
 
 type Phase = "work" | "shortBreak" | "longBreak";
@@ -30,13 +34,22 @@ const PHASE_LABELS: Record<Phase, string> = {
   longBreak: "Long Break",
 };
 
-export function PomodoroTimer({ onClose }: PomodoroTimerProps) {
+export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
   const [phase, setPhase] = useState<Phase>("work");
   const [secondsLeft, setSecondsLeft] = useState(DURATIONS.work);
   const [isRunning, setIsRunning] = useState(false);
   const [completedCycles, setCompletedCycles] = useState(0);
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
+  const [isHidden, setIsHidden] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleClose = useCallback(() => {
+    if (onClose) {
+      onClose();
+    } else {
+      setIsHidden(true);
+    }
+  }, [onClose]);
 
   // Timer logic
   useEffect(() => {
@@ -105,6 +118,23 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps) {
     setSecondsLeft(DURATIONS[phase]);
   }, [phase]);
 
+  // If hidden (self-managed close), render a tiny re-open button
+  if (isHidden) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full opacity-40 hover:opacity-100 transition-opacity"
+          onClick={() => { setIsHidden(false); setIsMinimized(false); }}
+          title="Open Pomodoro Timer"
+        >
+          <Timer className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const progress = 1 - secondsLeft / DURATIONS[phase];
@@ -152,7 +182,7 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps) {
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsMinimized(true)}>
             <ChevronDown className="h-3 w-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleClose}>
             <X className="h-3 w-3" />
           </Button>
         </div>
