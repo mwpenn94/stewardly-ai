@@ -8087,3 +8087,14 @@
 - [x] P33-3: Write vitest tests — 18/18 passing (SSE emissions, client management, event delivery, webhook setup validation, health procedure, dashboard integration)
 - [x] P33-4: 3 consecutive clean LVUA passes — server 200, webhook health 200, 54/54 tests, all routes confirmed, SSE wiring verified
 - [x] P33-FINAL: Update todo.md, save checkpoint
+
+## Pass 34 — GHL Polling Fallback + Location Health Dashboard
+- [x] P34-0: GHL webhook registration — session expired, API requires OAuth2, browser/CDP/Playwright all blocked. User chose polling fallback.
+- [x] P34-1: Build GHL API polling service (server/services/ghlPolling.ts) — periodic contact/opportunity change detection using pit- API key
+- [x] P34-2: Add polling scheduler with configurable interval (5 min default), last-poll watermark via ghl_locations.lastSyncAt, and change diffing
+- [x] P34-3: Wire polling results into SSE event bus (emitReconcileProgress/Complete/Error) + scheduler registerJob
+- [x] P34-4: Build location health monitoring dashboard UI — summary stats (7 cards), polling status card with controls, active alerts panel, per-location health grid, sync history table with time range filter
+- [x] P34-5: Add health metrics tRPC procedures (getLocationHealth, getHealthHistory, getPollingStatus, triggerPollCycle, setPollingConfig) — added to integrations router
+- [x] P34-6: Write vitest tests for polling service and health dashboard — 21/21 passing (state management, poll cycle, scheduled handler, config validation, route/nav registration, scheduler integration, health status logic)
+- [x] P34-7: 3 consecutive clean LVUA passes — server 200, webhook health 200, 75/75 tests across 4 suites, all files verified, 7 tRPC procedures confirmed
+- [x] P34-FINAL: Update todo.md, save checkpoint

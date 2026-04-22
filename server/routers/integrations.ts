@@ -2177,4 +2177,140 @@ export const integrationsRouter = router({
       return { success: false, status: 0, response: { error: e.message } };
     }
   }),
+
+  // ─── GHL Polling Fallback ────────────────────────────────────────────
+  getPollingStatus: protectedProcedure.query(async () => {
+    const { getPollingStatus } = await import("../services/ghlPolling");
+    const db = getDb();
+    let locCount = 0;
+    if (db) {
+      const locs = await db.select().from(ghlLocations).where(eq(ghlLocations.isActive, 1 as any));
+      locCount = locs.length;
+    }
+    return getPollingStatus(locCount);
+  }),
+
+  triggerPollCycle: protectedProcedure.mutation(async () => {
+    const { runPollCycle, updateLastCycleResult, setPollingActive } = await import("../services/ghlPolling");
+    setPollingActive(true);
+    const result = await runPollCycle();
+    updateLastCycleResult(result);
+    return result;
+  }),
+
+  setPollingConfig: protectedProcedure
+    .input(z.object({
+      active: z.boolean().optional(),
+      intervalMs: z.number().min(60000).max(3600000).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { setPollingActive, setPollingInterval } = await import("../services/ghlPolling");
+      if (input.active !== undefined) setPollingActive(input.active);
+      if (input.intervalMs !== undefined) setPollingInterval(input.intervalMs);
+      return { success: true };
+    }),
+
+  // ─── Location Health Monitoring ──────────────────────────────────────
+  getLocationHealth: protectedProcedure
+    .input(z.object({ locationDbId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const db = getDb();
+      if (!db) return { locations: [], alerts: [] };
+      const pool = getRawPool();
+      
+      // Get all active locations with their sync status
+      let locations;
+      if (input?.locationDbId) {
+        locations = await db.select().from(ghlLocations).where(eq(ghlLocations.id, input.locationDbId));
+      } else {
+        locations = await db.select().from(ghlLocations).where(eq(ghlLocations.isActive, 1 as any));
+      }
+      
+      const now = Date.now();
+      const alerts: Array<{ locationId: string; locationName: string; type: string; severity: string; message: string; timestamp: number }> = [];
+      
+      const healthData = locations.map(loc => {
+        const syncLagMs = loc.lastSyncAt ? now - loc.lastSyncAt : null;
+        const syncLagMinutes = syncLagMs ? Math.round(syncLagMs / 60000) : null;
+        
+        // Determine health status
+        let healthStatus: "healthy" | "warning" | "critical" | "unknown" = "unknown";
+        if (!loc.lastSyncAt) {
+          healthStatus = "unknown";
+        } else if (loc.lastSyncStatus === "failed") {
+          healthStatus = "critical";
+          alerts.push({
+            locationId: loc.locationId,
+            locationName: loc.name,
+            type: "sync_failed",
+            severity: "critical",
+            message: `Last sync failed for ${loc.name}`,
+            timestamp: loc.lastSyncAt,
+          });
+        } else if (syncLagMinutes && syncLagMinutes > 60) {
+          healthStatus = "warning";
+          alerts.push({
+            locationId: loc.locationId,
+            locationName: loc.name,
+            type: "sync_lag",
+            severity: "warning",
+            message: `Sync lag of ${syncLagMinutes} minutes for ${loc.name}`,
+            timestamp: now,
+          });
+        } else {
+          healthStatus = "healthy";
+        }
+        
+        return {
+          id: loc.id,
+          locationId: loc.locationId,
+          name: loc.name,
+          region: loc.region,
+          healthStatus,
+          syncDirection: loc.syncDirection,
+          syncFrequency: loc.syncFrequency,
+          lastSyncAt: loc.lastSyncAt,
+          lastSyncStatus: loc.lastSyncStatus,
+          syncLagMinutes,
+          totalContacts: loc.totalContacts,
+          linkedContacts: loc.linkedContacts,
+          conflictPolicy: loc.conflictPolicy,
+        };
+      });
+      
+      return { locations: healthData, alerts };
+    }),
+
+  getHealthHistory: protectedProcedure
+    .input(z.object({
+      locationDbId: z.number().optional(),
+      days: z.number().min(1).max(90).default(7),
+    }).optional())
+    .query(async ({ input }) => {
+      const pool = getRawPool();
+      if (!pool) return { history: [] };
+      
+      const days = input?.days || 7;
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      
+      let query = `SELECT id, connection_id, sync_type, status, records_synced, records_failed, error_message, started_at, completed_at 
+                   FROM integration_sync_logs WHERE started_at > ? ORDER BY started_at DESC LIMIT 500`;
+      const params: any[] = [new Date(cutoff)];
+      
+      const [rows] = await pool.execute(query, params);
+      
+      return {
+        history: (rows as any[]).map(r => ({
+          id: r.id,
+          connectionId: r.connection_id,
+          syncType: r.sync_type,
+          status: r.status,
+          recordsSynced: r.records_synced,
+          recordsFailed: r.records_failed,
+          errorMessage: r.error_message,
+          startedAt: r.started_at ? new Date(r.started_at).getTime() : null,
+          completedAt: r.completed_at ? new Date(r.completed_at).getTime() : null,
+        })),
+      };
+    }),
 });

@@ -165,6 +165,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Globe", label: "Location Analytics", href: "/location-analytics", minRole: "admin", section: "relationships" },
   { iconName: "Shield", label: "Permissions", href: "/permissions", minRole: "admin", section: "relationships" },
   { iconName: "Compass", label: "Location Onboarding", href: "/location-onboarding", minRole: "admin", section: "relationships" },
+  { iconName: "Heart", label: "Location Health", href: "/location-health", minRole: "admin", section: "relationships" },
   { iconName: "Link", label: "My Integrations", href: "/my-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor", section: "relationships" },
 

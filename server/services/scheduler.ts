@@ -833,6 +833,13 @@ export function initScheduler(): void {
       logger.warn( { operation: "scheduler" },`[Scheduler] Self-test failed to run: ${e.message}`);
     }
     
+    // ─── GHL POLLING FALLBACK ────────────────────────────────────────
+    // Registered but NOT auto-activated — user enables via Location Health dashboard
+    registerJob("ghl_contact_polling", MINS(5), async () => {
+      const { scheduledPollHandler } = await import("./ghlPolling");
+      await scheduledPollHandler();
+    });
+
     // Start all jobs with staggered delays
     let stagger = 0;
     for (const [name, job] of Object.entries(jobs)) {
