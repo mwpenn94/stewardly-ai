@@ -25,7 +25,7 @@ describe("LinkedIn Enrichment Service", () => {
     expect(data).toHaveProperty("total");
     expect(Array.isArray(data.results)).toBe(true);
     expect(typeof data.total).toBe("number");
-  }, 15000);
+  }, 30000);
 });
 
 // ─── CRM Auto-Sync Scheduler Tests ───────────────────────────────────

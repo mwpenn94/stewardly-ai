@@ -31,6 +31,7 @@ import {
   ArrowUpRight, Copy, CheckCheck, Link2, Sparkles, Timer, Info,
   ChevronDown, ChevronRight, Power, PlayCircle, PauseCircle,
   BarChart3, Key, ShieldCheck, TestTube2, Eye, EyeOff,
+  GitMerge, AlertCircle, ExternalLink, Unlink,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -504,6 +505,8 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
           <TabsTrigger value="history"><History className="h-3.5 w-3.5 mr-1" /> Sync History</TabsTrigger>
           <TabsTrigger value="syncLogs"><Zap className="h-3.5 w-3.5 mr-1" /> Integration Logs</TabsTrigger>
           <TabsTrigger value="settings"><Settings2 className="h-3.5 w-3.5 mr-1" /> Settings</TabsTrigger>
+          <TabsTrigger value="conflicts"><GitMerge className="h-3.5 w-3.5 mr-1" /> Conflicts</TabsTrigger>
+          <TabsTrigger value="ghlConnect"><ExternalLink className="h-3.5 w-3.5 mr-1" /> GHL Connect</TabsTrigger>
           <TabsTrigger value="mappings"><ArrowLeftRight className="h-3.5 w-3.5 mr-1" /> Field Mappings</TabsTrigger>
         </TabsList>
 
@@ -1148,6 +1151,16 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
           </Card>
         </TabsContent>
 
+        {/* Sync Conflict Resolution */}
+        <TabsContent value="conflicts" className="mt-4 space-y-4">
+          <ConflictResolutionPanel />
+        </TabsContent>
+
+        {/* GHL OAuth Connect */}
+        <TabsContent value="ghlConnect" className="mt-4 space-y-4">
+          <GHLConnectPanel />
+        </TabsContent>
+
         {/* Field Mappings */}
         <TabsContent value="mappings" className="mt-4">
           <Card>
@@ -1179,5 +1192,418 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
       </Tabs>
     </div>
     </Shell>
+  );
+}
+
+// ─── Conflict Resolution Panel ──────────────────────────────────────────────
+
+function ConflictResolutionPanel() {
+  const [statusFilter, setStatusFilter] = useState<"pending" | "resolved" | "all">("pending");
+  const conflicts = trpc.crm.getSyncConflicts.useQuery({ status: statusFilter, limit: 50 });
+  const resolveConflict = trpc.crm.resolveConflict.useMutation({
+    onSuccess: () => { conflicts.refetch(); toast.success("Conflict resolved"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const bulkResolve = trpc.crm.bulkResolveConflicts.useMutation({
+    onSuccess: (d) => { conflicts.refetch(); toast.success(`${d.resolved} conflicts resolved`); },
+    onError: (e) => toast.error(e.message),
+  });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [mergeValues, setMergeValues] = useState<Record<string, string>>({});
+
+  return (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <GitMerge className="h-5 w-5 text-orange-500" /> Sync Conflict Resolution
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Review and resolve data conflicts between Stewardly and external CRMs
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+            <SelectTrigger className="w-32 h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="all">All</SelectItem>
+            </SelectContent>
+          </Select>
+          {conflicts.data && conflicts.data.pendingCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => bulkResolve.mutate({ resolution: "newest_wins" })}
+              disabled={bulkResolve.isPending}
+            >
+              {bulkResolve.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+              Resolve All (Newest Wins)
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Stats */}
+      {conflicts.data && (
+        <div className="grid grid-cols-3 gap-3">
+          <Card>
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-orange-500">{conflicts.data.pendingCount}</div>
+              <div className="text-xs text-muted-foreground">Pending</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold text-green-500">{conflicts.data.resolvedCount}</div>
+              <div className="text-xs text-muted-foreground">Resolved</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-3 text-center">
+              <div className="text-2xl font-bold">{conflicts.data.total}</div>
+              <div className="text-xs text-muted-foreground">Total</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Conflict List */}
+      {conflicts.isLoading ? (
+        <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full" />)}</div>
+      ) : !conflicts.data?.conflicts.length ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
+            <h4 className="font-medium">No Conflicts</h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              {statusFilter === "pending" ? "All sync conflicts have been resolved" : "No conflicts found with this filter"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {conflicts.data.conflicts.map((conflict) => {
+            const isExpanded = expandedId === conflict.id;
+            return (
+              <Card key={conflict.id} className={`transition-all ${conflict.status === "resolved" ? "opacity-60" : ""}`}>
+                <CardContent className="p-3">
+                  {/* Conflict Header */}
+                  <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : conflict.id)}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full ${conflict.status === "pending" ? "bg-orange-500" : "bg-green-500"}`} />
+                      <div>
+                        <span className="font-medium text-sm">{conflict.field}</span>
+                        <Badge variant="outline" className="ml-2 text-xs">{conflict.resolution || "unresolved"}</Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{conflict.detectedAt ? new Date(conflict.detectedAt).toLocaleString() : ""}</span>
+                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </div>
+                  </div>
+
+                  {/* Expanded Diff View */}
+                  {isExpanded && (
+                    <div className="mt-3 space-y-3 border-t pt-3">
+                      {/* Visual Diff */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="rounded-md border border-blue-500/30 bg-blue-500/5 p-3">
+                          <div className="flex items-center gap-1 text-xs font-medium text-blue-500 mb-1">
+                            <Database className="h-3 w-3" /> Stewardly Value
+                          </div>
+                          <div className="font-mono text-sm bg-background/50 rounded p-2 min-h-[2rem]">
+                            {conflict.stewardlyValue || <span className="text-muted-foreground italic">empty</span>}
+                          </div>
+                        </div>
+                        <div className="rounded-md border border-purple-500/30 bg-purple-500/5 p-3">
+                          <div className="flex items-center gap-1 text-xs font-medium text-purple-500 mb-1">
+                            <Globe className="h-3 w-3" /> GHL Value
+                          </div>
+                          <div className="font-mono text-sm bg-background/50 rounded p-2 min-h-[2rem]">
+                            {conflict.ghlValue || <span className="text-muted-foreground italic">empty</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Merge Input */}
+                      <div>
+                        <Label className="text-xs">Custom Merged Value (optional)</Label>
+                        <Input
+                          placeholder="Enter custom merged value..."
+                          value={mergeValues[conflict.id] || ""}
+                          onChange={(e) => setMergeValues(prev => ({ ...prev, [conflict.id]: e.target.value }))}
+                          className="h-8 text-sm mt-1"
+                        />
+                      </div>
+
+                      {/* Resolution Actions */}
+                      {conflict.status === "pending" && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-blue-500 border-blue-500/30 hover:bg-blue-500/10"
+                            disabled={resolveConflict.isPending}
+                            onClick={() => resolveConflict.mutate({
+                              conflictId: conflict.id,
+                              resolution: "stewardly_wins",
+                              field: conflict.field,
+                            })}
+                          >
+                            <Database className="h-3 w-3 mr-1" /> Keep Stewardly
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-purple-500 border-purple-500/30 hover:bg-purple-500/10"
+                            disabled={resolveConflict.isPending}
+                            onClick={() => resolveConflict.mutate({
+                              conflictId: conflict.id,
+                              resolution: "ghl_wins",
+                              field: conflict.field,
+                            })}
+                          >
+                            <Globe className="h-3 w-3 mr-1" /> Keep GHL
+                          </Button>
+                          {mergeValues[conflict.id] && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-500 border-green-500/30 hover:bg-green-500/10"
+                              disabled={resolveConflict.isPending}
+                              onClick={() => resolveConflict.mutate({
+                                conflictId: conflict.id,
+                                resolution: "merged",
+                                mergedValue: mergeValues[conflict.id],
+                                field: conflict.field,
+                              })}
+                            >
+                              <GitMerge className="h-3 w-3 mr-1" /> Use Merged
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground"
+                            disabled={resolveConflict.isPending}
+                            onClick={() => resolveConflict.mutate({
+                              conflictId: conflict.id,
+                              resolution: "skip",
+                              field: conflict.field,
+                            })}
+                          >
+                            Skip
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── GHL Connect Panel (OAuth Marketplace App) ─────────────────────────────
+
+function GHLConnectPanel() {
+  const connectionStatus = trpc.crm.ghlConnectionStatus.useQuery();
+  const oauthUrl = trpc.crm.ghlOAuthUrl.useQuery({ origin: window.location.origin });
+  const [copied, setCopied] = useState(false);
+
+  const webhookUrl = `${window.location.origin}/api/webhooks/ghl`;
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success("Webhook URL copied");
+  };
+
+  const status = connectionStatus.data;
+
+  return (
+    <>
+      {/* Connection Status Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ExternalLink className="h-4 w-4" /> GoHighLevel Connection
+          </CardTitle>
+          <CardDescription>Connect via OAuth Marketplace App for full webhook support, or use PIT token for polling-only sync</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {connectionStatus.isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : status ? (
+            <>
+              {/* Connection Method */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className={`rounded-lg border p-3 ${status.method === "oauth" ? "border-green-500/50 bg-green-500/5" : "border-border"}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <ShieldCheck className={`h-4 w-4 ${status.oauthConfigured ? "text-green-500" : "text-muted-foreground"}`} />
+                    <span className="text-sm font-medium">OAuth App</span>
+                    {status.oauthConfigured && <Badge className="bg-green-500/20 text-green-500 text-xs">Active</Badge>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {status.oauthConfigured ? "Full access with webhooks" : "Not configured — requires Marketplace App"}
+                  </p>
+                  {status.tokenExpiresAt && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                <div className={`rounded-lg border p-3 ${status.method === "pit" ? "border-blue-500/50 bg-blue-500/5" : "border-border"}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Key className={`h-4 w-4 ${status.pitConfigured ? "text-blue-500" : "text-muted-foreground"}`} />
+                    <span className="text-sm font-medium">PIT Token</span>
+                    {status.pitConfigured && <Badge className="bg-blue-500/20 text-blue-500 text-xs">Active</Badge>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {status.pitConfigured ? "Polling sync only (no webhooks)" : "Not configured"}
+                  </p>
+                  {status.contactCount !== undefined && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {status.contactCount.toLocaleString()} contacts accessible
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Location Info */}
+              {status.locationName && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <span>Location: <strong>{status.locationName}</strong></span>
+                </div>
+              )}
+
+              {/* Webhook Status */}
+              <div className={`rounded-lg border p-3 ${status.webhooksActive ? "border-green-500/30 bg-green-500/5" : "border-orange-500/30 bg-orange-500/5"}`}>
+                <div className="flex items-center gap-2">
+                  {status.webhooksActive ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {status.webhooksActive ? "Webhooks Active" : "Webhooks Inactive"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {status.webhooksActive
+                    ? "Real-time events from GHL are being received via your Marketplace App"
+                    : "PIT tokens cannot receive webhooks. Connect a GHL Marketplace App for real-time sync, or use polling (already active)."}
+                </p>
+              </div>
+            </>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      {/* OAuth Connect Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Connect GHL Marketplace App</CardTitle>
+          <CardDescription>
+            Create a private Marketplace App at{" "}
+            <a href="https://marketplace.gohighlevel.com" target="_blank" rel="noopener" className="text-primary underline">
+              marketplace.gohighlevel.com
+            </a>
+            , then add Client ID and Secret in the Credentials tab
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Setup Steps */}
+          <div className="space-y-2">
+            {[
+              { step: 1, text: "Create a Private App at GHL Marketplace Developer Portal", done: false },
+              { step: 2, text: "Add scopes: contacts.readonly, contacts.write, webhooks.write", done: false },
+              { step: 3, text: `Set redirect URL to: ${window.location.origin}/api/ghl/oauth/callback`, done: false },
+              { step: 4, text: `Set webhook URL to: ${webhookUrl}`, done: false },
+              { step: 5, text: "Copy Client ID & Secret → Credentials tab → ghl_oauth", done: oauthUrl.data?.configured || false },
+              { step: 6, text: "Click 'Connect GHL' below to authorize", done: status?.oauthConfigured || false },
+            ].map(({ step, text, done }) => (
+              <div key={step} className="flex items-start gap-2 text-sm">
+                <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${done ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"}`}>
+                  {done ? "✓" : step}
+                </div>
+                <span className={done ? "line-through text-muted-foreground" : ""}>{text}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Webhook URL Copy */}
+          <div className="flex items-center gap-2 mt-3">
+            <Input value={webhookUrl} readOnly className="font-mono text-xs h-8" />
+            <Button size="sm" variant="outline" onClick={copyUrl} className="h-8">
+              {copied ? <CheckCheck className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+            </Button>
+          </div>
+
+          {/* Connect Button */}
+          {oauthUrl.data?.configured ? (
+            <Button
+              className="w-full"
+              onClick={() => {
+                if (oauthUrl.data?.url) {
+                  window.open(oauthUrl.data.url, "_blank");
+                  toast.info("Redirecting to GHL authorization...");
+                }
+              }}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" /> Connect GHL via OAuth
+            </Button>
+          ) : (
+            <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+              <Info className="h-4 w-4 inline mr-1" />
+              Add GHL Marketplace App credentials in the <strong>Credentials</strong> tab first (provider: ghl_oauth, fields: clientId, clientSecret)
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Polling Status Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" /> Polling Sync (Active)
+          </CardTitle>
+          <CardDescription>
+            Polling sync runs automatically via the PIT token — no webhook required
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Method</span>
+              <Badge variant="outline">API Polling via PIT Token</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Frequency</span>
+              <span>Every 5 minutes (auto-sync scheduler)</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Status</span>
+              <Badge className="bg-green-500/20 text-green-500">Running</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Contacts Accessible</span>
+              <span>{status?.contactCount?.toLocaleString() || "Loading..."}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 }

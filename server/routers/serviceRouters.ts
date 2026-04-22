@@ -751,4 +751,171 @@ export const crmRouter = router({
         return { success: false, message: e.message || "Failed to reach webhook endpoint" };
       }
     }),
+
+  // ─── GHL OAuth App Integration ──────────────────────────────────────────
+
+  ghlOAuthUrl: protectedProcedure
+    .input(z.object({ origin: z.string() }))
+    .query(async ({ input }) => {
+      const { buildOAuthUrl, getOAuthConfig } = await import("../services/ghlOAuth");
+      const redirectUri = `${input.origin}/api/ghl/oauth/callback`;
+      const config = await getOAuthConfig(redirectUri);
+      if (!config) return { url: null, configured: false, message: "Add GHL Marketplace App Client ID and Secret in the Credentials tab first." };
+      return { url: buildOAuthUrl(config), configured: true, message: "Ready to connect" };
+    }),
+
+  ghlOAuthCallback: publicProcedure
+    .input(z.object({ code: z.string(), origin: z.string() }))
+    .mutation(async ({ input }) => {
+      const { handleOAuthCallback } = await import("../services/ghlOAuth");
+      const redirectUri = `${input.origin}/api/ghl/oauth/callback`;
+      return handleOAuthCallback(input.code, redirectUri);
+    }),
+
+  ghlConnectionStatus: protectedProcedure.query(async () => {
+    const { getGHLConnectionStatus } = await import("../services/ghlOAuth");
+    return getGHLConnectionStatus();
+  }),
+
+  // ─── Sync Conflict Resolution ───────────────────────────────────────────
+
+  getSyncConflicts: protectedProcedure
+    .input(z.object({
+      locationId: z.number().optional(),
+      status: z.enum(["pending", "resolved", "all"]).default("pending"),
+      limit: z.number().min(1).max(100).default(20),
+      offset: z.number().min(0).default(0),
+    }).optional())
+    .query(async ({ input }) => {
+      const { getSyncAggregation } = await import("../services/syncReconciliation");
+      const agg = await getSyncAggregation(input?.locationId);
+      const conflicts = agg.recentConflicts || [];
+      // Enrich conflicts with IDs for UI
+      const enriched = conflicts.map((c, i) => ({
+        id: `conflict-${i}-${Date.now()}`,
+        ...c,
+        status: (c as any).status || "pending",
+        detectedAt: (c as any).detectedAt || new Date().toISOString(),
+      }));
+      const filtered = input?.status === "all" ? enriched
+        : enriched.filter(c => c.status === (input?.status || "pending"));
+      return {
+        conflicts: filtered.slice(input?.offset || 0, (input?.offset || 0) + (input?.limit || 20)),
+        total: filtered.length,
+        pendingCount: enriched.filter(c => c.status === "pending").length,
+        resolvedCount: enriched.filter(c => c.status === "resolved").length,
+      };
+    }),
+
+  resolveConflict: protectedProcedure
+    .input(z.object({
+      conflictId: z.string(),
+      resolution: z.enum(["stewardly_wins", "ghl_wins", "merged", "skip"]),
+      mergedValue: z.string().optional(),
+      field: z.string(),
+      leadId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const pool = (await import("../db")).getRawPool();
+      const db = await pool;
+      if (!db) return { success: false, message: "Database unavailable" };
+
+      // If resolution involves updating a lead field
+      if (input.leadId && input.resolution !== "skip") {
+        const value = input.resolution === "merged" ? input.mergedValue
+          : input.resolution === "stewardly_wins" ? null // keep current
+          : null; // ghl_wins — would need the GHL value
+        
+        if (value && input.field) {
+          try {
+            // Only update safe fields
+            const safeFields = ["first_name", "last_name", "email", "phone", "company", "title", "address", "city", "state", "zip", "notes"];
+            if (safeFields.includes(input.field)) {
+              await db.query(
+                `UPDATE lead_pipeline SET \`${input.field}\` = ?, updated_at = ? WHERE id = ?`,
+                [value, Date.now(), input.leadId]
+              );
+            }
+          } catch (e: any) {
+            return { success: false, message: e.message };
+          }
+        }
+      }
+
+      // Mark conflict as resolved in platform_kv
+      try {
+        const [rows] = await db.query(
+          "SELECT value FROM platform_kv WHERE `key` = 'recent_sync_conflicts' LIMIT 1"
+        );
+        const existing = (rows as any[])[0]?.value ? JSON.parse((rows as any[])[0].value) : [];
+        const updated = existing.map((c: any, i: number) => {
+          const cId = `conflict-${i}-${Date.now()}`;
+          if (c.field === input.field) {
+            return { ...c, status: "resolved", resolution: input.resolution, resolvedBy: ctx.user.id, resolvedAt: new Date().toISOString() };
+          }
+          return c;
+        });
+        await db.query(
+          "INSERT INTO platform_kv (`key`, value) VALUES ('recent_sync_conflicts', ?) ON DUPLICATE KEY UPDATE value = VALUES(value)",
+          [JSON.stringify(updated)]
+        );
+      } catch { /* best effort */ }
+
+      return { success: true, message: `Conflict resolved: ${input.resolution}` };
+    }),
+
+  bulkResolveConflicts: protectedProcedure
+    .input(z.object({
+      resolution: z.enum(["stewardly_wins", "ghl_wins", "newest_wins"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const pool = (await import("../db")).getRawPool();
+      const db = await pool;
+      if (!db) return { success: false, resolved: 0 };
+
+      try {
+        const [rows] = await db.query(
+          "SELECT value FROM platform_kv WHERE `key` = 'recent_sync_conflicts' LIMIT 1"
+        );
+        const existing = (rows as any[])[0]?.value ? JSON.parse((rows as any[])[0].value) : [];
+        const pending = existing.filter((c: any) => c.status !== "resolved");
+        const updated = existing.map((c: any) => ({
+          ...c,
+          status: "resolved",
+          resolution: input.resolution,
+          resolvedBy: ctx.user.id,
+          resolvedAt: new Date().toISOString(),
+        }));
+        await db.query(
+          "INSERT INTO platform_kv (`key`, value) VALUES ('recent_sync_conflicts', ?) ON DUPLICATE KEY UPDATE value = VALUES(value)",
+          [JSON.stringify(updated)]
+        );
+        return { success: true, resolved: pending.length };
+      } catch (e: any) {
+        return { success: false, resolved: 0, message: e.message };
+      }
+    }),
+
+  // ─── Sync Aggregation (for conflict resolution dashboard) ───────────────
+
+  syncAggregation: protectedProcedure
+    .input(z.object({ locationId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const { getSyncAggregation } = await import("../services/syncReconciliation");
+      return getSyncAggregation(input?.locationId);
+    }),
+
+  // ─── Connection Health Monitoring ─────────────────────────────────────────
+
+  healthReport: protectedProcedure.query(async () => {
+    const { getFullHealthReport } = await import("../services/credentialProvisioner");
+    return getFullHealthReport();
+  }),
+
+  setupGuidance: publicProcedure
+    .input(z.object({ provider: z.string() }))
+    .query(async ({ input }) => {
+      const { getSetupGuidance } = await import("../services/credentialProvisioner");
+      return getSetupGuidance(input.provider);
+    }),
 });

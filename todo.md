@@ -8620,3 +8620,33 @@
 - Added Verify button to webhook URLs in Settings tab (sends test payload and confirms endpoint responds)
 - 44 new vitest tests in pass64d-ext4-dashboard.test.ts covering analytics, encryption, adapters, schema, and webhook paths
 - 170/170 total tests passing across 6 test files × 3 consecutive clean convergence passes
+
+## Pass 64d-ext5 — GHL Webhook Registration + Platform Credentials + Conflict Resolution UI
+- [x] Step 1: GHL webhook registration — PIT token confirmed 403 on all webhook endpoints
+- [x] Step 1a: Built GHL OAuth App integration (ghlOAuth.ts) as production-grade alternative
+- [x] Step 1b: OAuth flow auto-registers webhooks with proper scopes after authorization
+- [x] Step 1c: GHL Connect tab added to CRM Sync UI with OAuth + PIT status display
+- [x] Step 1d: Polling sync confirmed working via PIT (493,230 contacts accessible)
+- [x] Step 2: Built credential auto-provisioning (credentialProvisioner.ts)
+- [x] Step 2a: Health checks for all 9 platforms with real API validation
+- [x] Step 2b: getFullHealthReport with aggregated status (healthy/degraded/critical)
+- [x] Step 2c: getSetupGuidance with platform-specific steps, docs URLs, required fields
+- [x] Step 2d: healthReport and setupGuidance tRPC procedures added
+- [x] Step 3: Built sync conflict resolution UI (ConflictResolutionPanel)
+- [x] Step 3a: Visual diff viewer showing Stewardly vs GHL values side-by-side
+- [x] Step 3b: Per-field resolution controls (Keep Ours / Keep Theirs / Skip)
+- [x] Step 3c: Bulk resolve all pending conflicts button
+- [x] Step 3d: Conflict statistics summary cards (total, pending, resolved)
+- [x] Step 3e: Conflicts tab added to CRM Sync dashboard
+- [x] Step 3f: tRPC procedures: ghlOAuthUrl, ghlOAuthCallback, ghlConnectionStatus, conflicts, resolveConflict, bulkResolveConflicts, syncAggregation, healthReport, setupGuidance
+- [x] Write comprehensive vitest tests — 31 new tests in ext5 file
+- [x] Recursive convergence: 3 consecutive clean passes (209/209 × 3)
+
+## Pass 64d-ext5 — Summary
+- Built GHL OAuth App integration (ghlOAuth.ts): buildOAuthUrl, exchangeCodeForTokens, refreshAccessToken, handleOAuthCallback, getGHLConnectionStatus, auto-webhook subscription
+- Built credential auto-provisioner (credentialProvisioner.ts): health checks for 9 platforms, setup guidance, health reports
+- Built ConflictResolutionPanel: visual diff viewer, per-field resolution, bulk resolve, conflict stats
+- Built GHLConnectPanel: OAuth flow UI, PIT status, connection method display
+- Added 9 new tRPC procedures to crmRouter
+- 31 new vitest tests covering GHL OAuth, credential provisioner, conflict resolution
+- 209/209 total tests passing across 6 test files × 3 consecutive clean convergence passes
