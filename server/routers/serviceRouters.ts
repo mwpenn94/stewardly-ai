@@ -419,8 +419,11 @@ export const crmRouter = router({
       company: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      const { enrichLeadFromLinkedIn } = await import("../services/linkedinEnrichment");
-      return enrichLeadFromLinkedIn(input);
+      if (!input.leadId) {
+        return { leadId: "0", matched: false, profile: null, confidence: 0, enrichedFields: [], error: "leadId is required" };
+      }
+      const { enrichLead } = await import("../services/linkedinEnrichment");
+      return enrichLead(String(input.leadId));
     }),
 
   /** Batch LinkedIn enrichment for multiple leads */
@@ -429,30 +432,15 @@ export const crmRouter = router({
       leadIds: z.array(z.number()).max(50),
     }))
     .mutation(async ({ input }) => {
-      const { enrichLeadFromLinkedIn } = await import("../services/linkedinEnrichment");
-      const { getRawPool } = await import("../db");
-      const pool = await getRawPool();
-      if (!pool) return { enriched: 0, failed: 0, results: [] };
+      const { enrichLead } = await import("../services/linkedinEnrichment");
 
       const results: Array<{ leadId: number; success: boolean; error?: string }> = [];
       for (const leadId of input.leadIds) {
         try {
-          const [rows] = await pool.query(
-            "SELECT firstName, lastName, email, company FROM lead_pipeline WHERE id = ? LIMIT 1",
-            [leadId]
-          ) as any;
-          if (!rows.length) { results.push({ leadId, success: false, error: "Lead not found" }); continue; }
-          const lead = rows[0];
-          const result = await enrichLeadFromLinkedIn({
-            leadId,
-            email: lead.email,
-            firstName: lead.firstName,
-            lastName: lead.lastName,
-            company: lead.company,
-          });
-          results.push({ leadId, success: result.enriched, error: result.error });
-          // Rate limit: 500ms between enrichments
-          await new Promise(r => setTimeout(r, 500));
+          const result = await enrichLead(String(leadId));
+          results.push({ leadId, success: result.matched, error: result.matched ? undefined : "No LinkedIn match found" });
+          // Rate limit: 2s between enrichments to avoid API throttling
+          await new Promise(r => setTimeout(r, 2000));
         } catch (e: any) {
           results.push({ leadId, success: false, error: e.message });
         }
