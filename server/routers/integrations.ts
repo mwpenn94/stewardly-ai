@@ -415,6 +415,7 @@ export const integrationsRouter = router({
     .input(z.object({
       connectionId: z.string(),
       syncType: z.enum(["full", "incremental"]),
+      direction: z.enum(["inbound", "outbound", "bidirectional"]).default("inbound"),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = (await getDb())!; if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
@@ -423,7 +424,7 @@ export const integrationsRouter = router({
         id: logId,
         connectionId: input.connectionId,
         syncType: input.syncType,
-        direction: "inbound",
+        direction: input.direction,
         startedAt: new Date(),
         status: "running",
         triggeredBy: "manual",
@@ -505,7 +506,9 @@ export const integrationsRouter = router({
             creds.subdomain = creds.subdomain || creds.account_name || creds.accountName || "app";
           }
 
-          const syncResult = await syncCRM(slug, creds, "pull", lastSync);
+          // Map direction: inbound=pull, outbound=push, bidirectional=bidirectional
+          const crmDirection = input.direction === "outbound" ? "push" : input.direction === "bidirectional" ? "bidirectional" : "pull";
+          const syncResult = await syncCRM(slug, creds, crmDirection, lastSync);
 
           await db.update(integrationSyncLogs)
             .set({

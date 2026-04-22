@@ -5,13 +5,17 @@
  * Dripify, SMS-iT, Workable, LinkedIn/Sales Navigator
  *
  * Wired to:
- * - crm.sync mutation (real sync across all providers)
+ * - crm.sync mutation (real sync across all providers — pull/push/bidirectional)
+ * - crm.triggerOutboundSync mutation (push leads to external CRMs)
+ * - crm.outboundSyncPreview query (preview leads eligible for push)
+ * - crm.registerWebhooks mutation (auto-register webhook URLs)
+ * - crm.webhookStatus query (webhook registration status per platform)
  * - crm.syncHistory query (crm_sync_log table)
  * - crm.providers query (aggregated provider status)
  * - crm.unifiedDashboard query (cross-platform unified view)
  * - crm.platformWebhookEvents query (per-platform webhook feed)
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { SEOHead } from "@/components/SEOHead";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,7 +27,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database,
   ArrowLeftRight, Settings2, History, Loader2, Webhook, Activity,
-  TrendingUp, Zap, Globe, Radio, XCircle, Inbox,
+  TrendingUp, Zap, Globe, Radio, XCircle, Inbox, Upload, Download,
+  ArrowUpRight, Copy, CheckCheck, Link2,
 } from "lucide-react";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
@@ -34,14 +39,14 @@ import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 
 const ALL_PROVIDERS = [
-  { value: "gohighlevel", label: "GoHighLevel", icon: "🔷", category: "crm" },
-  { value: "wealthbox", label: "Wealthbox", icon: "💼", category: "crm" },
-  { value: "salesforce", label: "Salesforce", icon: "☁️", category: "crm" },
-  { value: "redtail", label: "Redtail", icon: "🔴", category: "crm" },
-  { value: "dripify", label: "Dripify", icon: "💧", category: "marketing" },
-  { value: "smsit", label: "SMS-iT", icon: "📱", category: "messaging" },
-  { value: "workable", label: "Workable", icon: "👥", category: "recruiting" },
-  { value: "linkedin", label: "LinkedIn", icon: "🔗", category: "marketing" },
+  { value: "gohighlevel", label: "GoHighLevel", icon: "🔷", category: "crm", pushable: true },
+  { value: "wealthbox", label: "Wealthbox", icon: "💼", category: "crm", pushable: true },
+  { value: "salesforce", label: "Salesforce", icon: "☁️", category: "crm", pushable: true },
+  { value: "redtail", label: "Redtail", icon: "🔴", category: "crm", pushable: true },
+  { value: "dripify", label: "Dripify", icon: "💧", category: "marketing", pushable: false },
+  { value: "smsit", label: "SMS-iT", icon: "📱", category: "messaging", pushable: true },
+  { value: "workable", label: "Workable", icon: "👥", category: "recruiting", pushable: true },
+  { value: "linkedin", label: "LinkedIn", icon: "🔗", category: "marketing", pushable: false },
 ] as const;
 
 type ProviderValue = typeof ALL_PROVIDERS[number]["value"];
@@ -59,7 +64,7 @@ function statusColor(status: string | null | undefined): string {
 function statusBadge(status: string | null | undefined) {
   if (!status) return <Badge variant="outline" className="text-xs">Unknown</Badge>;
   const s = status.toLowerCase();
-  const color = s === "success" || s === "completed" || s === "connected" || s === "processed"
+  const color = s === "success" || s === "completed" || s === "connected" || s === "processed" || s === "registered"
     ? "text-emerald-400 border-emerald-500/30"
     : s === "failed" || s === "error" || s === "disconnected"
     ? "text-red-400 border-red-500/30"
@@ -89,6 +94,7 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
   const [provider, setProvider] = useState<ProviderValue>("gohighlevel");
   const [direction, setDirection] = useState<"pull" | "push" | "bidirectional">("pull");
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -112,6 +118,13 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
     { enabled: isAuthenticated && isAdmin && !!selectedPlatform },
   );
 
+  // Outbound sync preview
+  const outboundPreview = trpc.crm.outboundSyncPreview.useQuery(
+    { provider },
+    { enabled: isAuthenticated && isAdmin },
+  );
+
+  // Mutations
   const syncMut = trpc.crm.sync.useMutation({
     onSuccess: (r) => {
       const contacts = r?.contactsSynced ?? 0;
@@ -125,13 +138,59 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
       utils.crm.syncHistory.invalidate();
       utils.crm.providers.invalidate();
       utils.crm.unifiedDashboard.invalidate();
+      utils.crm.outboundSyncPreview.invalidate();
     },
     onError: (e) => toast.error(`Sync failed: ${e.message}`),
+  });
+
+  const outboundSyncMut = trpc.crm.triggerOutboundSync.useMutation({
+    onSuccess: (r) => {
+      toast.success(
+        `Outbound sync to ${r.provider}: ${r.contactsCreated} created, ${r.contactsUpdated} updated` +
+          (r.errors.length > 0 ? `, ${r.errors.length} errors` : ""),
+      );
+      utils.crm.syncHistory.invalidate();
+      utils.crm.providers.invalidate();
+      utils.crm.unifiedDashboard.invalidate();
+      utils.crm.outboundSyncPreview.invalidate();
+    },
+    onError: (e) => toast.error(`Outbound sync failed: ${e.message}`),
+  });
+
+  const registerWebhookMut = trpc.crm.registerWebhooks.useMutation({
+    onSuccess: (r) => {
+      if (r.registered) {
+        toast.success(`Webhook registered for ${r.provider}`);
+      } else {
+        toast.info(r.message || "Webhook registration attempted");
+      }
+    },
+    onError: (e) => toast.error(`Webhook registration failed: ${e.message}`),
   });
 
   const handleSync = () => {
     syncMut.mutate({ provider, direction });
   };
+
+  const handleOutboundSync = (prov: ProviderValue) => {
+    outboundSyncMut.mutate({ provider: prov });
+  };
+
+  const handleRegisterWebhook = (prov: string) => {
+    registerWebhookMut.mutate({
+      provider: prov as any,
+      baseUrl: window.location.origin,
+    });
+  };
+
+  const copyWebhookUrl = useCallback((path: string) => {
+    const url = `${window.location.origin}${path}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedUrl(path);
+      toast.success("Webhook URL copied to clipboard");
+      setTimeout(() => setCopiedUrl(null), 2000);
+    });
+  }, []);
 
   // Derive data
   const historyRows = (syncHistory.data ?? []) as any[];
@@ -144,7 +203,6 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
     for (const p of unifiedData.platforms as any[]) {
       map[p.provider] = p;
     }
-    // Also merge from providers query for CRM-specific data
     for (const p of providerRows) {
       if (!map[p.provider]) {
         map[p.provider] = {
@@ -171,6 +229,9 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
 
   const recentEvents = (unifiedData.recentEvents || []) as any[];
   const syncLogs = (unifiedData.syncLogs || []) as any[];
+  const preview = outboundPreview.data ?? { totalLeads: 0, unsyncedLeads: 0, syncedLeads: 0 };
+
+  const isSyncing = syncMut.isPending || outboundSyncMut.isPending;
 
   return (
     <Shell title="CRM Sync">
@@ -186,7 +247,7 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
           <div>
             <h1 className="text-2xl font-bold">CRM Sync Dashboard</h1>
             <p className="text-sm text-muted-foreground">
-              Unified sync management across {ALL_PROVIDERS.length} platforms
+              Bidirectional sync management across {ALL_PROVIDERS.length} platforms
             </p>
           </div>
         </div>
@@ -202,16 +263,16 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
             </SelectContent>
           </Select>
           <Select value={direction} onValueChange={(v) => setDirection(v as any)}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="pull">Pull</SelectItem>
-              <SelectItem value="push">Push</SelectItem>
-              <SelectItem value="bidirectional">Both</SelectItem>
+              <SelectItem value="pull"><Download className="h-3 w-3 inline mr-1" />Pull (Inbound)</SelectItem>
+              <SelectItem value="push"><Upload className="h-3 w-3 inline mr-1" />Push (Outbound)</SelectItem>
+              <SelectItem value="bidirectional"><ArrowLeftRight className="h-3 w-3 inline mr-1" />Bidirectional</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleSync} disabled={syncMut.isPending}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${syncMut.isPending ? "animate-spin" : ""}`} />
-            {syncMut.isPending ? "Syncing..." : "Sync Now"}
+          <Button onClick={handleSync} disabled={isSyncing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? "animate-spin" : ""}`} />
+            {isSyncing ? "Syncing..." : "Sync Now"}
           </Button>
         </div>
       </div>
@@ -219,7 +280,7 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
       <QueryErrorBanner query={syncHistory} label="sync history" />
 
       {/* Aggregate Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
             <div className="p-2 rounded-lg bg-emerald-500/10">
@@ -264,6 +325,17 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-cyan-500/10">
+              <Upload className="h-5 w-5 text-cyan-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{preview.unsyncedLeads.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Ready to Push</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Platform Status Cards */}
@@ -304,6 +376,22 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
                   <p className="text-lg font-bold mt-1">
                     {info ? `${Number(info.totalRecordsSynced || 0).toLocaleString()} records` : "—"}
                   </p>
+                  {/* Quick push button for pushable platforms */}
+                  {prov.pushable && isConnected && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 w-full text-xs"
+                      disabled={outboundSyncMut.isPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOutboundSync(prov.value);
+                      }}
+                    >
+                      <Upload className="h-3 w-3 mr-1" />
+                      Push Leads
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -311,15 +399,89 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
         </div>
       </div>
 
-      {/* Tabs: Webhook Feed, Sync History, Settings */}
-      <Tabs defaultValue="webhooks">
-        <TabsList>
+      {/* Tabs: Outbound Sync, Webhook Feed, Sync History, Settings */}
+      <Tabs defaultValue="outbound">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="outbound"><Upload className="h-3.5 w-3.5 mr-1" /> Outbound Sync</TabsTrigger>
           <TabsTrigger value="webhooks"><Webhook className="h-3.5 w-3.5 mr-1" /> Webhook Feed</TabsTrigger>
           <TabsTrigger value="history"><History className="h-3.5 w-3.5 mr-1" /> Sync History</TabsTrigger>
           <TabsTrigger value="syncLogs"><Zap className="h-3.5 w-3.5 mr-1" /> Integration Logs</TabsTrigger>
           <TabsTrigger value="settings"><Settings2 className="h-3.5 w-3.5 mr-1" /> Settings</TabsTrigger>
           <TabsTrigger value="mappings"><ArrowLeftRight className="h-3.5 w-3.5 mr-1" /> Field Mappings</TabsTrigger>
         </TabsList>
+
+        {/* Outbound Sync Tab */}
+        <TabsContent value="outbound" className="mt-4 space-y-4">
+          {/* Outbound Preview Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Upload className="h-4 w-4" /> Outbound Sync — Push Leads to External CRMs
+              </CardTitle>
+              <CardDescription>
+                Push contacts from your lead pipeline to connected CRM platforms. Leads originally from a platform are excluded to prevent circular sync.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-center p-4 rounded-lg bg-muted/30">
+                  <p className="text-3xl font-bold">{preview.totalLeads.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Total Leads in Pipeline</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+                  <p className="text-3xl font-bold text-cyan-400">{preview.unsyncedLeads.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Eligible for Push to {ALL_PROVIDERS.find(p => p.value === provider)?.label}</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                  <p className="text-3xl font-bold text-emerald-400">{preview.syncedLeads.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Already Synced</p>
+                </div>
+              </div>
+
+              {/* Per-platform outbound controls */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Push to Platform</h3>
+                {ALL_PROVIDERS.map((prov) => {
+                  const info = platformMap[prov.value];
+                  const isConnected = info?.connectionStatus === "connected";
+                  return (
+                    <div key={prov.value} className="flex items-center justify-between py-3 px-4 rounded-lg border border-border/50 hover:bg-muted/20">
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{prov.icon}</span>
+                        <div>
+                          <p className="text-sm font-medium">{prov.label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {isConnected ? "Connected" : "Not connected"}
+                            {!prov.pushable && " · Read-only (no outbound push)"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {prov.pushable ? (
+                          <Button
+                            size="sm"
+                            variant={isConnected ? "default" : "outline"}
+                            disabled={!isConnected || outboundSyncMut.isPending}
+                            onClick={() => handleOutboundSync(prov.value)}
+                          >
+                            {outboundSyncMut.isPending && outboundSyncMut.variables?.provider === prov.value ? (
+                              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                            ) : (
+                              <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
+                            )}
+                            Push Leads
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">Read-only</Badge>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Webhook Activity Feed */}
         <TabsContent value="webhooks" className="mt-4">
@@ -406,7 +568,13 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
                   {historyRows.map((h: any) => (
                     <div key={h.id} className="flex items-center justify-between py-2 px-3 border-b border-border/50 last:border-0 rounded hover:bg-muted/30">
                       <div className="flex items-center gap-3">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        {h.direction === "push" ? (
+                          <Upload className="h-4 w-4 text-cyan-400" />
+                        ) : h.direction === "bidirectional" ? (
+                          <ArrowLeftRight className="h-4 w-4 text-purple-400" />
+                        ) : (
+                          <Download className="h-4 w-4 text-blue-400" />
+                        )}
                         <div>
                           <p className="text-sm">
                             <span className="font-medium capitalize">{h.crmProvider}</span>
@@ -486,13 +654,13 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">Conflict Resolution</p>
-                  <p className="text-xs text-muted-foreground">When records conflict between CRM and Stewardly</p>
+                  <p className="text-xs text-muted-foreground">How to handle conflicting records</p>
                 </div>
                 <Badge variant="outline">CRM Wins</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium">Sync Direction</p>
+                  <p className="text-sm font-medium">Default Sync Direction</p>
                   <p className="text-xs text-muted-foreground">Bidirectional sync keeps both systems updated</p>
                 </div>
                 <Badge variant="outline">Bidirectional</Badge>
@@ -500,32 +668,69 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">Webhook Endpoints</p>
-                  <p className="text-xs text-muted-foreground">Configure these URLs in your platform settings</p>
+                  <p className="text-xs text-muted-foreground">5 webhook endpoints active for real-time push</p>
                 </div>
-                <Badge variant="outline">5 Active</Badge>
+                <Badge variant="outline" className="text-emerald-400 border-emerald-500/30">5 Active</Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Webhook URLs Reference */}
+          {/* Webhook URLs Reference with Copy + Auto-Register */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Webhook URLs</CardTitle>
-              <CardDescription>Configure these endpoints in each platform's webhook settings</CardDescription>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Link2 className="h-4 w-4" /> Webhook URLs
+              </CardTitle>
+              <CardDescription>
+                Configure these endpoints in each platform's webhook settings, or use auto-register to set them up programmatically.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-3">
               {[
-                { platform: "GoHighLevel", path: "/api/webhooks/ghl" },
-                { platform: "Dripify", path: "/api/webhooks/dripify" },
-                { platform: "SMS-iT", path: "/api/webhooks/smsit" },
-                { platform: "Workable", path: "/api/webhooks/workable" },
-                { platform: "LinkedIn", path: "/api/webhooks/linkedin" },
-              ].map(({ platform, path }) => (
-                <div key={path} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <span className="text-sm font-medium">{platform}</span>
-                  <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                    {window.location.origin}{path}
-                  </code>
+                { platform: "GoHighLevel", slug: "gohighlevel", path: "/api/webhooks/ghl" },
+                { platform: "Dripify", slug: "dripify", path: "/api/webhooks/dripify" },
+                { platform: "SMS-iT", slug: "smsit", path: "/api/webhooks/smsit" },
+                { platform: "Workable", slug: "workable", path: "/api/webhooks/workable" },
+                { platform: "LinkedIn", slug: "linkedin", path: "/api/webhooks/linkedin" },
+              ].map(({ platform, slug, path }) => (
+                <div key={path} className="flex items-center justify-between py-3 px-4 rounded-lg border border-border/50">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Webhook className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{platform}</p>
+                      <code className="text-xs text-muted-foreground font-mono truncate block">
+                        {window.location.origin}{path}
+                      </code>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2"
+                      onClick={() => copyWebhookUrl(path)}
+                    >
+                      {copiedUrl === path ? (
+                        <CheckCheck className="h-3.5 w-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs"
+                      disabled={registerWebhookMut.isPending}
+                      onClick={() => handleRegisterWebhook(slug)}
+                    >
+                      {registerWebhookMut.isPending && registerWebhookMut.variables?.provider === slug ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <Zap className="h-3 w-3 mr-1" />
+                      )}
+                      Auto-Register
+                    </Button>
+                  </div>
                 </div>
               ))}
             </CardContent>

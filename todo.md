@@ -8506,3 +8506,34 @@
 - [x] Dashboard shows per-provider status cards, webhook activity feed, sync logs
 - [x] 15/15 webhook+dashboard tests passing
 - [x] 35/35 simulation replacement tests passing
+
+## Pass 64e — Webhook Registration + Outbound Sync + Platform Connections
+- [ ] Register GHL webhook URL via GHL API (programmatic)
+- [ ] Register Dripify webhook URL (browser or API)
+- [ ] Register SMS-iT webhook URL (browser or API)
+- [ ] Register Workable webhook URL via Workable API
+- [ ] Register LinkedIn webhook URL (LinkedIn API)
+- [ ] Add push/outbound direction handling to syncCRM function
+- [ ] Build outbound sync for GHL (push leads from lead_pipeline to GHL)
+- [ ] Build outbound sync for Wealthbox
+- [ ] Build outbound sync for Salesforce
+- [ ] Build outbound sync for Redtail
+- [ ] Build outbound sync for SMS-iT
+- [ ] Build outbound sync for Workable
+- [ ] Dripify and LinkedIn are read-only (document limitation)
+- [ ] Add outbound sync trigger button in CRM Sync dashboard
+- [ ] Add sync direction toggle (pull/push/bidirectional) in dashboard
+- [ ] Write vitest tests for outbound sync
+- [ ] Verify all webhook registrations are active
+
+## Pass 64d-ext — Completed Items
+- [x] Auto-webhook registration service (webhookAutoRegister.ts) for all 5 platforms
+- [x] Outbound push sync in syncCRM — reads leads from lead_pipeline and pushes to external CRMs
+- [x] Direction parameter added to triggerSync (pull/push/bidirectional)
+- [x] New tRPC procedures: crm.registerWebhooks, crm.webhookStatus, crm.triggerOutboundSync, crm.outboundSyncPreview
+- [x] CRM Sync dashboard updated with outbound sync controls, webhook URLs, and auto-register buttons
+- [x] Express webhook routes for Dripify, SMS-iT, Workable, LinkedIn (all persist to lead_pipeline)
+- [x] Platform webhook health check endpoint (/api/webhooks/platforms/health)
+- [x] 73/73 vitest tests passing across 3 test files
+- [ ] GHL webhook manual registration in GHL Settings → Webhooks (browser unavailable — user can do manually)
+- [ ] Connect Dripify, SMS-iT, Workable, LinkedIn API credentials (user action needed)

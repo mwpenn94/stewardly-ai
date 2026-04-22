@@ -311,4 +311,101 @@ export const crmRouter = router({
       ) as any;
       return rows;
     }),
+
+  /** Register webhook URLs with external platforms */
+  registerWebhooks: adminProcedure
+    .input(z.object({
+      provider: z.enum(["gohighlevel", "smsit", "dripify", "workable", "linkedin"]),
+      baseUrl: z.string().url(),
+    }))
+    .mutation(async ({ input }) => {
+      const { autoRegisterWebhook } = await import("../services/webhookAutoRegister");
+      return autoRegisterWebhook(input.provider, { baseUrl: input.baseUrl });
+    }),
+
+  /** Get webhook registration status for all platforms */
+  webhookStatus: adminProcedure
+    .input(z.object({ baseUrl: z.string().url() }).optional())
+    .query(async ({ input }) => {
+      const { getAllWebhookUrls } = await import("../services/webhookAutoRegister");
+      return getAllWebhookUrls();
+    }),
+
+  /** Trigger outbound sync — push leads from lead_pipeline to an external CRM */
+  triggerOutboundSync: adminProcedure
+    .input(z.object({
+      provider: z.enum(["wealthbox", "salesforce", "redtail", "gohighlevel", "smsit", "dripify", "workable", "linkedin"]),
+      syncType: z.enum(["full", "incremental"]).default("incremental"),
+    }))
+    .mutation(async ({ input }) => {
+      const { syncCRM } = await import("../services/crmAdapter");
+      // For outbound, we need credentials from the connection or env
+      const creds: Record<string, string> = {};
+      if (input.provider === "gohighlevel") {
+        creds.apiToken = process.env.GHL_API_KEY || "";
+        creds.locationId = process.env.GHL_LOCATION_ID || "";
+      }
+      // For other providers, try to get credentials from integration_connections
+      if (!creds.apiToken) {
+        const { getRawPool } = await import("../db");
+        const pool = await getRawPool();
+        if (pool) {
+          const [rows] = await pool.query(
+            `SELECT ic.credentials_encrypted FROM integration_connections ic
+             JOIN integration_providers ip ON ic.provider_id = ip.id
+             WHERE ip.slug = ? AND ic.status = 'connected' LIMIT 1`,
+            [input.provider]
+          ) as any;
+          if (rows.length > 0 && rows[0].credentials_encrypted) {
+            try {
+              const { decryptCredentials } = await import("../services/encryption");
+              const decrypted = decryptCredentials(rows[0].credentials_encrypted);
+              Object.assign(creds, decrypted);
+              if (!creds.apiToken) {
+                creds.apiToken = (decrypted as any).api_key || (decrypted as any).apiKey || (decrypted as any).access_token || "";
+              }
+            } catch {}
+          }
+        }
+      }
+      const result = await syncCRM(input.provider, creds, "push");
+      return {
+        provider: input.provider,
+        direction: "push",
+        contactsSynced: result.contactsSynced,
+        contactsCreated: result.contactsCreated,
+        contactsUpdated: result.contactsUpdated,
+        errors: result.errors,
+        status: result.errors.length > 0 ? "partial" : "success",
+      };
+    }),
+
+  /** Get lead pipeline stats for outbound sync preview */
+  outboundSyncPreview: adminProcedure
+    .input(z.object({
+      provider: z.enum(["wealthbox", "salesforce", "redtail", "gohighlevel", "smsit", "dripify", "workable", "linkedin"]),
+    }))
+    .query(async ({ input }) => {
+      const { getRawPool } = await import("../db");
+      const pool = await getRawPool();
+      if (!pool) return { totalLeads: 0, unsyncedLeads: 0, syncedLeads: 0 };
+
+      const [totalRows] = await pool.query(
+        "SELECT COUNT(*) AS cnt FROM lead_pipeline WHERE email IS NOT NULL AND email != ''"
+      ) as any;
+      const totalLeads = totalRows[0]?.cnt || 0;
+
+      // Leads not from this provider (eligible for push)
+      const [unsyncedRows] = await pool.query(
+        "SELECT COUNT(*) AS cnt FROM lead_pipeline WHERE email IS NOT NULL AND email != '' AND (source IS NULL OR source != ?)",
+        [input.provider]
+      ) as any;
+      const unsyncedLeads = unsyncedRows[0]?.cnt || 0;
+
+      return {
+        totalLeads: Number(totalLeads),
+        unsyncedLeads: Number(unsyncedLeads),
+        syncedLeads: Number(totalLeads) - Number(unsyncedLeads),
+      };
+    }),
 });

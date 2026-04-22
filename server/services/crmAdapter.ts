@@ -882,18 +882,17 @@ export async function syncCRM(
     lastSyncAt: Date.now(),
   };
 
+  // ─── PULL direction ─────────────────────────────────────────────────
   try {
     if (direction === "pull" || direction === "bidirectional") {
-      // Pull contacts from external CRM
       const contacts = await adapter.pullContacts(credentials, lastSyncAt);
       logger.info({ provider, contactsPulled: contacts.length }, `[CRM:${provider}] Pulled ${contacts.length} contacts`);
 
-      // PERSIST contacts to leadPipeline table
       if (contacts.length > 0) {
         const persistResult = await persistContactsToLeadPipeline(contacts, provider);
-        result.contactsSynced = persistResult.created + persistResult.updated;
-        result.contactsCreated = persistResult.created;
-        result.contactsUpdated = persistResult.updated;
+        result.contactsSynced += persistResult.created + persistResult.updated;
+        result.contactsCreated += persistResult.created;
+        result.contactsUpdated += persistResult.updated;
         if (persistResult.errors > 0) {
           result.errors.push({ entity: "contacts", error: `${persistResult.errors} contacts failed to persist` });
         }
@@ -901,13 +900,30 @@ export async function syncCRM(
           `[CRM:${provider}] Persisted: ${persistResult.created} created, ${persistResult.updated} updated, ${persistResult.errors} errors`);
       }
 
-      // Pull activities
       const activities = await adapter.pullActivities(credentials, lastSyncAt);
       result.activitiesSynced += activities.length;
     }
   } catch (err: any) {
     result.errors.push({ entity: "pull", error: err.message });
-    logger.error({ operation: "crmAdapter", err, provider }, `[CRM:${provider}] Sync error:`, err.message);
+    logger.error({ operation: "crmAdapter", err, provider }, `[CRM:${provider}] Pull error:`, err.message);
+  }
+
+  // ─── PUSH direction ─────────────────────────────────────────────────
+  try {
+    if (direction === "push" || direction === "bidirectional") {
+      const pushResult = await pushLeadsToCRM(adapter, provider, credentials, lastSyncAt);
+      result.contactsSynced += pushResult.pushed;
+      result.contactsCreated += pushResult.created;
+      result.contactsUpdated += pushResult.updated;
+      if (pushResult.errors > 0) {
+        result.errors.push({ entity: "push", error: `${pushResult.errors} contacts failed to push` });
+      }
+      logger.info({ provider, pushed: pushResult.pushed, created: pushResult.created, updated: pushResult.updated, errors: pushResult.errors },
+        `[CRM:${provider}] Pushed: ${pushResult.created} created, ${pushResult.updated} updated, ${pushResult.errors} errors`);
+    }
+  } catch (err: any) {
+    result.errors.push({ entity: "push", error: err.message });
+    logger.error({ operation: "crmAdapter", err, provider }, `[CRM:${provider}] Push error:`, err.message);
   }
 
   // Log sync to crmSyncLog
@@ -915,7 +931,7 @@ export async function syncCRM(
   if (db) {
     await db.insert(crmSyncLog).values({
       crmProvider: provider,
-      direction: direction === "bidirectional" ? "pull" : direction,
+      direction: direction,
       syncType: "contacts",
       recordsSynced: result.contactsSynced + result.activitiesSynced,
       status: result.errors.length > 0 ? "failed" : "completed",
@@ -925,6 +941,107 @@ export async function syncCRM(
   }
 
   return result;
+}
+
+/**
+ * Push leads from lead_pipeline to an external CRM.
+ * Reads leads that haven't been synced to this provider yet (no crmExternalId for this provider).
+ * Uses raw SQL because actual DB columns are camelCase (not matching Drizzle schema).
+ */
+async function pushLeadsToCRM(
+  adapter: CRMAdapter,
+  provider: string,
+  credentials: Record<string, string>,
+  since?: number,
+): Promise<{ pushed: number; created: number; updated: number; errors: number }> {
+  const { getRawPool } = await import("../db");
+  const pool = await getRawPool();
+  if (!pool) return { pushed: 0, created: 0, updated: 0, errors: 0 };
+
+  let created = 0;
+  let updated = 0;
+  let errors = 0;
+
+  // Read leads that need to be pushed to this provider
+  // For GHL: check crmExternalId is null (not yet pushed)
+  // For others: check source !== provider (not originally from this CRM)
+  let query = `
+    SELECT id, firstName, lastName, email, phone, source, status, crmExternalId,
+           primaryInterest, estimatedIncome, notesJson
+    FROM lead_pipeline
+    WHERE email IS NOT NULL AND email != ''
+  `;
+  const params: any[] = [];
+
+  if (since) {
+    query += " AND updated_at > ?";
+    params.push(since);
+  }
+
+  // Don't push leads that originally came from this provider (avoid circular sync)
+  query += " AND (source IS NULL OR source != ?)";
+  params.push(provider);
+
+  // Limit batch size to avoid overwhelming external APIs
+  query += " ORDER BY id DESC LIMIT 100";
+
+  const [rows] = await pool.query(query, params) as any;
+  const leads = rows as any[];
+
+  logger.info({ provider, leadsToSync: leads.length }, `[CRM:${provider}] Found ${leads.length} leads to push`);
+
+  for (const lead of leads) {
+    try {
+      const contact: CRMContact = {
+        externalId: lead.crmExternalId || "",
+        firstName: lead.firstName || "",
+        lastName: lead.lastName || "",
+        email: lead.email,
+        phone: lead.phone || undefined,
+        tags: ["stewardly-synced", lead.status || "new"],
+        customFields: {
+          stewardlyId: lead.id,
+          primaryInterest: lead.primaryInterest,
+          source: lead.source,
+        },
+      };
+
+      // If lead already has a crmExternalId, it was previously pushed — skip or update
+      if (lead.crmExternalId && provider === "gohighlevel") {
+        // Update existing contact in external CRM
+        try {
+          await adapter.pushContact(credentials, { ...contact, externalId: lead.crmExternalId });
+          updated++;
+        } catch {
+          errors++;
+        }
+        continue;
+      }
+
+      // Push new contact
+      const externalId = await adapter.pushContact(credentials, contact);
+
+      if (externalId) {
+        // Update lead_pipeline with the external CRM ID
+        await pool.query(
+          "UPDATE lead_pipeline SET crmExternalId = ?, updated_at = ? WHERE id = ?",
+          [externalId, Date.now(), lead.id],
+        );
+        created++;
+      } else {
+        // pushContact returned empty string — platform may be read-only
+        errors++;
+      }
+
+      // Rate limiting — 200ms between API calls
+      await new Promise(r => setTimeout(r, 200));
+    } catch (err: any) {
+      logger.error({ operation: "crmAdapter", err, provider, leadId: lead.id }, `[CRM:${provider}] Push lead error:`, err.message);
+      errors++;
+    }
+  }
+
+  return { pushed: created + updated, created, updated, errors };
 }
 
 // ─── Helper Mappers ─────────────────────────────────────────────────────
