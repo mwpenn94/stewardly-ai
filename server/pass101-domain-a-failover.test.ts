@@ -276,12 +276,13 @@ describe("Pass 107 — MarketTicker removed from AppShell (intentional)", () => 
 describe("Pass 101 — AdminAuditTrail CSV export label", () => {
   const src = readFile("client/src/pages/AdminAuditTrail.tsx");
 
-  it("has Export CSV label on ExportDataButton", () => {
-    expect(src).toContain('label="Export CSV"');
+  it("has ExportDataButton with label", () => {
+    expect(src).toContain("ExportDataButton");
+    expect(src).toContain('label="Export"');
   });
 
-  it("still has text/csv in handleExport", () => {
-    expect(src).toContain("text/csv");
+  it("exports crm-audit-trail filename", () => {
+    expect(src).toContain('filename="crm-audit-trail"');
   });
 });
 

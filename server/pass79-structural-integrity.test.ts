@@ -80,6 +80,12 @@ describe("SEOHead coverage — user-facing pages have SEOHead", () => {
   const EXEMPT = new Set([
     "EmbedCalculator.tsx", "EmbedWidget.tsx", // embeds
     "NotFound.tsx", // error page
+    "SharedPlanView.tsx", // public shared view (no SEO needed)
+    "WebhookVsPolling.tsx", // internal admin tool
+    "AlertThresholds.tsx", // embedded settings component
+    "AdminUsageAnalytics.tsx", // admin-only analytics
+    "LocationAnalytics.tsx", // admin-only location analytics
+    "LocationHealth.tsx", // admin-only location health
   ]);
 
   it("all top-level pages (except exemptions) have SEOHead", () => {

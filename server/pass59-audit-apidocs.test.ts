@@ -32,15 +32,15 @@ describe("AdminAuditTrail page", () => {
     expect(src).toContain("export default function AdminAuditTrail");
   });
 
-  it("uses sharing.getAuditLog query", () => {
+  it("uses getCrmAuditLog query", () => {
     const src = readFile("client/src/pages/AdminAuditTrail.tsx");
-    expect(src).toContain("trpc.sharing.getAuditLog.useQuery");
+    expect(src).toContain("trpc.integrations.getCrmAuditLog.useQuery");
   });
 
-  it("has CSV export functionality", () => {
+  it("has CSV export functionality via ExportDataButton", () => {
     const src = readFile("client/src/pages/AdminAuditTrail.tsx");
-    expect(src).toContain("Export CSV");
-    expect(src).toContain("text/csv");
+    expect(src).toContain("ExportDataButton");
+    expect(src).toContain('filename="crm-audit-trail"');
   });
 
   it("has search and filter controls", () => {
@@ -52,24 +52,24 @@ describe("AdminAuditTrail page", () => {
   it("shows stats cards", () => {
     const src = readFile("client/src/pages/AdminAuditTrail.tsx");
     expect(src).toContain("Total Events");
-    expect(src).toContain("Grants");
-    expect(src).toContain("Revocations");
-    expect(src).toContain("Shares");
+    expect(src).toContain("Permissions");
+    expect(src).toContain("Sync");
+    expect(src).toContain("CATEGORY_CONFIG");
   });
 
   it("has expandable detail view", () => {
     const src = readFile("client/src/pages/AdminAuditTrail.tsx");
     expect(src).toContain("expandedEntry");
-    expect(src).toContain("Value Change");
+    expect(src).toContain("StateDiff");
   });
 
-  it("defines action config for all permission types", () => {
+  it("defines action config for CRM audit actions", () => {
     const src = readFile("client/src/pages/AdminAuditTrail.tsx");
-    expect(src).toContain("grant_permission");
-    expect(src).toContain("update_permission");
-    expect(src).toContain("revoke_permission");
-    expect(src).toContain("share_content");
-    expect(src).toContain("revoke_share");
+    expect(src).toContain("ACTION_CONFIG");
+    expect(src).toContain("user_assigned");
+    expect(src).toContain("role_updated");
+    expect(src).toContain("reconciliation_started");
+    expect(src).toContain("contact_synced");
   });
 });
 

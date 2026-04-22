@@ -250,7 +250,8 @@ describe("AdminAuditTrail CSV export", () => {
     "utf-8",
   );
 
-  it("has Export CSV label on ExportDataButton", () => {
-    expect(auditSrc).toContain("Export CSV");
+  it("has ExportDataButton with export label", () => {
+    expect(auditSrc).toContain("ExportDataButton");
+    expect(auditSrc).toContain('label="Export"');
   });
 });

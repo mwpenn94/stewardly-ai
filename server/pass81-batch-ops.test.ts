@@ -36,12 +36,12 @@ describe("Pass 81 — Batch Operations & Error Recovery", () => {
       expect(leadPipelineRouter).toMatch(/z\.array\(z\.number\(\)\)/);
     });
 
-    it("bulkUpdateStatus uses inArray for batch update", () => {
-      expect(leadPipelineRouter).toContain("inArray");
+    it("bulkUpdateStatus uses SQL IN for batch update", () => {
+      expect(leadPipelineRouter).toContain("IN (");
     });
 
     it("bulkUpdateStatus returns count of updated leads", () => {
-      expect(leadPipelineRouter).toMatch(/count:\s*input\.leadIds\.length/);
+      expect(leadPipelineRouter).toContain("count: accessibleIds.length");
     });
   });
 

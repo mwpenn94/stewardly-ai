@@ -329,7 +329,7 @@ export default function GHLWebhookSetup() {
                           variant="outline"
                           size="sm"
                           className="gap-1.5"
-                          onClick={() => window.open(step.link, "_blank")}
+                          onClick={() => window.open(step.link, "_blank", "noopener,noreferrer")}
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           {step.linkLabel}
