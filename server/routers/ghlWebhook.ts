@@ -448,6 +448,33 @@ export async function handleGHLWebhook(
       }
     } catch { /* SSE emit is best-effort */ }
 
+    // Record sync metric for webhook vs polling comparison
+    try {
+      const { recordWebhookEvent: recordWH } = await import("../services/syncMetrics");
+      const contactData = (payload.contact || payload) as Record<string, unknown>;
+      const ghlContactId = (contactData.id || contactData.contactId) as string | undefined;
+      // Map GHL event type to our normalized event type
+      const metricEventType = eventType.includes("delete") || eventType.includes("Delete")
+        ? "contact_delete" as const
+        : eventType.includes("opportunity") || eventType.includes("Opportunity")
+          ? (eventType.includes("create") || eventType.includes("Create") ? "opportunity_create" as const : "opportunity_update" as const)
+          : eventType.includes("create") || eventType.includes("Create")
+            ? "contact_create" as const
+            : "contact_update" as const;
+      // Try to extract GHL timestamp for latency calculation
+      const ghlDateAdded = (contactData.dateAdded || contactData.dateUpdated) as string | undefined;
+      const ghlTimestamp = ghlDateAdded ? new Date(ghlDateAdded).getTime() : undefined;
+      await recordWH({
+        eventType: metricEventType,
+        locationId: payloadLocationId,
+        locationDbId: locationDbId ?? undefined,
+        contactExternalId: ghlContactId,
+        ghlTimestamp: ghlTimestamp && !isNaN(ghlTimestamp) ? ghlTimestamp : undefined,
+        payloadSize: rawBody.length,
+        success: true,
+      });
+    } catch { /* metric recording is best-effort */ }
+
     logger.info({ eventId, eventType, upsertResult }, "GHL webhook processed");
     return {
       status: 200,
@@ -464,6 +491,16 @@ export async function handleGHLWebhook(
       .set({ processingStatus: "failed", processingError: err instanceof Error ? err.message : "Unknown error" })
       .where(eq(integrationWebhookEvents.id, eventId))
       .catch(() => {});
+    // Record failed webhook metric
+    try {
+      const { recordWebhookEvent: recordWH } = await import("../services/syncMetrics");
+      await recordWH({
+        eventType: "contact_update",
+        locationId: undefined,
+        success: false,
+        errorMessage: err instanceof Error ? err.message : "Unknown error",
+      });
+    } catch { /* best-effort */ }
     return { status: 500, body: { error: "Processing failed" } };
   }
 }

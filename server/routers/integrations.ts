@@ -19,6 +19,7 @@ import {
 import { eq, and, desc, sql, lte } from "drizzle-orm";
 import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
 import { firstOrNull } from "../services/dbResilience";
+import { notifyOwner } from "../_core/notification";
 import { reconcile, reconcileAllLocations, getSyncAggregation, persistReconcileStats, getActiveLocations } from "../services/syncReconciliation";
 import type { LocationConfig } from "../services/syncReconciliation";
 import { getRawPool } from "../db";
@@ -2552,6 +2553,45 @@ export const integrationsRouter = router({
               severity: "warning",
               message: `${metricLabel} for ${loc.name}: ${currentValue}${unit} exceeds warning threshold (${threshold.warning_threshold}${unit})`,
             });
+          }
+        }
+
+        // ── Threshold-breach notifications ──────────────────────────────
+        // When critical alerts are detected, push an in-app notification to the owner.
+        // Uses a simple dedup: only notify once per location+metric per hour.
+        const criticalAlerts = alerts.filter(a => a.severity === "critical");
+        if (criticalAlerts.length > 0) {
+          try {
+            // Check last notification time to avoid spam (1h cooldown per metric)
+            const now2 = Date.now();
+            const cooldownMs = 3600000; // 1 hour
+            const notifCacheKey = `alert_notif_cache`;
+            if (!(globalThis as any)[notifCacheKey]) (globalThis as any)[notifCacheKey] = new Map<string, number>();
+            const cache = (globalThis as any)[notifCacheKey] as Map<string, number>;
+
+            const newCriticals = criticalAlerts.filter(a => {
+              const key = `${a.locationDbId}:${a.metricName}`;
+              const lastNotified = cache.get(key) || 0;
+              return now2 - lastNotified > cooldownMs;
+            });
+
+            if (newCriticals.length > 0) {
+              const title = `\u26a0\ufe0f Critical Alert: ${newCriticals.length} threshold breach${newCriticals.length > 1 ? "es" : ""} detected`;
+              const content = newCriticals.map(a =>
+                `\u2022 ${a.message}`
+              ).join("\n") + "\n\nReview thresholds at Platform > Alert Thresholds.";
+
+              const sent = await notifyOwner({ title, content });
+              if (sent) {
+                // Update dedup cache
+                for (const a of newCriticals) {
+                  cache.set(`${a.locationDbId}:${a.metricName}`, now2);
+                }
+                logger.info(`[AlertThresholds] Notified owner of ${newCriticals.length} critical alert(s)`);
+              }
+            }
+          } catch (notifErr) {
+            logger.warn({ err: notifErr }, "[AlertThresholds] Failed to send threshold-breach notification");
           }
         }
 

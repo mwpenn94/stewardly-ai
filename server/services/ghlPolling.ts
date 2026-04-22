@@ -376,15 +376,53 @@ export async function pollLocation(
       // Upsert created contacts
       for (const contact of changes.created) {
         const upsertResult = await upsertContactToLeadPipeline(contact, locationDbId);
-        if (upsertResult === "created") result.contactsCreated++;
-        else if (upsertResult === "skipped") result.errors.push(`Failed to create ${contact.id}`);
+        if (upsertResult === "created") {
+          result.contactsCreated++;
+          // Record polling metric for each created contact
+          try {
+            const { recordPollingEvent } = await import("./syncMetrics");
+            await recordPollingEvent({
+              eventType: "contact_create",
+              locationId,
+              locationDbId,
+              contactExternalId: contact.id,
+              ghlTimestamp: contact.dateAdded ? new Date(contact.dateAdded).getTime() : undefined,
+              success: true,
+            });
+          } catch { /* best-effort */ }
+        } else if (upsertResult === "skipped") {
+          result.errors.push(`Failed to create ${contact.id}`);
+          try {
+            const { recordPollingEvent } = await import("./syncMetrics");
+            await recordPollingEvent({ eventType: "contact_create", locationId, locationDbId, contactExternalId: contact.id, success: false, errorMessage: `Skipped create for ${contact.id}` });
+          } catch { /* best-effort */ }
+        }
       }
       
       // Upsert updated contacts
       for (const contact of changes.updated) {
         const upsertResult = await upsertContactToLeadPipeline(contact, locationDbId);
-        if (upsertResult === "updated") result.contactsUpdated++;
-        else if (upsertResult === "skipped") result.errors.push(`Failed to update ${contact.id}`);
+        if (upsertResult === "updated") {
+          result.contactsUpdated++;
+          // Record polling metric for each updated contact
+          try {
+            const { recordPollingEvent } = await import("./syncMetrics");
+            await recordPollingEvent({
+              eventType: "contact_update",
+              locationId,
+              locationDbId,
+              contactExternalId: contact.id,
+              ghlTimestamp: contact.dateUpdated ? new Date(contact.dateUpdated).getTime() : undefined,
+              success: true,
+            });
+          } catch { /* best-effort */ }
+        } else if (upsertResult === "skipped") {
+          result.errors.push(`Failed to update ${contact.id}`);
+          try {
+            const { recordPollingEvent } = await import("./syncMetrics");
+            await recordPollingEvent({ eventType: "contact_update", locationId, locationDbId, contactExternalId: contact.id, success: false, errorMessage: `Skipped update for ${contact.id}` });
+          } catch { /* best-effort */ }
+        }
       }
     }
     

@@ -8112,3 +8112,24 @@
 - [x] P35-9: Write vitest tests — target 15+ new tests covering sync metrics, comparison panel data, alert thresholds CRUD, threshold evaluation
 - [x] P35-10: 3 consecutive clean LVUA passes — server 200, all routes load, all tests pass
 - [x] P35-FINAL: Update todo.md, save checkpoint
+
+## Pass 35 Follow-up — Wire Metrics, Notifications, and Alert Banner
+
+- [x] P35F-1: Wire recordWebhookEvent() into the GHL webhook handler in ghlWebhook.ts
+- [x] P35F-2: Wire recordPollingEvent() into the polling service (ghlPolling.ts)
+- [x] P35F-3: Add threshold-breach notification logic — when evaluateAlertThresholds detects critical alerts, call notifyOwner() to push in-app alerts
+- [x] P35F-4: Surface active alerts banner/badge on LocationHealth.tsx dashboard page
+- [x] P35F-5: Write/update vitest tests for the new integrations
+- [x] P35F-FINAL: Update todo.md, save checkpoint
+
+## Pass 36 — EMBA Modules Assessment + Learning Engine Parity Optimization
+
+- [ ] P36-1: Assess EMBA Modules live site (content, UX, features, capabilities)
+- [ ] P36-2: Assess EMBA Modules GitHub repo (code architecture, data models, features)
+- [ ] P36-3: Document comprehensive assessment findings and parity gap analysis
+- [ ] P36-4: Read current Stewardly learning engine code and identify gaps
+- [ ] P36-5: Optimize Stewardly learning engine backend (schema, services, procedures)
+- [ ] P36-6: Optimize Stewardly learning engine frontend (UI, UX, content)
+- [ ] P36-7: Write vitest tests for learning engine optimizations
+- [ ] P36-8: Virtual user assessment of optimized learning engine vs EMBA Modules
+- [ ] P36-FINAL: Final validation, todo update, checkpoint
