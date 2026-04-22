@@ -14,6 +14,7 @@ import {
   integrationHealthSummary,
   integrationImprovementLog,
   carrierImportTemplates,
+  ghlLocations,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, lte } from "drizzle-orm";
 import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
@@ -2312,5 +2313,252 @@ export const integrationsRouter = router({
           completedAt: r.completed_at ? new Date(r.completed_at).getTime() : null,
         })),
       };
+    }),
+
+  // ─── Pass 35: Webhook vs Polling Comparison ──────────────────────────
+  getWebhookVsPollingMetrics: protectedProcedure
+    .input(z.object({
+      since: z.number().optional(),
+      locationId: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const { getChannelComparison, getHourlyTimeline, getEventTypeBreakdown } = await import("../services/syncMetrics");
+      const since = input?.since ?? Date.now() - 7 * 86400000; // default: last 7 days
+      const locationId = input?.locationId;
+      const [comparison, timeline, breakdown] = await Promise.all([
+        getChannelComparison(since, locationId),
+        getHourlyTimeline(since, locationId),
+        getEventTypeBreakdown(since, locationId),
+      ]);
+      return { comparison, timeline, breakdown };
+    }),
+
+  getSyncChannelHealth: protectedProcedure.query(async () => {
+    const { getChannelMetrics } = await import("../services/syncMetrics");
+    const now = Date.now();
+    const last24h = now - 86400000;
+    const [webhook, polling] = await Promise.all([
+      getChannelMetrics("webhook", last24h),
+      getChannelMetrics("polling", last24h),
+    ]);
+    return {
+      webhook,
+      polling,
+      overallHealth: webhook.successRate >= 90 && polling.successRate >= 90 ? "healthy" :
+                     webhook.successRate >= 70 || polling.successRate >= 70 ? "warning" : "critical",
+    };
+  }),
+
+  // ─── Pass 35: Location Alert Thresholds ─────────────────────────────
+  getAlertThresholds: protectedProcedure
+    .input(z.object({ locationDbId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const pool = getRawPool();
+      if (!pool) return { thresholds: [] };
+      try {
+        let query = "SELECT * FROM location_alert_thresholds";
+        const params: unknown[] = [];
+        if (input?.locationDbId) {
+          query += " WHERE location_db_id = ?";
+          params.push(input.locationDbId);
+        }
+        query += " ORDER BY location_db_id, metric_name";
+        const [rows] = await pool.execute(query, params);
+        return {
+          thresholds: (rows as any[]).map(r => ({
+            id: r.id,
+            locationDbId: r.location_db_id,
+            locationId: r.location_id,
+            metricName: r.metric_name,
+            warningThreshold: r.warning_threshold,
+            criticalThreshold: r.critical_threshold,
+            enabled: !!r.enabled,
+          })),
+        };
+      } catch (err: any) {
+        logger.error("[AlertThresholds] getAlertThresholds error:", err);
+        return { thresholds: [] };
+      }
+    }),
+
+  setAlertThreshold: protectedProcedure
+    .input(z.object({
+      locationDbId: z.number(),
+      locationId: z.string(),
+      metricName: z.enum(["sync_lag_minutes", "error_rate_pct", "data_freshness_hours", "poll_failures"]),
+      warningThreshold: z.number().min(0),
+      criticalThreshold: z.number().min(0),
+      enabled: z.boolean().default(true),
+    }))
+    .mutation(async ({ input }) => {
+      const pool = getRawPool();
+      if (!pool) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      try {
+        // Upsert: insert or update on duplicate key
+        await pool.execute(
+          `INSERT INTO location_alert_thresholds
+            (location_db_id, location_id, metric_name, warning_threshold, critical_threshold, enabled)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+            warning_threshold = VALUES(warning_threshold),
+            critical_threshold = VALUES(critical_threshold),
+            enabled = VALUES(enabled),
+            updated_at = CURRENT_TIMESTAMP`,
+          [input.locationDbId, input.locationId, input.metricName, input.warningThreshold, input.criticalThreshold, input.enabled ? 1 : 0],
+        );
+        return { success: true };
+      } catch (err: any) {
+        logger.error("[AlertThresholds] setAlertThreshold error:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err.message });
+      }
+    }),
+
+  resetAlertThresholds: protectedProcedure
+    .input(z.object({ locationDbId: z.number() }))
+    .mutation(async ({ input }) => {
+      const pool = getRawPool();
+      if (!pool) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      try {
+        await pool.execute(
+          "DELETE FROM location_alert_thresholds WHERE location_db_id = ?",
+          [input.locationDbId],
+        );
+        return { success: true };
+      } catch (err: any) {
+        logger.error("[AlertThresholds] resetAlertThresholds error:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err.message });
+      }
+    }),
+
+  evaluateAlertThresholds: protectedProcedure
+    .input(z.object({ locationDbId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const pool = getRawPool();
+      if (!pool) return { alerts: [] };
+      const db = getDb();
+      if (!db) return { alerts: [] };
+
+      try {
+        // Get thresholds
+        let thresholdQuery = "SELECT * FROM location_alert_thresholds WHERE enabled = 1";
+        const thresholdParams: unknown[] = [];
+        if (input?.locationDbId) {
+          thresholdQuery += " AND location_db_id = ?";
+          thresholdParams.push(input.locationDbId);
+        }
+        const [thresholdRows] = await pool.execute(thresholdQuery, thresholdParams);
+        const thresholds = thresholdRows as any[];
+
+        if (thresholds.length === 0) return { alerts: [] };
+
+        // Get current location health data
+        const locations = await db.select().from(ghlLocations).where(eq(ghlLocations.isActive, 1 as any));
+        const locMap = new Map(locations.map(l => [l.id, l]));
+
+        const now = Date.now();
+        const alerts: Array<{
+          locationDbId: number;
+          locationId: string;
+          locationName: string;
+          metricName: string;
+          currentValue: number;
+          warningThreshold: number;
+          criticalThreshold: number;
+          severity: "warning" | "critical";
+          message: string;
+        }> = [];
+
+        // Get error counts per location (last 24h)
+        const [errorRows] = await pool.execute(
+          `SELECT location_db_id, COUNT(*) as total, SUM(CASE WHEN success = 0 THEN 1 ELSE 0 END) as errors
+           FROM sync_event_metrics WHERE detected_at >= ? GROUP BY location_db_id`,
+          [now - 86400000],
+        );
+        const errorMap = new Map<number, { total: number; errors: number }>();
+        for (const r of errorRows as any[]) {
+          if (r.location_db_id) errorMap.set(r.location_db_id, { total: Number(r.total), errors: Number(r.errors) });
+        }
+
+        for (const threshold of thresholds) {
+          const loc = locMap.get(threshold.location_db_id);
+          if (!loc) continue;
+
+          let currentValue: number | null = null;
+          let metricLabel = "";
+          let unit = "";
+
+          switch (threshold.metric_name) {
+            case "sync_lag_minutes": {
+              if (loc.lastSyncAt) {
+                currentValue = Math.round((now - loc.lastSyncAt) / 60000);
+                metricLabel = "Sync Lag";
+                unit = "min";
+              }
+              break;
+            }
+            case "error_rate_pct": {
+              const errData = errorMap.get(loc.id);
+              if (errData && errData.total > 0) {
+                currentValue = Math.round((errData.errors / errData.total) * 100);
+                metricLabel = "Error Rate";
+                unit = "%";
+              } else {
+                currentValue = 0;
+                metricLabel = "Error Rate";
+                unit = "%";
+              }
+              break;
+            }
+            case "data_freshness_hours": {
+              if (loc.lastSyncAt) {
+                currentValue = Math.round((now - loc.lastSyncAt) / 3600000 * 10) / 10;
+                metricLabel = "Data Freshness";
+                unit = "h";
+              }
+              break;
+            }
+            case "poll_failures": {
+              const errData = errorMap.get(loc.id);
+              currentValue = errData?.errors ?? 0;
+              metricLabel = "Poll Failures";
+              unit = "";
+              break;
+            }
+          }
+
+          if (currentValue === null) continue;
+
+          if (currentValue >= threshold.critical_threshold) {
+            alerts.push({
+              locationDbId: loc.id,
+              locationId: loc.locationId,
+              locationName: loc.name,
+              metricName: threshold.metric_name,
+              currentValue,
+              warningThreshold: threshold.warning_threshold,
+              criticalThreshold: threshold.critical_threshold,
+              severity: "critical",
+              message: `${metricLabel} for ${loc.name}: ${currentValue}${unit} exceeds critical threshold (${threshold.critical_threshold}${unit})`,
+            });
+          } else if (currentValue >= threshold.warning_threshold) {
+            alerts.push({
+              locationDbId: loc.id,
+              locationId: loc.locationId,
+              locationName: loc.name,
+              metricName: threshold.metric_name,
+              currentValue,
+              warningThreshold: threshold.warning_threshold,
+              criticalThreshold: threshold.critical_threshold,
+              severity: "warning",
+              message: `${metricLabel} for ${loc.name}: ${currentValue}${unit} exceeds warning threshold (${threshold.warning_threshold}${unit})`,
+            });
+          }
+        }
+
+        return { alerts };
+      } catch (err: any) {
+        logger.error("[AlertThresholds] evaluateAlertThresholds error:", err);
+        return { alerts: [] };
+      }
     }),
 });

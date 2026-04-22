@@ -8099,3 +8099,16 @@
 - [x] P34-7: 3 consecutive clean LVUA passes — server 200, webhook health 200, 75/75 tests across 4 suites, all files verified, 7 tRPC procedures confirmed
 - [x] P34-FINAL: Update todo.md, save checkpoint
 - [x] P34-HOTFIX: Fix deployment build failure — replaced non-existent `@/hooks/use-toast` import in LocationHealth.tsx with `sonner` toast (matching all other pages). Build verified locally (45.95s, 0 errors).
+
+## Pass 35 — Webhook vs Polling Comparison Panel + Location-Level Alerting Thresholds
+- [x] P35-1: Create DB migration — sync_event_metrics table (tracks webhook/polling event timestamps for latency comparison) + location_alert_thresholds table (per-location configurable warning/critical thresholds)
+- [x] P35-2: Build sync metrics tracking service (server/services/syncMetrics.ts) — record webhook event arrival, record polling detection, compute latency stats, channel health comparison
+- [x] P35-3: Add tRPC procedures — getWebhookVsPollingMetrics, getSyncChannelHealth for comparison panel data
+- [x] P35-4: Build webhook vs polling comparison UI panel — side-by-side latency stats, event counts by channel, 24h timeline, channel health indicators
+- [x] P35-5: Build alerting thresholds service (server/services/alertThresholds.ts) — CRUD for per-location thresholds, threshold evaluation against live metrics
+- [x] P35-6: Add tRPC procedures — getAlertThresholds, setAlertThreshold, resetAlertThresholds, evaluateAlertThresholds
+- [x] P35-7: Build alerting thresholds configuration UI — per-location threshold editor for sync lag, error rate, data freshness with warning/critical levels
+- [x] P35-8: Wire thresholds into LocationHealth.tsx active alerts panel — evaluate thresholds against live data, show threshold-based alerts
+- [x] P35-9: Write vitest tests — target 15+ new tests covering sync metrics, comparison panel data, alert thresholds CRUD, threshold evaluation
+- [x] P35-10: 3 consecutive clean LVUA passes — server 200, all routes load, all tests pass
+- [x] P35-FINAL: Update todo.md, save checkpoint

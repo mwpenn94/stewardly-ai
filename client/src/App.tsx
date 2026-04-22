@@ -74,6 +74,8 @@ const LocationAnalytics = lazy(() => import("./pages/LocationAnalytics"));
 const PermissionManagement = lazy(() => import("./pages/PermissionManagement"));
 const LocationOnboarding = lazy(() => import("./pages/LocationOnboarding"));
 const LocationHealth = lazy(() => import("./pages/LocationHealth"));
+const WebhookVsPolling = lazy(() => import("./pages/WebhookVsPolling"));
+const AlertThresholds = lazy(() => import("./pages/AlertThresholds"));
 const SuitabilityPanel = lazy(() => import("./pages/SuitabilityPanel"));
 const ProficiencyDashboard = lazy(() => import("./pages/ProficiencyDashboard"));
 const ProductIntelligence = lazy(() => import("./pages/ProductIntelligence"));
@@ -229,6 +231,8 @@ function Router() {
         <Route path={"/permissions"} component={PermissionManagement} />
         <Route path={"/location-onboarding"} component={LocationOnboarding} />
         <Route path={"/location-health"} component={LocationHealth} />
+        <Route path={"/webhook-vs-polling"} component={WebhookVsPolling} />
+        <Route path={"/alert-thresholds"} component={AlertThresholds} />
         <Route path={"/dynamic-integrations"} component={DynamicIntegrations} />
         <Route path={"/suitability-panel"} component={SuitabilityPanel} />
         <Route path={"/proficiency"} component={ProficiencyDashboard} />

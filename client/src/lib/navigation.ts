@@ -166,6 +166,8 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Shield", label: "Permissions", href: "/permissions", minRole: "admin", section: "relationships" },
   { iconName: "Compass", label: "Location Onboarding", href: "/location-onboarding", minRole: "admin", section: "relationships" },
   { iconName: "Heart", label: "Location Health", href: "/location-health", minRole: "admin", section: "relationships" },
+  { iconName: "ArrowLeftRight", label: "Webhook vs Polling", href: "/webhook-vs-polling", minRole: "admin", section: "relationships" },
+  { iconName: "Bell", label: "Alert Thresholds", href: "/alert-thresholds", minRole: "admin", section: "relationships" },
   { iconName: "Link", label: "My Integrations", href: "/my-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "Users2", label: "Community", href: "/community", minRole: "advisor", section: "relationships" },
 

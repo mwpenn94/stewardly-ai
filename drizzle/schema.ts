@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint, decimal, date, index, uniqueIndex } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, json, float, boolean as mysqlBoolean, bigint, decimal, date, index, uniqueIndex, double } from "drizzle-orm/mysql-core";
 
 // ─── ORGANIZATIONS (Multi-Tenant Organizational Units) ─────────────────────
 // DB table: organizations
@@ -7449,3 +7449,51 @@ export const userLocations = mysqlTable("user_locations", {
 }));
 export type UserLocation = typeof userLocations.$inferSelect;
 export type InsertUserLocation = typeof userLocations.$inferInsert;
+
+// ─── Pass 35: Sync Event Metrics (webhook vs polling latency tracking) ──────
+// DB table: sync_event_metrics
+export const syncEventMetrics = mysqlTable("sync_event_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 128 }).notNull(),
+  locationId: varchar("location_id", { length: 100 }),
+  locationDbId: int("location_db_id"),
+  channel: varchar("channel", { length: 20 }).notNull(), // 'webhook' | 'polling'
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  contactExternalId: varchar("contact_external_id", { length: 128 }),
+  detectedAt: bigint("detected_at", { mode: "number" }).notNull(),
+  ghlTimestamp: bigint("ghl_timestamp", { mode: "number" }),
+  latencyMs: bigint("latency_ms", { mode: "number" }),
+  payloadSize: int("payload_size").default(0),
+  success: mysqlBoolean("success").default(true),
+  errorMessage: text("error_message"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  channelIdx: index("idx_sem_channel").on(table.channel),
+  locationIdx: index("idx_sem_location").on(table.locationId),
+  detectedIdx: index("idx_sem_detected").on(table.detectedAt),
+  eventTypeIdx: index("idx_sem_event_type").on(table.eventType),
+  contactIdx: index("idx_sem_contact").on(table.contactExternalId),
+}));
+export type SyncEventMetric = typeof syncEventMetrics.$inferSelect;
+export type InsertSyncEventMetric = typeof syncEventMetrics.$inferInsert;
+
+// ─── Pass 35: Location Alert Thresholds (per-location configurable alerting) ─
+// DB table: location_alert_thresholds
+export const locationAlertThresholds = mysqlTable("location_alert_thresholds", {
+  id: int("id").autoincrement().primaryKey(),
+  locationDbId: int("location_db_id").notNull(),
+  locationId: varchar("location_id", { length: 100 }).notNull(),
+  metricName: varchar("metric_name", { length: 64 }).notNull(), // sync_lag_minutes, error_rate_pct, data_freshness_hours, poll_failures
+  warningThreshold: float("warning_threshold").notNull(),
+  criticalThreshold: float("critical_threshold").notNull(),
+  enabled: mysqlBoolean("enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  locationMetricIdx: index("idx_lat_location_metric").on(table.locationDbId, table.metricName),
+  locationIdx: index("idx_lat_location").on(table.locationDbId),
+  enabledIdx: index("idx_lat_enabled").on(table.enabled),
+}));
+export type LocationAlertThreshold = typeof locationAlertThresholds.$inferSelect;
+export type InsertLocationAlertThreshold = typeof locationAlertThresholds.$inferInsert;
