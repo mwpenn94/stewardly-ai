@@ -1243,11 +1243,25 @@ export async function executeAITool(name: string, args: Record<string, any>): Pr
         const age = args.clientAge ?? 40;
         const risk = args.riskTolerance ?? "moderate";
         const income = args.income ?? 100000;
+        // Deterministic suitability scoring based on client factors
+        let suitScore = 75;
+        if (age < 35) suitScore += 10;
+        else if (age < 50) suitScore += 5;
+        else if (age > 65) suitScore -= 10;
+        if (risk === "aggressive" && age < 50) suitScore += 8;
+        else if (risk === "conservative" && age > 55) suitScore += 8;
+        else if (risk === "moderate") suitScore += 5;
+        if (income > 150000) suitScore += 5;
+        else if (income < 50000) suitScore -= 5;
+        suitScore = Math.max(0, Math.min(100, suitScore));
+        const ageCategory = age < 30 ? "young" : age < 50 ? "appropriate" : age < 65 ? "pre-retirement" : "retirement";
         return JSON.stringify({
-          suitabilityScore: Math.round(70 + Math.random() * 25),
-          dimensions: { age: "appropriate", risk: risk, income: income > 75000 ? "qualified" : "review",
+          suitabilityScore: suitScore,
+          dimensions: { age: ageCategory, risk: risk, income: income > 75000 ? "qualified" : "review",
             goals: args.goals ?? ["growth"], timeHorizon: age < 50 ? "long" : "medium" },
-          recommendation: "Detailed suitability requires full profile completion",
+          recommendation: suitScore >= 85 ? "Strong suitability match based on client profile"
+            : suitScore >= 70 ? "Moderate suitability — review specific product features against client goals"
+            : "Low suitability — consider alternative products better aligned with client profile",
         });
       }
       case "model_insurance_needs": {

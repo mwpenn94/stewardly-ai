@@ -868,3 +868,143 @@ export async function listFormulas(filters: { disciplineId?: number; status?: Pu
     return [];
   }
 }
+
+
+// ─── Create helpers for content types missing from embaImport ─────────
+
+export async function createFormula(data: {
+  disciplineId: number | null;
+  name: string;
+  formula: string;
+  variables?: any;
+  createdBy: number | null;
+  sourceRef?: string;
+  tags?: any;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const [result] = await db.insert(learningFormulas).values({
+      disciplineId: data.disciplineId,
+      name: data.name,
+      formula: data.formula,
+      variables: data.variables ?? null,
+      createdBy: data.createdBy,
+      sourceRef: data.sourceRef ?? null,
+      tags: data.tags ?? null,
+    });
+    return { id: result.insertId };
+  } catch (err) {
+    log.warn({ err: String(err) }, "createFormula failed");
+    return null;
+  }
+}
+
+export async function createCase(data: {
+  disciplineId: number | null;
+  title: string;
+  content: string;
+  createdBy: number | null;
+  sourceRef?: string;
+  tags?: any;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const [result] = await db.insert(learningCases).values({
+      disciplineId: data.disciplineId,
+      title: data.title,
+      content: data.content,
+      createdBy: data.createdBy,
+      sourceRef: data.sourceRef ?? null,
+      tags: data.tags ?? null,
+    });
+    return { id: result.insertId };
+  } catch (err) {
+    log.warn({ err: String(err) }, "createCase failed");
+    return null;
+  }
+}
+
+export async function createFsApplication(data: {
+  disciplineId: number | null;
+  title: string;
+  content: string;
+  createdBy: number | null;
+  sourceRef?: string;
+  tags?: any;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const [result] = await db.insert(learningFsApplications).values({
+      disciplineId: data.disciplineId,
+      title: data.title,
+      content: data.content,
+      createdBy: data.createdBy,
+      sourceRef: data.sourceRef ?? null,
+      tags: data.tags ?? null,
+    });
+    return { id: result.insertId };
+  } catch (err) {
+    log.warn({ err: String(err) }, "createFsApplication failed");
+    return null;
+  }
+}
+
+export async function createConnection(data: {
+  fromDefinitionId: number;
+  toDefinitionId: number;
+  relationship: string;
+  createdBy: number | null;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const [result] = await db.insert(learningConnections).values({
+      fromDefinitionId: data.fromDefinitionId,
+      toDefinitionId: data.toDefinitionId,
+      relationship: data.relationship ?? null,
+      createdBy: data.createdBy,
+    });
+    return { id: result.insertId };
+  } catch (err) {
+    log.warn({ err: String(err) }, "createConnection failed");
+    return null;
+  }
+}
+
+export async function updateTrackExamOverview(trackId: number, examOverview: any) {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db
+      .update(learningTracks)
+      .set({ examOverview })
+      .where(eq(learningTracks.id, trackId));
+    return true;
+  } catch (err) {
+    log.warn({ err: String(err) }, "updateTrackExamOverview failed");
+    return false;
+  }
+}
+
+export async function updateTrackDiagrams(trackId: number, diagrams: any) {
+  // Store diagrams in the track's examOverview JSON field under a 'diagrams' key
+  // since there's no separate diagrams table
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    const track = await getTrack(trackId);
+    if (!track) return false;
+    const existing = (track.examOverview as any) ?? {};
+    await db
+      .update(learningTracks)
+      .set({ examOverview: { ...existing, diagrams } })
+      .where(eq(learningTracks.id, trackId));
+    return true;
+  } catch (err) {
+    log.warn({ err: String(err) }, "updateTrackDiagrams failed");
+    return false;
+  }
+}

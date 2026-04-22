@@ -232,6 +232,12 @@ function sanitizeCounts(raw: any): EMBAImportResult["counts"] | null {
     subsections: numOr0(raw.subsections),
     questions: numOr0(raw.questions),
     flashcards: numOr0(raw.flashcards),
+    formulas: numOr0(raw.formulas),
+    cases: numOr0(raw.cases),
+    fsApplications: numOr0(raw.fsApplications),
+    connections: numOr0(raw.connections),
+    diagrams: numOr0(raw.diagrams),
+    examOverviews: numOr0(raw.examOverviews),
   };
 }
 
@@ -244,6 +250,10 @@ function sanitizeSkipped(raw: any): EMBAImportResult["skipped"] | null {
     chapters: numOr0(raw.chapters),
     questions: numOr0(raw.questions),
     flashcards: numOr0(raw.flashcards),
+    formulas: numOr0(raw.formulas),
+    cases: numOr0(raw.cases),
+    fsApplications: numOr0(raw.fsApplications),
+    connections: numOr0(raw.connections),
   };
 }
 

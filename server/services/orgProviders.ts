@@ -525,18 +525,21 @@ export async function fetchSOFRFromFRED(apiKey?: string): Promise<SOFRRate[]> {
 }
 
 function getSOFRFallbackData(): SOFRRate[] {
-  // Fallback SOFR data based on recent historical values
+  // Deterministic fallback SOFR data based on recent known rate (4.33% as of 2025)
   const baseDate = new Date();
+  const baseRate = 4.33;
   return Array.from({ length: 30 }, (_, i) => {
     const date = new Date(baseDate);
     date.setDate(date.getDate() - i);
-    const baseRate = 4.33 + (Math.random() - 0.5) * 0.1;
+    // Slight deterministic variation based on day-of-month
+    const dayVariation = ((date.getDate() % 7) - 3) * 0.005;
+    const rate = Math.round((baseRate + dayVariation) * 100) / 100;
     return {
       date: date.toISOString().split("T")[0],
-      rate: Math.round(baseRate * 100) / 100,
-      percentile25: Math.round((baseRate - 0.02) * 100) / 100,
-      percentile75: Math.round((baseRate + 0.02) * 100) / 100,
-      volume: Math.floor(1800 + Math.random() * 400),
+      rate,
+      percentile25: Math.round((rate - 0.02) * 100) / 100,
+      percentile75: Math.round((rate + 0.02) * 100) / 100,
+      volume: 2000,
       source: "fallback",
     };
   });

@@ -156,6 +156,14 @@ const Playlists = lazy(() => import("./pages/learning/Playlists"));
 const StudyGroups = lazy(() => import("./pages/learning/StudyGroups"));
 const DiscoveryHistory = lazy(() => import("./pages/learning/DiscoveryHistory"));
 const PeerGroups = lazy(() => import("./pages/learning/PeerGroups"));
+// Pass 64d — new learning pages
+const FormulasPage = lazy(() => import("./pages/learning/FormulasPage"));
+const CasesPage = lazy(() => import("./pages/learning/CasesPage"));
+const FSToolkitPage = lazy(() => import("./pages/learning/FSToolkitPage"));
+const ConnectionsPage = lazy(() => import("./pages/learning/ConnectionsPage"));
+const TracksIndex = lazy(() => import("./pages/learning/TracksIndex"));
+const StudySession = lazy(() => import("./pages/learning/StudySession"));
+const SharedPlaylist = lazy(() => import("./pages/learning/SharedPlaylist"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
 // Comparables — competitive gap dashboard (hybrid build loop, pass 1)
 const ComparablesPage = lazy(() => import("./pages/Comparables"));
@@ -326,6 +334,14 @@ function Router() {
         <Route path="/learning/groups" component={StudyGroups} />
         <Route path="/learning/discovery" component={DiscoveryHistory} />
         <Route path="/learning/peer-groups" component={PeerGroups} />
+        {/* Pass 64d — new learning browse/study pages */}
+        <Route path="/learning/formulas" component={FormulasPage} />
+        <Route path="/learning/cases" component={CasesPage} />
+        <Route path="/learning/fs-toolkit" component={FSToolkitPage} />
+        <Route path="/learning/connections-browse" component={ConnectionsPage} />
+        <Route path="/learning/tracks" component={TracksIndex} />
+        <Route path="/learning/session/:trackSlug" component={StudySession} />
+        <Route path="/learning/shared/:shareToken" component={SharedPlaylist} />
 
         {/* Consolidated Hub Pages */}
         {/* Comparables — competitive gap dashboard (hybrid build loop pass 1) */}

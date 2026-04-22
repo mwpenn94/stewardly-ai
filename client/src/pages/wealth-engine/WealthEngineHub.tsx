@@ -66,7 +66,7 @@ type WETab =
   // Protect & Analyze stage
   | "quick-bundle" | "protection-score" | "strategy-comparison" | "insurance-analysis"
   | "holistic-comparison" | "quick-quote-hub"
-  | "configurator" | "sensitivity" | "what-if" | "references"
+  | "configurator" | "sensitivity" | "what-if" | "references" | "portfolio-risk"
   | "strategy-archetypes" | "advanced-workflows" | "firm-comparison" | "cascade-alerts" | "financial-data-hub"
   // Practice stage
   | "engine-dashboard" | "business-income" | "owner-comp" | "business-valuation" | "practice-to-wealth"

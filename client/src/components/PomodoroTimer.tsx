@@ -121,7 +121,7 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
   // If hidden (self-managed close), render a tiny re-open button
   if (isHidden) {
     return (
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed bottom-20 right-4 z-50">
         <Button
           variant="ghost"
           size="icon"
@@ -144,7 +144,7 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed bottom-20 right-4 z-50">
         <Button
           variant="default"
           size="sm"
@@ -163,7 +163,7 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-64 bg-card border rounded-xl shadow-2xl overflow-hidden">
+    <div className="fixed bottom-20 right-4 z-50 w-64 bg-card border rounded-xl shadow-2xl overflow-hidden">
       {/* Progress bar */}
       <div className="h-1 bg-muted">
         <div

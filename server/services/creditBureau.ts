@@ -69,9 +69,9 @@ export function verifyConsent(consentId: number): { valid: boolean; reason?: str
   return { valid: true };
 }
 
-// ─── Soft Pull Simulation ────────────────────────────────────────────────
-// In production, this would call TransUnion/Equifax/Experian APIs
-// For now, simulates a soft pull response structure
+// ─── Soft Pull (DB-backed) ────────────────────────────────────────────────────────────────────
+// Returns real credit profile data from DB if available.
+// When no data exists, returns success:false with a clear message.
 
 export interface SoftPullResult {
   success: boolean;
@@ -110,9 +110,7 @@ export async function performSoftPull(
     throw new Error(`Consent invalid: ${consentCheck.reason}`);
   }
 
-  // In production: call credit bureau API here
-  // For now: return structured response that matches real API format
-
+  // Return real credit profile data from DB if available
   // Check if we have a recent pull (within 30 days)
   const db = await getDb();
   if (db) {
@@ -143,12 +141,12 @@ export async function performSoftPull(
     }
   }
 
-  // No existing data — return placeholder indicating API integration needed
+  // No existing credit data for this user
   return {
     success: false,
     creditScore: 0,
     scoreModel: "FICO_8",
-    bureau: "TransUnion",
+    bureau: "N/A",
     pullDate: new Date().toISOString().split("T")[0],
     utilizationPercent: 0,
     totalDebt: 0,
@@ -158,7 +156,10 @@ export async function performSoftPull(
     oldestAccountYears: 0,
     paymentHistory: { onTimePercent: 0, latePayments30: 0, latePayments60: 0, latePayments90: 0 },
     accountBreakdown: { revolving: 0, installment: 0, mortgage: 0, other: 0 },
-    recommendations: ["Credit bureau API integration required for live data"],
+    recommendations: [
+      "No credit data on file. Please upload a credit report or connect a credit monitoring service to populate your profile.",
+      "You can also manually enter your credit score in the Financial Profile settings.",
+    ],
   };
 }
 

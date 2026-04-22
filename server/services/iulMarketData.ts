@@ -35,9 +35,11 @@ export async function seedIulCreditingHistory(): Promise<number> {
   for (const product of products.slice(0, 5)) {
     for (const strategy of strategies) {
       for (let year = 2019; year <= 2025; year++) {
-        const cap = strategy.capRange[0] + Math.random() * (strategy.capRange[1] - strategy.capRange[0]);
-        const part = strategy.partRange[0] + Math.random() * (strategy.partRange[1] - strategy.partRange[0]);
-        const spread = strategy.spreadRange[0] + Math.random() * (strategy.spreadRange[1] - strategy.spreadRange[0]);
+        // Deterministic: use midpoint of range + slight year-based offset for variety
+        const yearOffset = (year - 2019) / 12; // 0 to 0.5 across years
+        const cap = strategy.capRange[0] + (strategy.capRange[1] - strategy.capRange[0]) * (0.5 + yearOffset * 0.3);
+        const part = strategy.partRange[0] + (strategy.partRange[1] - strategy.partRange[0]) * (0.5 + yearOffset * 0.2);
+        const spread = strategy.spreadRange[0] + (strategy.spreadRange[1] - strategy.spreadRange[0]) * (0.5 - yearOffset * 0.1);
 
         const indexReturn = sp500Returns[year] ?? 5;
         let credited: number;
@@ -133,39 +135,73 @@ export async function seedMarketIndexHistory(): Promise<number> {
     { symbol: "VIX", baseValue: 15 },
   ];
 
+  // Fetch real historical data from Yahoo Finance via data API
+  const { callDataApi } = await import("../_core/dataApi");
+  const YAHOO_TICKERS: Record<string, string> = {
+    SPX: "^GSPC", NDX: "^IXIC", DJIA: "^DJI", RUT: "^RUT", AGG: "AGG", VIX: "^VIX",
+  };
   const records: any[] = [];
 
   for (const index of indices) {
-    let value = index.baseValue;
-    let yearStartValue = value;
+    const ticker = YAHOO_TICKERS[index.symbol] || index.symbol;
+    let monthlyData: Array<{ date: string; open: number; close: number }> = [];
+    try {
+      const resp = await callDataApi("/yahoo_finance/get_stock_chart", {
+        symbol: ticker, interval: "1mo", range: "7y",
+      });
+      const quotes = resp?.chart?.result?.[0];
+      if (quotes?.timestamp && quotes?.indicators?.quote?.[0]) {
+        const timestamps = quotes.timestamp as number[];
+        const q = quotes.indicators.quote[0];
+        monthlyData = timestamps.map((ts: number, i: number) => ({
+          date: new Date(ts * 1000).toISOString().slice(0, 10),
+          open: q.open?.[i] ?? 0,
+          close: q.close?.[i] ?? 0,
+        })).filter((d: any) => d.open > 0 && d.close > 0);
+      }
+    } catch {
+      // Fallback to deterministic data if API fails
+    }
 
-    for (let year = 2019; year <= 2025; year++) {
-      yearStartValue = value;
-      for (let month = 1; month <= 12; month++) {
-        if (year === 2025 && month > 3) break;
-
-        const monthlyReturn = index.symbol === "VIX"
-          ? (Math.random() - 0.5) * 10
-          : (Math.random() - 0.45) * 0.08;
-
-        const prevValue = value;
-        if (index.symbol === "VIX") {
-          value = Math.max(10, Math.min(80, value + monthlyReturn));
-        } else {
-          value = value * (1 + monthlyReturn);
-        }
-
-        const dailyReturn = ((value - prevValue) / prevValue * 100).toFixed(4);
-        const totalReturnIdx = ((value / yearStartValue - 1) * 100).toFixed(4);
-
+    if (monthlyData.length > 0) {
+      let yearStartValue = monthlyData[0].open;
+      let currentYear = parseInt(monthlyData[0].date.slice(0, 4));
+      for (const d of monthlyData) {
+        const yr = parseInt(d.date.slice(0, 4));
+        if (yr !== currentYear) { yearStartValue = d.open; currentYear = yr; }
+        const dailyReturn = ((d.close - d.open) / d.open * 100).toFixed(4);
+        const totalReturnIdx = ((d.close / yearStartValue - 1) * 100).toFixed(4);
         records.push({
           indexSymbol: index.symbol,
-          date: `${year}-${String(month).padStart(2, "0")}-01`,
-          openPrice: prevValue.toFixed(2),
-          closePrice: value.toFixed(2),
+          date: d.date.slice(0, 7) + "-01",
+          openPrice: d.open.toFixed(2),
+          closePrice: d.close.toFixed(2),
           dailyReturn,
           totalReturnIndex: totalReturnIdx,
         });
+      }
+    } else {
+      // Deterministic fallback using known annual returns
+      let value = index.baseValue;
+      let yearStartValue = value;
+      const knownReturns: Record<number, number> = { 2019: 0.315, 2020: 0.184, 2021: 0.287, 2022: -0.181, 2023: 0.263, 2024: 0.233, 2025: 0.052 };
+      for (let year = 2019; year <= 2025; year++) {
+        yearStartValue = value;
+        const annualReturn = knownReturns[year] ?? 0.08;
+        const monthlyReturn = annualReturn / 12;
+        for (let month = 1; month <= 12; month++) {
+          if (year === 2025 && month > 3) break;
+          const prevValue = value;
+          value = value * (1 + monthlyReturn);
+          records.push({
+            indexSymbol: index.symbol,
+            date: `${year}-${String(month).padStart(2, "0")}-01`,
+            openPrice: prevValue.toFixed(2),
+            closePrice: value.toFixed(2),
+            dailyReturn: ((value - prevValue) / prevValue * 100).toFixed(4),
+            totalReturnIndex: ((value / yearStartValue - 1) * 100).toFixed(4),
+          });
+        }
       }
     }
   }

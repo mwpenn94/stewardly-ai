@@ -9,12 +9,65 @@ const log = logger.child({ module: "smsit" });
 
 function getConfig() {
   const apiKey = process.env.SMSIT_API_KEY;
-  const apiUrl = process.env.SMSIT_API_URL;
+  const apiUrl = process.env.SMSIT_API_URL || "https://tool-it.smsit.ai/api";
   if (!apiKey || !apiUrl) return null;
   return { apiKey, apiUrl };
 }
 
-export async function pushContact(lead: { firstName?: string; lastName?: string; phone?: string; tags?: string[] }): Promise<string | null> {
+/**
+ * Pull contacts from SMS-iT API
+ */
+export async function pullContacts(since?: number): Promise<Array<{
+  externalId: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  tags?: string[];
+  customFields?: Record<string, unknown>;
+  updatedAt?: number;
+}>> {
+  const config = getConfig();
+  if (!config) {
+    log.warn("SMS-iT not configured — missing SMSIT_API_KEY or SMSIT_API_URL");
+    return [];
+  }
+  try {
+    let url = `${config.apiUrl}/contacts?limit=100`;
+    if (since) url += `&updated_after=${new Date(since).toISOString()}`;
+    const res = await fetch(url, {
+      headers: {
+        "Authorization": `Bearer ${config.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) {
+      log.error({ status: res.status }, `SMS-iT pull contacts HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json() as any;
+    const contacts = data?.data || data?.contacts || [];
+    log.info({ count: contacts.length }, `SMS-iT pulled ${contacts.length} contacts`);
+    return contacts.map((c: any) => ({
+      externalId: String(c.id || c._id),
+      firstName: c.first_name || c.firstName || "",
+      lastName: c.last_name || c.lastName || "",
+      email: c.email || undefined,
+      phone: c.phone || c.mobile || undefined,
+      company: c.company || "",
+      tags: c.tags || [],
+      customFields: c.custom_fields || {},
+      updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : undefined,
+    }));
+  } catch (e: any) {
+    log.error({ error: e.message }, "SMS-iT pull contacts failed");
+    return [];
+  }
+}
+
+export async function pushContact(lead: { firstName?: string; lastName?: string; phone?: string; email?: string; tags?: string[] }): Promise<string | null> {
   const config = getConfig();
   if (!config) { log.warn("SMS-iT not configured"); return null; }
 

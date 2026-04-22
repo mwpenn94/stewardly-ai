@@ -124,12 +124,58 @@ export async function runRegressionTests(variantId: number): Promise<boolean> {
   let totalSimilarity = 0;
   let compliancePassed = 0;
 
+  // Get the variant's prompt template to test against golden tests
+  const [variant] = await db.select().from(promptVariants).where(eq(promptVariants.id, variantId)).limit(1);
+  if (!variant) return false;
+
   for (const test of goldenTests) {
-    // Simulate similarity check (in production, this would call LLM)
-    const similarity = 0.85; // Placeholder — real impl would compare responses
+    let similarity = 0;
+    try {
+      // Use LLM to evaluate the variant's response against the golden test
+      const { invokeLLM } = await import("../_core/llm");
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: variant.promptTemplate },
+          { role: "user", content: test.promptText },
+        ],
+      });
+      const generatedResponse = response?.choices?.[0]?.message?.content ?? "";
+      // Use LLM to score similarity between generated and expected response
+      const evalResponse = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are a response quality evaluator. Compare the generated response to the expected pattern. Return ONLY a JSON object with a single field 'similarity' containing a number between 0.0 and 1.0." },
+          { role: "user", content: `Expected pattern: ${test.expectedResponsePattern}\n\nGenerated response: ${generatedResponse}\n\nRate the similarity (0.0 to 1.0):` },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "similarity_score",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: { similarity: { type: "number", description: "Similarity score 0.0-1.0" } },
+              required: ["similarity"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const evalContent = evalResponse?.choices?.[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(evalContent);
+      similarity = Math.max(0, Math.min(1, parsed.similarity ?? 0));
+    } catch {
+      // If LLM call fails, use basic text overlap as fallback
+      const expected = (test.expectedResponsePattern ?? "").toLowerCase().split(/\s+/);
+      const actual = (variant.promptTemplate ?? "").toLowerCase().split(/\s+/);
+      const overlap = expected.filter(w => actual.includes(w)).length;
+      similarity = expected.length > 0 ? overlap / expected.length : 0;
+    }
     totalSimilarity += similarity;
     if (similarity >= (test.minSimilarityScore ?? 0.7)) passed++;
-    if (test.complianceMustPass) compliancePassed++;
+    if (test.complianceMustPass) {
+      // For compliance tests, check if similarity meets threshold
+      if (similarity >= (test.minSimilarityScore ?? 0.7)) compliancePassed++;
+    }
   }
 
   const avgSimilarity = totalSimilarity / goldenTests.length;

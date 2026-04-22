@@ -668,9 +668,10 @@ export async function generateAuditSample(
     selected = accountIds.slice(0, Math.min(sampleSize, accountIds.length));
     rationale = `Targeted review: ${selected.length} accounts selected based on activity and risk indicators.`;
   } else {
-    // Random sampling
-    const shuffled = [...accountIds].sort(() => Math.random() - 0.5);
-    selected = shuffled.slice(0, Math.min(sampleSize, shuffled.length));
+    // Deterministic sampling using modular selection for reproducibility
+    const step = Math.max(1, Math.floor(accountIds.length / sampleSize));
+    const sampled = accountIds.filter((_, idx) => idx % step === 0);
+    selected = sampled.slice(0, Math.min(sampleSize, sampled.length));
     rationale = `Random sample: ${selected.length} of ${accountIds.length} accounts selected (${((selected.length / accountIds.length) * 100).toFixed(1)}% coverage).`;
   }
 

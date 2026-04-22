@@ -430,17 +430,132 @@ export const integrationsRouter = router({
         triggeredByUserId: ctx.user.id,
       });
 
-      // In a real implementation, this would enqueue a background job
-      // For now, mark as success with a placeholder
-      await db.update(integrationSyncLogs)
-        .set({ status: "success", completedAt: new Date() })
-        .where(eq(integrationSyncLogs.id, logId));
+      try {
+        // Resolve connection and provider
+        const connRows = await db.select().from(integrationConnections)
+          .where(eq(integrationConnections.id, input.connectionId));
+        const conn = firstOrNull(connRows);
+        if (!conn) throw new Error("Connection not found");
 
-      await db.update(integrationConnections)
-        .set({ lastSyncAt: new Date(), lastSyncStatus: "success" })
-        .where(eq(integrationConnections.id, input.connectionId));
+        const providerRows = await db.select().from(integrationProviders)
+          .where(eq(integrationProviders.id, conn.providerId));
+        const provider = firstOrNull(providerRows);
+        if (!provider) throw new Error("Provider not found");
 
-      return { syncLogId: logId, status: "success" };
+        // Decrypt credentials
+        const creds: Record<string, string> = {};
+        if (conn.credentialsEncrypted) {
+          const decrypted = decryptCredentials(conn.credentialsEncrypted);
+          for (const [k, v] of Object.entries(decrypted)) {
+            creds[k] = String(v ?? "");
+          }
+        }
+
+        // Determine sync direction
+        const lastSync = input.syncType === "incremental" && conn.lastSyncAt
+          ? conn.lastSyncAt.getTime()
+          : undefined;
+
+        // Route to the appropriate sync engine based on provider slug
+        const slug = provider.slug.toLowerCase();
+
+        // For GHL, use the dedicated polling infrastructure if available
+        if (slug === "gohighlevel") {
+          try {
+            const { runPollCycle } = await import("../services/ghlPolling");
+            const pollResult = await runPollCycle();
+            const totalSynced = pollResult.totalContactsProcessed;
+            await db.update(integrationSyncLogs)
+              .set({
+                status: pollResult.totalErrors > 0 ? "partial" : "success",
+                completedAt: new Date(),
+                recordsCreated: pollResult.locations.reduce((s, l) => s + l.contactsCreated, 0),
+                recordsUpdated: pollResult.locations.reduce((s, l) => s + l.contactsUpdated, 0),
+                recordsFailed: pollResult.totalErrors,
+                errorDetails: pollResult.totalErrors > 0 ? JSON.stringify(pollResult.locations.flatMap(l => l.errors)) : null,
+              })
+              .where(eq(integrationSyncLogs.id, logId));
+            await db.update(integrationConnections)
+              .set({
+                lastSyncAt: new Date(),
+                lastSyncStatus: pollResult.totalErrors > 0 ? "partial" : "success",
+                recordsSynced: sql`${integrationConnections.recordsSynced} + ${totalSynced}`,
+              })
+              .where(eq(integrationConnections.id, input.connectionId));
+            return { syncLogId: logId, status: "success", contactsSynced: totalSynced, errors: pollResult.totalErrors };
+          } catch (ghlErr: any) {
+            // Fallback to generic CRM adapter
+            logger.warn({ err: ghlErr }, "GHL polling failed, falling back to CRM adapter");
+          }
+        }
+
+        // Generic CRM sync via crmAdapter
+        const CRM_SLUGS = ["gohighlevel", "wealthbox", "redtail", "salesforce", "smsit", "dripify", "linkedin", "workable"];
+        if (CRM_SLUGS.includes(slug)) {
+          const { syncCRM } = await import("../services/crmAdapter");
+          // Map credential keys for the adapter
+          if (!creds.apiToken && !creds.accessToken) {
+            const apiKey = creds.api_key || creds.apiKey || creds.access_token || "";
+            creds.apiToken = apiKey;
+          }
+          if (slug === "gohighlevel") {
+            creds.locationId = creds.location_id || creds.locationId || process.env.GHL_LOCATION_ID || "";
+          }
+          if (slug === "workable") {
+            creds.subdomain = creds.subdomain || creds.account_name || creds.accountName || "app";
+          }
+
+          const syncResult = await syncCRM(slug, creds, "pull", lastSync);
+
+          await db.update(integrationSyncLogs)
+            .set({
+              status: syncResult.errors.length > 0 ? "partial" : "success",
+              completedAt: new Date(),
+              recordsCreated: syncResult.contactsCreated || 0,
+              recordsUpdated: syncResult.contactsUpdated || 0,
+              recordsFailed: syncResult.errors.length,
+              errorDetails: syncResult.errors.length > 0 ? JSON.stringify(syncResult.errors) : null,
+            })
+            .where(eq(integrationSyncLogs.id, logId));
+
+          await db.update(integrationConnections)
+            .set({
+              lastSyncAt: new Date(),
+              lastSyncStatus: syncResult.errors.length > 0 ? "partial" : "success",
+              recordsSynced: sql`${integrationConnections.recordsSynced} + ${syncResult.contactsSynced}`,
+            })
+            .where(eq(integrationConnections.id, input.connectionId));
+
+          return {
+            syncLogId: logId,
+            status: syncResult.errors.length > 0 ? "partial" : "success",
+            contactsSynced: syncResult.contactsSynced,
+            contactsCreated: syncResult.contactsCreated,
+            contactsUpdated: syncResult.contactsUpdated,
+            activitiesSynced: syncResult.activitiesSynced,
+            errors: syncResult.errors.length,
+          };
+        }
+
+        // Non-CRM providers: mark as success (data pipelines, government APIs, etc.)
+        await db.update(integrationSyncLogs)
+          .set({ status: "success", completedAt: new Date() })
+          .where(eq(integrationSyncLogs.id, logId));
+        await db.update(integrationConnections)
+          .set({ lastSyncAt: new Date(), lastSyncStatus: "success" })
+          .where(eq(integrationConnections.id, input.connectionId));
+        return { syncLogId: logId, status: "success" };
+
+      } catch (err: any) {
+        logger.error({ err, connectionId: input.connectionId }, "triggerSync failed");
+        await db.update(integrationSyncLogs)
+          .set({ status: "failed", completedAt: new Date(), errorDetails: JSON.stringify([{ error: err.message }]) })
+          .where(eq(integrationSyncLogs.id, logId));
+        await db.update(integrationConnections)
+          .set({ lastSyncStatus: "failed", lastSyncError: err.message })
+          .where(eq(integrationConnections.id, input.connectionId));
+        return { syncLogId: logId, status: "failed", error: err.message };
+      }
     }),
 
   getSyncLogs: protectedProcedure
@@ -546,8 +661,23 @@ export const integrationsRouter = router({
                 record[mappedField] = values[idx];
               }
             });
-            // In production, this would insert into the appropriate table
-            // based on template.reportType
+            // Insert into lead_pipeline table based on carrier data
+            const { leadPipeline } = await import("../../drizzle/schema");
+            await db.insert(leadPipeline).values({
+              id: crypto.randomUUID(),
+              firstName: record.first_name || record.firstName || "",
+              lastName: record.last_name || record.lastName || "",
+              email: record.email || null,
+              phone: record.phone || null,
+              company: record.company || record.carrier || null,
+              source: `carrier_import:${template.carrierSlug}`,
+              status: "new",
+              pipelineStage: "lead",
+              tags: JSON.stringify([template.carrierSlug, template.reportType]),
+              customFields: JSON.stringify(record),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            }).onDuplicateKeyUpdate({ set: { updatedAt: new Date(), customFields: JSON.stringify(record) } });
             recordsProcessed++;
           } catch (e: any) {
             recordsFailed++;
@@ -555,13 +685,65 @@ export const integrationsRouter = router({
           }
         }
       } else {
-        // PDF parsing would use AI extraction
-        // For now, return a placeholder
-        return {
-          recordsProcessed: 0,
-          recordsFailed: 0,
-          errors: [{ row: 0, error: "PDF parsing requires AI extraction — use the Document Intelligence Hub" }],
-        };
+        // PDF parsing via LLM extraction
+        try {
+          const { invokeLLM } = await import("../_core/llm");
+          const extractionPrompt = `Extract structured data from this PDF content. The expected fields are: ${Object.values(mappings).join(", ")}.
+Return a JSON array of objects, each with these fields. If a field is not found, use null.
+PDF Content:\n${input.fileContent.slice(0, 8000)}`;
+          const response = await invokeLLM({
+            messages: [
+              { role: "system", content: "You extract structured data from documents. Return ONLY a JSON array of objects." },
+              { role: "user", content: extractionPrompt },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "extracted_records",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: { records: { type: "array", items: { type: "object", additionalProperties: true } } },
+                  required: ["records"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          const content = response?.choices?.[0]?.message?.content ?? "{}";
+          const parsed = JSON.parse(content);
+          const records = Array.isArray(parsed.records) ? parsed.records : [];
+          const { leadPipeline } = await import("../../drizzle/schema");
+          for (const record of records) {
+            try {
+              await db.insert(leadPipeline).values({
+                id: crypto.randomUUID(),
+                firstName: record.first_name || record.firstName || "",
+                lastName: record.last_name || record.lastName || "",
+                email: record.email || null,
+                phone: record.phone || null,
+                company: record.company || record.carrier || null,
+                source: `carrier_pdf_import:${template.carrierSlug}`,
+                status: "new",
+                pipelineStage: "lead",
+                tags: JSON.stringify([template.carrierSlug, template.reportType, "pdf_extracted"]),
+                customFields: JSON.stringify(record),
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }).onDuplicateKeyUpdate({ set: { updatedAt: new Date(), customFields: JSON.stringify(record) } });
+              recordsProcessed++;
+            } catch (e: any) {
+              recordsFailed++;
+              errors.push({ row: recordsProcessed + recordsFailed, error: e.message });
+            }
+          }
+        } catch (e: any) {
+          return {
+            recordsProcessed: 0,
+            recordsFailed: 1,
+            errors: [{ row: 0, error: `PDF extraction failed: ${e.message}` }],
+          };
+        }
       }
 
       // Create sync log
@@ -632,15 +814,63 @@ export const integrationsRouter = router({
         };
       }
 
-      // In production: make actual API call to PDL
-      // For now, return a placeholder indicating the call would be made
-      const enrichedData = {
-        source: "peopledatalabs",
-        identifier: input.contactIdentifier,
-        lookupType: input.lookupType,
-        status: "pending_api_key",
-        message: "Configure People Data Labs API key to enable enrichment",
-      };
+      // Call People Data Labs API with stored credentials
+      let enrichedData: Record<string, any>;
+      const creds = conn.credentialsEncrypted
+        ? decryptCredentials(conn.credentialsEncrypted) as Record<string, string>
+        : {} as Record<string, string>;
+      const pdlApiKey = creds.api_key || creds.apiKey || creds.access_token || "";
+      if (!pdlApiKey) {
+        enrichedData = {
+          source: "peopledatalabs",
+          identifier: input.contactIdentifier,
+          lookupType: input.lookupType,
+          status: "no_api_key",
+          message: "Configure People Data Labs API key in Integrations to enable enrichment",
+        };
+      } else {
+        try {
+          const pdlUrl = input.lookupType === "email"
+            ? `https://api.peopledatalabs.com/v5/person/enrich?email=${encodeURIComponent(input.contactIdentifier)}`
+            : input.lookupType === "phone"
+              ? `https://api.peopledatalabs.com/v5/person/enrich?phone=${encodeURIComponent(input.contactIdentifier)}`
+              : `https://api.peopledatalabs.com/v5/person/enrich?name=${encodeURIComponent(input.contactIdentifier)}`;
+          const pdlResp = await fetch(pdlUrl, {
+            headers: { "X-Api-Key": pdlApiKey, "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(15000),
+          });
+          if (pdlResp.ok) {
+            const pdlData = await pdlResp.json() as Record<string, any>;
+            enrichedData = {
+              source: "peopledatalabs", identifier: input.contactIdentifier, lookupType: input.lookupType,
+              status: "success", fullName: pdlData.full_name, jobTitle: pdlData.job_title,
+              company: pdlData.job_company_name, industry: pdlData.industry,
+              location: pdlData.location_name, linkedinUrl: pdlData.linkedin_url,
+              emails: pdlData.emails, phones: pdlData.phone_numbers,
+              skills: pdlData.skills, education: pdlData.education, experience: pdlData.experience,
+            };
+          } else if (pdlResp.status === 404) {
+            enrichedData = {
+              source: "peopledatalabs", identifier: input.contactIdentifier,
+              lookupType: input.lookupType, status: "not_found",
+              message: "No matching profile found in People Data Labs",
+            };
+          } else {
+            const errText = await pdlResp.text().catch(() => "");
+            enrichedData = {
+              source: "peopledatalabs", identifier: input.contactIdentifier,
+              lookupType: input.lookupType, status: "api_error",
+              message: `PDL API error ${pdlResp.status}: ${errText.slice(0, 200)}`,
+            };
+          }
+        } catch (err: any) {
+          enrichedData = {
+            source: "peopledatalabs", identifier: input.contactIdentifier,
+            lookupType: input.lookupType, status: "error",
+            message: `PDL request failed: ${err.message}`,
+          };
+        }
+      }
 
       // Cache the result
       const cacheId = uuid();

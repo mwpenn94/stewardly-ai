@@ -22,6 +22,7 @@ import {
   BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award,
   ClipboardCheck, Scale, Flame, Search, ChevronDown, AlertTriangle, Layers,
   HelpCircle, Users, RotateCcw, Settings, FolderOpen, Home, ChevronRight,
+  Calculator, FileText,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -683,6 +684,86 @@ function ReferenceTab({ tracks }: { tracks: any[] }) {
             <p className="text-sm text-muted-foreground mb-3">Visual graph of interconnected concepts across all tracks.</p>
             <Link href="/learning/connections">
               <Button variant="outline" size="sm">Open Concept Map →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Formulas Reference */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Calculator className="h-5 w-5" />
+              Formulas
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Browse all financial formulas by discipline with examples and audio.</p>
+            <Link href="/learning/formulas">
+              <Button variant="outline" size="sm">Browse Formulas →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* FS Toolkit */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileText className="h-5 w-5" />
+              FS Toolkit
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Financial statement applications checklist and analysis tools.</p>
+            <Link href="/learning/fs-toolkit">
+              <Button variant="outline" size="sm">Open FS Toolkit →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Cross-Discipline Connections */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="h-5 w-5" />
+              Connections
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Browse cross-discipline connections and see how concepts relate.</p>
+            <Link href="/learning/connections-browse">
+              <Button variant="outline" size="sm">Browse Connections →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* All Tracks Index */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <GraduationCap className="h-5 w-5" />
+              All Tracks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Browse all exam tracks organized by discipline with progress.</p>
+            <Link href="/learning/tracks">
+              <Button variant="outline" size="sm">Browse Tracks →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Cases Browse */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Scale className="h-5 w-5" />
+              Cases Library
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Browse all case studies with difficulty ratings and discipline tags.</p>
+            <Link href="/learning/cases">
+              <Button variant="outline" size="sm">Browse Cases →</Button>
             </Link>
           </CardContent>
         </Card>

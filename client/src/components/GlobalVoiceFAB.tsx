@@ -38,7 +38,7 @@ export function GlobalVoiceFAB() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div className="fixed bottom-6 left-6 z-50 flex flex-col items-start gap-2">
       {/* Dismiss hint — only show once per page */}
       <Tooltip>
         <TooltipTrigger asChild>

@@ -93,22 +93,81 @@ export function getPerformanceSummary(): {
   };
 }
 
-export function simulateLoadTest(config: LoadTestConfig): LoadTestResult {
-  const metrics: PerformanceMetric[] = config.targetEndpoints.map(endpoint => {
-    const baseLatency = endpoint.includes("chat") ? 800 : endpoint.includes("llm") ? 2000 : 150;
-    const load = config.concurrentUsers;
-    const latencyMultiplier = 1 + (load / 100) * 0.5; // Latency increases with load
+/**
+ * Real HTTP-based load test — sends actual requests to the server endpoints
+ * and measures real latency, error rates, and throughput.
+ */
+export async function simulateLoadTest(config: LoadTestConfig): Promise<LoadTestResult> {
+  const startedAt = new Date().toISOString();
+  const allLatencies: Map<string, number[]> = new Map();
+  const allErrors: Map<string, number> = new Map();
+  const baseUrl = `http://localhost:${process.env.PORT || 3000}`;
 
+  // Initialize tracking
+  for (const ep of config.targetEndpoints) {
+    allLatencies.set(ep, []);
+    allErrors.set(ep, 0);
+  }
+
+  // Run requests in batches (concurrentUsers at a time)
+  const totalIterations = Math.max(1, Math.floor(config.duration * 1000 / config.thinkTime));
+  const batchSize = Math.min(config.concurrentUsers, 50); // Cap at 50 concurrent to avoid self-DoS
+  const iterationsToRun = Math.min(totalIterations, 100); // Cap total iterations for safety
+
+  for (let i = 0; i < iterationsToRun; i++) {
+    const batch: Promise<void>[] = [];
+    for (let j = 0; j < batchSize; j++) {
+      for (const endpoint of config.targetEndpoints) {
+        batch.push((async () => {
+          const start = Date.now();
+          try {
+            const url = endpoint.startsWith("http") ? endpoint : `${baseUrl}${endpoint}`;
+            const resp = await fetch(url, {
+              method: endpoint.includes("trpc") ? "GET" : "GET",
+              headers: { "Content-Type": "application/json" },
+              signal: AbortSignal.timeout(10000),
+            });
+            const latency = Date.now() - start;
+            allLatencies.get(endpoint)!.push(latency);
+            if (!resp.ok && resp.status >= 500) {
+              allErrors.set(endpoint, (allErrors.get(endpoint) ?? 0) + 1);
+            }
+          } catch {
+            const latency = Date.now() - start;
+            allLatencies.get(endpoint)!.push(latency);
+            allErrors.set(endpoint, (allErrors.get(endpoint) ?? 0) + 1);
+          }
+        })());
+      }
+    }
+    await Promise.all(batch);
+    // Think time between batches
+    if (i < iterationsToRun - 1) {
+      await new Promise(r => setTimeout(r, Math.min(config.thinkTime, 500)));
+    }
+  }
+
+  // Calculate metrics from real measurements
+  const metrics: PerformanceMetric[] = config.targetEndpoints.map(endpoint => {
+    const latencies = allLatencies.get(endpoint) ?? [];
+    const errors = allErrors.get(endpoint) ?? 0;
+    const sorted = [...latencies].sort((a, b) => a - b);
+    const count = sorted.length;
+    const avg = count > 0 ? Math.round(sorted.reduce((s, l) => s + l, 0) / count) : 0;
+    const p50 = count > 0 ? sorted[Math.floor(count * 0.5)] ?? avg : 0;
+    const p95 = count > 0 ? sorted[Math.floor(count * 0.95)] ?? avg : 0;
+    const p99 = count > 0 ? sorted[Math.floor(count * 0.99)] ?? avg : 0;
+    const durationSec = config.duration || 1;
     return {
       endpoint,
-      method: "POST",
-      avgLatency: Math.round(baseLatency * latencyMultiplier),
-      p50Latency: Math.round(baseLatency * latencyMultiplier * 0.8),
-      p95Latency: Math.round(baseLatency * latencyMultiplier * 2.5),
-      p99Latency: Math.round(baseLatency * latencyMultiplier * 4),
-      requestCount: Math.round(config.concurrentUsers * config.duration / (config.thinkTime / 1000)),
-      errorRate: load > 200 ? 0.05 : load > 100 ? 0.01 : 0,
-      throughput: Math.round(config.concurrentUsers / (baseLatency * latencyMultiplier / 1000)),
+      method: "GET",
+      avgLatency: avg,
+      p50Latency: p50,
+      p95Latency: p95,
+      p99Latency: p99,
+      requestCount: count,
+      errorRate: count > 0 ? Math.round((errors / count) * 10000) / 10000 : 0,
+      throughput: Math.round(count / durationSec * 10) / 10,
       timestamp: new Date().toISOString(),
     };
   });
@@ -128,19 +187,22 @@ export function simulateLoadTest(config: LoadTestConfig): LoadTestResult {
     }
   }
 
+  // Store metrics for history
+  for (const m of metrics) recordMetric(m);
+
   return {
     id: `load_${Date.now()}`,
     config,
-    startedAt: new Date().toISOString(),
+    startedAt,
     completedAt: new Date().toISOString(),
     metrics,
     summary: {
       totalRequests,
       successfulRequests: totalRequests - failedRequests,
       failedRequests,
-      avgLatency: Math.round(metrics.reduce((s, m) => s + m.avgLatency, 0) / metrics.length),
-      maxLatency: Math.max(...metrics.map(m => m.p99Latency)),
-      throughput: Math.round(metrics.reduce((s, m) => s + m.throughput, 0)),
+      avgLatency: metrics.length > 0 ? Math.round(metrics.reduce((s, m) => s + m.avgLatency, 0) / metrics.length) : 0,
+      maxLatency: metrics.length > 0 ? Math.max(...metrics.map(m => m.p99Latency)) : 0,
+      throughput: Math.round(metrics.reduce((s, m) => s + m.throughput, 0) * 10) / 10,
       errorRate: totalRequests > 0 ? Math.round((failedRequests / totalRequests) * 10000) / 100 : 0,
     },
     bottlenecks,

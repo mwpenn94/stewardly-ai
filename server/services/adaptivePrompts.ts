@@ -45,8 +45,9 @@ export async function getAdaptivePrompts(userId: number, limit = 4): Promise<Sug
     // Boost prompts in categories the user hasn't explored recently
     const categoryMentioned = recentTopics.some(t => t?.toLowerCase().includes(prompt.category));
     if (!categoryMentioned) score += 0.2; // Encourage exploration
-    // Slight randomization for variety
-    score += (Math.random() - 0.5) * 0.1;
+    // Deterministic variety based on user ID and prompt index
+    const hashSeed = (userId * 31 + prompt.text.length) % 100;
+    score += (hashSeed / 100 - 0.5) * 0.1;
     return { ...prompt, relevanceScore: Math.min(1, Math.max(0, score)) };
   });
 

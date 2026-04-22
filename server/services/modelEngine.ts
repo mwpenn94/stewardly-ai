@@ -416,11 +416,24 @@ function detectBehavioralPatterns(input: Record<string, unknown>): Record<string
 function trackGoalProgress(input: Record<string, unknown>): Record<string, unknown> {
   const goals = (input.goals as any[]) || [];
   return {
-    progress: goals.map((g: any) => ({
-      goalId: g?.id,
-      progressPercent: Math.random() * 100,
-      onTrack: Math.random() > 0.3,
-    })),
+    progress: goals.map((g: any) => {
+      // Calculate real progress based on goal parameters
+      const current = parseFloat(g?.currentValue ?? g?.current ?? "0");
+      const target = parseFloat(g?.targetValue ?? g?.target ?? "100");
+      const start = parseFloat(g?.startValue ?? g?.initial ?? "0");
+      const range = target - start;
+      const progressPercent = range !== 0
+        ? Math.max(0, Math.min(100, ((current - start) / range) * 100))
+        : (current >= target ? 100 : 0);
+      // Determine if on track based on timeline
+      const startDate = g?.startDate ? new Date(g.startDate).getTime() : Date.now() - 365 * 86400000;
+      const endDate = g?.targetDate ? new Date(g.targetDate).getTime() : Date.now() + 365 * 86400000;
+      const totalDuration = endDate - startDate;
+      const elapsed = Date.now() - startDate;
+      const expectedProgress = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 50;
+      const onTrack = progressPercent >= expectedProgress * 0.85; // 15% tolerance
+      return { goalId: g?.id, progressPercent: Math.round(progressPercent * 100) / 100, onTrack };
+    }),
     onTrack: true,
     adjustments: [],
   };

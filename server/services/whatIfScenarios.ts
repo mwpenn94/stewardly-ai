@@ -87,8 +87,8 @@ export async function runWhatIfScenario(
   let maxDrawdown = 0;
 
   for (let y = 1; y <= timeHorizon; y++) {
-    // Add some variance
-    const variance = (Math.random() - 0.5) * weightedVolatility * 2;
+    // Deterministic variance using sine wave based on year index for reproducibility
+    const variance = Math.sin(y * 1.618) * weightedVolatility;
     const yearReturn = weightedReturn + variance;
     currentValue *= (1 + yearReturn);
     maxValue = Math.max(maxValue, currentValue);

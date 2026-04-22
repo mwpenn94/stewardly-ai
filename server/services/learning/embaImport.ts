@@ -40,6 +40,17 @@ import {
   listDefinitions,
   listQuestionsForTrack,
   listFlashcardsForTrack,
+  createFormula,
+  createCase,
+  createFsApplication,
+  createConnection,
+  listFormulas,
+  listCases,
+  listFsApplications,
+  listConnections,
+  updateTrackExamOverview,
+  updateTrackDiagrams,
+  getTrack,
 } from "./content";
 import { recordImportRun } from "./importHistory";
 
@@ -100,12 +111,53 @@ interface EmbaDisciplineValueRaw {
   description?: string;
 }
 
+interface EmbaFormulaRaw {
+  id?: number;
+  name: string;
+  formula: string;
+  discipline?: string;
+  variables?: string[];
+}
+
+interface EmbaCaseRaw {
+  id?: number;
+  title: string;
+  content: string;
+  discipline?: string;
+}
+
+interface EmbaFsAppRaw {
+  id?: number;
+  title: string;
+  content: string;
+  discipline?: string;
+}
+
+interface EmbaConnectionRaw {
+  from: string;
+  to: string;
+  concept_from?: string;
+  concept_to?: string;
+  relationship: string;
+}
+
+interface TrackDiagramRaw {
+  id?: string;
+  title: string;
+  url: string;
+  description?: string;
+}
+
 interface EmbaDataRaw {
   /** Object keyed by display name, not an array. */
   disciplines?: Record<string, EmbaDisciplineValueRaw>;
   definitions?: EmbaDefinitionRaw[];
   /** Array of plain strings in the real repo. */
   specializations?: string[];
+  formulas?: EmbaFormulaRaw[];
+  cases?: EmbaCaseRaw[];
+  fs_applications?: EmbaFsAppRaw[];
+  connections?: EmbaConnectionRaw[];
 }
 
 interface TrackSubsectionRaw {
@@ -166,6 +218,8 @@ interface TrackRaw {
   practice_questions?: TrackPracticeQuestionRaw[];
   practiceQuestions?: TrackPracticeQuestionRaw[];
   flashcards?: TrackFlashcardRaw[];
+  diagrams?: TrackDiagramRaw[];
+  exam_overview?: any;
 }
 
 interface TracksDataRaw {
@@ -189,6 +243,12 @@ export interface EMBAImportResult {
     subsections: number;
     questions: number;
     flashcards: number;
+    formulas: number;
+    cases: number;
+    fsApplications: number;
+    connections: number;
+    diagrams: number;
+    examOverviews: number;
   };
   skipped: {
     disciplines: number;
@@ -197,6 +257,10 @@ export interface EMBAImportResult {
     chapters: number;
     questions: number;
     flashcards: number;
+    formulas: number;
+    cases: number;
+    fsApplications: number;
+    connections: number;
   };
   errors: string[];
   durationMs: number;
@@ -214,6 +278,12 @@ function emptyResult(embaDataUrl: string, tracksDataUrl: string): EMBAImportResu
       subsections: 0,
       questions: 0,
       flashcards: 0,
+      formulas: 0,
+      cases: 0,
+      fsApplications: 0,
+      connections: 0,
+      diagrams: 0,
+      examOverviews: 0,
     },
     skipped: {
       disciplines: 0,
@@ -222,6 +292,10 @@ function emptyResult(embaDataUrl: string, tracksDataUrl: string): EMBAImportResu
       chapters: 0,
       questions: 0,
       flashcards: 0,
+      formulas: 0,
+      cases: 0,
+      fsApplications: 0,
+      connections: 0,
     },
     errors: [],
     durationMs: 0,
@@ -319,7 +393,138 @@ async function importDisciplinesAndDefinitions(
     }
   }
 
-  // 2. Definitions. Skip if a definition with the same term already
+  // 2. Formulas (dedup by name within discipline)
+  const existingFormulas = await listFormulas();
+  const seenFormulas = new Set<string>(
+    existingFormulas.map((f: any) => `${f.disciplineId ?? 0}:${(f.name ?? "").toLowerCase()}`),
+  );
+  for (const f of data.formulas ?? []) {
+    if (!f.name || !f.formula) continue;
+    const disciplineSlug = f.discipline ? slugify(f.discipline) : null;
+    const disciplineId = disciplineSlug ? bySlug.get(disciplineSlug) ?? null : null;
+    const key = `${disciplineId ?? 0}:${f.name.toLowerCase()}`;
+    if (seenFormulas.has(key)) {
+      result.skipped.formulas += 1;
+      continue;
+    }
+    const row = await createFormula({
+      disciplineId,
+      name: f.name,
+      formula: f.formula,
+      variables: f.variables ?? null,
+      createdBy: null,
+      sourceRef: "github:mwpenn94/emba_modules",
+    });
+    if (row) {
+      seenFormulas.add(key);
+      result.counts.formulas += 1;
+    }
+  }
+
+  // 3. Cases (dedup by title within discipline)
+  const existingCases = await listCases();
+  const seenCases = new Set<string>(
+    existingCases.map((c: any) => `${c.disciplineId ?? 0}:${(c.title ?? "").toLowerCase()}`),
+  );
+  for (const c of data.cases ?? []) {
+    if (!c.title || !c.content) continue;
+    const disciplineSlug = c.discipline ? slugify(c.discipline) : null;
+    const disciplineId = disciplineSlug ? bySlug.get(disciplineSlug) ?? null : null;
+    const key = `${disciplineId ?? 0}:${c.title.toLowerCase()}`;
+    if (seenCases.has(key)) {
+      result.skipped.cases += 1;
+      continue;
+    }
+    const row = await createCase({
+      disciplineId,
+      title: c.title,
+      content: c.content,
+      createdBy: null,
+      sourceRef: "github:mwpenn94/emba_modules",
+    });
+    if (row) {
+      seenCases.add(key);
+      result.counts.cases += 1;
+    }
+  }
+
+  // 4. FS Applications (dedup by title within discipline)
+  const existingFsApps = await listFsApplications();
+  const seenFsApps = new Set<string>(
+    existingFsApps.map((f: any) => `${f.disciplineId ?? 0}:${(f.title ?? "").toLowerCase()}`),
+  );
+  for (const f of data.fs_applications ?? []) {
+    if (!f.title || !f.content) continue;
+    const disciplineSlug = f.discipline ? slugify(f.discipline) : null;
+    const disciplineId = disciplineSlug ? bySlug.get(disciplineSlug) ?? null : null;
+    const key = `${disciplineId ?? 0}:${f.title.toLowerCase()}`;
+    if (seenFsApps.has(key)) {
+      result.skipped.fsApplications += 1;
+      continue;
+    }
+    const row = await createFsApplication({
+      disciplineId,
+      title: f.title,
+      content: f.content,
+      createdBy: null,
+      sourceRef: "github:mwpenn94/emba_modules",
+    });
+    if (row) {
+      seenFsApps.add(key);
+      result.counts.fsApplications += 1;
+    }
+  }
+
+  // 5. Connections (dedup by from+to+relationship)
+  const existingConns = await listConnections();
+  // Build a lookup of existing definitions by term for resolving connection endpoints
+  const allDefs = await listDefinitions({ limit: 5000 });
+  const defByTerm = new Map<string, number>();
+  for (const d of allDefs) {
+    defByTerm.set((d as any).term?.toLowerCase() ?? "", (d as any).id);
+  }
+  const seenConns = new Set<string>(
+    existingConns.map((c: any) => `${c.fromDefinitionId}:${c.toDefinitionId}:${(c.relationship ?? "").toLowerCase()}`),
+  );
+  for (const conn of data.connections ?? []) {
+    if (!conn.from || !conn.to || !conn.relationship) continue;
+    // Try to find definitions matching the concept names
+    const fromTerm = (conn.concept_from ?? conn.from).toLowerCase();
+    const toTerm = (conn.concept_to ?? conn.to).toLowerCase();
+    // Find any definition whose term contains the concept
+    let fromId: number | null = null;
+    let toId: number | null = null;
+    for (const [term, id] of defByTerm) {
+      if (!fromId && term.includes(fromTerm.toLowerCase())) fromId = id;
+      if (!toId && term.includes(toTerm.toLowerCase())) toId = id;
+    }
+    // If we can't find matching definitions, use discipline IDs as proxies
+    if (!fromId) {
+      const slug = slugify(conn.from);
+      fromId = bySlug.get(slug) ?? 1;
+    }
+    if (!toId) {
+      const slug = slugify(conn.to);
+      toId = bySlug.get(slug) ?? 2;
+    }
+    const key = `${fromId}:${toId}:${conn.relationship.toLowerCase()}`;
+    if (seenConns.has(key)) {
+      result.skipped.connections += 1;
+      continue;
+    }
+    const row = await createConnection({
+      fromDefinitionId: fromId,
+      toDefinitionId: toId,
+      relationship: conn.relationship,
+      createdBy: null,
+    });
+    if (row) {
+      seenConns.add(key);
+      result.counts.connections += 1;
+    }
+  }
+
+  // 6. Definitions. Skip if a definition with the same term already
   //    exists under the same discipline (term uniqueness is not
   //    enforced at the schema level so we do a listDefinitions lookup
   //    once per discipline).
@@ -498,6 +703,26 @@ async function importTrack(
       seenTerms.add(card.term.toLowerCase());
     }
   }
+
+  // 5. Diagrams (store in track's examOverview JSON)
+  if (raw.diagrams && raw.diagrams.length > 0) {
+    const diagrams = raw.diagrams.map((d) => ({
+      title: d.title,
+      url: d.url,
+      description: d.description ?? "",
+    }));
+    const ok = await updateTrackDiagrams(trackId, diagrams);
+    if (ok) result.counts.diagrams += diagrams.length;
+  }
+
+  // 6. Exam overview (store in track's examOverview JSON)
+  if (raw.exam_overview) {
+    const track = await getTrack(trackId);
+    const existing = (track?.examOverview as any) ?? {};
+    const merged = { ...existing, sections: raw.exam_overview };
+    const ok = await updateTrackExamOverview(trackId, merged);
+    if (ok) result.counts.examOverviews += 1;
+  }
 }
 
 // ─── Public entry point ──────────────────────────────────────────────────
@@ -515,7 +740,7 @@ export async function importEMBAFromGitHub(): Promise<EMBAImportResult> {
   const { embaData: embaDataUrl, tracksData: tracksDataUrl } = urls();
   const result = emptyResult(embaDataUrl, tracksDataUrl);
 
-  // 1. emba_data.json
+  // 1. emba_data.json (disciplines, definitions, formulas, cases, fs_applications, connections)
   try {
     const embaData = await fetchJson<EmbaDataRaw>(embaDataUrl);
     await importDisciplinesAndDefinitions(embaData, result);
