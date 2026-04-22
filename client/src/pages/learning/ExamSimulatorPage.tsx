@@ -22,6 +22,7 @@ import { transformDbQuestions } from "@/components/wealth-engine/calculatorHelpe
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useStudySession } from "@/hooks/useStudySession";
 export default function ExamSimulatorPage() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
@@ -55,6 +56,9 @@ export default function ExamSimulatorPage() {
     moduleTitle: track?.name ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
     questionCount: Math.min(questionPool.length, 25),
   }), [slug, track?.name, questionPool.length]);
+
+  // Auto-track study session
+  const session = useStudySession({ discipline: slug, trackKey: slug });
 
   const isLoading = trackLoading || questionsLoading;
 
@@ -140,6 +144,12 @@ export default function ExamSimulatorPage() {
         config={config}
         questionPool={questionPool}
         onBack={() => navigate("/learning")}
+        onComplete={(results) => {
+          session.recordQuizScore(results.percentage);
+          for (let i = 0; i < results.total; i++) session.recordItem();
+          for (let i = 0; i < results.correct; i++) session.recordMastery();
+          session.flush();
+        }}
       />
     </>
   );

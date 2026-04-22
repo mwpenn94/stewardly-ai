@@ -69,4 +69,61 @@ ttsRouter.get("/api/tts/voices", async (req, res) => {
   res.json({ voices: catalog });
 });
 
+/**
+ * POST /api/tts/batch — Batch synthesize multiple text items
+ * Body: { items: Array<{ id: string; text: string }>, voice?: string, speed?: number, pitch?: string }
+ * Returns: JSON array of { id, success, audioBase64?, error? }
+ * Max 10 items per batch, 2000 chars each.
+ */
+ttsRouter.post("/api/tts/batch", async (req, res) => {
+  const user = (req as any).__user;
+  if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+
+  try {
+    const { items, voice = "en-US-GuyNeural", speed = 1.0, pitch = "default" } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "items array is required" });
+    }
+    if (items.length > 10) {
+      return res.status(400).json({ error: "Max 10 items per batch" });
+    }
+
+    // Check rate limit for entire batch
+    for (let i = 0; i < items.length; i++) {
+      if (!checkTtsRateLimit(user.id)) {
+        return res.status(429).json({ error: `TTS rate limit exceeded at item ${i + 1}` });
+      }
+    }
+
+    const ratePercent = Math.round((speed - 1.0) * 100);
+    const rateString = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
+    const pitchString = pitch === "low" ? "-2Hz" : pitch === "high" ? "+2Hz" : "+0Hz";
+
+    const results = await Promise.allSettled(
+      items.map(async (item: { id: string; text: string }) => {
+        if (!item.text || item.text.length > 2000) {
+          throw new Error("Text missing or exceeds 2000 char limit");
+        }
+        const audioBuffer = await generateSpeech(item.text, voice, rateString, pitchString);
+        return {
+          id: item.id,
+          success: true,
+          audioBase64: audioBuffer.toString("base64"),
+        };
+      }),
+    );
+
+    const response = results.map((r, i) =>
+      r.status === "fulfilled"
+        ? r.value
+        : { id: items[i]?.id ?? String(i), success: false, error: (r.reason as Error).message },
+    );
+
+    res.json({ results: response });
+  } catch (error: any) {
+    logger.error("[TTS] Batch error", { error: error.message });
+    res.status(500).json({ error: "Batch TTS generation failed" });
+  }
+});
+
 export default ttsRouter;

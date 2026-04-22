@@ -11,6 +11,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useStudySession } from "@/hooks/useStudySession";
 import { FORMULA_REGISTRY } from "@/lib/formulaRegistry";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -185,6 +186,7 @@ export default function FormulaLab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
+  const studySession = useStudySession({ discipline: "formula-lab" });
   const formulasQ = trpc.learning.content.listFormulas.useQuery(undefined, { enabled: !!isAuthenticated });
 
   const categories = useMemo(() => {
@@ -206,6 +208,7 @@ export default function FormulaLab() {
     const formula = FORMULA_CATALOG.find((f) => f.id === id);
     if (!formula) return;
     setSelectedId(id);
+    studySession.recordItem();
     const defaults: Record<string, number> = {};
     for (const v of formula.variables) {
       defaults[v.key] = v.default;

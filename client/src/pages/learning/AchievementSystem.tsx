@@ -54,6 +54,73 @@ const CATEGORY_COLORS: Record<string, string> = {
   case: "text-chart-3", milestone: "text-chart-4",
 };
 
+/* ── 90-Day Activity Heatmap ─────────────────────────────────────── */
+
+function ActivityHeatmap() {
+  const heatData = useMemo(() => {
+    const days: { date: string; count: number; level: 0 | 1 | 2 | 3 | 4 }[] = [];
+    const today = new Date();
+    for (let i = 89; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      let count = 0;
+      try {
+        count = Number(localStorage.getItem(`stewardly-reviews-${key}`)) || 0;
+      } catch { /* noop */ }
+      const level = count === 0 ? 0 : count < 5 ? 1 : count < 15 ? 2 : count < 30 ? 3 : 4;
+      days.push({ date: key, count, level });
+    }
+    return days;
+  }, []);
+
+  const totalActive = heatData.filter(d => d.count > 0).length;
+  const totalReviews = heatData.reduce((s, d) => s + d.count, 0);
+
+  // Group into weeks (columns of 7)
+  const weeks: typeof heatData[] = [];
+  for (let i = 0; i < heatData.length; i += 7) {
+    weeks.push(heatData.slice(i, i + 7));
+  }
+
+  const levelColors = [
+    "bg-muted/30",
+    "bg-emerald-900/40",
+    "bg-emerald-700/60",
+    "bg-emerald-500/80",
+    "bg-emerald-400",
+  ];
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-3 px-1">
+        <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-widest">90-Day Activity</h2>
+        <span className="text-xs text-muted-foreground">{totalActive} active days · {totalReviews} reviews</span>
+      </div>
+      <div className="flex gap-[3px] overflow-x-auto pb-1">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-[3px]">
+            {week.map((day) => (
+              <div
+                key={day.date}
+                className={`w-3 h-3 rounded-[2px] ${levelColors[day.level]} transition-colors`}
+                title={`${day.date}: ${day.count} reviews`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 mt-2 px-1">
+        <span className="text-[10px] text-muted-foreground">Less</span>
+        {levelColors.map((c, i) => (
+          <div key={i} className={`w-2.5 h-2.5 rounded-[2px] ${c}`} />
+        ))}
+        <span className="text-[10px] text-muted-foreground">More</span>
+      </div>
+    </div>
+  );
+}
+
 // CBL22: Removed DEMO_DATA constant — deriveAchievements() now handles
 // the empty-state case cleanly with real mastery data (0 mastered shows
 // "First Steps" at 0% and real daily goal targets).
@@ -207,6 +274,9 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
           <div className="text-[10px] text-muted-foreground">Study Time</div>
         </div>
       </div>
+
+      {/* 90-Day Activity Heatmap */}
+      <ActivityHeatmap />
 
       {/* Daily goals */}
       <div className="mb-6">

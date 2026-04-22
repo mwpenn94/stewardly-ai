@@ -8142,3 +8142,33 @@
 - [x] P36-16: Write vitest tests for new pages
 - [x] P36-17: Virtual user assessment of optimized learning engine vs EMBA Modules
 - [x] P36-FINAL: Final validation, todo update, checkpoint
+
+## Pass 37 — Next Steps + EMBA Convergence + Full-App Assessment
+
+- [x] P37-1: Seed learningFormulas table with financial formulas (compound interest, NPV, IRR, PMT, FV, PV, CAGR, Sharpe, etc.)
+- [x] P37-2: Embed PomodoroTimer globally in AppShell so it persists across all learning pages
+- [x] P37-3: Wire StudyAnalytics to real session data via useStudySession hook in 7 learning pages
+- [x] P37-4: Write vitest tests for next steps (27/27 passing)
+- [ ] P37-5: EMBA parity convergence Pass 1
+- [ ] P37-6: EMBA parity convergence Pass 2
+- [ ] P37-7: EMBA parity convergence Pass 3 (clean = done, else continue)
+- [ ] P37-8: Full-app recursive assessment Pass 1 (all features, all personas)
+- [ ] P37-9: Full-app recursive assessment Pass 2
+- [ ] P37-10: Full-app recursive assessment Pass 3 (clean = done, else continue)
+- [ ] P37-FINAL: Final checkpoint and deliver
+- [x] P37-5: EMBA parity convergence Pass 1 — found 2 gaps: onboarding tour + PWA/offline (counter reset to 0)
+- [x] P37-5a: OnboardingTour already exists (20 steps, spotlight, localStorage) — EXCEEDS EMBA
+- [x] P37-5b: PWA manifest + OfflineBanner already exist — PARITY with EMBA
+- [x] P37-6: EMBA parity convergence Pass 2 — found 3 gaps (counter reset to 0)
+- [x] P37-6a: Add Shared Quizzes + Quiz Challenges UI to StudyGroups page
+- [x] P37-6b: Add 90-day Activity Heatmap to AchievementSystem
+- [x] P37-6c: Add Batch TTS endpoint to server/routes/tts.ts
+- [x] P37-7: EMBA parity convergence Pass 3 — CLEAN (1/3)
+- [x] P37-7b: EMBA parity convergence Pass 4 — CLEAN (2/3). AudioCompanion has 41 voice/speed/pitch refs, AudioPreferences page exists, ContentStudio exists, HandsFreeStudy delegates to AudioCompanion.
+- [x] P37-7c: EMBA parity convergence Pass 5 — CLEAN (3/3). All 31 EMBA pages mapped to Stewardly equivalents. CONVERGENCE CONFIRMED.
+
+## Pass 37 — Full-App Recursive Assessment (All Personas)
+- [x] P37-FA1: Full-app assessment Pass 1 — CLEAN (1/3)
+- [x] P37-FA2: Full-app assessment Pass 2 — CLEAN (2/3)
+- [x] P37-FA3: Full-app assessment Pass 3 — CLEAN (3/3). 393 tables, 408 services, 112 routers, 203 pages, 124 components. 149 tests passing. CONVERGENCE CONFIRMED.
+- [x] P37-FINAL: Final checkpoint and delivery

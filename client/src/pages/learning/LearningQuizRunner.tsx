@@ -43,6 +43,7 @@ import {
 } from "./lib/deckBuilder";
 import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import { useStudySession } from "@/hooks/useStudySession";
 
 
 export default function LearningQuizRunner() {
@@ -62,6 +63,7 @@ export default function LearningQuizRunner() {
     refetchOnWindowFocus: false,
   });
   const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
+  const studySession = useStudySession({ discipline: slug, trackKey: slug });
   const pil = usePlatformIntelligence();
 
   const track = trackQ.data;
@@ -110,7 +112,9 @@ export default function LearningQuizRunner() {
     if (selected == null || !current) return;
     setRevealed(true);
     const correct = selected === current.correctIndex;
+    studySession.recordItem();
     if (correct) {
+      studySession.recordMastery();
       setCorrectCount((c) => c + 1);
       pil.giveFeedback("learning.answer_correct");
     } else {

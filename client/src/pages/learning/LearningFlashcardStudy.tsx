@@ -50,6 +50,7 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useStudySession } from "@/hooks/useStudySession";
 export default function LearningFlashcardStudy() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
@@ -114,8 +115,13 @@ export default function LearningFlashcardStudy() {
   const total = cards.length;
   const progress = total > 0 ? ((index + (complete ? 1 : 0)) / total) * 100 : 0;
 
+  // Auto-track study session
+  const studySession = useStudySession({ discipline: slug, trackKey: slug });
+
   const mark = async (correct: boolean) => {
     if (!current) return;
+    studySession.recordItem();
+    if (correct) studySession.recordMastery();
     // Fire-and-forget SRS update — if it fails we still advance, but we
     // surface the error via toast so learners know their progress may
     // not have been saved (e.g. DB unavailable).

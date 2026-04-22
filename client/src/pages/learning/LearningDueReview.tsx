@@ -59,6 +59,7 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useStudySession } from "@/hooks/useStudySession";
 type KindFilter = "all" | "flashcard" | "question";
 
 export default function LearningDueReview() {
@@ -75,6 +76,7 @@ export default function LearningDueReview() {
     { refetchOnWindowFocus: false },
   );
   const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
+  const studySession = useStudySession({ discipline: "due-review" });
 
   const items = deckQ.data?.items ?? [];
   const totalDue = deckQ.data?.dueTotal ?? 0;
@@ -117,6 +119,8 @@ export default function LearningDueReview() {
 
   const submitFlashcard = async (ok: boolean) => {
     if (!current || current.kind !== "flashcard") return;
+    studySession.recordItem();
+    if (ok) studySession.recordMastery();
     recordReview
       .mutateAsync({
         itemKey: current.itemKey,
@@ -140,6 +144,8 @@ export default function LearningDueReview() {
     if (!current || current.kind !== "question" || selected == null) return;
     setRevealed(true);
     const ok = selected === current.question.correctIndex;
+    studySession.recordItem();
+    if (ok) studySession.recordMastery();
     recordReview
       .mutateAsync({
         itemKey: current.itemKey,

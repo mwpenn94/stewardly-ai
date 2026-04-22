@@ -29,6 +29,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
+import { PomodoroTimer } from "@/components/PomodoroTimer";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -283,6 +284,8 @@ export default function AppShell({ children, title }: AppShellProps) {
           </div>
         </footer>
       </div>
+      {/* Global floating Pomodoro Timer — persists across all learning pages */}
+      <PomodoroTimer />
     </div>
   );
 }

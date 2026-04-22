@@ -12,6 +12,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useStudySession } from "@/hooks/useStudySession";
 import { useAudioCompanion, type AudioItem } from "@/components/AudioCompanion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,8 @@ export default function HandsFreeStudy() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
   const audio = useAudioCompanion();
+
+  const studySession = useStudySession({ discipline: "hands-free" });
 
   // Config
   const [mode, setMode] = useState<StudyMode>("mixed");
@@ -124,10 +127,13 @@ export default function HandsFreeStudy() {
       const nextIdx = currentIndex + 1;
       setCurrentIndex(nextIdx);
       setCompletedCount((c) => c + 1);
+      studySession.recordItem();
       audio.play(sessionItems[nextIdx]);
     } else {
       setPlaybackState("complete");
       setCompletedCount(sessionItems.length);
+      studySession.recordItem();
+      studySession.flush();
       toast.success("Session complete!");
     }
   }, [currentIndex, sessionItems, audio]);

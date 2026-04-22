@@ -12,6 +12,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useStudySession } from "@/hooks/useStudySession";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,8 @@ interface GeneratedQuestion {
 
 export default function AIQuizPage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
+
+  const studySession = useStudySession({ discipline: "ai-quiz" });
 
   // Config
   const [topic, setTopic] = useState("");
@@ -145,7 +148,11 @@ export default function AIQuizPage() {
     if (!q) return;
     const answer = q.questionType === "free_response" ? freeAnswer : selectedAnswer;
     const isCorrect = answer.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim();
-    if (isCorrect) setScore((s) => s + 1);
+    studySession.recordItem();
+    if (isCorrect) {
+      studySession.recordMastery();
+      setScore((s) => s + 1);
+    }
 
     recordReview.mutate({
       itemKey: `ai-quiz:${q.id}`,

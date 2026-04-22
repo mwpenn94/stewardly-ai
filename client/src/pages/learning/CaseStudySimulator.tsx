@@ -19,6 +19,7 @@ import { trpc } from "@/lib/trpc";
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useStudySession } from "@/hooks/useStudySession";
 /* ── types ─────────────────────────────────────────────────────── */
 
 interface CaseOption {
@@ -157,6 +158,7 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
   const [, params] = useRoute("/learning/case-study/:id");
   const audio = useAudioCompanion();
   const celebrate = useCelebration();
+  const studySession = useStudySession({ discipline: "case-study" });
 
   // Fetch cases from DB (graceful fallback to demo data)
   const dbCases = trpc.learning.content.listCases.useQuery(undefined, { enabled: isAuthenticated,
@@ -195,6 +197,7 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
 
   const handleSelect = useCallback((option: CaseOption) => {
     setSelectedOption(option);
+    studySession.recordItem();
     setPhase("consequence");
     setTotalScore(prev => prev + option.score);
     setMaxPossibleScore(prev => prev + Math.max(...currentDecision.options.map(o => o.score)));
@@ -216,6 +219,8 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
       if (pct >= 70) celebrate("medium");
       // Pass 16 — PIL feedback dispatch (G1/G8).
       sendFeedback("learning.case_complete", { percentage: pct, complianceFlags });
+      studySession.recordQuizScore(pct);
+      studySession.flush();
       onComplete?.(totalScore, maxPossibleScore, complianceFlags);
     }
   }, [selectedOption, cs, totalScore, maxPossibleScore, complianceFlags, celebrate, onComplete]);
