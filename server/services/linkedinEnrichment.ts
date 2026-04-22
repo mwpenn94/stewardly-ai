@@ -191,7 +191,7 @@ export async function getCompanyDetails(companyUsername: string): Promise<any> {
 export async function enrichLead(leadId: string): Promise<EnrichmentResult> {
   const pool = await getRawPool();
   const [rows] = await pool.execute(
-    "SELECT id, firstName, lastName, email, company, title, linkedinUrl, source FROM lead_pipeline WHERE id = ?",
+    "SELECT id, firstName, lastName, email, source, enrichment_data, crmExternalId FROM lead_pipeline WHERE id = ?",
     [leadId]
   ) as any;
 
@@ -203,9 +203,15 @@ export async function enrichLead(leadId: string): Promise<EnrichmentResult> {
   let profile: LinkedInProfile | null = null;
   let confidence = 0;
 
+  // Parse existing enrichment data for linkedin URL, company, title
+  const existingData = lead.enrichment_data ? (typeof lead.enrichment_data === 'string' ? JSON.parse(lead.enrichment_data) : lead.enrichment_data) : {};
+  const linkedinUrl = existingData.linkedin_url || existingData.linkedinUrl || null;
+  const company = existingData.company || existingData.linkedin_company || null;
+  const title = existingData.title || existingData.linkedin_headline || null;
+
   // Strategy 1: Direct username from LinkedIn URL
-  if (lead.linkedinUrl) {
-    const username = extractLinkedInUsername(lead.linkedinUrl);
+  if (linkedinUrl) {
+    const username = extractLinkedInUsername(linkedinUrl);
     if (username) {
       profile = await getLinkedInProfile(username);
       if (profile) confidence = 0.95;
@@ -217,7 +223,7 @@ export async function enrichLead(leadId: string): Promise<EnrichmentResult> {
     const searchResults = await searchLinkedInPeople({
       firstName: lead.firstName,
       lastName: lead.lastName,
-      company: lead.company || undefined,
+      company: company || undefined,
     });
 
     if (searchResults.results.length > 0) {
@@ -227,18 +233,18 @@ export async function enrichLead(leadId: string): Promise<EnrichmentResult> {
                         bestMatch.fullName.toLowerCase().includes(lead.lastName.toLowerCase());
       if (nameMatch && bestMatch.username) {
         profile = await getLinkedInProfile(bestMatch.username);
-        confidence = lead.company && bestMatch.headline?.toLowerCase().includes(lead.company.toLowerCase())
+        confidence = company && bestMatch.headline?.toLowerCase().includes(company.toLowerCase())
           ? 0.85 : 0.65;
       }
     }
   }
 
   // Strategy 3: Search by name + title
-  if (!profile && lead.firstName && lead.lastName && lead.title) {
+  if (!profile && lead.firstName && lead.lastName && title) {
     const searchResults = await searchLinkedInPeople({
       firstName: lead.firstName,
       lastName: lead.lastName,
-      title: lead.title,
+      title: title,
     });
 
     if (searchResults.results.length > 0) {
@@ -261,25 +267,15 @@ export async function enrichLead(leadId: string): Promise<EnrichmentResult> {
   const updates: string[] = [];
   const values: any[] = [];
 
-  if (profile.profileUrl && !lead.linkedinUrl) {
-    updates.push("linkedinUrl = ?");
-    values.push(profile.profileUrl);
-    enrichedFields.push("linkedinUrl");
-  }
-  if (profile.headline && !lead.title) {
-    updates.push("title = ?");
-    values.push(profile.headline);
-    enrichedFields.push("title");
-  }
-  if (profile.positions.length > 0 && !lead.company) {
-    const currentPos = profile.positions.find(p => p.isCurrent) || profile.positions[0];
-    updates.push("company = ?");
-    values.push(currentPos.companyName);
-    enrichedFields.push("company");
-  }
+  // Note: lead_pipeline DB columns are: id, firmId, professionalId, firstName, lastName,
+  // email, phone, source, status, propensityScore, primaryInterest, estimatedIncome,
+  // protectionScore, notesJson, crmExternalId, created_at, updated_at, location_id,
+  // enrichment_data, segment_data
+  // Fields like company, title, linkedinUrl are stored in enrichment_data JSON
+  const existingEnrichment = lead.enrichment_data ? (typeof lead.enrichment_data === 'string' ? JSON.parse(lead.enrichment_data) : lead.enrichment_data) : {};
 
-  // Store full profile in customFields JSON
-  const customFields = {
+  // Store full profile in enrichment_data JSON (actual column in lead_pipeline)
+  const enrichmentPayload = {
     linkedin_enriched: true,
     linkedin_enriched_at: Date.now(),
     linkedin_confidence: confidence,
@@ -292,9 +288,9 @@ export async function enrichLead(leadId: string): Promise<EnrichmentResult> {
     linkedin_current_position: profile.positions.find(p => p.isCurrent) || null,
     linkedin_education: profile.educations.slice(0, 3),
   };
-  updates.push("customFields = JSON_MERGE_PATCH(COALESCE(customFields, '{}'), ?)");
-  values.push(JSON.stringify(customFields));
-  enrichedFields.push("customFields");
+  updates.push("enrichment_data = JSON_MERGE_PATCH(COALESCE(enrichment_data, '{}'), ?)");
+  values.push(JSON.stringify(enrichmentPayload));
+  enrichedFields.push("enrichment_data");
 
   if (updates.length > 0) {
     values.push(leadId);
@@ -323,9 +319,9 @@ export async function batchEnrichLeads(limit: number = 10): Promise<{
   // Find leads without LinkedIn enrichment
   const [rows] = await pool.execute(
     `SELECT id FROM lead_pipeline 
-     WHERE (customFields IS NULL OR JSON_EXTRACT(customFields, '$.linkedin_enriched') IS NULL)
+     WHERE (enrichment_data IS NULL OR JSON_EXTRACT(enrichment_data, '$.linkedin_enriched') IS NULL)
      AND status != 'disqualified'
-     ORDER BY createdAt DESC
+     ORDER BY created_at DESC
      LIMIT ?`,
     [limit]
   ) as any;

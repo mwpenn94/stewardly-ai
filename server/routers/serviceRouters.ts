@@ -918,4 +918,38 @@ export const crmRouter = router({
       const { getSetupGuidance } = await import("../services/credentialProvisioner");
       return getSetupGuidance(input.provider);
     }),
+
+  // ─── Sync History Timeline ──────────────────────────────────────────────
+  timeline: protectedProcedure
+    .input(z.object({
+      provider: z.string().optional(),
+      direction: z.enum(["inbound", "outbound", "bidirectional"]).optional(),
+      eventType: z.string().optional(),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+      limit: z.number().default(100),
+      offset: z.number().default(0),
+    }).optional())
+    .query(async ({ input }) => {
+      const { getUnifiedTimeline } = await import("../services/syncHistory");
+      return getUnifiedTimeline({
+        provider: input?.provider,
+        direction: input?.direction,
+        eventType: input?.eventType,
+        dateFrom: input?.dateFrom ? new Date(input.dateFrom) : undefined,
+        dateTo: input?.dateTo ? new Date(input.dateTo) : undefined,
+        limit: input?.limit || 100,
+        offset: input?.offset || 0,
+      });
+    }),
+
+  timelineSummary: protectedProcedure.query(async () => {
+    const { getTimelineSummary } = await import("../services/syncHistory");
+    return getTimelineSummary();
+  }),
+
+  liveSyncTest: adminProcedure.mutation(async () => {
+    const { runLiveSyncTest } = await import("../services/syncHistory");
+    return runLiveSyncTest();
+  }),
 });

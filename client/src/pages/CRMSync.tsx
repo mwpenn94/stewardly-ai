@@ -264,6 +264,27 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
     onError: (e) => toast.error(`Webhook registration failed: ${e.message}`),
   });
 
+  // Timeline queries
+  const [timelineFilter, setTimelineFilter] = useState<{ provider?: string; eventType?: string }>({});
+  const timeline = trpc.crm.timeline.useQuery(
+    { provider: timelineFilter.provider, eventType: timelineFilter.eventType, limit: 100 },
+    { enabled: isAuthenticated && isAdmin, refetchInterval: 30000 },
+  );
+  const timelineSummary = trpc.crm.timelineSummary.useQuery(undefined, {
+    enabled: isAuthenticated && isAdmin,
+    staleTime: 60000,
+  });
+  const liveSyncTestMut = trpc.crm.liveSyncTest.useMutation({
+    onSuccess: (r: any) => {
+      toast.success(
+        `Live sync test: ${r.ghlContactsFetched} contacts fetched, ${r.conflictsDetected} conflicts detected`,
+      );
+      utils.crm.timeline.invalidate();
+      utils.crm.timelineSummary.invalidate();
+      utils.crm.syncHistory.invalidate();
+    },
+    onError: (e: any) => toast.error(`Live sync test failed: ${e.message}`),
+  });
   const handleSync = () => {
     syncMut.mutate({ provider, direction });
   };
@@ -502,8 +523,9 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
           <TabsTrigger value="credentials"><Key className="h-3.5 w-3.5 mr-1" /> Credentials</TabsTrigger>
           <TabsTrigger value="outbound"><Upload className="h-3.5 w-3.5 mr-1" /> Outbound Sync</TabsTrigger>
           <TabsTrigger value="webhooks"><Webhook className="h-3.5 w-3.5 mr-1" /> Webhook Feed</TabsTrigger>
-          <TabsTrigger value="history"><History className="h-3.5 w-3.5 mr-1" /> Sync History</TabsTrigger>
+          <TabsTrigger value="history"><History className="h-3.5 w-3.5 mr-1" /> Timeline</TabsTrigger>
           <TabsTrigger value="syncLogs"><Zap className="h-3.5 w-3.5 mr-1" /> Integration Logs</TabsTrigger>
+          <TabsTrigger value="liveTest"><Activity className="h-3.5 w-3.5 mr-1" /> Live Test</TabsTrigger>
           <TabsTrigger value="settings"><Settings2 className="h-3.5 w-3.5 mr-1" /> Settings</TabsTrigger>
           <TabsTrigger value="conflicts"><GitMerge className="h-3.5 w-3.5 mr-1" /> Conflicts</TabsTrigger>
           <TabsTrigger value="ghlConnect"><ExternalLink className="h-3.5 w-3.5 mr-1" /> GHL Connect</TabsTrigger>
@@ -940,51 +962,123 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
           </Card>
         </TabsContent>
 
-        {/* CRM Sync History (from crm_sync_log) */}
-        <TabsContent value="history" className="mt-4">
-          <div className="flex justify-end mb-2">
+        {/* Unified Sync Timeline */}
+        <TabsContent value="history" className="mt-4 space-y-4">
+          {/* Summary Cards */}
+          {timelineSummary.data && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{timelineSummary.data.totalEvents}</p>
+                <p className="text-xs text-muted-foreground">Total Events</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{timelineSummary.data.totalContactsSynced}</p>
+                <p className="text-xs text-muted-foreground">Contacts Synced</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold">{timelineSummary.data.successRate}%</p>
+                <p className="text-xs text-muted-foreground">Success Rate</p>
+              </CardContent></Card>
+              <Card><CardContent className="p-3 text-center">
+                <p className="text-2xl font-bold text-red-400">{timelineSummary.data.totalErrors}</p>
+                <p className="text-xs text-muted-foreground">Errors</p>
+              </CardContent></Card>
+            </div>
+          )}
+          {/* Filters */}
+          <div className="flex gap-2 flex-wrap">
+            <Select value={timelineFilter.provider || "all"} onValueChange={(v) => setTimelineFilter(f => ({ ...f, provider: v === "all" ? undefined : v }))}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Providers" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Providers</SelectItem>
+                <SelectItem value="gohighlevel">GoHighLevel</SelectItem>
+                <SelectItem value="dripify">Dripify</SelectItem>
+                <SelectItem value="smsit">SMS-iT</SelectItem>
+                <SelectItem value="workable">Workable</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={timelineFilter.eventType || "all"} onValueChange={(v) => setTimelineFilter(f => ({ ...f, eventType: v === "all" ? undefined : v }))}>
+              <SelectTrigger className="w-40"><SelectValue placeholder="All Types" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="pull">Pull (Inbound)</SelectItem>
+                <SelectItem value="push">Push (Outbound)</SelectItem>
+                <SelectItem value="webhook">Webhook</SelectItem>
+                <SelectItem value="auto_sync">Auto Sync</SelectItem>
+                <SelectItem value="manual_sync">Manual Sync</SelectItem>
+              </SelectContent>
+            </Select>
             <ExportDataButton
-              data={historyRows}
-              filename="crm-sync-history"
-              columns={["crmProvider", "direction", "status", "recordsSynced", "createdAt"]}
+              data={timeline.data ?? []}
+              filename="sync-timeline"
+              columns={["eventType", "provider", "direction", "status", "contactCount", "timestamp"]}
             />
           </div>
+          {/* Timeline */}
           <Card>
             <CardContent className="p-4">
-              {syncHistory.isLoading ? (
+              {timeline.isLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : historyRows.length === 0 ? (
+              ) : !timeline.data?.length ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <History className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No sync history yet. Run your first sync to see results here.</p>
+                  <p className="text-sm">No sync events yet. Run your first sync to see the timeline.</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
-                  {historyRows.map((h: any) => (
-                    <div key={h.id} className="flex items-center justify-between py-2 px-3 border-b border-border/50 last:border-0 rounded hover:bg-muted/30">
-                      <div className="flex items-center gap-3">
-                        {h.direction === "push" ? (
-                          <Upload className="h-4 w-4 text-cyan-400" />
-                        ) : h.direction === "bidirectional" ? (
-                          <ArrowLeftRight className="h-4 w-4 text-purple-400" />
-                        ) : (
-                          <Download className="h-4 w-4 text-blue-400" />
-                        )}
-                        <div>
-                          <p className="text-sm">
-                            <span className="font-medium capitalize">{h.crmProvider}</span>
-                            {" · "}{h.recordsSynced ?? 0} records · {h.direction}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {h.createdAt ? new Date(h.createdAt).toLocaleString() : "—"}
-                          </p>
+                <div className="relative">
+                  {/* Vertical timeline line */}
+                  <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
+                  <div className="space-y-1 max-h-[500px] overflow-y-auto">
+                    {(timeline.data as any[]).map((evt: any) => {
+                      const iconMap: Record<string, React.ReactNode> = {
+                        pull: <Download className="h-3.5 w-3.5 text-blue-400" />,
+                        push: <Upload className="h-3.5 w-3.5 text-cyan-400" />,
+                        webhook: <Webhook className="h-3.5 w-3.5 text-green-400" />,
+                        auto_sync: <Zap className="h-3.5 w-3.5 text-amber-400" />,
+                        manual_sync: <Activity className="h-3.5 w-3.5 text-purple-400" />,
+                        conflict_resolved: <GitMerge className="h-3.5 w-3.5 text-orange-400" />,
+                      };
+                      const statusColors: Record<string, string> = {
+                        success: "bg-green-500/20 text-green-400 border-green-500/30",
+                        partial: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+                        failed: "bg-red-500/20 text-red-400 border-red-500/30",
+                        pending: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                      };
+                      return (
+                        <div key={evt.id} className="relative pl-12 py-2 group">
+                          {/* Timeline dot */}
+                          <div className="absolute left-3 top-3 w-4 h-4 rounded-full bg-background border-2 border-border flex items-center justify-center z-10">
+                            {iconMap[evt.eventType] || <Activity className="h-3 w-3" />}
+                          </div>
+                          <div className="flex items-start justify-between gap-2 p-2 rounded hover:bg-muted/30 transition-colors">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm capitalize">{evt.provider}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${statusColors[evt.status] || ""}`}>
+                                  {evt.status}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                                  {evt.eventType.replace("_", " ")}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {evt.contactCount > 0 && `${evt.contactCount} contact${evt.contactCount !== 1 ? "s" : ""}`}
+                                {evt.contactsCreated > 0 && ` (${evt.contactsCreated} new)`}
+                                {evt.contactsUpdated > 0 && ` (${evt.contactsUpdated} updated)`}
+                                {evt.errorCount > 0 && <span className="text-red-400"> · {evt.errorCount} error{evt.errorCount !== 1 ? "s" : ""}</span>}
+                                {evt.durationMs && ` · ${evt.durationMs}ms`}
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {new Date(evt.timestamp).toLocaleString()}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      {statusBadge(h.status)}
-                    </div>
-                  ))}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -1031,6 +1125,42 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
                       {statusBadge(log.status)}
                     </div>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Live Sync Test */}
+        <TabsContent value="liveTest" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="h-4 w-4" /> Live Sync Test
+              </CardTitle>
+              <CardDescription>
+                Pull real contacts from GHL, compare with lead_pipeline, and detect field conflicts. Read-only test.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button onClick={() => liveSyncTestMut.mutate()} disabled={liveSyncTestMut.isPending} className="w-full">
+                {liveSyncTestMut.isPending ? (<><Loader2 className="h-4 w-4 animate-spin mr-2" /> Running...</>) : (<><Zap className="h-4 w-4 mr-2" /> Run Live Sync Test</>)}
+              </Button>
+              {liveSyncTestMut.data && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{liveSyncTestMut.data.ghlContactsFetched}</p><p className="text-xs text-muted-foreground">GHL Fetched</p></CardContent></Card>
+                    <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-green-400">{liveSyncTestMut.data.realContacts}</p><p className="text-xs text-muted-foreground">Real Contacts</p></CardContent></Card>
+                    <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-muted-foreground">{liveSyncTestMut.data.testContacts}</p><p className="text-xs text-muted-foreground">Test Contacts</p></CardContent></Card>
+                    <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-orange-400">{liveSyncTestMut.data.conflictsDetected}</p><p className="text-xs text-muted-foreground">Conflicts</p></CardContent></Card>
+                  </div>
+                  {liveSyncTestMut.data.sampleContacts?.length > 0 && (
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm">Sample Real Contacts</CardTitle></CardHeader><CardContent><div className="space-y-1 max-h-60 overflow-y-auto">{liveSyncTestMut.data.sampleContacts.map((c: any) => (<div key={c.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/30 text-sm"><div><span className="font-medium">{c.name || 'No Name'}</span><span className="text-muted-foreground ml-2">{c.email}</span></div><span className="text-xs text-muted-foreground">{c.city}{c.state ? `, ${c.state}` : ''}</span></div>))}</div></CardContent></Card>
+                  )}
+                  {liveSyncTestMut.data.conflictDetails?.length > 0 && (
+                    <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-orange-400">Field Conflicts</CardTitle></CardHeader><CardContent><div className="space-y-2 max-h-60 overflow-y-auto">{liveSyncTestMut.data.conflictDetails.map((c: any, i: number) => (<div key={i} className="p-2 rounded border border-border/50 text-sm"><p className="font-medium">{c.contactName} \u2014 <span className="text-muted-foreground">{c.field}</span></p><div className="flex gap-4 mt-1 text-xs"><span className="text-blue-400">GHL: {c.ghlValue}</span><span className="text-cyan-400">Stewardly: {c.stewardlyValue}</span></div></div>))}</div></CardContent></Card>
+                  )}
+                  <p className="text-xs text-muted-foreground text-center">Test at {new Date(liveSyncTestMut.data.timestamp).toLocaleString()}</p>
                 </div>
               )}
             </CardContent>
