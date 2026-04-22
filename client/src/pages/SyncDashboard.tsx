@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -531,7 +532,7 @@ export default function SyncDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
   // ─── SSE Live Stream ──────────────────────────────────────────────────
-  const { events: sseEvents, connected: sseConnected } = useSyncEvents({
+  const { events: sseEvents, connected: sseConnected, latestByType } = useSyncEvents({
     maxEvents: 50,
     autoConnect: true,
   });
@@ -848,7 +849,93 @@ export default function SyncDashboard() {
                     </p>
                   </div>
                 </CardContent>
-              </Card>
+               </Card>
+
+              {/* Real-Time Reconciliation Progress */}
+              {isReconciling && (
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      Reconciliation In Progress
+                    </CardTitle>
+                    <CardDescription>
+                      {(() => {
+                        const progress = latestByType("reconcile_progress");
+                        if (!progress) return "Initializing...";
+                        const d = progress.data as any;
+                        return `${d.locationName || selectedLocation?.name || "All locations"} \u2014 ${d.pct || 0}% complete`;
+                      })()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {(() => {
+                      const progress = latestByType("reconcile_progress");
+                      if (!progress) {
+                        return (
+                          <div className="space-y-3">
+                            <Progress value={0} className="h-2" />
+                            <p className="text-xs text-muted-foreground text-center">Connecting to GHL API...</p>
+                          </div>
+                        );
+                      }
+                      const d = progress.data as any;
+                      const pct = d.pct || 0;
+                      return (
+                        <>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="font-mono font-medium">{(d.processed || 0).toLocaleString()} / {(d.total || 0).toLocaleString()}</span>
+                            </div>
+                            <Progress value={pct} className="h-2.5" />
+                          </div>
+                          <div className="grid grid-cols-4 gap-3">
+                            <div className="rounded-lg bg-background/80 p-3 text-center">
+                              <p className="text-lg font-bold text-emerald-500">{formatNumber(d.matched || 0)}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Matched</p>
+                            </div>
+                            <div className="rounded-lg bg-background/80 p-3 text-center">
+                              <p className="text-lg font-bold text-blue-500">{formatNumber(d.created || 0)}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Created</p>
+                            </div>
+                            <div className="rounded-lg bg-background/80 p-3 text-center">
+                              <p className="text-lg font-bold text-amber-500">{formatNumber(d.processed || 0)}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Processed</p>
+                            </div>
+                            <div className="rounded-lg bg-background/80 p-3 text-center">
+                              <p className="text-lg font-bold text-red-500">{formatNumber(d.errors || 0)}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Errors</p>
+                            </div>
+                          </div>
+                          {sseEvents.filter(e => e.type === "reconcile_progress" || e.type === "reconcile_complete" || e.type === "sync_error").length > 0 && (
+                            <div className="max-h-[120px] overflow-y-auto space-y-1 rounded-md bg-background/50 p-2">
+                              {sseEvents
+                                .filter(e => e.type === "reconcile_progress" || e.type === "reconcile_complete" || e.type === "sync_error")
+                                .slice(0, 10)
+                                .map((evt, i) => (
+                                  <div key={`prog-${evt.timestamp}-${i}`} className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                                    <span className="font-mono w-14 shrink-0">{new Date(evt.timestamp).toLocaleTimeString()}</span>
+                                    <Badge variant={evt.type === "sync_error" ? "destructive" : "outline"} className="text-[9px] h-4">
+                                      {evt.type === "reconcile_progress" ? "progress" : evt.type === "reconcile_complete" ? "done" : "error"}
+                                    </Badge>
+                                    <span className="truncate">
+                                      {evt.type === "reconcile_progress"
+                                        ? `${(evt.data as any).pct}% \u2014 ${(evt.data as any).processed} processed`
+                                        : evt.type === "reconcile_complete"
+                                        ? `Completed in ${formatDuration((evt.data as any).durationMs)}`
+                                        : (evt.data as any).error}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Distribution Breakdown */}
               <Card>

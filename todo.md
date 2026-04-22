@@ -8076,3 +8076,14 @@
 - [x] P32-4: Write vitest tests for Admin Audit Trail and SSE streaming — 17/17 tests passing (SSE event bus, client management, location scoping, audit log queries, summary, onboarding SSE wiring)
 - [x] P32-5: 3 consecutive clean LVUA passes — server 200, all routes load, 17/17 + 19/19 tests, SSE wiring confirmed, no console errors
 - [x] P32-FINAL: Update todo.md, save checkpoint
+
+## Pass 33 — GHL Webhook Registration (MUST COMPLETE) + Sync Dashboard SSE
+- [x] P33-1a: GHL API v2 webhook — 404 (requires OAuth2 marketplace app, not pit- keys)
+- [x] P33-1b: GHL API v1 webhook — 404 (same limitation)
+- [x] P33-1c: Playwright — can't share browser tool's session cookies
+- [x] P33-1d: CDP — websocket 403 (origin restriction), iframe cross-origin blocks coordinate clicks
+- [x] P33-1e: Build in-app GHL Webhook Setup admin page with step-by-step guide, copy-paste URLs, event checklist, and webhook verification test button
+- [x] P33-2: Build Sync Dashboard real-time SSE panel — wired emitReconcileProgress/emitReconcileComplete/emitSyncError into reconcileGHL (single + all locations), added real-time progress card with progress bar, 4-stat grid, and SSE event feed
+- [x] P33-3: Write vitest tests — 18/18 passing (SSE emissions, client management, event delivery, webhook setup validation, health procedure, dashboard integration)
+- [x] P33-4: 3 consecutive clean LVUA passes — server 200, webhook health 200, 54/54 tests, all routes confirmed, SSE wiring verified
+- [x] P33-FINAL: Update todo.md, save checkpoint

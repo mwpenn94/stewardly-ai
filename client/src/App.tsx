@@ -109,6 +109,7 @@ const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const BillingPage = lazy(() => import("./pages/BillingPage"));
 const APIKeys = lazy(() => import("./pages/APIKeys"));
 const WebhookManager = lazy(() => import("./pages/WebhookManager"));
+const GHLWebhookSetup = lazy(() => import("./pages/GHLWebhookSetup"));
 const ClientOnboarding = lazy(() => import("./pages/ClientOnboarding"));
 const FinancialProtectionScore = lazy(() => import("./pages/FinancialProtectionScore"));
 const Community = lazy(() => import("./pages/Community"));
@@ -256,6 +257,7 @@ function Router() {
         <Route path="/admin/billing" component={BillingPage} />
         <Route path="/admin/api-keys" component={APIKeys} />
         <Route path="/admin/webhooks" component={WebhookManager} />
+        <Route path="/admin/webhooks/ghl-setup" component={GHLWebhookSetup} />
         <Route path="/client-onboarding" component={ClientOnboarding} />
         <Route path="/protection-score" component={FinancialProtectionScore} />
         <Route path="/financial-planning" component={FinancialPlanning} />

@@ -201,6 +201,7 @@ export const ADMIN_NAV: NavItemDef[] = [
   { iconName: "Compass", label: "Comparables", href: "/comparables", minRole: "advisor" },
   { iconName: "Key", label: "API Keys", href: "/admin/api-keys", minRole: "admin" },
   { iconName: "Webhook", label: "Webhooks", href: "/admin/webhooks", minRole: "admin" },
+  { iconName: "Settings", label: "GHL Webhook Setup", href: "/admin/webhooks/ghl-setup", minRole: "admin" },
   { iconName: "Users", label: "Team", href: "/admin/team", minRole: "admin" },
   { iconName: "CreditCard", label: "Billing", href: "/admin/billing", minRole: "admin" },
   { iconName: "Cpu", label: "AI Intelligence", href: "/admin/intelligence", minRole: "admin" },

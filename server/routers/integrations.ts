@@ -22,6 +22,7 @@ import { reconcile, reconcileAllLocations, getSyncAggregation, persistReconcileS
 import type { LocationConfig } from "../services/syncReconciliation";
 import { getRawPool } from "../db";
 import crypto from "crypto";
+import { emitReconcileProgress, emitReconcileComplete, emitSyncError } from "../services/syncEventBus";
 
 const uuid = () => crypto.randomUUID();
 
@@ -1234,6 +1235,17 @@ export const integrationsRouter = router({
             pushOrphans: input?.pushOrphans ?? true,
             resumeCursor: input?.resumeCursor ?? null,
             location: loc,
+            onProgress: (progressStats) => {
+              emitReconcileProgress({
+                locationId: loc.dbId,
+                locationName: loc.name,
+                processed: progressStats.matched + progressStats.createdInStewardly + progressStats.createdInGHL,
+                total: progressStats.ghlTotal || 1,
+                matched: progressStats.matched,
+                created: progressStats.createdInStewardly + progressStats.createdInGHL,
+                errors: progressStats.errors,
+              });
+            },
           });
           await persistReconcileStats(stats, loc.dbId);
 
@@ -1255,8 +1267,20 @@ export const integrationsRouter = router({
               );
             } catch { /* non-fatal */ }
           }
+          emitReconcileComplete({
+            locationId: loc.dbId,
+            locationName: loc.name,
+            stats,
+            durationMs: stats.duration_ms,
+          });
           return stats;
         } catch (err: any) {
+          emitSyncError({
+            locationId: loc.dbId,
+            locationName: loc.name,
+            error: err.message,
+            context: "reconcileGHL",
+          });
           if (pool && runId) {
             await pool.query(
               `UPDATE sync_run_history SET status = 'failed', errors = 1, duration_ms = ?, completed_at = ? WHERE id = ?`,
@@ -1275,6 +1299,15 @@ export const integrationsRouter = router({
           resumeCursor: input?.resumeCursor ?? null,
         });
 
+        // Emit SSE complete for each location result
+        for (const r of results) {
+          emitReconcileComplete({
+            locationId: undefined,
+            locationName: r.locationName || r.locationId,
+            stats: r,
+            durationMs: r.duration_ms,
+          });
+        }
         // Return the first result for backward compat, or a summary
         if (results.length === 1) return results[0];
         return {
@@ -1298,10 +1331,13 @@ export const integrationsRouter = router({
           complete: results.every(r => r.complete),
         };
       } catch (err: any) {
+        emitSyncError({
+          error: err.message,
+          context: "reconcileGHL_all",
+        });
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err.message });
       }
     }),
-
   /** Get current sync aggregation stats (optional location filter) */
   getSyncAggregation: protectedProcedure
     .input(z.object({ locationDbId: z.number().optional() }).optional())
@@ -2001,7 +2037,7 @@ export const integrationsRouter = router({
       }).catch(() => {});
       try {
         const { reconcile } = await import("../services/syncReconciliation");
-        const { emitReconcileProgress, emitReconcileComplete, emitSyncError } = await import("../services/syncEventBus");
+        // SSE event bus functions imported at top level
         const stats = await reconcile({
           location: {
             dbId: input.locationDbId,
@@ -2104,4 +2140,41 @@ export const integrationsRouter = router({
         })),
       };
     }),
+
+  // ─── GHL Webhook Setup Helpers ───────────────────────────────────────────
+  ghlWebhookHealth: protectedProcedure.query(async () => {
+    try {
+      const resp = await fetch(`http://localhost:${process.env.PORT || 3000}/api/webhooks/ghl/health`);
+      if (!resp.ok) return { status: "error", message: `HTTP ${resp.status}` };
+      const data = await resp.json();
+      return { status: "ok", ...data };
+    } catch (e: any) {
+      return { status: "error", message: e.message };
+    }
+  }),
+
+  testGhlWebhook: protectedProcedure.mutation(async () => {
+    try {
+      const testPayload = {
+        type: "ContactCreate",
+        locationId: process.env.GHL_LOCATION_ID || "test-location",
+        id: `test-${Date.now()}`,
+        firstName: "Webhook",
+        lastName: "Test",
+        email: "webhook-test@stewardly.ai",
+        phone: "+1234567890",
+        _testEvent: true,
+        timestamp: Date.now(),
+      };
+      const resp = await fetch(`http://localhost:${process.env.PORT || 3000}/api/webhooks/ghl`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(testPayload),
+      });
+      const data = await resp.json();
+      return { success: resp.ok, status: resp.status, response: data };
+    } catch (e: any) {
+      return { success: false, status: 0, response: { error: e.message } };
+    }
+  }),
 });
