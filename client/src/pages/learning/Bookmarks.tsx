@@ -5,6 +5,7 @@
  * flashcards, questions, cases) and add personal notes.
  */
 import { useState, useMemo, useCallback } from "react";
+import { useOptimisticRemove } from "@/hooks/useOptimisticMutation";
 import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -33,10 +34,14 @@ export default function Bookmarks() {
   const [editNote, setEditNote] = useState("");
 
   const bookmarksQ = trpc.learningSocial.bookmarks.list.useQuery(undefined, { enabled: !!isAuthenticated });
-  const removeMut = trpc.learningSocial.bookmarks.remove.useMutation({
-    onSuccess: () => { bookmarksQ.refetch(); toast.success("Bookmark removed"); },
-    onError: () => toast.error("Failed to remove bookmark"),
+  const utils = trpc.useUtils();
+  const removeCallbacks = useOptimisticRemove({
+    queryUtils: utils.learningSocial.bookmarks.list as any,
+    removeItem: (data: any, id) => (Array.isArray(data) ? data.filter((b: any) => b.id !== id) : data),
+    successMessage: "Bookmark removed",
+    errorPrefix: "Failed to remove bookmark",
   });
+  const removeMut = trpc.learningSocial.bookmarks.remove.useMutation(removeCallbacks);
   // @ts-expect-error — property access on loosely typed object
   const updateMut = trpc.learningSocial.bookmarks.update.useMutation({
     onSuccess: () => { bookmarksQ.refetch(); setEditingId(null); toast.success("Note updated"); },

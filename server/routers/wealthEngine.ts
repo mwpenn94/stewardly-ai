@@ -1424,4 +1424,28 @@ export const wealthEngineRouter = router({
         },
       };
     }),
+
+  /**
+   * Portfolio Risk Metrics — compute Sharpe ratio, Sortino ratio,
+   * max drawdown, and efficient frontier points for a given set of
+   * periodic returns. Powered by optimizationUtils.
+   */
+  portfolioRiskMetrics: protectedProcedure
+    .input(
+      z.object({
+        returns: z.array(z.number()).min(2).max(1200),
+        riskFreeRate: z.number().min(0).max(0.3).default(0.04),
+        benchmarkReturns: z.array(z.number()).optional(),
+      }),
+    )
+    .query(({ input }) => {
+      const { computeRiskMetrics, generateEfficientFrontier } = require("../services/portfolio/optimizationUtils");
+      const metrics = computeRiskMetrics(input.returns, 252, input.riskFreeRate);
+      const series = [
+        { id: "portfolio", returns: input.returns },
+        ...(input.benchmarkReturns ? [{ id: "benchmark", returns: input.benchmarkReturns }] : []),
+      ];
+      const frontier = generateEfficientFrontier(series, 5, 252, input.riskFreeRate);
+      return { data: { ...metrics, frontier } };
+    }),
 });

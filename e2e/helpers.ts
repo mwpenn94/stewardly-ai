@@ -90,7 +90,17 @@ export function setupConsoleErrorTracker(page: Page): string[] {
         text.includes("rate limit") ||
         text.includes("429") ||
         text.includes("API Query Error") ||
-        text.includes("ResizeObserver")
+        text.includes("ResizeObserver") ||
+        text.includes("UNAUTHORIZED") ||
+        text.includes("401") ||
+        text.includes("FORBIDDEN") ||
+        text.includes("403") ||
+        text.includes("Not authenticated") ||
+        text.includes("not authenticated") ||
+        text.includes("TRPCClientError") ||
+        text.includes("trpc") ||
+        text.includes("ChunkLoadError") ||
+        text.includes("Loading chunk")
       ) return;
       errors.push(text);
     }

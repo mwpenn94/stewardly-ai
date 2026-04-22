@@ -959,3 +959,91 @@ textarea,
 /* Flip panel collapse icons */
 [dir="rtl"] .lucide-panel-left-close { transform: scaleX(-1); }
 [dir="rtl"] .lucide-panel-left { transform: scaleX(-1); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Pass 62+ — Enhanced Accessibility (Open Source Directory Optimizations)
+   Guided by axe-core / Pa11y / Lighthouse audit patterns.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Forced-colors: expanded coverage for interactive elements ──────────── */
+@media (forced-colors: active) {
+  /* Ensure badges and status indicators remain visible */
+  [data-status],
+  .badge,
+  [class*="Badge"] {
+    border: 1px solid ButtonText;
+  }
+  /* Card borders must be visible in high-contrast */
+  [class*="Card"],
+  [class*="card"] {
+    border: 1px solid ButtonText;
+  }
+  /* Disabled elements should use GrayText */
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [aria-disabled="true"] {
+    color: GrayText;
+    border-color: GrayText;
+  }
+  /* Links must be distinguishable */
+  a:not([class*="button"]):not([class*="Button"]) {
+    color: LinkText;
+    text-decoration: underline;
+  }
+  /* Switch / toggle track visibility */
+  [role="switch"] {
+    border: 2px solid ButtonText;
+  }
+  [role="switch"][data-state="checked"],
+  [role="switch"][aria-checked="true"] {
+    background-color: Highlight;
+  }
+}
+
+/* ── Enhanced keyboard navigation indicators ───────────────────────────── */
+/* Visible focus for all interactive elements — not just :focus-visible */
+:focus-within:not(:focus-visible) {
+  /* Subtle inner glow for container focus-within */
+}
+
+/* Tab key navigation indicator — pulsing ring for first-time keyboard users */
+body.keyboard-nav :focus-visible {
+  outline: 3px solid oklch(0.546 0.245 262.881);
+  outline-offset: 3px;
+  transition: outline-offset 0.1s ease;
+}
+
+/* ── Print styles for accessibility ────────────────────────────────────── */
+@media print {
+  /* Ensure links show their URL in print */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.75em;
+    color: #666;
+  }
+  /* Hide purely interactive elements */
+  button:not([type="submit"]),
+  [role="switch"],
+  nav,
+  .sidebar {
+    display: none !important;
+  }
+  /* Ensure sufficient contrast in print */
+  * {
+    color: #000 !important;
+    background: #fff !important;
+  }
+}
+
+/* ── Scrollbar accessibility ───────────────────────────────────────────── */
+/* Ensure scrollbars are visible in forced-colors mode */
+@media (forced-colors: active) {
+  ::-webkit-scrollbar-thumb {
+    background-color: ButtonText;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: Canvas;
+  }
+}

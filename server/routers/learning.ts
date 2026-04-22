@@ -1099,6 +1099,49 @@ export const learningRouter = router({
   ceCredits: ceCreditsRouter,
   peerGroups: peerGroupsRouter,
 
+  // ── Study Analytics (uses analyticsAggregation pure functions) ──────────
+  studyAnalytics: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(500).default(100) }))
+    .query(async ({ ctx, input }) => {
+      const { getDb: getDbFn } = await import("../db");
+      const { learningStudySessions } = await import("../../drizzle/schema");
+      const { eq, desc } = await import("drizzle-orm");
+      const db = await getDbFn();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const rows = await db
+        .select()
+        .from(learningStudySessions)
+        .where(eq(learningStudySessions.userId, ctx.user.id))
+        .orderBy(desc(learningStudySessions.createdAt))
+        .limit(input.limit);
+
+      // Map DB rows → StudySessionRecord shape expected by analyticsAggregation
+      const sessions = rows.map((r: any) => ({
+        id: String(r.id),
+        userId: r.userId,
+        startedAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : String(r.createdAt),
+        durationSec: (r.durationMinutes ?? 0) * 60,
+        questionsAttempted: r.itemsStudied ?? 0,
+        questionsCorrect: r.itemsMastered ?? 0,
+        topic: r.discipline ?? r.trackKey ?? "general",
+        difficulty: 3,
+      }));
+
+      const {
+        analyzeTrends,
+        buildTopicMastery,
+        generateEfficiencyReport,
+      } = require("../services/learning/analyticsAggregation");
+
+      return {
+        sessionCount: sessions.length,
+        trends: analyzeTrends(sessions),
+        topicMastery: buildTopicMastery(sessions),
+        efficiency: generateEfficiencyReport(sessions),
+      };
+    }),
+
   // Admin-only seed
   seed: adminProcedure.mutation(async ({ ctx }) => {
     if (!canSeedContent({ id: ctx.user.id, role: (ctx.user.role as any) ?? "user" })) {

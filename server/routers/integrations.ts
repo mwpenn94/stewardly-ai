@@ -871,15 +871,25 @@ export const integrationsRouter = router({
             credentialDecrypt: r.credentialDecrypt,
           })) || [],
         } : null,
-        jobs: status.jobs.map(j => ({
-          name: j.name,
-          lastRun: j.lastRun,
-          lastError: j.lastError,
-          runCount: j.runCount,
-          errorCount: j.errorCount,
-          isRunning: j.isRunning,
-          nextRun: j.nextRun,
-        })),
+        jobs: status.jobs.map((j: any) => {
+          const { assessFreshness } = require("../services/dataPipelineUtils");
+          const DAY_MS = 86_400_000;
+          const staleMs = j.name.includes("daily") ? 2 * DAY_MS : DAY_MS / 24;
+          const freshness = j.lastRun
+            ? assessFreshness(new Date(j.lastRun), { staleThresholdMs: staleMs, expiredThresholdMs: staleMs * 3 })
+            : { level: "unknown" as const, ageLabel: "never", score: 0, ageMs: Infinity };
+          return {
+            name: j.name,
+            lastRun: j.lastRun,
+            lastError: j.lastError,
+            runCount: j.runCount,
+            errorCount: j.errorCount,
+            isRunning: j.isRunning,
+            nextRun: j.nextRun,
+            freshness: freshness.level,
+            ageLabel: freshness.ageLabel,
+          };
+        }),
       };
     }),
 

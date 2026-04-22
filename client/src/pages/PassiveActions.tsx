@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
+import { useOptimisticToggle } from "@/hooks/useOptimisticMutation";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -87,9 +88,17 @@ export default function PassiveActions() {
     );
   }
 
+  const toggleCallbacks = useOptimisticToggle({
+    queryUtils: trpc.useUtils().passiveActions.preferences as any,
+    toggleItem: (data: any, id) => {
+      if (!Array.isArray(data)) return data;
+      return data.map((p: any) => p.id === id ? { ...p, enabled: !p.enabled } : p);
+    },
+    errorPrefix: "Toggle failed",
+  });
   const toggleMutation = trpc.passiveActions.toggle.useMutation({
+    ...(toggleCallbacks as any),
     onSuccess: () => { refetchPrefs(); refetchStats(); },
-    onError: (err) => toast.error(err.message),
   });
 
   const bulkSourceMutation = trpc.passiveActions.bulkToggleSource.useMutation({

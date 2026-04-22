@@ -30,6 +30,15 @@ i18n.on("languageChanged", (lng: string) => {
 initErrorTracking();
 initPerformanceMonitor();
 
+// Keyboard vs mouse navigation detection (for enhanced focus indicators)
+// Adds body.keyboard-nav when Tab is pressed, removes on mouse click
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") document.body.classList.add("keyboard-nav");
+});
+document.addEventListener("mousedown", () => {
+  document.body.classList.remove("keyboard-nav");
+});
+
 /**
  * Handle stale-deployment chunk loading errors.
  * When a new deployment changes chunk hashes, users with cached index.html
