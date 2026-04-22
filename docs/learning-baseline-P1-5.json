@@ -1,0 +1,17 @@
+{
+  "item_id": "P1-5",
+  "title": "Faculty/expert office hours via LiveSession",
+  "hypothesis": "Scheduled expert office hours increase learner engagement by ≥20%",
+  "primary_metric": "office_hour_attendance_rate",
+  "secondary_metrics": ["session_satisfaction_score", "repeat_attendance_rate"],
+  "baseline_value": null,
+  "target_value": "+20% engagement vs baseline",
+  "measurement_window_days": 30,
+  "sample_size_min": 30,
+  "pre_registered_at": "2026-04-22T00:00:00Z",
+  "artifacts": [
+    "drizzle/schema.ts (officeHours, officeHourRegistrations)",
+    "server/services/learning/officeHours.ts",
+    "server/routers/learning.ts (officeHoursRouter)"
+  ]
+}

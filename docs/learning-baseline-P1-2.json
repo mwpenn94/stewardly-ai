@@ -1,0 +1,17 @@
+{
+  "item_id": "P1-2",
+  "title": "Lesson graph + mastery gating",
+  "hypothesis": "Prerequisite-gated chapter progression increases track completion rate by ≥15%",
+  "primary_metric": "track_completion_rate",
+  "secondary_metrics": ["avg_chapters_completed", "gating_unlock_rate"],
+  "baseline_value": null,
+  "target_value": "+15% vs baseline",
+  "measurement_window_days": 30,
+  "sample_size_min": 50,
+  "pre_registered_at": "2026-04-22T00:00:00Z",
+  "artifacts": [
+    "drizzle/schema.ts (chapterPrerequisites)",
+    "server/services/learning/lessonGraph.ts",
+    "server/routers/learning.ts (lessonGraphRouter)"
+  ]
+}

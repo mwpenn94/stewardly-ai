@@ -1,0 +1,18 @@
+{
+  "item_id": "P1-3",
+  "title": "CE credit issuance pipeline",
+  "hypothesis": "Building a CE credit tracking and issuance system enables users to earn continuing education credits through completed learning tracks",
+  "success_criteria": [
+    "ce_credits table in schema with userId, trackId, creditsEarned, issuedAt, status",
+    "CE credit service with earn, verify, and list functions",
+    "CE credit issuance triggered on track completion",
+    "CE credit history page or section in learning UI",
+    "Dual-track: self-serve issuance + partnership placeholder"
+  ],
+  "baseline_snapshot": {
+    "ce_table_exists": false,
+    "ce_service_exists": false,
+    "ce_issuance_on_completion": false
+  },
+  "created_at": "2026-04-22T06:38:00Z"
+}

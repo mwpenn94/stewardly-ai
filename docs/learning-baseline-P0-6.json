@@ -1,0 +1,20 @@
+{
+  "item_id": "P0-6",
+  "title": "PWA offline mode",
+  "hypothesis": "Adding a service worker with cache-first strategy for app shell and network-first for API will enable offline access to cached learning content",
+  "success_criteria": [
+    "manifest.json has name, short_name, start_url, display, icons",
+    "sw.js pre-caches app shell on install",
+    "sw.js uses cache-first for static assets",
+    "sw.js uses network-first for API calls",
+    "offline.html fallback page exists",
+    "Service worker registered in main.tsx (production only)"
+  ],
+  "baseline_snapshot": {
+    "manifest_exists": true,
+    "service_worker_exists": false,
+    "offline_page_exists": false,
+    "sw_registration": false
+  },
+  "created_at": "2026-04-22T06:33:00Z"
+}

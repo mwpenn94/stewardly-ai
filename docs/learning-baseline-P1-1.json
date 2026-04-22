@@ -1,0 +1,17 @@
+{
+  "item_id": "P1-1",
+  "title": "Mobile-native shell via Capacitor",
+  "hypothesis": "Adding Capacitor configuration enables PWA-to-native packaging for iOS/Android app stores",
+  "success_criteria": [
+    "capacitor.config.ts exists with correct appId and webDir",
+    "Capacitor core dependency added to package.json",
+    "Build script for Capacitor sync exists",
+    "Native splash screen and icon config present"
+  ],
+  "baseline_snapshot": {
+    "capacitor_installed": false,
+    "native_config": false,
+    "app_store_ready": false
+  },
+  "created_at": "2026-04-22T06:38:00Z"
+}

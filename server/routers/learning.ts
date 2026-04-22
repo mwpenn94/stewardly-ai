@@ -21,6 +21,60 @@ import type { ActingUser } from "../services/learning/permissions";
 import { assertCanEdit, canPublish, canSeedContent } from "../services/learning/permissions";
 
 import {
+  processReview as fsrs5ProcessReview,
+  getDueCards as fsrs5GetDueCards,
+  getReviewStats as fsrs5GetReviewStats,
+} from "../services/learning/fsrsSrsService";
+import {
+  startSession as startAssessmentSession,
+  getActiveSession,
+  completeSession as completeAssessmentSession,
+  abandonSession as abandonAssessmentSession,
+  getSessionHistory,
+  isAiBlocked,
+  recordFocusLoss,
+} from "../services/learning/assessmentSession";
+import {
+  recordActivity as recordStreakActivity,
+  getOrCreateStreak,
+  updateSettings as updateStreakSettings,
+  isStreakAtRisk,
+} from "../services/learning/streaks";
+import {
+  getLessonGraph,
+  isChapterUnlocked,
+  addPrerequisite,
+  removePrerequisite,
+  getNextUnlockable,
+} from "../services/learning/lessonGraph";
+import {
+  createSession as createOfficeHour,
+  listUpcoming as listUpcomingOfficeHours,
+  listPast as listPastOfficeHours,
+  register as registerForOfficeHour,
+  cancelRegistration as cancelOfficeHourRegistration,
+  getMyRegistrations as getMyOfficeHourRegistrations,
+  updateSessionStatus as updateOfficeHourStatus,
+  getRegistrations as getOfficeHourRegistrations,
+} from "../services/learning/officeHours";
+import {
+  issueCeCredit,
+  revokeCeCredit,
+  listUserCredits,
+  getCreditSummary,
+  verifyCeCredit,
+} from "../services/learning/ceCredits";
+import {
+  createGroup,
+  joinGroup,
+  leaveGroup,
+  listGroups,
+  getGroupMembers,
+  postMessage as postGroupMessage,
+  getMessages as getGroupMessages,
+  getMyGroups,
+} from "../services/learning/peerGroups";
+import {
   getUserMastery,
   upsertMastery,
   batchUpsertMastery,
@@ -695,6 +749,274 @@ const recommendationsRouter = router({
     }),
 });
 
+// ── FSRS-5 subrouter (P0-1) ──────────────────────────────────────────────
+const fsrs5Router = router({
+  review: protectedProcedure
+    .input(z.object({
+      itemKey: z.string(),
+      itemType: z.enum(["flashcard", "question"]),
+      rating: z.number().int().min(1).max(4),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      await recordStreakActivity(ctx.user.id);
+      const result = await fsrs5ProcessReview(ctx.user.id, input.itemKey, input.itemType, input.rating as 1|2|3|4);
+      if (!result) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Review failed" });
+      return result;
+    }),
+  dueCards: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(200).default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      return fsrs5GetDueCards(ctx.user.id, input?.limit ?? 20);
+    }),
+  stats: protectedProcedure.query(async ({ ctx }) => {
+    return fsrs5GetReviewStats(ctx.user.id);
+  }),
+});
+
+// ── Assessment subrouter (P0-3) ──────────────────────────────────────────
+const assessmentRouter = router({
+  start: protectedProcedure
+    .input(z.object({
+      assessmentType: z.enum(["quiz", "exam", "smartcase", "capstone"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const session = await startAssessmentSession(ctx.user.id, input.assessmentType);
+      if (!session) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to start session" });
+      return session;
+    }),
+  active: protectedProcedure.query(async ({ ctx }) => {
+    return getActiveSession(ctx.user.id);
+  }),
+  complete: protectedProcedure
+    .input(z.object({
+      sessionId: z.number().int(),
+      score: z.number(),
+      maxScore: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const session = await completeAssessmentSession(ctx.user.id, input.sessionId, input.score, input.maxScore);
+      if (!session) throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      return session;
+    }),
+  abandon: protectedProcedure
+    .input(z.object({ sessionId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      await abandonAssessmentSession(ctx.user.id, input.sessionId);
+      return { ok: true };
+    }),
+  focusLoss: protectedProcedure.mutation(async ({ ctx }) => {
+    await recordFocusLoss(ctx.user.id);
+    return { ok: true };
+  }),
+  history: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(100).default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      return getSessionHistory(ctx.user.id, input?.limit ?? 20);
+    }),
+  isBlocked: protectedProcedure.query(async ({ ctx }) => {
+    return { blocked: await isAiBlocked(ctx.user.id) };
+  }),
+});
+
+// ── Streaks subrouter (P0-5) ─────────────────────────────────────────────
+const streaksRouter = router({
+  get: protectedProcedure.query(async ({ ctx }) => {
+    return getOrCreateStreak(ctx.user.id);
+  }),
+  record: protectedProcedure.mutation(async ({ ctx }) => {
+    return recordStreakActivity(ctx.user.id);
+  }),
+  updateSettings: protectedProcedure
+    .input(z.object({
+      dailyGoalMinutes: z.number().int().min(1).max(480).optional(),
+      nudgeEnabled: z.boolean().optional(),
+      nudgeTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return updateStreakSettings(ctx.user.id, input);
+    }),
+  atRisk: protectedProcedure.query(async ({ ctx }) => {
+    return { atRisk: await isStreakAtRisk(ctx.user.id) };
+  }),
+});
+
+// ── P1-2: Lesson Graph + Mastery Gating subrouter ──────────────────────
+
+const lessonGraphRouter = router({
+  getGraph: protectedProcedure
+    .input(z.object({ trackId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      return getLessonGraph(ctx.user.id, input.trackId);
+    }),
+  isUnlocked: protectedProcedure
+    .input(z.object({ chapterId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      return { unlocked: await isChapterUnlocked(ctx.user.id, input.chapterId) };
+    }),
+  nextUnlockable: protectedProcedure
+    .input(z.object({ trackId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      return getNextUnlockable(ctx.user.id, input.trackId);
+    }),
+  addPrerequisite: adminProcedure
+    .input(z.object({
+      chapterId: z.number().int().positive(),
+      prerequisiteChapterId: z.number().int().positive(),
+      minMasteryScore: z.number().min(0).max(1).default(0.7),
+    }))
+    .mutation(async ({ input }) => {
+      await addPrerequisite(input.chapterId, input.prerequisiteChapterId, input.minMasteryScore);
+      return { ok: true };
+    }),
+  removePrerequisite: adminProcedure
+    .input(z.object({
+      chapterId: z.number().int().positive(),
+      prerequisiteChapterId: z.number().int().positive(),
+    }))
+    .mutation(async ({ input }) => {
+      await removePrerequisite(input.chapterId, input.prerequisiteChapterId);
+      return { ok: true };
+    }),
+});
+
+// ── P1-5: Office Hours subrouter ───────────────────────────────────────
+
+const officeHoursRouter = router({
+  upcoming: protectedProcedure
+    .input(z.object({ trackId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(50).default(20) }).optional())
+    .query(async ({ ctx, input }) => {
+      return listUpcomingOfficeHours({ trackId: input?.trackId, userId: ctx.user.id, limit: input?.limit });
+    }),
+  past: protectedProcedure
+    .input(z.object({ trackId: z.number().int().positive().optional(), limit: z.number().int().min(1).max(50).default(20) }).optional())
+    .query(async ({ input }) => {
+      return listPastOfficeHours({ trackId: input?.trackId, limit: input?.limit });
+    }),
+  register: protectedProcedure
+    .input(z.object({ officeHourId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      return registerForOfficeHour(input.officeHourId, ctx.user.id);
+    }),
+  cancelRegistration: protectedProcedure
+    .input(z.object({ officeHourId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      return cancelOfficeHourRegistration(input.officeHourId, ctx.user.id);
+    }),
+  myRegistrations: protectedProcedure.query(async ({ ctx }) => {
+    return getMyOfficeHourRegistrations(ctx.user.id);
+  }),
+  create: adminProcedure
+    .input(z.object({
+      title: z.string().min(1).max(256),
+      description: z.string().optional(),
+      trackId: z.number().int().positive().optional(),
+      scheduledAt: z.coerce.date(),
+      durationMinutes: z.number().int().min(15).max(480).default(60),
+      maxAttendees: z.number().int().min(1).max(500).default(20),
+      meetingUrl: z.string().url().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const id = await createOfficeHour({ ...input, hostUserId: ctx.user.id });
+      return { id };
+    }),
+  updateStatus: adminProcedure
+    .input(z.object({
+      sessionId: z.number().int().positive(),
+      status: z.enum(["scheduled", "live", "completed", "cancelled"]),
+      meetingUrl: z.string().url().optional(),
+      recordingUrl: z.string().url().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      await updateOfficeHourStatus(input.sessionId, input.status, { meetingUrl: input.meetingUrl, recordingUrl: input.recordingUrl });
+      return { ok: true };
+    }),
+  registrations: adminProcedure
+    .input(z.object({ officeHourId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      return getOfficeHourRegistrations(input.officeHourId);
+    }),
+});
+
+// ── CE Credits subrouter (P1-3) ─────────────────────────────────────────
+
+const ceCreditsRouter = router({
+  issue: protectedProcedure
+    .input(z.object({
+      trackId: z.number().int(),
+      creditsEarned: z.number().min(0).max(100),
+      creditType: z.enum(["self_serve", "partnership"]).optional(),
+      notes: z.string().max(500).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return issueCeCredit({ userId: ctx.user.id, ...input });
+    }),
+  revoke: adminProcedure
+    .input(z.object({ creditId: z.number().int(), reason: z.string().min(1).max(500) }))
+    .mutation(async ({ input }) => {
+      return revokeCeCredit(input.creditId, input.reason);
+    }),
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return listUserCredits(ctx.user.id);
+  }),
+  summary: protectedProcedure.query(async ({ ctx }) => {
+    return getCreditSummary(ctx.user.id);
+  }),
+  verify: protectedProcedure
+    .input(z.object({ creditId: z.number().int() }))
+    .query(async ({ input }) => {
+      return verifyCeCredit(input.creditId);
+    }),
+});
+
+// ── Peer Groups subrouter (P1-4) ────────────────────────────────────────
+
+const peerGroupsRouter = router({
+  create: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(200),
+      description: z.string().max(1000).optional(),
+      trackId: z.number().int().optional(),
+      maxMembers: z.number().int().min(2).max(100).optional(),
+      requiredRole: z.string().max(30).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return createGroup({ ...input, createdBy: ctx.user.id });
+    }),
+  join: protectedProcedure
+    .input(z.object({ groupId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      return joinGroup(input.groupId, ctx.user.id, ctx.user.role);
+    }),
+  leave: protectedProcedure
+    .input(z.object({ groupId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      return leaveGroup(input.groupId, ctx.user.id);
+    }),
+  list: protectedProcedure
+    .input(z.object({ trackId: z.number().int().optional() }).optional())
+    .query(async ({ input }) => {
+      return listGroups(input?.trackId);
+    }),
+  members: protectedProcedure
+    .input(z.object({ groupId: z.number().int() }))
+    .query(async ({ input }) => {
+      return getGroupMembers(input.groupId);
+    }),
+  postMessage: protectedProcedure
+    .input(z.object({ groupId: z.number().int(), content: z.string().min(1).max(5000) }))
+    .mutation(async ({ ctx, input }) => {
+      return postGroupMessage(input.groupId, ctx.user.id, input.content);
+    }),
+  messages: protectedProcedure
+    .input(z.object({ groupId: z.number().int(), limit: z.number().int().min(1).max(200).optional() }))
+    .query(async ({ input }) => {
+      return getGroupMessages(input.groupId, input.limit);
+    }),
+  myGroups: protectedProcedure.query(async ({ ctx }) => {
+    return getMyGroups(ctx.user.id);
+  }),
+});
+
 // ── Root learning router ─────────────────────────────────────────────────
 
 export const learningRouter = router({
@@ -703,6 +1025,13 @@ export const learningRouter = router({
   content: contentRouter,
   freshness: freshnessRouter,
   recommendations: recommendationsRouter,
+  fsrs5: fsrs5Router,
+  assessment: assessmentRouter,
+  streaks: streaksRouter,
+  lessonGraph: lessonGraphRouter,
+  officeHours: officeHoursRouter,
+  ceCredits: ceCreditsRouter,
+  peerGroups: peerGroupsRouter,
 
   // Admin-only seed
   seed: adminProcedure.mutation(async ({ ctx }) => {

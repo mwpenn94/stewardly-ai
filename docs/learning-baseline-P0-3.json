@@ -1,0 +1,41 @@
+{
+  "item_id": "P0-3",
+  "item_title": "Graded-assessment mode (no-AI zone)",
+  "pre_registered_at": "2026-04-22T02:30:00Z",
+  "pre_registered_at_pass": 1,
+  "hypothesis": "A technically enforced no-AI mode during graded assessments prevents AI-assisted submissions and yields defensible integrity for CE credit issuance.",
+  "primary_metric": {
+    "name": "bypass_rate",
+    "definition": "Attempts that successfully invoke any AI surface during an active assessment session.",
+    "baseline_value": null,
+    "baseline_measurement_protocol": "pen-test matrix of >=20 attack vectors",
+    "success_threshold": "0% bypass across the full pen-test matrix",
+    "rollback_threshold": "any bypass in production"
+  },
+  "secondary_metrics": [],
+  "experiment_design": {
+    "type": "pen-test",
+    "arms": ["attack-matrix"],
+    "split": "N/A",
+    "min_users_per_arm": 1,
+    "min_window_days": 14,
+    "stratification": []
+  },
+  "analysis_plan": {
+    "primary_test": "binary pass/fail per attack vector, all must pass",
+    "stopping_rule": "no peeking; analysis only at min_window_days+1",
+    "missing_data_policy": "any untested vector counts as fail"
+  },
+  "code_artifacts": {
+    "services": ["server/services/assessmentSession.ts"],
+    "routers": ["server/routers/learning.ts (assessment procedures)"],
+    "schema_tables": ["assessment_sessions"],
+    "ui_components": ["client/src/pages/learning/AssessmentMode.tsx"],
+    "tests": ["server/tests/assessment-session.test.ts"]
+  },
+  "compliance_review": {
+    "required": true,
+    "reason": "Assessment integrity is gating for CE credit issuance"
+  },
+  "affects_matrix_dimensions": [10, 18]
+}

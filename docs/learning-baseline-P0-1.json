@@ -1,0 +1,41 @@
+{
+  "item_id": "P0-1",
+  "item_title": "FSRS-5 scheduler for EMBA learning cards",
+  "pre_registered_at": "2026-04-22T02:30:00Z",
+  "pre_registered_at_pass": 1,
+  "hypothesis": "FSRS-5 scheduling on EMBA cards improves 30-day retention vs. no-SRS baseline.",
+  "primary_metric": {
+    "name": "30_day_retention_rate",
+    "definition": "Fraction of cards correctly recalled at 30 days post-first-exposure.",
+    "baseline_value": null,
+    "baseline_measurement_protocol": "measured from control arm during A/B",
+    "success_threshold": "+15 percentage points absolute over baseline",
+    "rollback_threshold": "miss by >20% relative (<+12pp)"
+  },
+  "secondary_metrics": [],
+  "experiment_design": {
+    "type": "A/B",
+    "arms": ["control", "treatment"],
+    "split": "50/50",
+    "min_users_per_arm": 30,
+    "min_window_days": 14,
+    "stratification": ["role", "cohort_start_month"]
+  },
+  "analysis_plan": {
+    "primary_test": "two-proportion z-test, alpha=0.05",
+    "stopping_rule": "no peeking; analysis only at min_window_days+1",
+    "missing_data_policy": "ITT with last-observation-carried-forward"
+  },
+  "code_artifacts": {
+    "services": ["server/services/fsrsSrsService.ts"],
+    "routers": ["server/routers/learning.ts (review/next procedures)"],
+    "schema_tables": ["learning_cards", "card_reviews", "card_schedules"],
+    "ui_components": ["client/src/components/learning/SrsWidget.tsx"],
+    "tests": ["server/tests/fsrs-scheduler.test.ts"]
+  },
+  "compliance_review": {
+    "required": false,
+    "reason": "No PII, no regulatory surface"
+  },
+  "affects_matrix_dimensions": [2, 3, 1]
+}

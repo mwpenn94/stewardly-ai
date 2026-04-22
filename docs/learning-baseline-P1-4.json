@@ -1,0 +1,18 @@
+{
+  "item_id": "P1-4",
+  "title": "Compliant professional peer groups",
+  "hypothesis": "Adding compliance-gated peer study groups enables professionals to collaborate within regulatory bounds",
+  "success_criteria": [
+    "peer_groups and peer_group_members tables in schema",
+    "Peer group service with create, join, leave, list functions",
+    "Compliance gating: groups require professional role or admin approval",
+    "Group discussion thread support",
+    "Track-scoped groups (optional filter by learning track)"
+  ],
+  "baseline_snapshot": {
+    "peer_group_tables_exist": false,
+    "peer_group_service_exists": false,
+    "compliance_gating": false
+  },
+  "created_at": "2026-04-22T06:38:00Z"
+}

@@ -7497,3 +7497,230 @@ export const locationAlertThresholds = mysqlTable("location_alert_thresholds", {
 }));
 export type LocationAlertThreshold = typeof locationAlertThresholds.$inferSelect;
 export type InsertLocationAlertThreshold = typeof locationAlertThresholds.$inferInsert;
+
+// ─── P0-1: FSRS-5 Card Schedules ────────────────────────────────────────────
+// DB table: card_schedules
+export const cardSchedules = mysqlTable("card_schedules", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  itemKey: varchar("item_key", { length: 255 }).notNull(),
+  itemType: varchar("item_type", { length: 32 }).notNull(),
+  stability: float("stability").notNull().default(0.4),
+  difficulty: float("difficulty").notNull().default(0.3),
+  elapsedDays: float("elapsed_days").notNull().default(0),
+  scheduledDays: float("scheduled_days").notNull().default(0),
+  reps: int("reps").notNull().default(0),
+  lapses: int("lapses").notNull().default(0),
+  state: mysqlEnum("state", ["new", "learning", "review", "relearning"]).notNull().default("new"),
+  lastReview: timestamp("last_review"),
+  nextDue: timestamp("next_due"),
+  featureFlag: mysqlEnum("feature_flag", ["control", "fsrs5"]).notNull().default("fsrs5"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userItemIdx: index("idx_cs_user_item").on(table.userId, table.itemKey, table.itemType),
+  userDueIdx: index("idx_cs_user_due").on(table.userId, table.nextDue),
+  flagIdx: index("idx_cs_flag").on(table.featureFlag),
+}));
+export type CardSchedule = typeof cardSchedules.$inferSelect;
+export type InsertCardSchedule = typeof cardSchedules.$inferInsert;
+
+// ─── P0-1: FSRS-5 Card Reviews ─────────────────────────────────────────────
+// DB table: card_reviews
+export const cardReviews = mysqlTable("card_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  itemKey: varchar("item_key", { length: 255 }).notNull(),
+  itemType: varchar("item_type", { length: 32 }).notNull(),
+  rating: int("rating").notNull(),
+  reviewedAt: timestamp("reviewed_at").defaultNow(),
+  elapsedDays: float("elapsed_days").notNull().default(0),
+  scheduledDays: float("scheduled_days").notNull().default(0),
+  stabilityBefore: float("stability_before"),
+  stabilityAfter: float("stability_after"),
+  difficultyBefore: float("difficulty_before"),
+  difficultyAfter: float("difficulty_after"),
+  stateBefore: varchar("state_before", { length: 16 }),
+  stateAfter: varchar("state_after", { length: 16 }),
+  featureFlag: mysqlEnum("feature_flag", ["control", "fsrs5"]).notNull().default("fsrs5"),
+}, (table) => ({
+  userItemIdx: index("idx_cr_user_item").on(table.userId, table.itemKey),
+  userDateIdx: index("idx_cr_user_date").on(table.userId, table.reviewedAt),
+  flagIdx: index("idx_cr_flag").on(table.featureFlag),
+}));
+export type CardReview = typeof cardReviews.$inferSelect;
+export type InsertCardReview = typeof cardReviews.$inferInsert;
+
+// ─── P0-3: Assessment Sessions (No-AI Zone) ────────────────────────────────
+// DB table: assessment_sessions
+export const assessmentSessions = mysqlTable("assessment_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  assessmentType: varchar("assessment_type", { length: 64 }).notNull(),
+  status: mysqlEnum("status", ["active", "completed", "abandoned", "invalidated"]).notNull().default("active"),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  aiBlockActive: mysqlBoolean("ai_block_active").notNull().default(true),
+  focusLossCount: int("focus_loss_count").notNull().default(0),
+  aiAttemptCount: int("ai_attempt_count").notNull().default(0),
+  score: float("score"),
+  maxScore: float("max_score"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userIdx: index("idx_as_user").on(table.userId),
+  statusIdx: index("idx_as_status").on(table.status),
+  userStatusIdx: index("idx_as_user_status").on(table.userId, table.status),
+}));
+export type AssessmentSession = typeof assessmentSessions.$inferSelect;
+export type InsertAssessmentSession = typeof assessmentSessions.$inferInsert;
+
+// ─── P0-5: Learning Streaks ────────────────────────────────────────────────
+// DB table: learning_streaks
+export const learningStreaks = mysqlTable("learning_streaks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  currentStreak: int("current_streak").notNull().default(0),
+  longestStreak: int("longest_streak").notNull().default(0),
+  lastActivityDate: varchar("last_activity_date", { length: 10 }),
+  dailyGoalMinutes: int("daily_goal_minutes").notNull().default(15),
+  nudgeEnabled: mysqlBoolean("nudge_enabled").notNull().default(false),
+  nudgeTime: varchar("nudge_time", { length: 5 }),
+  totalDaysActive: int("total_days_active").notNull().default(0),
+  featureFlag: mysqlEnum("feature_flag", ["control", "treatment"]).notNull().default("treatment"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdx: uniqueIndex("idx_ls_user").on(table.userId),
+  flagIdx: index("idx_ls_flag").on(table.featureFlag),
+}));
+export type LearningStreak = typeof learningStreaks.$inferSelect;
+export type InsertLearningStreak = typeof learningStreaks.$inferInsert;
+
+// ─── P1-2: Chapter Prerequisites (Lesson Graph DAG) ────────────────────────
+// DB table: chapter_prerequisites
+export const chapterPrerequisites = mysqlTable("chapter_prerequisites", {
+  id: int("id").autoincrement().primaryKey(),
+  chapterId: int("chapter_id").notNull(),
+  prerequisiteChapterId: int("prerequisite_chapter_id").notNull(),
+  minMasteryScore: float("min_mastery_score").notNull().default(0.7),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  chapterIdx: index("idx_cp_chapter").on(table.chapterId),
+  prereqIdx: index("idx_cp_prereq").on(table.prerequisiteChapterId),
+  uniquePair: uniqueIndex("idx_cp_unique").on(table.chapterId, table.prerequisiteChapterId),
+}));
+export type ChapterPrerequisite = typeof chapterPrerequisites.$inferSelect;
+export type InsertChapterPrerequisite = typeof chapterPrerequisites.$inferInsert;
+
+// ─── P1-5: Office Hours (Faculty/Expert Sessions) ──────────────────────────
+// DB table: office_hours
+export const officeHours = mysqlTable("office_hours", {
+  id: int("id").autoincrement().primaryKey(),
+  hostUserId: int("host_user_id").notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  trackId: int("track_id"),
+  scheduledAt: timestamp("scheduled_at").notNull(),
+  durationMinutes: int("duration_minutes").notNull().default(60),
+  maxAttendees: int("max_attendees").notNull().default(20),
+  currentAttendees: int("current_attendees").notNull().default(0),
+  status: mysqlEnum("status", ["scheduled", "live", "completed", "cancelled"]).notNull().default("scheduled"),
+  meetingUrl: varchar("meeting_url", { length: 512 }),
+  recordingUrl: varchar("recording_url", { length: 512 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  hostIdx: index("idx_oh_host").on(table.hostUserId),
+  trackIdx: index("idx_oh_track").on(table.trackId),
+  statusIdx: index("idx_oh_status").on(table.status),
+  scheduledIdx: index("idx_oh_scheduled").on(table.scheduledAt),
+}));
+export type OfficeHour = typeof officeHours.$inferSelect;
+export type InsertOfficeHour = typeof officeHours.$inferInsert;
+
+// ─── P1-5: Office Hour Registrations ───────────────────────────────────────
+// DB table: office_hour_registrations
+export const officeHourRegistrations = mysqlTable("office_hour_registrations", {
+  id: int("id").autoincrement().primaryKey(),
+  officeHourId: int("office_hour_id").notNull(),
+  userId: int("user_id").notNull(),
+  status: mysqlEnum("status", ["registered", "attended", "no_show", "cancelled"]).notNull().default("registered"),
+  registeredAt: timestamp("registered_at").defaultNow(),
+}, (table) => ({
+  ohIdx: index("idx_ohr_oh").on(table.officeHourId),
+  userIdx: index("idx_ohr_user").on(table.userId),
+  uniquePair: uniqueIndex("idx_ohr_unique").on(table.officeHourId, table.userId),
+}));
+export type OfficeHourRegistration = typeof officeHourRegistrations.$inferSelect;
+export type InsertOfficeHourRegistration = typeof officeHourRegistrations.$inferInsert;
+
+
+// ─── P1-3: CE Credit Issuance Pipeline ──────────────────────────────────
+export const ceCredits = mysqlTable("ce_credits", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  trackId: int("track_id").notNull(),
+  creditsEarned: varchar("credits_earned", { length: 10 }).notNull().default("0"),
+  creditType: varchar("credit_type", { length: 50 }).notNull().default("self_serve"),
+  status: varchar("status", { length: 30 }).notNull().default("pending"),
+  issuedAt: timestamp("issued_at"),
+  expiresAt: timestamp("expires_at"),
+  certificateUrl: varchar("certificate_url", { length: 500 }),
+  issuer: varchar("issuer", { length: 200 }).notNull().default("Stewardly Learning Platform"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  userIdx: index("idx_ce_credits_user").on(table.userId),
+  trackIdx: index("idx_ce_credits_track").on(table.trackId),
+  statusIdx: index("idx_ce_credits_status").on(table.status),
+}));
+export type CeCredit = typeof ceCredits.$inferSelect;
+export type InsertCeCredit = typeof ceCredits.$inferInsert;
+
+// ─── P1-4: Compliant Professional Peer Groups ──────────────────────────
+export const peerGroups = mysqlTable("peer_groups", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  trackId: int("track_id"),
+  createdBy: int("created_by").notNull(),
+  maxMembers: int("max_members").notNull().default(20),
+  currentMembers: int("current_members").notNull().default(0),
+  isComplianceGated: mysqlBoolean("is_compliance_gated").notNull().default(true),
+  requiredRole: varchar("required_role", { length: 30 }).notNull().default("advisor"),
+  status: varchar("status", { length: 30 }).notNull().default("active"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+}, (table) => ({
+  trackIdx: index("idx_peer_groups_track").on(table.trackId),
+  statusIdx: index("idx_peer_groups_status").on(table.status),
+}));
+export type PeerGroup = typeof peerGroups.$inferSelect;
+export type InsertPeerGroup = typeof peerGroups.$inferInsert;
+
+export const peerGroupMembers = mysqlTable("peer_group_members", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  userId: int("user_id").notNull(),
+  role: varchar("role", { length: 30 }).notNull().default("member"),
+  status: varchar("status", { length: 30 }).notNull().default("active"),
+  joinedAt: timestamp("joined_at").notNull().defaultNow(),
+}, (table) => ({
+  groupIdx: index("idx_pgm_group").on(table.groupId),
+  userIdx: index("idx_pgm_user").on(table.userId),
+  uniquePair: uniqueIndex("idx_pgm_unique").on(table.groupId, table.userId),
+}));
+export type PeerGroupMember = typeof peerGroupMembers.$inferSelect;
+
+export const peerGroupMessages = mysqlTable("peer_group_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  userId: int("user_id").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  groupIdx: index("idx_pgmsg_group").on(table.groupId),
+}));
+export type PeerGroupMessage = typeof peerGroupMessages.$inferSelect;

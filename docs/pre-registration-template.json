@@ -1,0 +1,41 @@
+{
+  "item_id": "<P0-N or P1-N>",
+  "item_title": "<from §3>",
+  "pre_registered_at": "<ISO-date>",
+  "pre_registered_at_pass": 0,
+  "hypothesis": "<from §3>",
+  "primary_metric": {
+    "name": "<from §3>",
+    "definition": "<from §3>",
+    "baseline_value": null,
+    "baseline_measurement_protocol": "measured from control arm during A/B",
+    "success_threshold": "<from §3>",
+    "rollback_threshold": "<from §3>"
+  },
+  "secondary_metrics": [],
+  "experiment_design": {
+    "type": "<A/B | synthetic | pen-test>",
+    "arms": ["control", "treatment"],
+    "split": "50/50",
+    "min_users_per_arm": 30,
+    "min_window_days": "<from measurement_window_days>",
+    "stratification": []
+  },
+  "analysis_plan": {
+    "primary_test": "<statistical test, alpha>",
+    "stopping_rule": "no peeking; analysis only at min_window_days+1",
+    "missing_data_policy": "<policy>"
+  },
+  "code_artifacts": {
+    "services": [],
+    "routers": [],
+    "schema_tables": [],
+    "ui_components": [],
+    "tests": []
+  },
+  "compliance_review": {
+    "required": false,
+    "reason": "<note>"
+  },
+  "affects_matrix_dimensions": []
+}

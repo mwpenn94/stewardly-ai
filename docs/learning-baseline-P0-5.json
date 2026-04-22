@@ -1,0 +1,41 @@
+{
+  "item_id": "P0-5",
+  "item_title": "Daily-practice loop (streak + nudge)",
+  "pre_registered_at": "2026-04-22T02:30:00Z",
+  "pre_registered_at_pass": 1,
+  "hypothesis": "Streak counter with daily goal and opt-in nudge improves D7 retention.",
+  "primary_metric": {
+    "name": "d7_retention_rate",
+    "definition": "Users returning on day 7 after a baseline visit.",
+    "baseline_value": null,
+    "baseline_measurement_protocol": "measured from control arm during A/B",
+    "success_threshold": "+10 percentage points absolute over control",
+    "rollback_threshold": "<+8pp"
+  },
+  "secondary_metrics": [],
+  "experiment_design": {
+    "type": "A/B",
+    "arms": ["control", "treatment"],
+    "split": "50/50",
+    "min_users_per_arm": 30,
+    "min_window_days": 14,
+    "stratification": []
+  },
+  "analysis_plan": {
+    "primary_test": "two-proportion z-test, alpha=0.05",
+    "stopping_rule": "no peeking; analysis only at min_window_days+1",
+    "missing_data_policy": "ITT with last-observation-carried-forward"
+  },
+  "code_artifacts": {
+    "services": ["server/services/learningStreaks.ts"],
+    "routers": ["server/routers/learning.ts (streak procedures)"],
+    "schema_tables": ["learning_streaks"],
+    "ui_components": ["client/src/components/learning/StreakWidget.tsx"],
+    "tests": ["server/tests/learning-streaks.test.ts"]
+  },
+  "compliance_review": {
+    "required": false,
+    "reason": "No PII, no regulatory surface"
+  },
+  "affects_matrix_dimensions": [12, 16]
+}
