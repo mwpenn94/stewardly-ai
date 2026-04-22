@@ -30,7 +30,10 @@ import {
   TrendingUp, Zap, Globe, Radio, XCircle, Inbox, Upload, Download,
   ArrowUpRight, Copy, CheckCheck, Link2, Sparkles, Timer, Info,
   ChevronDown, ChevronRight, Power, PlayCircle, PauseCircle,
+  BarChart3, Key, ShieldCheck, TestTube2, Eye, EyeOff,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -99,6 +102,9 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
   const [enrichEmail, setEnrichEmail] = useState("");
   const [enrichName, setEnrichName] = useState("");
   const [expandedInstructions, setExpandedInstructions] = useState<string | null>(null);
+  const [credForms, setCredForms] = useState<Record<string, Record<string, string>>>({});
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [verifyingProvider, setVerifyingProvider] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -171,6 +177,49 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
   const connectionInstructions = trpc.crm.connectionInstructions.useQuery(undefined, {
     enabled: isAuthenticated && isAdmin,
     staleTime: 300000,
+  });
+
+  // Sync analytics query
+  const syncAnalytics = trpc.crm.syncAnalytics.useQuery(undefined, {
+    enabled: isAuthenticated && isAdmin,
+    staleTime: 60000,
+  });
+
+  // Connection status query
+  const connectionStatus = trpc.crm.getConnectionStatus.useQuery(undefined, {
+    enabled: isAuthenticated && isAdmin,
+    staleTime: 30000,
+  });
+
+  // Save credentials mutation
+  const saveCredsMut = trpc.crm.saveCredentials.useMutation({
+    onSuccess: (r: any) => {
+      toast.success(`Credentials ${r.status} successfully`);
+      utils.crm.getConnectionStatus.invalidate();
+    },
+    onError: (e: any) => toast.error(`Failed to save credentials: ${e.message}`),
+  });
+
+  // Test connection mutation
+  const testConnMut = trpc.crm.testConnection.useMutation({
+    onSuccess: (r: any) => {
+      if (r.success) toast.success(`${r.provider}: ${r.message}`);
+      else toast.error(`${r.provider}: ${r.message}`);
+    },
+    onError: (e: any) => toast.error(`Connection test failed: ${e.message}`),
+  });
+
+  // Webhook verify mutation
+  const webhookVerifyMut = trpc.crm.webhookVerify.useMutation({
+    onSuccess: (r: any) => {
+      setVerifyingProvider(null);
+      if (r.success) toast.success(`Webhook verified! Event ID: ${r.eventId}`);
+      else toast.error(r.message || "Webhook verification failed");
+    },
+    onError: (e: any) => {
+      setVerifyingProvider(null);
+      toast.error(`Verification failed: ${e.message}`);
+    },
   });
 
   // LinkedIn enrichment mutation
@@ -448,6 +497,8 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
       {/* Tabs: Outbound Sync, Webhook Feed, Sync History, Settings */}
       <Tabs defaultValue="outbound">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="analytics"><BarChart3 className="h-3.5 w-3.5 mr-1" /> Analytics</TabsTrigger>
+          <TabsTrigger value="credentials"><Key className="h-3.5 w-3.5 mr-1" /> Credentials</TabsTrigger>
           <TabsTrigger value="outbound"><Upload className="h-3.5 w-3.5 mr-1" /> Outbound Sync</TabsTrigger>
           <TabsTrigger value="webhooks"><Webhook className="h-3.5 w-3.5 mr-1" /> Webhook Feed</TabsTrigger>
           <TabsTrigger value="history"><History className="h-3.5 w-3.5 mr-1" /> Sync History</TabsTrigger>
@@ -455,6 +506,303 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
           <TabsTrigger value="settings"><Settings2 className="h-3.5 w-3.5 mr-1" /> Settings</TabsTrigger>
           <TabsTrigger value="mappings"><ArrowLeftRight className="h-3.5 w-3.5 mr-1" /> Field Mappings</TabsTrigger>
         </TabsList>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="mt-4 space-y-4">
+          {syncAnalytics.isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1,2,3,4].map(i => <Skeleton key={i} className="h-48 w-full" />)}
+            </div>
+          ) : !syncAnalytics.data ? (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No analytics data yet. Sync events will populate metrics here.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Channel Comparison */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {["webhook", "polling"].map((ch) => {
+                  const m = ch === "webhook" ? syncAnalytics.data!.comparison.webhook : syncAnalytics.data!.comparison.polling;
+                  const isWinner = syncAnalytics.data!.comparison.latencyAdvantage.channel === ch;
+                  return (
+                    <Card key={ch} className={isWinner ? "border-emerald-500/30 ring-1 ring-emerald-500/20" : ""}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base flex items-center gap-2 capitalize">
+                          {ch === "webhook" ? <Webhook className="h-4 w-4 text-purple-400" /> : <RefreshCw className="h-4 w-4 text-blue-400" />}
+                          {ch} Channel
+                          {isWinner && <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Faster</Badge>}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="text-center p-2 rounded bg-muted/30">
+                            <p className="text-xl font-bold">{m.totalEvents.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">Total Events</p>
+                          </div>
+                          <div className="text-center p-2 rounded bg-emerald-500/5">
+                            <p className="text-xl font-bold text-emerald-400">{m.successRate.toFixed(1)}%</p>
+                            <p className="text-xs text-muted-foreground">Success Rate</p>
+                          </div>
+                          <div className="text-center p-2 rounded bg-blue-500/5">
+                            <p className="text-xl font-bold text-blue-400">{m.avgLatencyMs != null ? `${Math.round(m.avgLatencyMs)}ms` : "\u2014"}</p>
+                            <p className="text-xs text-muted-foreground">Avg Latency</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="flex justify-between p-2 rounded bg-muted/20">
+                            <span className="text-muted-foreground">Last 1h</span>
+                            <span className="font-medium">{m.eventsLast1h}</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-muted/20">
+                            <span className="text-muted-foreground">Last 24h</span>
+                            <span className="font-medium">{m.eventsLast24h}</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-muted/20">
+                            <span className="text-muted-foreground">P95 Latency</span>
+                            <span className="font-medium">{m.p95LatencyMs != null ? `${Math.round(m.p95LatencyMs)}ms` : "\u2014"}</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-muted/20">
+                            <span className="text-muted-foreground">Failed</span>
+                            <span className="font-medium text-red-400">{m.failedEvents}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Recommendation */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Sparkles className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium mb-1">Recommendation</p>
+                      <p className="text-sm text-muted-foreground">{syncAnalytics.data.comparison.recommendation}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mt-4">
+                    <div className="text-center p-3 rounded bg-purple-500/5 border border-purple-500/20">
+                      <p className="text-lg font-bold text-purple-400">{syncAnalytics.data.comparison.coverageComparison.webhookOnly}</p>
+                      <p className="text-xs text-muted-foreground">Webhook Only</p>
+                    </div>
+                    <div className="text-center p-3 rounded bg-emerald-500/5 border border-emerald-500/20">
+                      <p className="text-lg font-bold text-emerald-400">{syncAnalytics.data.comparison.coverageComparison.bothChannels}</p>
+                      <p className="text-xs text-muted-foreground">Both Channels</p>
+                    </div>
+                    <div className="text-center p-3 rounded bg-blue-500/5 border border-blue-500/20">
+                      <p className="text-lg font-bold text-blue-400">{syncAnalytics.data.comparison.coverageComparison.pollingOnly}</p>
+                      <p className="text-xs text-muted-foreground">Polling Only</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Hourly Timeline */}
+              {syncAnalytics.data.timeline.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" /> Hourly Sync Timeline (Last 24h)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-end gap-1 h-32 overflow-x-auto">
+                      {syncAnalytics.data.timeline.map((pt: any, i: number) => {
+                        const maxCount = Math.max(...syncAnalytics.data!.timeline.map((t: any) => t.webhookCount + t.pollingCount), 1);
+                        const total = pt.webhookCount + pt.pollingCount;
+                        const height = Math.max((total / maxCount) * 100, 4);
+                        const webhookPct = total > 0 ? (pt.webhookCount / total) * 100 : 50;
+                        return (
+                          <div key={i} className="flex flex-col items-center gap-1 min-w-[24px]" title={`${pt.hour}: ${pt.webhookCount} webhook, ${pt.pollingCount} polling`}>
+                            <div className="w-5 rounded-t overflow-hidden" style={{ height: `${height}%` }}>
+                              <div className="bg-purple-500/70 w-full" style={{ height: `${webhookPct}%` }} />
+                              <div className="bg-blue-500/70 w-full" style={{ height: `${100 - webhookPct}%` }} />
+                            </div>
+                            {i % 4 === 0 && (
+                              <span className="text-[9px] text-muted-foreground rotate-45 origin-left">
+                                {pt.hour.split(" ")[1] || pt.hour.slice(-5)}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-purple-500/70" /> Webhook</div>
+                      <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-blue-500/70" /> Polling</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Event Type Breakdown */}
+              {syncAnalytics.data.breakdown.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity className="h-4 w-4" /> Event Type Breakdown
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {syncAnalytics.data.breakdown.map((evt: any) => {
+                        const total = evt.webhookCount + evt.pollingCount;
+                        const maxTotal = Math.max(...syncAnalytics.data!.breakdown.map((e: any) => e.webhookCount + e.pollingCount), 1);
+                        return (
+                          <div key={evt.eventType} className="space-y-1">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="font-mono text-xs">{evt.eventType}</span>
+                              <span className="text-muted-foreground text-xs">{total} events</span>
+                            </div>
+                            <div className="flex h-4 rounded overflow-hidden bg-muted/30">
+                              <div className="bg-purple-500/60 transition-all" style={{ width: `${(evt.webhookCount / maxTotal) * 100}%` }} />
+                              <div className="bg-blue-500/60 transition-all" style={{ width: `${(evt.pollingCount / maxTotal) * 100}%` }} />
+                            </div>
+                            <div className="flex gap-4 text-xs text-muted-foreground">
+                              <span>Webhook: {evt.webhookCount} {evt.webhookAvgLatency != null ? `(${Math.round(evt.webhookAvgLatency)}ms)` : ""}</span>
+                              <span>Polling: {evt.pollingCount} {evt.pollingAvgLatency != null ? `(${Math.round(evt.pollingAvgLatency)}ms)` : ""}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* Credentials Tab */}
+        <TabsContent value="credentials" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Key className="h-4 w-4" /> Platform API Credentials
+              </CardTitle>
+              <CardDescription>
+                Enter API keys and tokens for each platform. Credentials are encrypted at rest and never exposed after saving.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {[
+                { prov: "gohighlevel", label: "GoHighLevel", icon: "\uD83D\uDD37", fields: [
+                  { key: "apiToken", label: "API Key (PIT)", placeholder: "pit-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
+                  { key: "locationId", label: "Location ID", placeholder: "xxxxxxxxxx" },
+                ]},
+                { prov: "smsit", label: "SMS-iT", icon: "\uD83D\uDCF1", fields: [
+                  { key: "apiToken", label: "API Key", placeholder: "smsit-api-key-here" },
+                ]},
+                { prov: "dripify", label: "Dripify", icon: "\uD83D\uDCA7", fields: [
+                  { key: "apiToken", label: "API Key", placeholder: "dripify-api-key" },
+                ]},
+                { prov: "workable", label: "Workable", icon: "\uD83D\uDC65", fields: [
+                  { key: "apiToken", label: "API Token", placeholder: "workable-api-token" },
+                  { key: "subdomain", label: "Subdomain", placeholder: "your-company" },
+                ]},
+                { prov: "wealthbox", label: "Wealthbox", icon: "\uD83D\uDCBC", fields: [
+                  { key: "apiToken", label: "Access Token", placeholder: "wealthbox-access-token" },
+                ]},
+                { prov: "salesforce", label: "Salesforce", icon: "\u2601\uFE0F", fields: [
+                  { key: "clientId", label: "Consumer Key", placeholder: "3MVG9..." },
+                  { key: "clientSecret", label: "Consumer Secret", placeholder: "xxxxxxxx" },
+                  { key: "instanceUrl", label: "Instance URL", placeholder: "https://yourorg.salesforce.com" },
+                ]},
+                { prov: "redtail", label: "Redtail CRM", icon: "\uD83D\uDD34", fields: [
+                  { key: "apiToken", label: "API Key", placeholder: "redtail-api-key" },
+                ]},
+              ].map(({ prov, label, icon, fields }) => {
+                const connStatus = (connectionStatus.data || []).find((c: any) => c.provider === prov);
+                const isConnected = connStatus?.status === "connected";
+                const form = credForms[prov] || {};
+                const showPw = showPasswords[prov] || false;
+
+                return (
+                  <div key={prov} className="p-4 rounded-lg border border-border/50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{icon}</span>
+                        <span className="font-medium">{label}</span>
+                        {isConnected ? (
+                          <Badge className="text-xs bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Connected
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">Not configured</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs"
+                          disabled={testConnMut.isPending}
+                          onClick={() => testConnMut.mutate({ provider: prov, credentials: Object.keys(form).length > 0 ? form : undefined })}
+                        >
+                          {testConnMut.isPending && testConnMut.variables?.provider === prov ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <TestTube2 className="h-3 w-3 mr-1" />
+                          )}
+                          Test
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-8 text-xs"
+                          disabled={saveCredsMut.isPending || Object.keys(form).length === 0}
+                          onClick={() => saveCredsMut.mutate({ provider: prov, credentials: form })}
+                        >
+                          {saveCredsMut.isPending && saveCredsMut.variables?.provider === prov ? (
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          ) : (
+                            <ShieldCheck className="h-3 w-3 mr-1" />
+                          )}
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {fields.map((f) => (
+                        <div key={f.key} className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">{f.label}</Label>
+                          <div className="relative">
+                            <Input
+                              type={showPw ? "text" : "password"}
+                              placeholder={f.placeholder}
+                              value={form[f.key] || ""}
+                              onChange={(e) => setCredForms(prev => ({
+                                ...prev,
+                                [prov]: { ...(prev[prov] || {}), [f.key]: e.target.value },
+                              }))}
+                              className="pr-8 text-sm font-mono"
+                            />
+                            <button
+                              type="button"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                              onClick={() => setShowPasswords(prev => ({ ...prev, [prov]: !prev[prov] }))}
+                            >
+                              {showPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {connStatus?.lastSyncAt && (
+                      <p className="text-xs text-muted-foreground">
+                        Last sync: {timeAgo(connStatus.lastSyncAt)} \u00b7 {connStatus.recordsSynced || 0} records synced
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Outbound Sync Tab */}
         <TabsContent value="outbound" className="mt-4 space-y-4">
@@ -775,6 +1123,23 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
                         <Zap className="h-3 w-3 mr-1" />
                       )}
                       Auto-Register
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs"
+                      disabled={webhookVerifyMut.isPending}
+                      onClick={() => {
+                        setVerifyingProvider(slug);
+                        webhookVerifyMut.mutate({ provider: slug });
+                      }}
+                    >
+                      {verifyingProvider === slug && webhookVerifyMut.isPending ? (
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      ) : (
+                        <TestTube2 className="h-3 w-3 mr-1" />
+                      )}
+                      Verify
                     </Button>
                   </div>
                 </div>

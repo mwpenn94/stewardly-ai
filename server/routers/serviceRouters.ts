@@ -608,4 +608,147 @@ export const crmRouter = router({
       },
     ];
   }),
+
+  // ─── SYNC ANALYTICS ─────────────────────────────────────────────────
+  syncAnalytics: protectedProcedure.query(async () => {
+    const { getChannelComparison } = await import("../services/syncMetrics");
+    const { getHourlyTimeline } = await import("../services/syncMetrics");
+    const { getEventTypeBreakdown } = await import("../services/syncMetrics");
+    const [comparison, timeline, breakdown] = await Promise.all([
+      getChannelComparison(),
+      getHourlyTimeline(),
+      getEventTypeBreakdown(),
+    ]);
+    return { comparison, timeline, breakdown };
+  }),
+
+  // ─── SAVE CREDENTIALS ─────────────────────────────────────────────────
+  saveCredentials: protectedProcedure
+    .input(z.object({
+      provider: z.string(),
+      credentials: z.record(z.string()),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const { encryptCredentials } = await import("../services/encryption");
+      const { integrationConnections } = await import("../../drizzle/schema");
+      const { db } = await import("../db");
+      const { eq, and } = await import("drizzle-orm");
+      const encrypted = encryptCredentials(input.credentials);
+      const existing = await db.select().from(integrationConnections)
+        .where(and(
+          eq(integrationConnections.providerId, input.provider),
+          eq(integrationConnections.ownerId, String(ctx.user.id)),
+        ))
+        .limit(1);
+      if (existing.length > 0) {
+        await db.update(integrationConnections)
+          .set({
+            credentialsEncrypted: encrypted,
+            status: "connected",
+            updatedAt: new Date(),
+          })
+          .where(eq(integrationConnections.id, existing[0].id));
+        return { status: "updated", provider: input.provider };
+      } else {
+        const id = crypto.randomUUID();
+        await db.insert(integrationConnections).values({
+          id,
+          providerId: input.provider,
+          ownershipTier: "professional",
+          ownerId: String(ctx.user.id),
+          userId: ctx.user.id,
+          credentialsEncrypted: encrypted,
+          status: "connected",
+        });
+        return { status: "created", provider: input.provider };
+      }
+    }),
+
+  // ─── TEST CONNECTION ──────────────────────────────────────────────────
+  testConnection: protectedProcedure
+    .input(z.object({
+      provider: z.string(),
+      credentials: z.record(z.string()).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      try {
+        const { getCRMAdapter } = await import("../services/crmAdapter");
+        const adapter = getCRMAdapter(input.provider);
+        let creds = input.credentials || {};
+        if (Object.keys(creds).length === 0) {
+          const { integrationConnections } = await import("../../drizzle/schema");
+          const { db } = await import("../db");
+          const { eq, and } = await import("drizzle-orm");
+          const { decryptCredentials } = await import("../services/encryption");
+          const rows = await db.select().from(integrationConnections)
+            .where(and(
+              eq(integrationConnections.providerId, input.provider),
+              eq(integrationConnections.ownerId, String(ctx.user.id)),
+            ))
+            .limit(1);
+          if (rows.length > 0 && rows[0].credentialsEncrypted) {
+            creds = decryptCredentials(rows[0].credentialsEncrypted) as Record<string, string>;
+          }
+        }
+        const ok = await adapter.testConnection(creds);
+        return { success: ok, provider: input.provider, message: ok ? "Connection successful" : "Connection failed" };
+      } catch (e: any) {
+        return { success: false, provider: input.provider, message: e.message || "Unknown error" };
+      }
+    }),
+
+  // ─── GET CONNECTION STATUS ────────────────────────────────────────────
+  getConnectionStatus: protectedProcedure.query(async ({ ctx }) => {
+    const { integrationConnections } = await import("../../drizzle/schema");
+    const { db } = await import("../db");
+    const { eq } = await import("drizzle-orm");
+    const rows = await db.select({
+      provider: integrationConnections.providerId,
+      status: integrationConnections.status,
+      lastSyncAt: integrationConnections.lastSyncAt,
+      recordsSynced: integrationConnections.recordsSynced,
+    }).from(integrationConnections)
+      .where(eq(integrationConnections.ownerId, String(ctx.user.id)));
+    return rows;
+  }),
+
+  // ─── WEBHOOK VERIFY ───────────────────────────────────────────────────
+  webhookVerify: protectedProcedure
+    .input(z.object({ provider: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const providerToPath: Record<string, string> = {
+        gohighlevel: "/api/webhooks/ghl",
+        dripify: "/api/webhooks/dripify",
+        smsit: "/api/webhooks/smsit",
+        workable: "/api/webhooks/workable",
+        linkedin: "/api/webhooks/linkedin",
+      };
+      const path = providerToPath[input.provider];
+      if (!path) return { success: false, message: `Unknown provider: ${input.provider}` };
+      try {
+        const origin = ctx.req?.headers?.origin || ctx.req?.headers?.referer?.replace(/\/$/, "") || "http://localhost:3000";
+        const url = `${origin}${path}`;
+        const testPayload = {
+          type: "ContactCreate",
+          locationId: "test-location",
+          id: `test-verify-${Date.now()}`,
+          firstName: "Webhook",
+          lastName: "Test",
+          email: `webhook-test-${Date.now()}@verify.local`,
+          _isVerificationTest: true,
+        };
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(testPayload),
+        });
+        if (resp.ok) {
+          const body = await resp.json().catch(() => ({}));
+          return { success: true, eventId: body.eventId || "verified", message: `Webhook endpoint responded ${resp.status}` };
+        }
+        return { success: false, message: `Webhook returned ${resp.status}` };
+      } catch (e: any) {
+        return { success: false, message: e.message || "Failed to reach webhook endpoint" };
+      }
+    }),
 });

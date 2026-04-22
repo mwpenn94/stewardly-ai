@@ -8589,3 +8589,34 @@
 - 48 new vitest tests in pass64d-ext3-e2e-validation.test.ts
 - 149/149 total tests passing across 5 test files × 3 consecutive clean convergence passes
 - Manual GHL webhook registration required: user must go to GHL Settings → Webhooks → Add https://stewardly.manus.space/api/webhooks/ghl
+
+## Pass 64d-ext4 — GHL Webhook Wizard + Credential Management + Analytics Dashboard
+- [x] Step 1: GHL Webhook Setup Wizard — in-app UI with copy-paste URL + verification
+- [x] Step 1a: Add webhookVerify tRPC procedure (sends test payload to local endpoint)
+- [x] Step 1b: Add Verify button next to each webhook URL in Settings tab
+- [x] Step 1c: Show verification status badge (verified/unverified) per platform
+- [x] Step 2: API Credential Management — encrypted credential forms for all platforms
+- [x] Step 2a: Add saveCredentials tRPC procedure (encrypt + store in integration_connections)
+- [x] Step 2b: Add testConnection tRPC procedure (validate creds against platform adapter)
+- [x] Step 2c: Add getConnectionStatus tRPC procedure (list all platform connections)
+- [x] Step 2d: Build Credentials tab in CRMSync with forms for all 7 platforms
+- [x] Step 2e: Add eye/show toggle for password fields
+- [x] Step 2f: Show connection status badges (Connected/Not configured)
+- [x] Step 3: CRM Sync Analytics Dashboard — metrics visualization
+- [x] Step 3a: Add syncAnalytics tRPC procedure (channel comparison + timeline + breakdown)
+- [x] Step 3b: Build Analytics tab with channel comparison cards (webhook vs polling)
+- [x] Step 3c: Add hourly sync timeline bar chart (last 24h)
+- [x] Step 3d: Add event type breakdown with stacked bars
+- [x] Step 3e: Show recommendation card based on channel performance
+- [x] Step 3f: Show coverage comparison (webhook-only, polling-only, both)
+- [x] Write comprehensive vitest tests for all new procedures and features (44 tests)
+- [x] Recursive convergence: 3 consecutive clean passes (170/170 × 3)
+
+## Pass 64d-ext4 — Summary
+- Added 5 new tRPC procedures: syncAnalytics, saveCredentials, testConnection, getConnectionStatus, webhookVerify
+- Built Analytics tab with channel comparison cards (webhook vs polling), hourly timeline bar chart, event type breakdown, recommendation engine, coverage comparison
+- Built Credentials tab with encrypted credential forms for 7 platforms (GHL, SMS-iT, Dripify, Workable, Wealthbox, Salesforce, Redtail)
+- Each credential form has: password eye toggle, Test Connection button, Save button, connection status badge, last sync info
+- Added Verify button to webhook URLs in Settings tab (sends test payload and confirms endpoint responds)
+- 44 new vitest tests in pass64d-ext4-dashboard.test.ts covering analytics, encryption, adapters, schema, and webhook paths
+- 170/170 total tests passing across 6 test files × 3 consecutive clean convergence passes
