@@ -12,6 +12,7 @@
 
 import { getDb } from "../../db";
 import { rawInvokeLLM as invokeLLM } from "../../shared/stewardlyWiring";
+import { sql } from "drizzle-orm";
 
 // ─── TYPES ────────────────────────────────────────────────────────
 
@@ -84,7 +85,7 @@ export async function scanForCascadeAlerts(advisorId: number): Promise<CascadeAl
 
   try {
     // 1. Check for stale financial profiles (>90 days without update)
-    const [staleProfiles] = await db.execute(`
+    const [staleProfiles] = await db.execute(sql`
       SELECT fp.user_id, fp.updated_at, u.name
       FROM financial_profiles fp
       JOIN users u ON u.id = fp.user_id
@@ -112,7 +113,7 @@ export async function scanForCascadeAlerts(advisorId: number): Promise<CascadeAl
 
   try {
     // 2. Check for planning nodes with misaligned cascades
-    const [misaligned] = await db.execute(`
+    const [misaligned] = await db.execute(sql`
       SELECT pn.id, pn.title, pn.node_type, pn.client_id, u.name
       FROM planning_nodes pn
       LEFT JOIN users u ON u.id = pn.client_id
@@ -139,7 +140,7 @@ export async function scanForCascadeAlerts(advisorId: number): Promise<CascadeAl
 
   try {
     // 3. Check for clients without recent suitability assessments
-    const [noSuitability] = await db.execute(`
+    const [noSuitability] = await db.execute(sql`
       SELECT u.id, u.name
       FROM users u
       LEFT JOIN suitability_assessments sa ON sa.user_id = u.id
@@ -166,7 +167,7 @@ export async function scanForCascadeAlerts(advisorId: number): Promise<CascadeAl
 
   try {
     // 4. Check for engagement letters expiring within 30 days
-    const [expiringLetters] = await db.execute(`
+    const [expiringLetters] = await db.execute(sql`
       SELECT el.id, el.client_id, el.client_name, el.expiration_date
       FROM engagement_letters el
       WHERE el.status = 'signed'
@@ -194,7 +195,7 @@ export async function scanForCascadeAlerts(advisorId: number): Promise<CascadeAl
 
   try {
     // 5. Check for opportunities — clients with high AUM but few strategies
-    const [opportunities] = await db.execute(`
+    const [opportunities] = await db.execute(sql`
       SELECT fp.user_id, u.name, fp.profile_json
       FROM financial_profiles fp
       JOIN users u ON u.id = fp.user_id
@@ -208,11 +209,7 @@ export async function scanForCascadeAlerts(advisorId: number): Promise<CascadeAl
         const netWorth = profile?.netWorth ?? profile?.savings ?? 0;
         if (netWorth > 500000) {
           // Check if they have advanced strategies
-          const [strategyCount] = await db.execute(
-            `SELECT COUNT(*) as cnt FROM planning_nodes WHERE client_id = ? AND node_type IN ('strategy', 'advanced_strategy')`,
-            // @ts-expect-error — strict mode fix
-            [row.user_id]
-          ) as any[];
+          const [strategyCount] = await db.execute(sql`SELECT COUNT(*) as cnt FROM planning_nodes WHERE client_id = ${row.user_id} AND node_type IN ('strategy', 'advanced_strategy')`) as any;
           const cnt = strategyCount?.[0]?.cnt ?? 0;
           if (cnt < 3) {
             alerts.push({
@@ -260,11 +257,7 @@ export async function generateClientFacingSummary(
 
   // 1. Retirement Planning section
   try {
-    const [retirementData] = await db.execute(
-      `SELECT result_json FROM saved_analyses WHERE user_id = ? AND calculator_type LIKE '%retirement%' ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [retirementData] = await db.execute(sql`SELECT result_json FROM saved_analyses WHERE user_id = ${clientId} AND calculator_type LIKE '%retirement%' ORDER BY updated_at DESC LIMIT 1`) as any;
     if (retirementData?.[0]?.result_json) {
       const data = typeof retirementData[0].result_json === "string" ? JSON.parse(retirementData[0].result_json) : retirementData[0].result_json;
       const readiness = data.readinessScore ?? data.fundedRatio ?? 0;
@@ -290,11 +283,7 @@ export async function generateClientFacingSummary(
 
   // 2. Protection & Insurance section
   try {
-    const [insuranceData] = await db.execute(
-      `SELECT result_json FROM saved_analyses WHERE user_id = ? AND calculator_type LIKE '%insurance%' ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [insuranceData] = await db.execute(sql`SELECT result_json FROM saved_analyses WHERE user_id = ${clientId} AND calculator_type LIKE '%insurance%' ORDER BY updated_at DESC LIMIT 1`) as any;
     if (insuranceData?.[0]?.result_json) {
       const data = typeof insuranceData[0].result_json === "string" ? JSON.parse(insuranceData[0].result_json) : insuranceData[0].result_json;
       const coverage = data.coverageScore ?? data.adequacyRatio ?? 0;
@@ -318,11 +307,7 @@ export async function generateClientFacingSummary(
 
   // 3. Tax Planning section
   try {
-    const [taxData] = await db.execute(
-      `SELECT result_json FROM saved_analyses WHERE user_id = ? AND calculator_type LIKE '%tax%' ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [taxData] = await db.execute(sql`SELECT result_json FROM saved_analyses WHERE user_id = ${clientId} AND calculator_type LIKE '%tax%' ORDER BY updated_at DESC LIMIT 1`) as any;
     if (taxData?.[0]?.result_json) {
       const data = typeof taxData[0].result_json === "string" ? JSON.parse(taxData[0].result_json) : taxData[0].result_json;
       const savings = data.totalSavings ?? data.taxSavings ?? 0;
@@ -346,11 +331,7 @@ export async function generateClientFacingSummary(
 
   // 4. Estate Planning section
   try {
-    const [estateData] = await db.execute(
-      `SELECT result_json FROM saved_analyses WHERE user_id = ? AND calculator_type LIKE '%estate%' ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [estateData] = await db.execute(sql`SELECT result_json FROM saved_analyses WHERE user_id = ${clientId} AND calculator_type LIKE '%estate%' ORDER BY updated_at DESC LIMIT 1`) as any;
     if (estateData?.[0]?.result_json) {
       sections.push({
         title: "Estate Planning",
@@ -366,11 +347,7 @@ export async function generateClientFacingSummary(
 
   // 5. Investment Growth section
   try {
-    const [investData] = await db.execute(
-      `SELECT result_json FROM saved_analyses WHERE user_id = ? AND calculator_type LIKE '%invest%' ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [investData] = await db.execute(sql`SELECT result_json FROM saved_analyses WHERE user_id = ${clientId} AND calculator_type LIKE '%invest%' ORDER BY updated_at DESC LIMIT 1`) as any;
     if (investData?.[0]?.result_json) {
       const data = typeof investData[0].result_json === "string" ? JSON.parse(investData[0].result_json) : investData[0].result_json;
       sections.push({
@@ -504,16 +481,12 @@ export async function generateBulkEngagementLetters(
   try {
     if (options.clientIds && options.clientIds.length > 0) {
       // Specific clients
-      const placeholders = options.clientIds.map(() => "?").join(",");
-      const [rows] = await db.execute(
-        `SELECT id, name, email FROM users WHERE id IN (${placeholders})`,
-        // @ts-expect-error — strict mode fix
-        options.clientIds
-      ) as any[];
+      const idParams = options.clientIds.map(id => sql`${id}`);
+      const [rows] = await db.execute(sql`SELECT id, name, email FROM users WHERE id IN (${sql.join(idParams, sql`, `)})`) as any[];
       clients = rows ?? [];
     } else if (options.renewalOnly) {
       // Clients with expiring or expired engagement letters
-      const [rows] = await db.execute(`
+      const [rows] = await db.execute(sql`
         SELECT DISTINCT u.id, u.name, u.email
         FROM users u
         JOIN engagement_letters el ON el.client_id = u.id
@@ -525,7 +498,7 @@ export async function generateBulkEngagementLetters(
       clients = rows ?? [];
     } else {
       // All active clients
-      const [rows] = await db.execute(`
+      const [rows] = await db.execute(sql`
         SELECT id, name, email FROM users WHERE role = 'user' LIMIT 100
       `) as any[];
       clients = rows ?? [];
@@ -538,11 +511,7 @@ export async function generateBulkEngagementLetters(
   for (const client of clients) {
     try {
       // Check if client already has a valid, non-expired letter
-      const [existing] = await db.execute(
-        `SELECT id FROM engagement_letters WHERE client_id = ? AND status = 'signed' AND (expiration_date IS NULL OR expiration_date > DATE_ADD(NOW(), INTERVAL 60 DAY)) LIMIT 1`,
-        // @ts-expect-error — strict mode fix
-        [client.id]
-      ) as any[];
+      const [existing] = await db.execute(sql`SELECT id FROM engagement_letters WHERE client_id = ${client.id} AND status = 'signed' AND (expiration_date IS NULL OR expiration_date > DATE_ADD(NOW(), INTERVAL 60 DAY)) LIMIT 1`) as any;
 
       if (existing?.[0] && options.renewalOnly) {
         skipped++;
@@ -559,12 +528,8 @@ export async function generateBulkEngagementLetters(
       const letterContent = await generateLetterContent(client, options.feeSchedule, options.templateOverrides);
 
       // Store the letter
-      const [insertResult] = await db.execute(
-        `INSERT INTO engagement_letters (advisor_id, client_id, client_name, letter_type, status, content, fee_schedule, created_at, updated_at)
-         VALUES (?, ?, ?, 'annual_renewal', 'draft', ?, ?, NOW(), NOW())`,
-        // @ts-expect-error — strict mode fix
-        [advisorId, client.id, client.name || "Unknown", letterContent, options.feeSchedule || "standard"]
-      ) as any;
+      const [insertResult] = await db.execute(sql`INSERT INTO engagement_letters (advisor_id, client_id, client_name, letter_type, status, content, fee_schedule, created_at, updated_at)
+         VALUES (${advisorId}, ${client.id}, ${client.name || "Unknown"}, 'annual_renewal', 'draft', ${letterContent}, ${options.feeSchedule || "standard"}, NOW(), NOW())`) as any;
 
       generated++;
       results.push({

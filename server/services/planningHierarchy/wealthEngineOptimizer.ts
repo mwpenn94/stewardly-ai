@@ -11,6 +11,7 @@
  */
 
 import { getDb } from "../../db";
+import { sql } from "drizzle-orm";
 
 // ─── 1. COLLATERAL TRACKING ─────────────────────────────────────────────
 
@@ -578,11 +579,7 @@ export async function generateUnifiedFiduciaryFile(
 
   // Gather suitability assessments
   try {
-    const suitRows = await db.execute(
-      `SELECT * FROM suitability_assessments WHERE client_id = ? ORDER BY created_at DESC LIMIT 50`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const suitRows = await db.execute(sql`SELECT * FROM suitability_assessments WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 50`);
     for (const row of (suitRows as any)[0] || []) {
       entries.push({
         type: "suitability",
@@ -596,11 +593,7 @@ export async function generateUnifiedFiduciaryFile(
 
   // Gather recommendations with Reg BI check
   try {
-    const recRows = await db.execute(
-      `SELECT * FROM recommendations_log WHERE client_id = ? ORDER BY created_at DESC LIMIT 100`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const recRows = await db.execute(sql`SELECT * FROM recommendations_log WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 100`);
     for (const row of (recRows as any)[0] || []) {
       const reasoning = typeof row.reasoning_chain === "string" ? JSON.parse(row.reasoning_chain || "{}") : row.reasoning_chain || {};
       const hasRegBI = !!(reasoning.basisForRecommendation && reasoning.costDisclosure && reasoning.conflictsDisclosure);
@@ -616,11 +609,7 @@ export async function generateUnifiedFiduciaryFile(
 
   // Gather client acknowledgments (e-signatures)
   try {
-    const ackRows = await db.execute(
-      `SELECT * FROM engagement_letters WHERE client_id = ? AND status = 'signed' ORDER BY created_at DESC LIMIT 50`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const ackRows = await db.execute(sql`SELECT * FROM engagement_letters WHERE client_id = ${clientId} AND status = 'signed' ORDER BY created_at DESC LIMIT 50`);
     for (const row of (ackRows as any)[0] || []) {
       entries.push({
         type: "acknowledgment",
@@ -634,11 +623,7 @@ export async function generateUnifiedFiduciaryFile(
 
   // Gather PFR reviews
   try {
-    const pfrRows = await db.execute(
-      `SELECT * FROM personal_financial_reviews WHERE client_id = ? ORDER BY created_at DESC LIMIT 20`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const pfrRows = await db.execute(sql`SELECT * FROM personal_financial_reviews WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 20`);
     for (const row of (pfrRows as any)[0] || []) {
       entries.push({
         type: "review",
@@ -652,11 +637,7 @@ export async function generateUnifiedFiduciaryFile(
 
   // Gather engagement letter disclosures
   try {
-    const engRows = await db.execute(
-      `SELECT * FROM engagement_letters WHERE client_id = ? AND status IN ('signed','active') ORDER BY created_at DESC LIMIT 50`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const engRows = await db.execute(sql`SELECT * FROM engagement_letters WHERE client_id = ${clientId} AND status IN ('signed','active') ORDER BY created_at DESC LIMIT 50`);
     for (const row of (engRows as any)[0] || []) {
       entries.push({
         type: "disclosure",
@@ -723,11 +704,7 @@ export async function detectAssumptionDrift(clientId: number): Promise<Assumptio
   const drifts: AssumptionDriftResult["drifts"] = [];
 
   try {
-    const assumptions = await db.execute(
-      `SELECT * FROM shared_assumptions WHERE (scope = 'client' AND scope_id = ?) OR scope = 'global' ORDER BY scope DESC`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const assumptions = await db.execute(sql`SELECT * FROM shared_assumptions WHERE (scope = 'client' AND scope_id = ${clientId}) OR scope = 'global' ORDER BY scope DESC`);
     const rows = (assumptions as any)[0] || [];
     const byKey: Record<string, Array<{ source: string; value: any }>> = {};
     for (const row of rows) {
@@ -763,11 +740,7 @@ export async function detectAssumptionDrift(clientId: number): Promise<Assumptio
   // Check calculator outputs for common assumption inconsistencies
   const commonKeys = ["inflation_rate", "discount_rate", "tax_rate", "growth_rate", "mortality_age"];
   try {
-    const calcOutputs = await db.execute(
-      `SELECT * FROM saved_analyses WHERE client_id = ? ORDER BY created_at DESC LIMIT 50`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const calcOutputs = await db.execute(sql`SELECT * FROM saved_analyses WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 50`);
     const rows = (calcOutputs as any)[0] || [];
     const assumptionsByCalc: Record<string, Record<string, number>> = {};
     for (const row of rows) {
@@ -827,8 +800,8 @@ export async function findOrphanedRecommendations(clientId: number): Promise<{
   const orphaned: OrphanedRecommendation[] = [];
   let linked = 0, total = 0;
   try {
-    const recs = await (db as any).execute(`SELECT * FROM recommendations_log WHERE client_id = ? ORDER BY created_at DESC`, [clientId]);
-    const goals = await (db as any).execute(`SELECT * FROM client_goals WHERE client_id = ? AND status != 'abandoned'`, [clientId]);
+    const recs = await db.execute(sql`SELECT * FROM recommendations_log WHERE client_id = ${clientId} ORDER BY created_at DESC`);
+    const goals = await db.execute(sql`SELECT * FROM client_goals WHERE client_id = ${clientId} AND status != 'abandoned'`);
     const recRows = (recs as any)[0] || [];
     const goalRows = (goals as any)[0] || [];
     total = recRows.length;
@@ -860,7 +833,7 @@ export async function findOrphanedRecommendations(clientId: number): Promise<{
 
 export async function linkRecommendationToGoal(recommendationId: number, goalId: number): Promise<boolean> {
   const db = (await getDb())!;
-  try { await (db as any).execute(`UPDATE recommendations_log SET goal_id = ? WHERE id = ?`, [goalId, recommendationId]); return true; } catch { return false; }
+  try { await db.execute(sql`UPDATE recommendations_log SET goal_id = ${goalId} WHERE id = ${recommendationId}`); return true; } catch { return false; }
 }
 
 // ─── 9. CROSS-HIERARCHY DATA STALENESS RESOLUTION ─────────────────
@@ -885,7 +858,7 @@ export async function detectDataStaleness(clientId: number): Promise<StalenessRe
 
   const checkTable = async (tableName: string, entityLabel: string, dateCol: string = "updated_at") => {
     try {
-      const rows = await (db as any).execute(`SELECT ${dateCol} as last_date FROM ${tableName} WHERE client_id = ? ORDER BY ${dateCol} DESC LIMIT 1`, [clientId]);
+      const rows = await (db as any).execute(sql`SELECT ${sql.raw(dateCol)} as last_date FROM ${sql.raw(tableName)} WHERE client_id = ${clientId} ORDER BY ${sql.raw(dateCol)} DESC LIMIT 1`);
       const result = (rows as any)[0]?.[0];
       if (result?.last_date) {
         const lastDate = new Date(result.last_date);
@@ -946,14 +919,14 @@ export async function generatePlanningHealthReport(clientId: number): Promise<Pl
   const db = (await getDb())!;
   let coverageScore = 50;
   try {
-    const goals = await (db as any).execute(`SELECT DISTINCT goal_category FROM client_goals WHERE client_id = ? AND status != 'abandoned'`, [clientId]);
+    const goals = await db.execute(sql`SELECT DISTINCT goal_category FROM client_goals WHERE client_id = ${clientId} AND status != 'abandoned'`);
     const categories = ((goals as any)[0] || []).length;
     coverageScore = Math.min(100, (categories / 8) * 100);
   } catch { /* */ }
 
   let fundingScore = 50;
   try {
-    const goals = await (db as any).execute(`SELECT target_amount, current_amount FROM client_goals WHERE client_id = ? AND status != 'abandoned'`, [clientId]);
+    const goals = await db.execute(sql`SELECT target_amount, current_amount FROM client_goals WHERE client_id = ${clientId} AND status != 'abandoned'`);
     const goalRows = (goals as any)[0] || [];
     if (goalRows.length > 0) { const funded = goalRows.filter((g: any) => g.current_amount > 0).length; fundingScore = Math.round((funded / goalRows.length) * 100); }
   } catch { /* */ }
@@ -963,8 +936,8 @@ export async function generatePlanningHealthReport(clientId: number): Promise<Pl
 
   let docScore = 50;
   try {
-    const pfrs = await (db as any).execute(`SELECT COUNT(*) as cnt FROM personal_financial_reviews WHERE client_id = ?`, [clientId]);
-    const engs = await (db as any).execute(`SELECT COUNT(*) as cnt FROM engagement_letters WHERE client_id = ? AND status IN ('active', 'signed')`, [clientId]);
+    const pfrs = await db.execute(sql`SELECT COUNT(*) as cnt FROM personal_financial_reviews WHERE client_id = ${clientId}`);
+    const engs = await db.execute(sql`SELECT COUNT(*) as cnt FROM engagement_letters WHERE client_id = ${clientId} AND status IN ('active', 'signed')`);
     const pfrCount = (pfrs as any)[0]?.[0]?.cnt || 0;
     const engCount = (engs as any)[0]?.[0]?.cnt || 0;
     docScore = Math.min(100, (pfrCount > 0 ? 50 : 0) + (engCount > 0 ? 50 : 0));
@@ -1022,7 +995,7 @@ export async function validateCrossCalculatorConsistency(clientId: number): Prom
   const db = (await getDb())!;
   const issues: ConsistencyValidation["issues"] = [];
   try {
-    const outputs = await (db as any).execute(`SELECT * FROM saved_analyses WHERE client_id = ? ORDER BY created_at DESC LIMIT 100`, [clientId]);
+    const outputs = await db.execute(sql`SELECT * FROM saved_analyses WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 100`);
     const rows = (outputs as any)[0] || [];
     const now = Date.now();
     for (const row of rows) {

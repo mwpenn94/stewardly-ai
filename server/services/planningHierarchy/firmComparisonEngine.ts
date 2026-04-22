@@ -16,6 +16,7 @@
  */
 
 import { getDb } from "../../db";
+import { sql } from "drizzle-orm";
 
 // ─── TYPES ────────────────────────────────────────────────────────
 
@@ -748,11 +749,7 @@ export async function generateFirmComparison(
   const goals: string[] = [];
 
   try {
-    const [rows] = await db.execute(
-      `SELECT profile_json FROM financial_profiles WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [rows] = await db.execute(sql`SELECT profile_json FROM financial_profiles WHERE user_id = ${clientId} ORDER BY updated_at DESC LIMIT 1`) as any;
     if (rows?.[0]?.profile_json) {
       const profile = typeof rows[0].profile_json === "string" ? JSON.parse(rows[0].profile_json) : rows[0].profile_json;
       aum = overrides?.aum ?? profile.netWorth ?? profile.savings ?? aum;
@@ -764,11 +761,7 @@ export async function generateFirmComparison(
 
   // Get client goals
   try {
-    const [goalRows] = await db.execute(
-      `SELECT title FROM client_goals WHERE client_id = ? LIMIT 5`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [goalRows] = await db.execute(sql`SELECT title FROM client_goals WHERE client_id = ${clientId} LIMIT 5`) as any;
     for (const g of (goalRows ?? [])) {
       if (g.title) goals.push(g.title);
     }

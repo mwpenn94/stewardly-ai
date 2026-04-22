@@ -16,6 +16,7 @@
  */
 
 import { getDb } from "../../db";
+import { sql } from "drizzle-orm";
 
 // ─── TYPES ────────────────────────────────────────────────────────
 
@@ -210,11 +211,7 @@ export async function getUnifiedClientPlan(clientId: number): Promise<UnifiedCli
   const db = (await getDb())!;
 
   // 1. Get client info
-  const [clientRow] = await db.execute(
-    `SELECT u.id, u.name, u.email FROM users u WHERE u.id = ?`,
-    // @ts-expect-error — strict mode fix
-    [clientId]
-  ) as any[];
+  const [clientRow] = await db.execute(sql`SELECT u.id, u.name, u.email FROM users u WHERE u.id = ${clientId}`) as any;
   const clientName = clientRow?.[0]?.name ?? "Client";
 
   // 2. Gather category statuses from saved analyses and planning nodes
@@ -282,11 +279,7 @@ export async function generateForwardPlan(clientId: number): Promise<ForwardPlan
   }
 
   // Get cascade nodes for this client
-  const [nodeRows] = await db.execute(
-    `SELECT id, level, label, value FROM planning_nodes WHERE owner_id = ? ORDER BY level, label`,
-    // @ts-expect-error — strict mode fix
-    [clientId]
-  ) as any[];
+  const [nodeRows] = await db.execute(sql`SELECT id, level, label, value FROM planning_nodes WHERE owner_id = ${clientId} ORDER BY level, label`) as any;
   const cascadeNodes = (nodeRows ?? []).map((r: any) => ({
     nodeId: r.id, level: r.level, label: r.label, value: r.value ?? 0,
   }));
@@ -311,12 +304,8 @@ export async function generateBackPlan(clientId: number): Promise<BackPlanResult
   const db = (await getDb())!;
 
   // Get client goals
-  const [goalRows] = await db.execute(
-    `SELECT id, title, target_value, current_value, category, status, timeline_months
-     FROM client_goals WHERE client_id = ? ORDER BY priority ASC`,
-    // @ts-expect-error — strict mode fix
-    [clientId]
-  ) as any[];
+  const [goalRows] = await db.execute(sql`SELECT id, title, target_value, current_value, category, status, timeline_months
+     FROM client_goals WHERE client_id = ${clientId} ORDER BY priority ASC`) as any;
 
   const goals = (goalRows ?? []).map((g: any) => {
     const gap = (g.target_value ?? 0) - (g.current_value ?? 0);
@@ -374,14 +363,10 @@ export async function getPracticeToClientRollup(
   const db = (await getDb())!;
 
   // Get practice income data from business income calculations
-  const [incomeRows] = await db.execute(
-    `SELECT sa.calculator_type, sa.result_json, sa.created_at
+  const [incomeRows] = await db.execute(sql`SELECT sa.calculator_type, sa.result_json, sa.created_at
      FROM saved_analyses sa
-     WHERE sa.user_id = ? AND sa.calculator_type IN ('business_income', 'gdc_calculator', 'sales_funnel')
-     ORDER BY sa.created_at DESC LIMIT 10`,
-    // @ts-expect-error — strict mode fix
-    [clientId]
-  ) as any[];
+     WHERE sa.user_id = ${clientId} AND sa.calculator_type IN ('business_income', 'gdc_calculator', 'sales_funnel')
+     ORDER BY sa.created_at DESC LIMIT 10`) as any;
 
   let totalGDC = 0;
   let totalNetIncome = 0;
@@ -552,11 +537,7 @@ export async function getClientFacingSummary(clientId: number): Promise<{
 
   // Get milestones from goals
   const db = (await getDb())!;
-  const [milestoneRows] = await db.execute(
-    `SELECT title, target_date, status FROM client_goals WHERE client_id = ? AND target_date IS NOT NULL ORDER BY target_date ASC LIMIT 10`,
-    // @ts-expect-error — strict mode fix
-    [clientId]
-  ) as any[];
+  const [milestoneRows] = await db.execute(sql`SELECT title, target_date, status FROM client_goals WHERE client_id = ${clientId} AND target_date IS NOT NULL ORDER BY target_date ASC LIMIT 10`) as any;
 
   const now = Date.now();
   const milestones = (milestoneRows ?? []).map((m: any) => {
@@ -602,11 +583,7 @@ export async function bulkGenerateEngagementLetters(
   for (const clientId of clientIds) {
     try {
       // Get client info
-      const [clientRows] = await db.execute(
-        `SELECT name, email FROM users WHERE id = ?`,
-        // @ts-expect-error — strict mode fix
-        [clientId]
-      ) as any[];
+      const [clientRows] = await db.execute(sql`SELECT name, email FROM users WHERE id = ${clientId}`) as any;
       const client = clientRows?.[0];
       if (!client) {
         results.push({ clientId, status: "error", error: "Client not found" });
@@ -614,20 +591,12 @@ export async function bulkGenerateEngagementLetters(
       }
 
       // Get advisor info
-      const [advisorRows] = await db.execute(
-        `SELECT name FROM users WHERE id = ?`,
-        // @ts-expect-error — strict mode fix
-        [advisorId]
-      ) as any[];
+      const [advisorRows] = await db.execute(sql`SELECT name FROM users WHERE id = ${advisorId}`) as any;
       const advisor = advisorRows?.[0];
 
       // Create engagement letter record
-      const [insertResult] = await db.execute(
-        `INSERT INTO engagement_letters (client_id, advisor_id, engagement_type, status, effective_date, term_months, auto_renew, created_at, updated_at)
-         VALUES (?, ?, ?, 'draft', ?, ?, ?, NOW(), NOW())`,
-        // @ts-expect-error — strict mode fix
-        [clientId, advisorId, template.engagementType, template.effectiveDate, template.termMonths, template.autoRenew ? 1 : 0]
-      ) as any[];
+      const [insertResult] = await db.execute(sql`INSERT INTO engagement_letters (client_id, advisor_id, engagement_type, status, effective_date, term_months, auto_renew, created_at, updated_at)
+         VALUES (${clientId}, ${advisorId}, ${template.engagementType}, 'draft', ${template.effectiveDate}, ${template.termMonths}, ${template.autoRenew ? 1 : 0}, NOW(), NOW())`) as any;
 
       const letterId = insertResult?.insertId;
       results.push({ clientId, status: "success", letterId });
@@ -651,22 +620,14 @@ async function gatherCategoryStatuses(clientId: number): Promise<ClientPlanCateg
 
   // Check saved analyses for each client planning domain
   for (const config of CLIENT_PLAN_DOMAINS) {
-    const [rows] = await db.execute(
-      `SELECT COUNT(*) as cnt, MAX(created_at) as last_updated
-       FROM saved_analyses WHERE user_id = ? AND calculator_type = ?`,
-      // @ts-expect-error — strict mode fix
-      [clientId, config.domain]
-    ) as any[];
+    const [rows] = await db.execute(sql`SELECT COUNT(*) as cnt, MAX(created_at) as last_updated
+       FROM saved_analyses WHERE user_id = ${clientId} AND calculator_type = ${config.domain}`) as any;
 
     const count = rows?.[0]?.cnt ?? 0;
     const lastUpdated = rows?.[0]?.last_updated ?? null;
 
     // Check planning nodes for this domain
-    const [nodeRows] = await db.execute(
-      `SELECT id, value FROM planning_nodes WHERE owner_id = ? AND entity_type = ? LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId, config.domain]
-    ) as any[];
+    const [nodeRows] = await db.execute(sql`SELECT id, value FROM planning_nodes WHERE owner_id = ${clientId} AND entity_type = ${config.domain} LIMIT 1`) as any;
     const nodeId = nodeRows?.[0]?.id ?? null;
     const nodeValue = nodeRows?.[0]?.value ?? 0;
 
@@ -728,11 +689,7 @@ async function getAdvancedStrategyStatus(clientId: number, domain: AdvancedStrat
   const mapping = tableMap[domain];
   if (mapping) {
     try {
-      const [rows] = await db.execute(
-        `SELECT COUNT(*) as cnt, MAX(created_at) as last_updated FROM ${mapping.table} WHERE ${mapping.clientCol} = ?`,
-        // @ts-expect-error — strict mode fix
-        [clientId]
-      ) as any[];
+      const [rows] = await db.execute(sql`SELECT COUNT(*) as cnt, MAX(created_at) as last_updated FROM ${mapping.table} WHERE ${mapping.clientCol} = ${clientId}`) as any;
       const count = rows?.[0]?.cnt ?? 0;
       const score = count > 0 ? Math.min(100, 30 + count * 20) : 0;
       return {
@@ -825,14 +782,10 @@ async function getCascadeHealth(clientId: number): Promise<{
 }> {
   const db = (await getDb())!;
   try {
-    const [rows] = await db.execute(
-      `SELECT COUNT(*) as total,
+    const [rows] = await db.execute(sql`SELECT COUNT(*) as total,
               SUM(CASE WHEN updated_at > DATE_SUB(NOW(), INTERVAL 90 DAY) THEN 1 ELSE 0 END) as fresh,
               SUM(CASE WHEN updated_at <= DATE_SUB(NOW(), INTERVAL 90 DAY) THEN 1 ELSE 0 END) as stale
-       FROM planning_nodes WHERE owner_id = ?`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+       FROM planning_nodes WHERE owner_id = ${clientId}`) as any;
 
     const total = rows?.[0]?.total ?? 0;
     const fresh = rows?.[0]?.fresh ?? 0;
@@ -854,11 +807,7 @@ async function getCascadeHealth(clientId: number): Promise<{
 async function getCurrentFinancialState(clientId: number): Promise<ForwardPlanResult["currentState"]> {
   const db = (await getDb())!;
   try {
-    const [rows] = await db.execute(
-      `SELECT profile_json FROM financial_profiles WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [rows] = await db.execute(sql`SELECT profile_json FROM financial_profiles WHERE user_id = ${clientId} ORDER BY updated_at DESC LIMIT 1`) as any;
     const profile = rows?.[0]?.profile_json
       ? (typeof rows[0].profile_json === "string" ? JSON.parse(rows[0].profile_json) : rows[0].profile_json)
       : {};
@@ -1015,11 +964,7 @@ async function checkCascadeAlignmentForBackPlan(
 ): Promise<BackPlanResult["cascadeAlignment"]> {
   const db = (await getDb())!;
   try {
-    const [nodeRows] = await db.execute(
-      `SELECT COUNT(*) as total FROM planning_nodes WHERE owner_id = ?`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    ) as any[];
+    const [nodeRows] = await db.execute(sql`SELECT COUNT(*) as total FROM planning_nodes WHERE owner_id = ${clientId}`) as any;
     const totalNodes = nodeRows?.[0]?.total ?? 0;
 
     // Check if goals have linked planning nodes

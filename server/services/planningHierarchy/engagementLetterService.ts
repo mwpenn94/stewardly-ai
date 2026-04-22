@@ -16,6 +16,7 @@
 
 import { getDb } from "../../db";
 import { rawInvokeLLM as invokeLLM } from "../../shared/stewardlyWiring";
+import { sql } from "drizzle-orm";
 
 // ─── TYPES ────────────────────────────────────────────────────────
 
@@ -347,28 +348,17 @@ export async function saveEngagementLetter(
   letterMarkdown: string
 ): Promise<number> {
   const db = (await getDb())!;
-  const [result] = await db.execute(
-    `INSERT INTO engagement_letters (client_id, advisor_id, client_name, advisor_name, firm_name,
+  const [result] = await db.execute(sql`INSERT INTO engagement_letters (client_id, advisor_id, client_name, advisor_name, firm_name,
       scope_json, fee_schedule_json, fiduciary_standard, engagement_type, effective_date,
       term_months, auto_renew, termination_notice_days, form_crs_json, adv_delivery_json,
       privacy_policy_delivered, arbitration_clause, status, letter_html, letter_markdown)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    // @ts-expect-error — strict mode fix
-    [
-      data.clientId, data.advisorId, data.clientName, data.advisorName, data.firmName,
-      JSON.stringify(data.scope), JSON.stringify(data.feeSchedule), data.fiduciaryStandard,
-      data.engagementType, data.effectiveDate, data.termMonths, data.autoRenew ? 1 : 0,
-      data.terminationNoticeDays, JSON.stringify(data.formCRS), JSON.stringify(data.advDelivery),
-      data.privacyPolicyDelivered ? 1 : 0, data.arbitrationClause ? 1 : 0, data.status,
-      letterHtml, letterMarkdown,
-    ]
-  );
+    VALUES (${data.clientId}, ${data.advisorId}, ${data.clientName}, ${data.advisorName}, ${data.firmName}, ${JSON.stringify(data.scope)}, ${JSON.stringify(data.feeSchedule)}, ${data.fiduciaryStandard}, ${data.engagementType}, ${data.effectiveDate}, ${data.termMonths}, ${data.autoRenew ? 1 : 0}, ${data.terminationNoticeDays}, ${JSON.stringify(data.formCRS)}, ${JSON.stringify(data.advDelivery)}, ${data.privacyPolicyDelivered ? 1 : 0}, ${data.arbitrationClause ? 1 : 0}, ${data.status}, ${letterHtml}, ${letterMarkdown})`);
   return (result as any).insertId;
 }
 
 export async function getEngagementLetter(id: number): Promise<EngagementLetterOutput | null> {
   const db = (await getDb())!;
-  const [rows] = await (db as any).execute("SELECT * FROM engagement_letters WHERE id = ?", [id]);
+  const [rows] = await db.execute(sql`SELECT * FROM engagement_letters WHERE id = ${id}`);
   const arr = rows as unknown as any[];
   if (!arr.length) return null;
   const r = arr[0];
@@ -403,12 +393,13 @@ export async function getEngagementLetter(id: number): Promise<EngagementLetterO
 
 export async function listEngagementLetters(clientId?: number, advisorId?: number): Promise<EngagementLetterOutput[]> {
   const db = (await getDb())!;
-  let query = "SELECT * FROM engagement_letters WHERE 1=1";
-  const params: any[] = [];
-  if (clientId) { query += " AND client_id = ?"; params.push(clientId); }
-  if (advisorId) { query += " AND advisor_id = ?"; params.push(advisorId); }
-  query += " ORDER BY created_at DESC LIMIT 100";
-  const [rows] = await (db as any).execute(query, params);
+  const [rows] = clientId && advisorId
+    ? await db.execute(sql`SELECT * FROM engagement_letters WHERE client_id = ${clientId} AND advisor_id = ${advisorId} ORDER BY created_at DESC LIMIT 100`)
+    : clientId
+      ? await db.execute(sql`SELECT * FROM engagement_letters WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 100`)
+      : advisorId
+        ? await db.execute(sql`SELECT * FROM engagement_letters WHERE advisor_id = ${advisorId} ORDER BY created_at DESC LIMIT 100`)
+        : await db.execute(sql`SELECT * FROM engagement_letters WHERE 1=1 ORDER BY created_at DESC LIMIT 100`);
   return (rows as unknown as any[]).map(r => ({
     id: r.id,
     letterHtml: r.letter_html,
@@ -432,7 +423,7 @@ export async function listEngagementLetters(clientId?: number, advisorId?: numbe
 
 export async function updateEngagementStatus(id: number, status: EngagementLetterData["status"]): Promise<boolean> {
   const db = (await getDb())!;
-  const [result] = await (db as any).execute("UPDATE engagement_letters SET status = ? WHERE id = ?", [status, id]);
+  const [result] = await db.execute(sql`UPDATE engagement_letters SET status = ${status} WHERE id = ${id}`);
   return (result as any).affectedRows > 0;
 }
 
@@ -440,20 +431,16 @@ export async function updateEngagementStatus(id: number, status: EngagementLette
 
 export async function saveUnderwritingStatus(data: Omit<UnderwritingStatus, "applicationId">): Promise<number> {
   const db = (await getDb())!;
-  const [result] = await db.execute(
-    `INSERT INTO underwriting_tracking (client_id, carrier, product, status, requirements_json,
+  const [result] = await db.execute(sql`INSERT INTO underwriting_tracking (client_id, carrier, product, status, requirements_json,
       submitted_at, last_status_update, expected_decision_date, notes)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    // @ts-expect-error — strict mode fix
-    [data.clientId, data.carrier, data.product, data.status, JSON.stringify(data.requirements),
-     data.submittedAt, data.lastStatusUpdate, data.expectedDecisionDate, data.notes]
-  );
+    VALUES (${data.clientId}, ${data.carrier}, ${data.product}, ${data.status}, ${JSON.stringify(data.requirements)},
+     ${data.submittedAt}, ${data.lastStatusUpdate}, ${data.expectedDecisionDate}, ${data.notes})`);
   return (result as any).insertId;
 }
 
 export async function getUnderwritingStatus(applicationId: number): Promise<UnderwritingStatus | null> {
   const db = (await getDb())!;
-  const [rows] = await (db as any).execute("SELECT * FROM underwriting_tracking WHERE id = ?", [applicationId]);
+  const [rows] = await db.execute(sql`SELECT * FROM underwriting_tracking WHERE id = ${applicationId}`);
   const arr = rows as unknown as any[];
   if (!arr.length) return null;
   const r = arr[0];
@@ -468,11 +455,9 @@ export async function getUnderwritingStatus(applicationId: number): Promise<Unde
 
 export async function listUnderwritingStatuses(clientId?: number): Promise<UnderwritingStatus[]> {
   const db = (await getDb())!;
-  let query = "SELECT * FROM underwriting_tracking";
-  const params: any[] = [];
-  if (clientId) { query += " WHERE client_id = ?"; params.push(clientId); }
-  query += " ORDER BY submitted_at DESC LIMIT 100";
-  const [rows] = await (db as any).execute(query, params);
+  const [rows] = clientId
+    ? await db.execute(sql`SELECT * FROM underwriting_tracking WHERE client_id = ${clientId} ORDER BY submitted_at DESC LIMIT 100`)
+    : await db.execute(sql`SELECT * FROM underwriting_tracking ORDER BY submitted_at DESC LIMIT 100`);
   return (rows as unknown as any[]).map(r => ({
     applicationId: r.id, clientId: r.client_id, carrier: r.carrier, product: r.product,
     status: r.status,
@@ -484,12 +469,9 @@ export async function listUnderwritingStatuses(clientId?: number): Promise<Under
 
 export async function updateUnderwritingStatus(applicationId: number, status: UnderwritingStatus["status"], requirements?: UnderwritingStatus["requirements"]): Promise<boolean> {
   const db = (await getDb())!;
-  let query = "UPDATE underwriting_tracking SET status = ?, last_status_update = NOW()";
-  const params: any[] = [status];
-  if (requirements) { query += ", requirements_json = ?"; params.push(JSON.stringify(requirements)); }
-  query += " WHERE id = ?";
-  params.push(applicationId);
-  const [result] = await (db as any).execute(query, params);
+  const [result] = requirements
+    ? await db.execute(sql`UPDATE underwriting_tracking SET status = ${status}, last_status_update = NOW(), requirements_json = ${JSON.stringify(requirements)} WHERE id = ${applicationId}`)
+    : await db.execute(sql`UPDATE underwriting_tracking SET status = ${status}, last_status_update = NOW() WHERE id = ${applicationId}`);
   return (result as any).affectedRows > 0;
 }
 
@@ -501,10 +483,7 @@ export async function generatePreMeetingBrief(clientId: number, advisorId: numbe
   // Gather client context
   let clientContext = "";
   try {
-    const [profiles] = await db.execute(
-      // @ts-expect-error — strict mode fix
-      "SELECT financial_profile_json FROM users WHERE id = ? LIMIT 1", [clientId]
-    );
+    const [profiles] = await db.execute(sql`SELECT financial_profile_json FROM users WHERE id = ${clientId} LIMIT 1`);
     const profileArr = profiles as unknown as any[];
     if (profileArr.length && profileArr[0].financial_profile_json) {
       const fp = typeof profileArr[0].financial_profile_json === "string"
@@ -517,11 +496,7 @@ export async function generatePreMeetingBrief(clientId: number, advisorId: numbe
   // Get recent planning nodes
   let planningContext = "";
   try {
-    const [nodes] = await db.execute(
-      "SELECT node_type, label, current_value, target_value, status FROM planning_nodes WHERE client_id = ? ORDER BY updated_at DESC LIMIT 10",
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const [nodes] = await db.execute(sql`SELECT node_type, label, current_value, target_value, status FROM planning_nodes WHERE client_id = ${clientId} ORDER BY updated_at DESC LIMIT 10`);
     const nodeArr = nodes as unknown as any[];
     if (nodeArr.length) {
       planningContext = `\nRecent planning nodes:\n${nodeArr.map(n => `- ${n.label} (${n.node_type}): current=${n.current_value}, target=${n.target_value}, status=${n.status}`).join("\n")}`;
@@ -531,11 +506,7 @@ export async function generatePreMeetingBrief(clientId: number, advisorId: numbe
   // Get recent action items
   let actionContext = "";
   try {
-    const [actions] = await db.execute(
-      "SELECT item, status FROM meeting_action_items WHERE client_id = ? ORDER BY created_at DESC LIMIT 10",
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const [actions] = await db.execute(sql`SELECT item, status FROM meeting_action_items WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 10`);
     const actionArr = actions as unknown as any[];
     if (actionArr.length) {
       actionContext = `\nOutstanding action items:\n${actionArr.map(a => `- [${a.status}] ${a.item}`).join("\n")}`;
@@ -642,12 +613,8 @@ export async function saveMeetingActionItems(clientId: number, advisorId: number
   const ids: number[] = [];
   for (const ai of items) {
     try {
-      const [result] = await db.execute(
-        `INSERT INTO meeting_action_items (client_id, advisor_id, meeting_id, item, assignee, due_date, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-        // @ts-expect-error — strict mode fix
-        [clientId, advisorId, meetingId, ai.item, ai.assignee, ai.dueDate === "TBD" ? null : ai.dueDate]
-      );
+      const [result] = await db.execute(sql`INSERT INTO meeting_action_items (client_id, advisor_id, meeting_id, item, assignee, due_date, status)
+        VALUES (${clientId}, ${advisorId}, ${meetingId}, ${ai.item}, ${ai.assignee}, ${ai.dueDate === "TBD" ? null : ai.dueDate}, 'pending')`);
       ids.push((result as any).insertId);
     } catch { /* skip duplicates */ }
   }
@@ -656,11 +623,7 @@ export async function saveMeetingActionItems(clientId: number, advisorId: number
 
 export async function listMeetingActionItems(clientId: number): Promise<Array<{ id: number; item: string; assignee: string; dueDate: string | null; status: string; meetingId: number }>> {
   const db = (await getDb())!;
-  const [rows] = await db.execute(
-    "SELECT * FROM meeting_action_items WHERE client_id = ? ORDER BY created_at DESC LIMIT 100",
-    // @ts-expect-error — strict mode fix
-    [clientId]
-  );
+  const [rows] = await db.execute(sql`SELECT * FROM meeting_action_items WHERE client_id = ${clientId} ORDER BY created_at DESC LIMIT 100`);
   return (rows as unknown as any[]).map(r => ({
     id: r.id, item: r.item, assignee: r.assignee, dueDate: r.due_date,
     status: r.status, meetingId: r.meeting_id,
@@ -669,7 +632,7 @@ export async function listMeetingActionItems(clientId: number): Promise<Array<{ 
 
 export async function updateActionItemStatus(id: number, status: "pending" | "done" | "cancelled"): Promise<boolean> {
   const db = (await getDb())!;
-  const [result] = await (db as any).execute("UPDATE meeting_action_items SET status = ? WHERE id = ?", [status, id]);
+  const [result] = await db.execute(sql`UPDATE meeting_action_items SET status = ${status} WHERE id = ${id}`);
   return (result as any).affectedRows > 0;
 }
 
@@ -686,11 +649,7 @@ export async function generateAuditSample(
   // Get all client accounts for this advisor
   let accountIds: number[] = [];
   try {
-    const [rows] = await db.execute(
-      "SELECT DISTINCT client_id FROM planning_nodes WHERE advisor_id = ? AND client_id IS NOT NULL",
-      // @ts-expect-error — strict mode fix
-      [advisorId]
-    );
+    const [rows] = await db.execute(sql`SELECT DISTINCT client_id FROM planning_nodes WHERE advisor_id = ${advisorId} AND client_id IS NOT NULL`);
     accountIds = (rows as unknown as any[]).map(r => r.client_id);
   } catch { /* fallback */ }
 
@@ -720,24 +679,17 @@ export async function generateAuditSample(
 
 export async function saveComplianceAuditSample(data: Omit<ComplianceAuditSample, "sampleId">): Promise<number> {
   const db = (await getDb())!;
-  const [result] = await db.execute(
-    `INSERT INTO compliance_audit_samples (review_period, sample_size, selected_accounts_json,
+  const [result] = await db.execute(sql`INSERT INTO compliance_audit_samples (review_period, sample_size, selected_accounts_json,
       review_type, findings_json, supervisor_id, review_date, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    // @ts-expect-error — strict mode fix
-    [data.reviewPeriod, data.sampleSize, JSON.stringify(data.selectedAccounts),
-     data.reviewType, JSON.stringify(data.findings), data.supervisorId, data.reviewDate, data.status]
-  );
+    VALUES (${data.reviewPeriod}, ${data.sampleSize}, ${JSON.stringify(data.selectedAccounts)}, ${data.reviewType}, ${JSON.stringify(data.findings)}, ${data.supervisorId}, ${data.reviewDate}, ${data.status})`);
   return (result as any).insertId;
 }
 
 export async function listComplianceAuditSamples(supervisorId?: number): Promise<ComplianceAuditSample[]> {
   const db = (await getDb())!;
-  let query = "SELECT * FROM compliance_audit_samples";
-  const params: any[] = [];
-  if (supervisorId) { query += " WHERE supervisor_id = ?"; params.push(supervisorId); }
-  query += " ORDER BY review_date DESC LIMIT 50";
-  const [rows] = await (db as any).execute(query, params);
+  const [rows] = supervisorId
+    ? await db.execute(sql`SELECT * FROM compliance_audit_samples WHERE supervisor_id = ${supervisorId} ORDER BY review_date DESC LIMIT 50`)
+    : await db.execute(sql`SELECT * FROM compliance_audit_samples ORDER BY review_date DESC LIMIT 50`);
   return (rows as unknown as any[]).map(r => ({
     sampleId: r.id, reviewPeriod: r.review_period, sampleSize: r.sample_size,
     selectedAccounts: typeof r.selected_accounts_json === "string" ? JSON.parse(r.selected_accounts_json) : (r.selected_accounts_json ?? []),
@@ -757,22 +709,14 @@ export async function recordPrivacyConsent(
   details: string
 ): Promise<number> {
   const db = (await getDb())!;
-  const [result] = await db.execute(
-    `INSERT INTO privacy_consent_log (client_id, advisor_id, consent_type, granted, details)
-    VALUES (?, ?, ?, ?, ?)`,
-    // @ts-expect-error — strict mode fix
-    [clientId, advisorId, consentType, granted ? 1 : 0, details]
-  );
+  const [result] = await db.execute(sql`INSERT INTO privacy_consent_log (client_id, advisor_id, consent_type, granted, details)
+    VALUES (${clientId}, ${advisorId}, ${consentType}, ${granted ? 1 : 0}, ${details})`);
   return (result as any).insertId;
 }
 
 export async function getPrivacyConsents(clientId: number): Promise<Array<{ id: number; consentType: string; granted: boolean; details: string; createdAt: string }>> {
   const db = (await getDb())!;
-  const [rows] = await db.execute(
-    "SELECT * FROM privacy_consent_log WHERE client_id = ? ORDER BY created_at DESC",
-    // @ts-expect-error — strict mode fix
-    [clientId]
-  );
+  const [rows] = await db.execute(sql`SELECT * FROM privacy_consent_log WHERE client_id = ${clientId} ORDER BY created_at DESC`);
   return (rows as unknown as any[]).map(r => ({
     id: r.id, consentType: r.consent_type, granted: !!r.granted,
     details: r.details, createdAt: r.created_at,
@@ -784,12 +728,8 @@ export async function getPrivacyConsents(clientId: number): Promise<Array<{ id: 
 export async function archivePFRDocument(pfrId: number): Promise<boolean> {
   const db = (await getDb())!;
   try {
-    const [result] = await db.execute(
-      `UPDATE personal_financial_reviews SET archived = 1, archived_at = NOW(),
-        retention_expiry = DATE_ADD(NOW(), INTERVAL 3 YEAR) WHERE id = ?`,
-      // @ts-expect-error — strict mode fix
-      [pfrId]
-    );
+    const [result] = await db.execute(sql`UPDATE personal_financial_reviews SET archived = 1, archived_at = NOW(),
+        retention_expiry = DATE_ADD(NOW(), INTERVAL 3 YEAR) WHERE id = ${pfrId}`);
     return (result as any).affectedRows > 0;
   } catch {
     return false;
@@ -798,11 +738,9 @@ export async function archivePFRDocument(pfrId: number): Promise<boolean> {
 
 export async function listArchivedPFRs(advisorId?: number): Promise<Array<{ id: number; clientId: number; status: string; archivedAt: string; retentionExpiry: string }>> {
   const db = (await getDb())!;
-  let query = "SELECT id, client_id, status, archived_at, retention_expiry FROM personal_financial_reviews WHERE archived = 1";
-  const params: any[] = [];
-  if (advisorId) { query += " AND advisor_id = ?"; params.push(advisorId); }
-  query += " ORDER BY archived_at DESC LIMIT 200";
-  const [rows] = await (db as any).execute(query, params);
+  const [rows] = advisorId
+    ? await db.execute(sql`SELECT id, client_id, status, archived_at, retention_expiry FROM personal_financial_reviews WHERE archived = 1 AND advisor_id = ${advisorId} ORDER BY archived_at DESC LIMIT 200`)
+    : await db.execute(sql`SELECT id, client_id, status, archived_at, retention_expiry FROM personal_financial_reviews WHERE archived = 1 ORDER BY archived_at DESC LIMIT 200`);
   return (rows as unknown as any[]).map(r => ({
     id: r.id, clientId: r.client_id, status: r.status,
     archivedAt: r.archived_at, retentionExpiry: r.retention_expiry,
@@ -814,12 +752,8 @@ export async function listArchivedPFRs(advisorId?: number): Promise<Array<{ id: 
 export async function checkSuitabilityStaleness(clientId: number): Promise<{ isStale: boolean; daysSinceUpdate: number; recommendation: string }> {
   const db = (await getDb())!;
   try {
-    const [rows] = await db.execute(
-      `SELECT DATEDIFF(NOW(), updated_at) as days_since FROM suitability_assessments
-       WHERE client_id = ? ORDER BY updated_at DESC LIMIT 1`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const [rows] = await db.execute(sql`SELECT DATEDIFF(NOW(), updated_at) as days_since FROM suitability_assessments
+       WHERE client_id = ${clientId} ORDER BY updated_at DESC LIMIT 1`);
     const arr = rows as unknown as any[];
     if (!arr.length) {
       return { isStale: true, daysSinceUpdate: 999, recommendation: "No suitability score found. Run initial suitability assessment." };
@@ -848,25 +782,17 @@ export async function detectAssumptionDrift(clientId: number): Promise<Array<{ k
 
   try {
     // Get shared assumptions for this client
-    const [shared] = await db.execute(
-      "SELECT assumption_key, assumption_value FROM planning_assumptions WHERE client_id = ? AND scope = 'client'",
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const [shared] = await db.execute(sql`SELECT assumption_key, assumption_value FROM planning_assumptions WHERE client_id = ${clientId} AND scope = 'client'`);
     const sharedMap = new Map<string, number>();
     for (const r of shared as unknown as any[]) {
       sharedMap.set(r.assumption_key, parseFloat(r.assumption_value));
     }
 
     // Get node-level assumptions
-    const [nodeAssumptions] = await db.execute(
-      `SELECT pa.assumption_key, pa.assumption_value, pn.label as node_label
+    const [nodeAssumptions] = await db.execute(sql`SELECT pa.assumption_key, pa.assumption_value, pn.label as node_label
        FROM planning_assumptions pa
        JOIN planning_nodes pn ON pa.node_id = pn.id
-       WHERE pn.client_id = ? AND pa.scope = 'node'`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+       WHERE pn.client_id = ${clientId} AND pa.scope = 'node'`);
 
     for (const na of nodeAssumptions as unknown as any[]) {
       const nodeVal = parseFloat(na.assumption_value);

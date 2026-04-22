@@ -16,6 +16,7 @@
  */
 
 import { getDb } from "../../db";
+import { sql } from "drizzle-orm";
 
 // ─── TYPES ────────────────────────────────────────────────────────
 
@@ -123,12 +124,8 @@ export async function captureSnapshot(
   // Gather current planning nodes
   let nodes: PlanningSnapshot["nodesJson"] = [];
   try {
-    const [nodeRows] = await db.execute(
-      `SELECT id, node_type, label, current_value, target_value, status
-       FROM planning_nodes WHERE client_id = ? AND deleted_at IS NULL`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const [nodeRows] = await db.execute(sql`SELECT id, node_type, label, current_value, target_value, status
+       FROM planning_nodes WHERE client_id = ${clientId} AND deleted_at IS NULL`);
     nodes = (nodeRows as unknown as any[]).map(r => ({
       nodeId: r.id,
       nodeType: r.node_type ?? "goal",
@@ -143,12 +140,8 @@ export async function captureSnapshot(
   // Gather current goals
   let goals: PlanningSnapshot["goalsJson"] = [];
   try {
-    const [goalRows] = await db.execute(
-      `SELECT id, name, target_amount, current_amount, priority, status
-       FROM client_goals WHERE client_id = ?`,
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const [goalRows] = await db.execute(sql`SELECT id, name, target_amount, current_amount, priority, status
+       FROM client_goals WHERE client_id = ${clientId}`);
     goals = (goalRows as unknown as any[]).map(r => ({
       goalId: r.id,
       name: r.name ?? "",
@@ -186,11 +179,7 @@ export async function captureSnapshot(
 
   // Try to enrich from financial profile
   try {
-    const [profiles] = await db.execute(
-      "SELECT financial_profile_json FROM users WHERE id = ? LIMIT 1",
-      // @ts-expect-error — strict mode fix
-      [clientId]
-    );
+    const [profiles] = await db.execute(sql`SELECT financial_profile_json FROM users WHERE id = ${clientId} LIMIT 1`);
     const profileArr = profiles as unknown as any[];
     if (profileArr.length && profileArr[0].financial_profile_json) {
       const fp = typeof profileArr[0].financial_profile_json === "string"
@@ -202,32 +191,23 @@ export async function captureSnapshot(
     }
   } catch { /* profile may not exist */ }
 
-  const [result] = await db.execute(
-    `INSERT INTO planning_snapshots (client_id, advisor_id, snapshot_date, snapshot_type, label,
+  const [result] = await db.execute(sql`INSERT INTO planning_snapshots (client_id, advisor_id, snapshot_date, snapshot_type, label,
       nodes_json, goals_json, metrics_json)
-    VALUES (?, ?, CURDATE(), ?, ?, ?, ?, ?)`,
-    // @ts-expect-error — strict mode fix
-    [clientId, advisorId, snapshotType, label,
-     JSON.stringify(nodes), JSON.stringify(goals), JSON.stringify(metrics)]
-  );
+    VALUES (${clientId}, ${advisorId}, CURDATE(), ${snapshotType}, ${label}, ${JSON.stringify(nodes)}, ${JSON.stringify(goals)}, ${JSON.stringify(metrics)})`);
 
   return (result as any).insertId;
 }
 
 export async function getSnapshots(clientId: number, limit = 20): Promise<PlanningSnapshot[]> {
   const db = (await getDb())!;
-  const [rows] = await db.execute(
-    `SELECT * FROM planning_snapshots WHERE client_id = ?
-     ORDER BY snapshot_date DESC LIMIT ?`,
-    // @ts-expect-error — strict mode fix
-    [clientId, limit]
-  );
+  const [rows] = await db.execute(sql`SELECT * FROM planning_snapshots WHERE client_id = ${clientId}
+     ORDER BY snapshot_date DESC LIMIT ${limit}`);
   return (rows as unknown as any[]).map(parseSnapshotRow);
 }
 
 export async function getSnapshotById(id: number): Promise<PlanningSnapshot | null> {
   const db = (await getDb())!;
-  const [rows] = await (db as any).execute("SELECT * FROM planning_snapshots WHERE id = ?", [id]);
+  const [rows] = await db.execute(sql`SELECT * FROM planning_snapshots WHERE id = ${id}`);
   const arr = rows as unknown as any[];
   if (!arr.length) return null;
   return parseSnapshotRow(arr[0]);
@@ -466,6 +446,6 @@ export async function calculatePlanAdherence(clientId: number, periodLabel: stri
 
 export async function deleteSnapshot(id: number): Promise<boolean> {
   const db = (await getDb())!;
-  const [result] = await (db as any).execute("DELETE FROM planning_snapshots WHERE id = ?", [id]);
+  const [result] = await db.execute(sql`DELETE FROM planning_snapshots WHERE id = ${id}`);
   return (result as any).affectedRows > 0;
 }
