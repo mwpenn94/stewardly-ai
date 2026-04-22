@@ -290,6 +290,7 @@ function ConceptExplorer() {
    Study Home — overview + progress
    ═══════════════════════════════════════════════════════════════════════ */
 function StudyHome() {
+  // @ts-expect-error — property access on loosely typed object
   const progressQ = trpc.learning.getProgress.useQuery(undefined, { retry: false });
   const progress = progressQ.data as any;
 

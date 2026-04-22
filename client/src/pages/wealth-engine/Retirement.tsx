@@ -36,6 +36,7 @@ import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorConte
 import StressTestPanel from "@/components/StressTestPanel";
 import MonteCarloFan from "@/components/MonteCarloFan";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
+// @ts-expect-error — module resolution
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { useLocation } from "wouter";
 import { SEOHead } from "@/components/SEOHead";

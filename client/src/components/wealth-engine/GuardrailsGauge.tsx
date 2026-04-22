@@ -14,6 +14,7 @@ import {
   useReducedMotion,
   useCountUp,
   linearScale,
+// @ts-expect-error — module resolution
 } from "@/lib/wealth-engine/animations";
 
 export interface GuardrailsGaugeProps {

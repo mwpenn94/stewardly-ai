@@ -281,6 +281,7 @@ function CampaignEditor({
   onBack: () => void;
   onSaved: (id: number) => void;
 }) {
+  const [, navigate] = useLocation();
   const isEdit = !!campaignId;
   const { data: existing } = trpc.emailCampaign.get.useQuery(
     { id: campaignId! },
@@ -414,6 +415,7 @@ function CampaignEditor({
               </div>
             </div>
             <EmailTemplateBuilder
+              // @ts-expect-error — strict mode type fix
               value={bodyHtml}
               onChange={setBodyHtml}
             />

@@ -34,7 +34,7 @@ export interface LessonGraphResult {
  * Get the full lesson graph for a track, with unlock status per user.
  */
 export async function getLessonGraph(userId: number, trackId: number): Promise<LessonGraphResult> {
-  const db = await getDb();
+  const db = (await getDb())!;
   // 1. Get all chapters in this track
   const chapters = await db
     .select()
@@ -130,7 +130,7 @@ export async function getLessonGraph(userId: number, trackId: number): Promise<L
  * Check if a specific chapter is unlocked for a user.
  */
 export async function isChapterUnlocked(userId: number, chapterId: number): Promise<boolean> {
-  const db = await getDb();
+  const db = (await getDb())!;
   const prereqs = await db!
     .select()
     .from(chapterPrerequisites)
@@ -164,7 +164,7 @@ export async function addPrerequisite(
   prerequisiteChapterId: number,
   minMasteryScore = 0.7,
 ): Promise<void> {
-  const db = await getDb();
+  const db = (await getDb())!;
   // Validate no circular dependency
   const wouldCreateCycle = await detectCycle(prerequisiteChapterId, chapterId);
   if (wouldCreateCycle) {
@@ -182,7 +182,7 @@ export async function addPrerequisite(
  * Remove a prerequisite relationship.
  */
 export async function removePrerequisite(chapterId: number, prerequisiteChapterId: number): Promise<void> {
-  const db = await getDb();
+  const db = (await getDb())!;
   await db!
     .delete(chapterPrerequisites)
     .where(
@@ -198,7 +198,7 @@ export async function removePrerequisite(chapterId: number, prerequisiteChapterI
  * Uses BFS from `to` to see if we can reach `from`.
  */
 async function detectCycle(from: number, to: number): Promise<boolean> {
-  const db = await getDb();
+  const db = (await getDb())!;
   const visited = new Set<number>();
   const queue = [to];
 

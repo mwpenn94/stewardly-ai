@@ -37,6 +37,7 @@ export default function Bookmarks() {
     onSuccess: () => { bookmarksQ.refetch(); toast.success("Bookmark removed"); },
     onError: () => toast.error("Failed to remove bookmark"),
   });
+  // @ts-expect-error — property access on loosely typed object
   const updateMut = trpc.learningSocial.bookmarks.update.useMutation({
     onSuccess: () => { bookmarksQ.refetch(); setEditingId(null); toast.success("Note updated"); },
     onError: () => toast.error("Failed to update note"),

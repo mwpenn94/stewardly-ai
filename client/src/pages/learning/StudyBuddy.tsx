@@ -143,7 +143,7 @@ export default function StudyBuddy() {
           <Card>
             <CardContent className="p-4 text-center">
               <Target className="h-6 w-6 mx-auto mb-1 text-primary" />
-              <div className="text-2xl font-bold">{mastery?.overallPct ?? 0}%</div>
+              <div className="text-2xl font-bold">{(mastery as any)?.masteryPct ?? 0}%</div>
               <div className="text-xs text-muted-foreground">Mastery</div>
             </CardContent>
           </Card>
@@ -316,8 +316,8 @@ export default function StudyBuddy() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { icon: Flame, label: "7-Day Streak", unlocked: streak.current >= 7, color: "text-orange-500" },
-            { icon: Trophy, label: "First Exam", unlocked: (mastery?.totalReviews ?? 0) > 0, color: "text-amber-500" },
-            { icon: Brain, label: "50% Mastery", unlocked: (mastery?.overallPct ?? 0) >= 50, color: "text-purple-500" },
+            { icon: Trophy, label: "First Exam", unlocked: ((mastery as any)?.totalReviews ?? 0) > 0, color: "text-amber-500" },
+            { icon: Brain, label: "50% Mastery", unlocked: ((mastery as any)?.masteryPct ?? 0) >= 50, color: "text-purple-500" },
             { icon: Shield, label: "License Ready", unlocked: false, color: "text-emerald-500" },
           ].map((ach) => (
             <Card key={ach.label} className={`${ach.unlocked ? "" : "opacity-50"}`}>

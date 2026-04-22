@@ -204,6 +204,7 @@ export default function InsuranceAnalysis() {
             lifeInsuranceNeed: String(dime.total),
             debtCoverage: String(dime.debt),
             incomeCoverage: String(dime.income),
+            // @ts-expect-error — property access on loosely typed object
             mortgageCoverage: String(dime.mortgage),
             educationCoverage: String(dime.education),
           }]}

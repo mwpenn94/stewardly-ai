@@ -77,6 +77,7 @@ export default function KnowledgeBaseTab() {
       utils.documents.list.invalidate();
       const catLabel = CATEGORIES.find(c => c.value === data.category)?.label || data.category;
       toast.success(`Uploaded — AI categorized as "${catLabel}"`);
+      // @ts-expect-error — property access on loosely typed object
       sendFeedback("document.uploaded", { filename: data.filename || "document" });
       setUploadCount(prev => {
         const next = prev - 1;

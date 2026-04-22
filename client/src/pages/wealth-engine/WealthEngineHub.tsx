@@ -268,8 +268,10 @@ function InlineQuickBundle() {
 // ─── OVERVIEW CONTENT — HOLISTIC CASCADING DASHBOARD ──────────────
 function OverviewContent() {
   const [, navigate] = useLocation();
+  // @ts-expect-error — property access on loosely typed object
   const goalsQ = trpc.wealthEngine.getAdvisorGoals.useQuery(undefined, { retry: false });
   const treeQ = trpc.planningHierarchy.getFullTree.useQuery(undefined, { retry: false });
+  // @ts-expect-error — property access on loosely typed object
   const assumptionsQ = trpc.wealthEngine.getAssumptions.useQuery(undefined, { retry: false });
   const latestUWE = trpc.wealthEngine.getLatestRun.useQuery({ tool: "uwe.simulate" }, { retry: false });
   const latestMC = trpc.wealthEngine.getLatestRun.useQuery({ tool: "montecarlo.simulate" }, { retry: false });

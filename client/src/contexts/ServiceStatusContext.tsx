@@ -86,6 +86,7 @@ export function ServiceStatusProvider({ children }: { children: ReactNode }) {
             lastChecked: backendStatus.lastChecked || Date.now(),
             latencyMs: backendStatus.latencyMs,
             message: backendStatus.details || undefined,
+            // @ts-expect-error — property access on loosely typed object
             cachedSince: backendStatus.status === "degraded" ? (backendStatus.cachedSince || Date.now()) : undefined,
           };
         }

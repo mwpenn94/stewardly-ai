@@ -77,7 +77,7 @@ export default function MarketData({ embedded = false }: { embedded?: boolean } 
         <BarChart3 className="w-5 h-5 text-accent relative" />
         <h1 className="text-lg font-semibold relative">Market Data</h1>
         <div className="ml-auto flex items-center gap-2">
-          <ShareButton contentType="market-view" contentId="watchlist" title="Market Watchlist" />
+          <ShareButton contentType="market-view" contentId="watchlist" contentTitle="Market Watchlist" />
           <Button variant="ghost" size="icon" aria-label="Refresh market data" onClick={() => quotesQuery.refetch()} disabled={quotesQuery.isFetching}>
             <RefreshCw className={`w-4 h-4 ${quotesQuery.isFetching ? "animate-spin" : ""}`} />
           </Button>

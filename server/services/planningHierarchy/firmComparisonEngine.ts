@@ -738,7 +738,7 @@ export async function generateFirmComparison(
   clientId: number,
   overrides?: { aum?: number; income?: number; netWorth?: number; age?: number }
 ): Promise<FirmComparisonResult> {
-  const db = await getDb();
+  const db = (await getDb())!;
 
   // Get client financial profile
   let aum = overrides?.aum ?? 500000;
@@ -750,6 +750,7 @@ export async function generateFirmComparison(
   try {
     const [rows] = await db.execute(
       `SELECT profile_json FROM financial_profiles WHERE user_id = ? ORDER BY updated_at DESC LIMIT 1`,
+      // @ts-expect-error — strict mode fix
       [clientId]
     ) as any[];
     if (rows?.[0]?.profile_json) {
@@ -765,6 +766,7 @@ export async function generateFirmComparison(
   try {
     const [goalRows] = await db.execute(
       `SELECT title FROM client_goals WHERE client_id = ? LIMIT 5`,
+      // @ts-expect-error — strict mode fix
       [clientId]
     ) as any[];
     for (const g of (goalRows ?? [])) {

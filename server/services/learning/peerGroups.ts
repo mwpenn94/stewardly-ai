@@ -15,7 +15,7 @@ export async function createGroup(params: {
   isComplianceGated?: boolean;
   requiredRole?: string;
 }) {
-  const db = getDb();
+  const db = (await getDb())!;
   const [result] = await db.insert(peerGroups).values({
     name: params.name,
     description: params.description || null,
@@ -38,7 +38,7 @@ export async function createGroup(params: {
 }
 
 export async function joinGroup(groupId: number, userId: number, userRole: string) {
-  const db = getDb();
+  const db = (await getDb())!;
 
   const [group] = await db.select().from(peerGroups).where(eq(peerGroups.id, groupId)).limit(1);
   if (!group) return { success: false, error: "Group not found" };
@@ -73,7 +73,7 @@ export async function joinGroup(groupId: number, userId: number, userRole: strin
 }
 
 export async function leaveGroup(groupId: number, userId: number) {
-  const db = getDb();
+  const db = (await getDb())!;
   await db
     .update(peerGroupMembers)
     .set({ status: "inactive" })
@@ -84,7 +84,7 @@ export async function leaveGroup(groupId: number, userId: number) {
 }
 
 export async function listGroups(trackId?: number) {
-  const db = getDb();
+  const db = (await getDb())!;
   if (trackId) {
     return db.select().from(peerGroups).where(and(eq(peerGroups.status, "active"), eq(peerGroups.trackId, trackId)));
   }
@@ -92,12 +92,12 @@ export async function listGroups(trackId?: number) {
 }
 
 export async function getGroupMembers(groupId: number) {
-  const db = getDb();
+  const db = (await getDb())!;
   return db.select().from(peerGroupMembers).where(and(eq(peerGroupMembers.groupId, groupId), eq(peerGroupMembers.status, "active")));
 }
 
 export async function postMessage(groupId: number, userId: number, content: string) {
-  const db = getDb();
+  const db = (await getDb())!;
 
   // Verify membership
   const [member] = await db
@@ -113,7 +113,7 @@ export async function postMessage(groupId: number, userId: number, content: stri
 }
 
 export async function getMessages(groupId: number, limit = 50) {
-  const db = getDb();
+  const db = (await getDb())!;
   return db
     .select()
     .from(peerGroupMessages)
@@ -123,7 +123,7 @@ export async function getMessages(groupId: number, limit = 50) {
 }
 
 export async function getMyGroups(userId: number) {
-  const db = getDb();
+  const db = (await getDb())!;
   const memberships = await db
     .select()
     .from(peerGroupMembers)

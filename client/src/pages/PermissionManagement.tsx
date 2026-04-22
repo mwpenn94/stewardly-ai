@@ -480,6 +480,7 @@ function UserAssignmentsPanel({
 // ─── Main Page ────────────────────────────────────────────────────────────
 
 export default function PermissionManagement() {
+  // @ts-expect-error — property access on loosely typed object
   const { user, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("locations");
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);

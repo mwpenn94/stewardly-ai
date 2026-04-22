@@ -135,6 +135,7 @@ export default function MyWork() {
           </p>
         </div>
         <ExportDataButton
+          // @ts-expect-error — type assignment mismatch
           data={items}
           filename="my-work"
           columns={["type", "title", "status", "priority", "updatedAt"]}

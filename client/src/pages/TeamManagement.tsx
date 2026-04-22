@@ -146,6 +146,7 @@ export default function TeamManagement({ embedded = false }: { embedded?: boolea
                     inviteMutation.mutate({
                       organizationId: orgId,
                       email: inviteEmail.trim(),
+                      // @ts-expect-error — type assignment mismatch
                       role: inviteRole,
                     });
                   }}

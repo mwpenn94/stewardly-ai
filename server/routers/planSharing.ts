@@ -25,7 +25,7 @@ export const planSharingRouter = router({
       expiresInDays: z.number().min(1).max(365).default(30),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       // Per-user shared link count limit
       const MAX_SHARED_LINKS_PER_USER = 20;
       const existing = await db
@@ -67,7 +67,7 @@ export const planSharingRouter = router({
   getShare: publicProcedure
     .input(z.object({ token: z.string().min(1) }))
     .query(async ({ input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [row] = await db
         .select()
         .from(sharedLinks)
@@ -110,7 +110,7 @@ export const planSharingRouter = router({
 
   /** List my shared links */
   myShares: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
+    const db = (await getDb())!;
     const rows = await db
       .select({
         id: sharedLinks.id,
@@ -147,7 +147,7 @@ export const planSharingRouter = router({
       expiresInDays: z.number().min(1).max(365),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const newExpiry = new Date(Date.now() + input.expiresInDays * 86_400_000);
       await db
         .update(sharedLinks)
@@ -166,7 +166,7 @@ export const planSharingRouter = router({
   revokeShare: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       // Set maxViews to 0 to effectively revoke
       await db
         .update(sharedLinks)

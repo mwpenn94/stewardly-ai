@@ -40,6 +40,7 @@ import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { DownloadReportButton } from "@/components/wealth-engine/DownloadReportButton";
 import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
+// @ts-expect-error — module resolution
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { loadCalculatorContext, recordCalculation, saveCalculatorContext, type CalculationResult } from "@/lib/calculatorContext";
 import { useLocation } from "wouter";

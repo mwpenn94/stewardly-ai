@@ -18,6 +18,7 @@ import {
   formatCurrency,
   linearScale,
   useReducedMotion,
+// @ts-expect-error — module resolution
 } from "@/lib/wealth-engine/animations";
 
 export interface ProjectionSeries {

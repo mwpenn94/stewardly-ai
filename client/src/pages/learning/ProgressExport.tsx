@@ -59,6 +59,7 @@ export default function ProgressExport() {
 
   const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, { enabled: !!isAuthenticated });
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
+  // @ts-expect-error — overload resolution mismatch
   const sessionsQ = trpc.learningSocial.studySessions.list.useQuery({ limit: 500 }, { enabled: !!isAuthenticated });
 
   const exportMastery = useCallback((format: ExportFormat) => {

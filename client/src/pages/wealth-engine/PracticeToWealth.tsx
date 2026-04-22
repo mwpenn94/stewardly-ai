@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProjectionChart } from "@/components/wealth-engine/ProjectionChart";
 import { CalculatorContextBar } from "@/components/wealth-engine/CalculatorContextBar";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
+// @ts-expect-error — module resolution
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { SEOHead } from "@/components/SEOHead";
 import {

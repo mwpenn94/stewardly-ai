@@ -168,10 +168,10 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: "Total Endpoints", value: stats.total ?? webhooks?.length ?? 0 },
-            { label: "Active", value: stats.active ?? 0 },
-            { label: "Events (24h)", value: stats.eventsLast24h ?? 0 },
-            { label: "Success Rate", value: `${stats.successRate ?? 100}%` },
+            { label: "Total Endpoints", value: (stats as any).totalWebhooks ?? webhooks?.length ?? 0 },
+            { label: "Active", value: (stats as any).active ?? 0 },
+            { label: "Events (24h)", value: (stats as any).eventsLast24h ?? 0 },
+            { label: "Success Rate", value: `${(stats as any).successRate ?? 100}%` },
           ].map((s) => (
             <Card key={s.label}>
               <CardContent className="p-4 text-center">
@@ -211,10 +211,10 @@ export default function WebhookManager({ embedded = false }: { embedded?: boolea
                       <Button variant="ghost" size="icon" aria-label="Copy URL" className="h-7 w-7" onClick={() => copyUrl(wh)}>
                         <Copy className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon" aria-label="Toggle" className="h-7 w-7" onClick={() => toggleMut.mutate({ id: wh.id })}>
+                      <Button variant="ghost" size="icon" aria-label="Toggle" className="h-7 w-7" onClick={() => toggleMut.mutate({ webhookId: String(wh.id), active: wh.active === false })}>
                         {wh.active !== false ? <ToggleRight className="h-4 w-4 text-emerald-400" /> : <ToggleLeft className="h-4 w-4" />}
                       </Button>
-                      <Button variant="ghost" size="icon" aria-label="Delete" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Delete this webhook?")) deleteMut.mutate({ id: wh.id }); }}>
+                      <Button variant="ghost" size="icon" aria-label="Delete" className="h-7 w-7 text-destructive" onClick={() => { if (confirm("Delete this webhook?")) deleteMut.mutate({ webhookId: String(wh.id) }); }}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>

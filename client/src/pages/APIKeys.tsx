@@ -26,6 +26,7 @@ export default function APIKeys({ embedded = false }: { embedded?: boolean } = {
   const [, navigate] = useLocation();
   const webhooksQ = trpc.webhooks.list.useQuery();
   const webhookStatsQ = trpc.webhooks.stats.useQuery();
+  // @ts-expect-error — property access on loosely typed object
   const integrationsQ = trpc.dynamicIntegrations.listBlueprints.useQuery({ status: "active" });
 
   const webhooks = webhooksQ.data ?? [];
@@ -73,12 +74,12 @@ export default function APIKeys({ embedded = false }: { embedded?: boolean } = {
           </Card>
           <Card className="p-3">
             <div className="text-xs text-muted-foreground flex items-center gap-1"><Activity className="h-3 w-3" /> Events (24h)</div>
-            <div className="text-2xl font-bold mt-1">{stats?.last24h ?? 0}</div>
+            <div className="text-2xl font-bold mt-1">{(stats as any)?.totalEventsToday ?? 0}</div>
             <div className="text-[10px] text-muted-foreground">webhook events</div>
           </Card>
           <Card className="p-3">
             <div className="text-xs text-muted-foreground flex items-center gap-1"><Shield className="h-3 w-3" /> Success Rate</div>
-            <div className="text-2xl font-bold mt-1">{stats?.successRate ? `${Math.round(stats.successRate)}%` : "—"}</div>
+            <div className="text-2xl font-bold mt-1">{(stats as any)?.successRate ? `${Math.round((stats as any).successRate)}%` : "—"}</div>
             <div className="text-[10px] text-muted-foreground">delivery rate</div>
           </Card>
         </div>

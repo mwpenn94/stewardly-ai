@@ -14,7 +14,7 @@ export async function issueCeCredit(params: {
   issuer?: string;
   notes?: string;
 }) {
-  const db = getDb();
+  const db = (await getDb())!;
   const [existing] = await db
     .select()
     .from(ceCredits)
@@ -40,7 +40,7 @@ export async function issueCeCredit(params: {
 }
 
 export async function revokeCeCredit(creditId: number, reason: string) {
-  const db = getDb();
+  const db = (await getDb())!;
   await db
     .update(ceCredits)
     .set({ status: "revoked", notes: reason })
@@ -49,7 +49,7 @@ export async function revokeCeCredit(creditId: number, reason: string) {
 }
 
 export async function listUserCredits(userId: number) {
-  const db = getDb();
+  const db = (await getDb())!;
   return db
     .select()
     .from(ceCredits)
@@ -58,7 +58,7 @@ export async function listUserCredits(userId: number) {
 }
 
 export async function getCreditSummary(userId: number) {
-  const db = getDb();
+  const db = (await getDb())!;
   const credits = await db
     .select()
     .from(ceCredits)
@@ -73,7 +73,7 @@ export async function getCreditSummary(userId: number) {
 }
 
 export async function verifyCeCredit(creditId: number) {
-  const db = getDb();
+  const db = (await getDb())!;
   const [credit] = await db
     .select()
     .from(ceCredits)

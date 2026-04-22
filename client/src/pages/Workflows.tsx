@@ -340,11 +340,11 @@ export default function Workflows() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {instancesQ.isError && (
+        {instancesQuery.isError && (
           <div className="mb-4 flex items-center gap-2 text-sm p-3 rounded-lg border border-destructive/30 bg-destructive/5">
             <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
             <span>Failed to load saved workflows.</span>
-            <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => instancesQ.refetch()}>Retry</Button>
+            <Button variant="ghost" size="sm" className="ml-auto text-xs" onClick={() => instancesQuery.refetch()}>Retry</Button>
           </div>
         )}
         {activeWorkflow && activeTemplate ? (

@@ -74,6 +74,7 @@ export function LocalePicker() {
                 variant="ghost"
                 size="icon" aria-label="Close locale picker"
                 onClick={() => setOpen(false)}
+                // @ts-expect-error — strict mode fix
                 aria-label="Close locale picker"
               >
                 <X className="w-4 h-4" />

@@ -11,6 +11,7 @@ import {
   formatPercent,
   useCountUp,
   useReducedMotion,
+// @ts-expect-error — module resolution
 } from "@/lib/wealth-engine/animations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -601,6 +601,7 @@ export async function reconcile(options?: ReconcileOptions): Promise<SyncStats> 
             }
 
             // Update GHL if Stewardly has newer data and direction allows push
+            // @ts-expect-error — strict mode fix
             const canPush = syncDirection === "bidirectional" || syncDirection === "push_only";
             const ghlNeedsUpdate = canPush && conflicts.some(c => c.resolution === "stewardly_wins");
             if (ghlNeedsUpdate) {

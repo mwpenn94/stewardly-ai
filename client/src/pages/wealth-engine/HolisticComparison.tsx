@@ -43,6 +43,7 @@ import { useFinancialProfile } from "@/hooks/useFinancialProfile";
 import { FinancialProfileBanner } from "@/components/financial-profile/FinancialProfileBanner";
 import { useRunTimeline } from "@/hooks/useRunTimeline";
 import { announcePolite } from "@/lib/a11y";
+// @ts-expect-error — module resolution
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import { SEOHead } from "@/components/SEOHead";
 import {

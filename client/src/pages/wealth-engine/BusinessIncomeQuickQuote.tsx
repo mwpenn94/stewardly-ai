@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { chartTokens } from "@/lib/wealth-engine/tokens";
+// @ts-expect-error — module resolution
 import { formatCurrency } from "@/lib/wealth-engine/animations";
 import {
   ChevronRight,

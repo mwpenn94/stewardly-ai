@@ -25,6 +25,7 @@ type FilingStatus = typeof FILING_STATUSES[number]["value"];
 
 export default function TaxProjector() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   
   const [tab, setTab] = useState("single-year");
 
@@ -152,7 +153,7 @@ export default function TaxProjector() {
                 <Select value={stateCode} onValueChange={setStateCode}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(supportedStatesQ.data as string[] || ["CA", "NY", "IL", "TX"]).map((s: string) => (
+                    {(supportedStatesQ.data as unknown as string[] || ["CA", "NY", "IL", "TX"]).map((s: string) => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>

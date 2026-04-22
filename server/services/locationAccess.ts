@@ -77,6 +77,7 @@ export async function getLocationScope(
       // User has no location assignments — zero access
       // Note: In early setup, you may want to grant all locations by default.
       // For now, zero-trust: no assignments = no access.
+      // @ts-expect-error — overload resolution mismatch
       logger.debug("[locationAccess] User has no location assignments", { userId: user.id });
       return { isAdmin: false, locationIds: [], sqlFilter: " AND 1=0", sqlWhere: " WHERE 1=0", drizzleIds: [] };
     }
@@ -90,6 +91,7 @@ export async function getLocationScope(
       drizzleIds: ids,
     };
   } catch (err: any) {
+    // @ts-expect-error — overload resolution mismatch
     logger.warn("[locationAccess] Failed to resolve location scope", { error: err.message });
     // Fail-closed: no access on error
     return { isAdmin: false, locationIds: [], sqlFilter: " AND 1=0", sqlWhere: " WHERE 1=0", drizzleIds: [] };

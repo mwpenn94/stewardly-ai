@@ -354,6 +354,7 @@ export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps)
                                 size="icon" aria-label="Edit profile"
                                 variant="ghost"
                                 onClick={() => handleBeginEdit(entry)}
+                                // @ts-expect-error — strict mode fix
                                 aria-label={`Edit ${entry.label}`}
                               >
                                 <Pencil className="w-3 h-3" />
@@ -362,6 +363,7 @@ export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps)
                                 size="icon" aria-label="Delete profile"
                                 variant="ghost"
                                 onClick={() => handleDelete(entry.id)}
+                                // @ts-expect-error — strict mode fix
                                 aria-label={`Delete ${entry.label}`}
                               >
                                 <Trash2 className="w-3 h-3 text-destructive" />

@@ -31,7 +31,7 @@ interface TranscriptSegment {
  * Must be called before recording begins.
  */
 export async function recordConsent(consent: ConsentRecord): Promise<{ id: string }> {
-  const db = getDb();
+  const db = (await getDb())!;
   const consentId = `consent-${nanoid(12)}`;
 
   await db.execute(sql`
@@ -60,7 +60,7 @@ export async function checkAllConsented(sessionId: number): Promise<{
   pending: string[];
   denied: string[];
 }> {
-  const db = getDb();
+  const db = (await getDb())!;
   const rows = await db.execute(sql`
     SELECT participant_id, granted FROM office_hours_consent WHERE session_id = ${sessionId}
   `);
@@ -68,6 +68,7 @@ export async function checkAllConsented(sessionId: number): Promise<{
   const pending: string[] = [];
   const denied: string[] = [];
 
+  // @ts-expect-error — property access on loosely typed object
   for (const row of rows.rows as any[]) {
     if (!row.granted) {
       denied.push(row.participant_id);
@@ -109,7 +110,7 @@ export async function persistTranscript(
   ]);
 
   // Record in database
-  const db = getDb();
+  const db = (await getDb())!;
   await db.execute(sql`
     INSERT INTO office_hours_transcripts 
     (transcript_id, session_id, text_url, json_url, duration_ms, segment_count, created_at) 

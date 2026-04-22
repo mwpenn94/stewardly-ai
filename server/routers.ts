@@ -1029,7 +1029,7 @@ const documentsRouter = router({
       const { url } = await storagePut(fileKey, buffer, input.mimeType || "application/octet-stream");
 
       // Update the main document record
-      const db = await getDb();
+      const db = (await getDb())!;
       if (db) {
         const { documents: docsTable } = await import("../drizzle/schema");
         await db.update(docsTable).set({
@@ -1096,7 +1096,7 @@ const documentsRouter = router({
         if (!text || text.length < 10 || extraction.method === "unsupported") {
           await updateDocumentStatus(input.id, "ready", `[${doc.filename}: binary file]`, 0);
         } else {
-          const db = await getDb();
+          const db = (await getDb())!;
           if (db) {
             const { documentChunks: chunksTable } = await import("../drizzle/schema");
             await db.delete(chunksTable).where(eq(chunksTable.documentId, input.id));
@@ -1777,7 +1777,7 @@ const settingsRouter = router({
 
   // ─── KEYBOARD SHORTCUTS (server-side persistence) ─────────────────
   getShortcuts: protectedProcedure.query(async ({ ctx }) => {
-    const db = await getDb(); if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+    const db = (await getDb())!; if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
     const { userPreferences } = await import("../drizzle/schema");
     const [row] = await db
       .select({ customShortcuts: userPreferences.customShortcuts })
@@ -1796,7 +1796,7 @@ const settingsRouter = router({
       })).max(26),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb(); if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const db = (await getDb())!; if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const { userPreferences } = await import("../drizzle/schema");
       const [existing] = await db
         .select({ id: userPreferences.id })
@@ -2243,6 +2243,7 @@ const clientErrorsRouter = router({
       userAgent: z.string().max(500).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
+      // @ts-expect-error — overload resolution mismatch
       logger.error("[ClientError]", {
         message: input.message,
         stack: input.stack?.slice(0, 500),

@@ -273,7 +273,7 @@ function AgentCard({ agent, onSelect, onLaunch, onStop, isLaunching }: {
         <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {agent.totalRuns} runs</span>
           <span className="flex items-center gap-1"><DollarSign className="h-3 w-3" /> ${agent.totalCost?.toFixed(2) || "0.00"}</span>
-          {agent.config?.complianceAware && <Shield className="h-3 w-3 text-green-400" title="Compliance aware" />}
+          {agent.config?.complianceAware && <span title="Compliance aware"><Shield className="h-3 w-3 text-green-400" /></span>}
         </div>
         <div className="flex gap-1.5">
           {agent.status !== "active" ? (
@@ -568,6 +568,7 @@ function RunDetailView({ agentId, runActionId, onBack }: {
     return rows
       .filter((r: any) => {
         const sp = parseStepProgress(r.actionType);
+        // @ts-expect-error — strict mode fix
         return sp && r.createdAt <= targetTime && r.createdAt >= targetTime - 300000;
       })
       .sort((a: any, b: any) => a.createdAt - b.createdAt);
@@ -613,16 +614,16 @@ function RunDetailView({ agentId, runActionId, onBack }: {
                 </div>
                 <Separator />
                 <div className="flex justify-between"><span className="text-muted-foreground">Compliance Tier</span>
-                  <span className={COMPLIANCE_TIERS[targetAction.complianceTier || 1]?.color || ""}>
-                    {COMPLIANCE_TIERS[targetAction.complianceTier || 1]?.label || `Tier ${targetAction.complianceTier}`}
+                  <span className={COMPLIANCE_TIERS[(targetAction as any).complianceTier || 1]?.color || ""}>
+                    {COMPLIANCE_TIERS[(targetAction as any).complianceTier || 1]?.label || `Tier ${(targetAction as any).complianceTier}`}
                   </span>
                 </div>
-                {targetAction.gateTriggered && (
+                {(targetAction as any).gateTriggered && (
                   <>
                     <Separator />
                     <div className="flex justify-between"><span className="text-muted-foreground">Gate Result</span>
-                      <Badge variant={targetAction.gateResult === "approved" ? "default" : "destructive"} className="text-[10px]">
-                        {targetAction.gateResult}
+                      <Badge variant={(targetAction as any).gateResult === "approved" ? "default" : "destructive"} className="text-[10px]">
+                        {(targetAction as any).gateResult}
                       </Badge>
                     </div>
                   </>
@@ -633,10 +634,10 @@ function RunDetailView({ agentId, runActionId, onBack }: {
                 <div className="flex justify-between"><span className="text-muted-foreground">Time</span>
                   <span>{new Date(targetAction.createdAt).toLocaleString()}</span>
                 </div>
-                {targetAction.targetSystem && (
+                {(targetAction as any).targetSystem && (
                   <>
                     <Separator />
-                    <div className="flex justify-between"><span className="text-muted-foreground">Target</span><span>{targetAction.targetSystem}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Target</span><span>{(targetAction as any).targetSystem}</span></div>
                   </>
                 )}
               </>

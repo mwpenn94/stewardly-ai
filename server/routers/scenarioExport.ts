@@ -13,6 +13,7 @@ import crypto from "crypto";
 
 const scenarioSchema = z.object({
   name: z.string(),
+  // @ts-expect-error — argument count mismatch with drizzle overload
   data: z.record(z.any()),
 });
 

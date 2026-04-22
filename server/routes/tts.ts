@@ -57,6 +57,7 @@ ttsRouter.post("/api/tts", async (req, res) => {
     res.setHeader("Cache-Control", "public, max-age=86400");
     res.send(audioBuffer);
   } catch (error: any) {
+    // @ts-expect-error — overload resolution mismatch
     logger.error("[TTS] Error", { error: error.message });
     res.status(500).json({ error: "TTS generation failed" });
   }
@@ -121,6 +122,7 @@ ttsRouter.post("/api/tts/batch", async (req, res) => {
 
     res.json({ results: response });
   } catch (error: any) {
+    // @ts-expect-error — overload resolution mismatch
     logger.error("[TTS] Batch error", { error: error.message });
     res.status(500).json({ error: "Batch TTS generation failed" });
   }

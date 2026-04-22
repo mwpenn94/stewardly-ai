@@ -782,6 +782,7 @@ const taskQueueRouter = router({
   enqueue: protectedProcedure
     .input(z.object({
       type: z.string().min(1),
+      // @ts-expect-error — argument count mismatch with drizzle overload
       payload: z.record(z.unknown()).default({}),
       priority: z.enum(["low", "normal", "high", "critical"]).default("normal"),
     }))

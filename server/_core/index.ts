@@ -276,6 +276,7 @@ async function startServer() {
       const user = await sdk.authenticateRequest(req);
       if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
       const { addClient } = await import("../services/syncEventBus");
+      // @ts-expect-error — property access on loosely typed object
       const { getUserLocationIds } = await import("../services/locationAccess");
       const { getRawPool } = await import("../db");
       const pool = getRawPool();

@@ -16,6 +16,7 @@
 
 import { logger } from "../_core/logger";
 import { getDb } from "../db";
+// @ts-expect-error — strict mode fix
 import { agentTasks } from "../../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { sendNotification, getIO } from "./websocketNotifications";

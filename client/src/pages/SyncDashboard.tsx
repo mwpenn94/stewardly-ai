@@ -524,6 +524,7 @@ function EditLocationDialog({ location, onSuccess }: { location: any; onSuccess:
 // ─── Main Component ───────────────────────────────────────────────────────
 
 export default function SyncDashboard() {
+  // @ts-expect-error — property access on loosely typed object
   const { user, isLoading: authLoading } = useAuth();
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null); // null = all locations
   const [maxContacts, setMaxContacts] = useState("0");

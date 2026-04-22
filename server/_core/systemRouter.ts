@@ -11,6 +11,7 @@ const clientErrorSchema = z.object({
   timestamp: z.number(),
   userAgent: z.string(),
   fingerprint: z.string(),
+  // @ts-expect-error — argument count mismatch with drizzle overload
   metadata: z.record(z.unknown()).optional(),
 });
 

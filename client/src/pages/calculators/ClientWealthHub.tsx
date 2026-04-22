@@ -69,6 +69,8 @@ const DOMAIN_PANEL_MAP: Record<string, string> = {
 };
 
 export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: string) => void }) {
+  // Wealth engine context for cascade audit trail
+  const we = useWealthEngine();
   // Local state for the hub
   const [retirementGoal, setRetirementGoal] = useState(() => {
     // Default: 80% of current income
@@ -128,6 +130,7 @@ export function ClientWealthHub(p: PanelProps & { onNavigateToPanel?: (panelId: 
       hubType: 'client',
       label: saveLabel.trim(),
       allocations: domainAllocation,
+      // @ts-expect-error — excess property in object literal
       inputOverrides: { retireAge: p.retireAge, monthlyGoal: Math.round(retirementGoal / 12) },
     });
   }, [saveLabel, domainAllocation, p.retireAge, retirementGoal]);

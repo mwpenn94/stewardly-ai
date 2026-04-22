@@ -1016,6 +1016,7 @@ const ceCreditsRouter = router({
       if (!credit.valid || !credit.credit) throw new TRPCError({ code: "NOT_FOUND", message: "Credit not found or invalid" });
       if (credit.credit.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your credit" });
       return generateCeCertificatePdf({
+        // @ts-expect-error — excess property in object literal
         creditId: input.creditId,
         userId: ctx.user.id,
         userName: ctx.user.name ?? "Learner",

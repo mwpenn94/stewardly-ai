@@ -18,7 +18,7 @@ export const scenariosRouter = router({
       calculatorType: z.string().default("wealth_engine"),
     }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const rows = await db
         .select()
         .from(calculatorScenarios)
@@ -54,7 +54,7 @@ export const scenariosRouter = router({
       resultsJson: z.any(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       // Per-user scenario count limit
       const MAX_SCENARIOS_PER_USER = 50;
       const existing = await db
@@ -83,7 +83,7 @@ export const scenariosRouter = router({
       resultsJson: z.any(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       // Fetch current version to archive
       const [existing] = await db
         .select()
@@ -132,7 +132,7 @@ export const scenariosRouter = router({
   history: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       const [row] = await db
         .select()
         .from(calculatorScenarios)
@@ -164,7 +164,7 @@ export const scenariosRouter = router({
   remove: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const db = await getDb();
+      const db = (await getDb())!;
       await db
         .delete(calculatorScenarios)
         .where(

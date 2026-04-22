@@ -122,7 +122,7 @@ export default function FinancialPlanning() {
             <p className="text-xs text-muted-foreground">Monte Carlo projections, Social Security optimization, Roth analysis, and goal tracking</p>
           </div>
         </div>
-        <ShareButton contentType="financial-plan" contentId="user-plan" title="Financial Plan" />
+        <ShareButton contentType="financial-plan" contentId="user-plan" contentTitle="Financial Plan" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">

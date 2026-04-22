@@ -47,7 +47,7 @@ export async function resolveAssumptions(
   advisorId?: number,
   teamId?: number,
 ): Promise<Record<string, { value: number; label: string; source: string; scope: string }>> {
-  const db = await getDb();
+  const db = (await getDb())!;
   
   // Start with defaults
   const resolved: Record<string, { value: number; label: string; source: string; scope: string }> = {};
@@ -98,7 +98,7 @@ export async function setAssumption(
   label?: string,
   source?: string,
 ): Promise<void> {
-  const db = await getDb();
+  const db = (await getDb())!;
   
   // Upsert: check if exists
   const existing = await db.select().from(sharedAssumptions).where(
@@ -141,7 +141,7 @@ export async function getAssumptionsForScope(
   scope: "platform" | "team" | "advisor" | "client",
   scopeEntityId?: number,
 ): Promise<Array<{ key: string; value: number; label: string; source: string }>> {
-  const db = await getDb();
+  const db = (await getDb())!;
   
   const rows = await db.select().from(sharedAssumptions).where(
     and(

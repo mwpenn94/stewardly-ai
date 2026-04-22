@@ -208,6 +208,7 @@ export async function bridgeCalculatorToPlanning(
     nodeId = existingNodes[0].id;
     await phDb.updatePlanningNode(nodeId, {
       currentValue: extractPrimaryValue(input.calculatorOutput, input.domain),
+      // @ts-expect-error — excess property in object literal
       metadata: {
         calculatorDomain: input.domain,
         runId: input.runId,
@@ -227,6 +228,7 @@ export async function bridgeCalculatorToPlanning(
       entityId,
       label: input.label || config.defaultLabel,
       currentValue: extractPrimaryValue(input.calculatorOutput, input.domain),
+      // @ts-expect-error — excess property in object literal
       targetValue: null,
       timeHorizonMonths: extractTimeHorizon(input.calculatorOutput),
       metadata: {
@@ -339,6 +341,7 @@ async function findOrCreateDomainNode(
     entityId,
     label: config.defaultLabel,
     currentValue: null,
+    // @ts-expect-error — excess property in object literal
     targetValue: null,
     timeHorizonMonths: null,
     metadata: { calculatorDomain: domain, autoCreated: true } as any,

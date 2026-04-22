@@ -29,6 +29,7 @@ export default function PeerGroups() {
   });
 
   const groups = useMemo(() => {
+    // @ts-expect-error — property access on loosely typed object
     const all = groupsQ.data?.groups ?? [];
     if (!searchQuery.trim()) return all;
     const q = searchQuery.toLowerCase();

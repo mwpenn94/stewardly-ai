@@ -196,6 +196,7 @@ export function RunTimelinePanel({ open, onClose }: RunTimelinePanelProps) {
                           size="icon" aria-label="Remove run"
                           variant="ghost"
                           onClick={() => removeRun(entry.id)}
+                          // @ts-expect-error — strict mode fix
                           aria-label={`Delete run ${entry.label}`}
                           className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                         >

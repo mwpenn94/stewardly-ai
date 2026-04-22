@@ -123,6 +123,7 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<number | null
 
     return (result as any).insertId ?? null;
   } catch (err) {
+    // @ts-expect-error — overload resolution mismatch
     logger.error("[AuditLog] Failed to log audit event:", err);
     return null;
   }

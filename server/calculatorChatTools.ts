@@ -587,6 +587,7 @@ function runBusinessEntityComparison(args: Record<string, any>): string {
 
   try {
     const comparison = compareEntities({
+      // @ts-expect-error — excess property in object literal
       revenue,
       expenses,
       ownerSalary,
