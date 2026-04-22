@@ -154,6 +154,7 @@ const Bookmarks = lazy(() => import("./pages/learning/Bookmarks"));
 const Playlists = lazy(() => import("./pages/learning/Playlists"));
 const StudyGroups = lazy(() => import("./pages/learning/StudyGroups"));
 const DiscoveryHistory = lazy(() => import("./pages/learning/DiscoveryHistory"));
+const PeerGroups = lazy(() => import("./pages/learning/PeerGroups"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
 // Comparables — competitive gap dashboard (hybrid build loop, pass 1)
 const ComparablesPage = lazy(() => import("./pages/Comparables"));
@@ -322,6 +323,7 @@ function Router() {
         <Route path="/learning/playlists" component={Playlists} />
         <Route path="/learning/groups" component={StudyGroups} />
         <Route path="/learning/discovery" component={DiscoveryHistory} />
+        <Route path="/learning/peer-groups" component={PeerGroups} />
 
         {/* Consolidated Hub Pages */}
         {/* Comparables — competitive gap dashboard (hybrid build loop pass 1) */}

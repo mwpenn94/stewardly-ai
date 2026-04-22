@@ -167,8 +167,6 @@ export default function LearningFlashcardStudy() {
     setStarted(true);
   };
 
-  if (trackQ.isLoading || flashcardsQ.isLoading) {
-
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -186,9 +184,10 @@ export default function LearningFlashcardStudy() {
     );
   }
 
+  if (trackQ.isLoading || flashcardsQ.isLoading) {
     return (
       <AppShell title="Flashcards">
-      <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
+        <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
         <div className="p-6 text-sm text-muted-foreground">Loading deck…</div>
       </AppShell>
     );

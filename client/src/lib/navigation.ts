@@ -191,6 +191,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "ListMusic", label: "Playlists", href: "/learning/playlists", minRole: "user", section: "learning" },
   { iconName: "Users", label: "Study Groups", href: "/learning/groups", minRole: "user", section: "learning" },
   { iconName: "Compass", label: "Discovery Log", href: "/learning/discovery", minRole: "user", section: "learning" },
+  { iconName: "Users2", label: "Peer Groups", href: "/learning/peer-groups", minRole: "user", section: "learning" },
 ];
 
 // ─── ADMIN section ───────────────────────────────────────────────────────────

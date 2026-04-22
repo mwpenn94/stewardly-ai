@@ -91,6 +91,9 @@ import { plaidRouter } from "./routers/plaid";
 import { sharingRouter } from "./routers/sharing";
 import { financialDataRouter } from "./routers/financialData";
 
+// ─── ASSESSMENT GUARD ──────────────────────────────────────────────
+import { isAiBlocked, recordAiAttempt } from "./services/learning/assessmentSession";
+
 // ─── CHAT ROUTER ──────────────────────────────────────────────────
 const chatRouter = router({
   /**
@@ -107,6 +110,14 @@ const chatRouter = router({
       focus: z.string().default("general,financial"),
     }))
     .mutation(async ({ ctx, input }) => {
+      // §P0-3 Assessment integrity: block AI during active graded assessment
+      if (await isAiBlocked(ctx.user.id)) {
+        await recordAiAttempt(ctx.user.id);
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "AI assistance is disabled during a graded assessment. Complete or exit the assessment first.",
+        });
+      }
       const conversation = await getConversation(input.conversationId, ctx.user.id);
       if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
 
@@ -254,6 +265,14 @@ const chatRouter = router({
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // §P0-3 Assessment integrity: block AI during active graded assessment
+      if (await isAiBlocked(ctx.user.id)) {
+        await recordAiAttempt(ctx.user.id);
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "AI assistance is disabled during a graded assessment. Complete or exit the assessment first.",
+        });
+      }
       const conversation = await getConversation(input.conversationId, ctx.user.id);
       if (!conversation) throw new TRPCError({ code: "NOT_FOUND", message: "Conversation not found" });
 

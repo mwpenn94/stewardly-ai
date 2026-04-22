@@ -74,6 +74,9 @@ import {
   getMessages as getGroupMessages,
   getMyGroups,
 } from "../services/learning/peerGroups";
+import { generateCeCertificatePdf } from "../services/learning/ceCertificatePdf";
+import { prescreenContent, isAdvisorOrAbove } from "../services/learning/compliancePrescreening";
+import { recordConsent, checkAllConsented, persistTranscript } from "../services/learning/officeHoursConsent";
 import {
   getUserMastery,
   upsertMastery,
@@ -935,6 +938,46 @@ const officeHoursRouter = router({
     .query(async ({ input }) => {
       return getOfficeHourRegistrations(input.officeHourId);
     }),
+  consent: protectedProcedure
+    .input(z.object({
+      sessionId: z.number().int().positive(),
+      consentType: z.enum(["recording", "transcript", "both"]).default("both"),
+      granted: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return recordConsent({
+        sessionId: input.sessionId,
+        participantId: String(ctx.user.id),
+        consentType: input.consentType,
+        granted: input.granted,
+        timestamp: Date.now(),
+      });
+    }),
+  checkConsent: adminProcedure
+    .input(z.object({ sessionId: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      return checkAllConsented(input.sessionId);
+    }),
+  saveTranscript: adminProcedure
+    .input(z.object({
+      sessionId: z.number().int().positive(),
+      segments: z.array(z.object({
+        speaker: z.string(),
+        text: z.string(),
+        startMs: z.number(),
+        endMs: z.number(),
+      })),
+      duration: z.number().int().positive(),
+      participantCount: z.number().int().positive(),
+      topic: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return persistTranscript(input.sessionId, input.segments, {
+        duration: input.duration,
+        participantCount: input.participantCount,
+        topic: input.topic,
+      });
+    }),
 });
 
 // ── CE Credits subrouter (P1-3) ─────────────────────────────────────────
@@ -965,6 +1008,22 @@ const ceCreditsRouter = router({
     .input(z.object({ creditId: z.number().int() }))
     .query(async ({ input }) => {
       return verifyCeCredit(input.creditId);
+    }),
+  certificate: protectedProcedure
+    .input(z.object({ creditId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const credit = await verifyCeCredit(input.creditId);
+      if (!credit.valid || !credit.credit) throw new TRPCError({ code: "NOT_FOUND", message: "Credit not found or invalid" });
+      if (credit.credit.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN", message: "Not your credit" });
+      return generateCeCertificatePdf({
+        creditId: input.creditId,
+        userId: ctx.user.id,
+        userName: ctx.user.name ?? "Learner",
+        trackTitle: `Track #${credit.credit.trackId}`,
+        creditsEarned: parseFloat(credit.credit.creditsEarned),
+        issuedAt: credit.credit.issuedAt?.toISOString() ?? new Date().toISOString(),
+        issuer: credit.credit.issuer ?? "Stewardly Learning Platform",
+      });
     }),
 });
 
@@ -1015,6 +1074,12 @@ const peerGroupsRouter = router({
   myGroups: protectedProcedure.query(async ({ ctx }) => {
     return getMyGroups(ctx.user.id);
   }),
+  prescreen: protectedProcedure
+    .input(z.object({ content: z.string().min(1).max(5000) }))
+    .query(async ({ ctx, input }) => {
+      const result = prescreenContent(input.content);
+      return { ...result, isAdvisor: isAdvisorOrAbove(ctx.user.role ?? "user") };
+    }),
 });
 
 // ── Root learning router ─────────────────────────────────────────────────
