@@ -8098,3 +8098,4 @@
 - [x] P34-6: Write vitest tests for polling service and health dashboard — 21/21 passing (state management, poll cycle, scheduled handler, config validation, route/nav registration, scheduler integration, health status logic)
 - [x] P34-7: 3 consecutive clean LVUA passes — server 200, webhook health 200, 75/75 tests across 4 suites, all files verified, 7 tRPC procedures confirmed
 - [x] P34-FINAL: Update todo.md, save checkpoint
+- [x] P34-HOTFIX: Fix deployment build failure — replaced non-existent `@/hooks/use-toast` import in LocationHealth.tsx with `sonner` toast (matching all other pages). Build verified locally (45.95s, 0 errors).

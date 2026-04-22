@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database, Heart,
   Loader2, MapPin, RefreshCw, Server, Shield, Signal, TrendingDown,
@@ -41,17 +41,16 @@ function SyncLagDisplay({ minutes }: { minutes: number | null }) {
 
 // ─── Polling Status Card ──────────────────────────────────────────────
 function PollingStatusCard() {
-  const { toast } = useToast();
   const pollingStatus = trpc.integrations.getPollingStatus.useQuery(undefined, { refetchInterval: 30000 });
   const triggerPoll = trpc.integrations.triggerPollCycle.useMutation({
     onSuccess: (result) => {
-      toast({ title: "Poll cycle complete", description: `Processed ${result.locationsPolled} location(s), ${result.contactsFound} contact(s) found, ${result.changesDetected} change(s) detected` });
+      toast.success(`Poll cycle complete: ${result.locationsPolled} location(s), ${result.contactsFound} contact(s), ${result.changesDetected} change(s)`);
       pollingStatus.refetch();
     },
-    onError: (err) => toast({ title: "Poll failed", description: err.message, variant: "destructive" }),
+    onError: (err) => toast.error(`Poll failed: ${err.message}`),
   });
   const setConfig = trpc.integrations.setPollingConfig.useMutation({
-    onSuccess: () => { pollingStatus.refetch(); toast({ title: "Polling config updated" }); },
+    onSuccess: () => { pollingStatus.refetch(); toast.success("Polling config updated"); },
   });
 
   const ps = pollingStatus.data;
@@ -150,7 +149,6 @@ function PollingStatusCard() {
 
 // ─── Main Component ───────────────────────────────────────────────────
 export default function LocationHealth() {
-  const { toast } = useToast();
   const [historyDays, setHistoryDays] = useState(7);
 
   const healthQuery = trpc.integrations.getLocationHealth.useQuery(undefined, { refetchInterval: 30000 });
