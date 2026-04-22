@@ -631,6 +631,16 @@ async function startServer() {
       });
       startCronManager();
       logger.info({ operation: "cronManager" }, "Cron manager started with platform jobs");
+      // Initialize CRM auto-sync jobs for all connected platforms
+      import("../services/crmAutoSync").then(({ initCRMAutoSync }) => {
+        initCRMAutoSync().then(() => {
+          logger.info({ operation: "crmAutoSync" }, "CRM auto-sync initialized");
+        }).catch((err: any) => {
+          logger.warn({ operation: "crmAutoSync", err: String(err) }, "CRM auto-sync init failed (non-fatal)");
+        });
+      }).catch((err: any) => {
+        logger.warn({ operation: "crmAutoSync", err: String(err) }, "CRM auto-sync import failed (non-fatal)");
+      });
     }).catch((err) =>
       logger.warn({ operation: "cronManager", err: String(err) }, "Cron manager startup failed (non-fatal)"),
     );

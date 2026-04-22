@@ -40,6 +40,7 @@ export interface CRMSyncResult {
   activitiesSynced: number;
   errors: Array<{ entity: string; error: string }>;
   lastSyncAt: number;
+  error?: string;
 }
 
 export interface CRMAdapter {
@@ -770,6 +771,9 @@ export class WorkableAdapter implements CRMAdapter {
 
 // ─── Adapter Factory ────────────────────────────────────────────────────
 export function getCRMAdapter(provider: string): CRMAdapter {
+  if (!provider || typeof provider !== 'string') {
+    throw new Error(`Unsupported CRM provider: ${provider}`);
+  }
   switch (provider.toLowerCase()) {
     case "wealthbox": return new WealthboxAdapter();
     case "redtail": return new RedtailAdapter();
@@ -870,7 +874,22 @@ export async function syncCRM(
   direction: "push" | "pull" | "bidirectional",
   lastSyncAt?: number,
 ): Promise<CRMSyncResult> {
-  const adapter = getCRMAdapter(provider);
+  let adapter: CRMAdapter;
+  try {
+    adapter = getCRMAdapter(provider);
+  } catch (err: any) {
+    return {
+      provider: typeof provider === 'string' ? provider : String(provider),
+      direction: direction === "bidirectional" ? "pull" : direction,
+      contactsSynced: 0,
+      contactsCreated: 0,
+      contactsUpdated: 0,
+      activitiesSynced: 0,
+      errors: [{ entity: "adapter", error: err.message }],
+      lastSyncAt: Date.now(),
+      error: err.message,
+    };
+  }
   const result: CRMSyncResult = {
     provider,
     direction: direction === "bidirectional" ? "pull" : direction,

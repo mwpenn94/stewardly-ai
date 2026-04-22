@@ -28,7 +28,8 @@ import {
   ArrowLeft, RefreshCw, CheckCircle2, AlertTriangle, Clock, Database,
   ArrowLeftRight, Settings2, History, Loader2, Webhook, Activity,
   TrendingUp, Zap, Globe, Radio, XCircle, Inbox, Upload, Download,
-  ArrowUpRight, Copy, CheckCheck, Link2,
+  ArrowUpRight, Copy, CheckCheck, Link2, Sparkles, Timer, Info,
+  ChevronDown, ChevronRight, Power, PlayCircle, PauseCircle,
 } from "lucide-react";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
@@ -95,6 +96,9 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
   const [direction, setDirection] = useState<"pull" | "push" | "bidirectional">("pull");
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
+  const [enrichEmail, setEnrichEmail] = useState("");
+  const [enrichName, setEnrichName] = useState("");
+  const [expandedInstructions, setExpandedInstructions] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -155,6 +159,48 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
       utils.crm.outboundSyncPreview.invalidate();
     },
     onError: (e) => toast.error(`Outbound sync failed: ${e.message}`),
+  });
+
+  // Auto-sync status
+  const autoSyncStatus = trpc.crm.autoSyncStatus.useQuery(undefined, {
+    enabled: isAuthenticated && isAdmin,
+    refetchInterval: 60000,
+  });
+
+  // Connection instructions
+  const connectionInstructions = trpc.crm.connectionInstructions.useQuery(undefined, {
+    enabled: isAuthenticated && isAdmin,
+    staleTime: 300000,
+  });
+
+  // LinkedIn enrichment mutation
+  const linkedinEnrichMut = trpc.crm.linkedinEnrich.useMutation({
+    onSuccess: (r) => {
+      if (r.enriched) {
+        toast.success(`LinkedIn enrichment successful — ${r.profileUrl || 'profile found'}`);
+      } else {
+        toast.info(r.error || 'No LinkedIn profile found');
+      }
+    },
+    onError: (e) => toast.error(`Enrichment failed: ${e.message}`),
+  });
+
+  // Auto-sync toggle mutation
+  const toggleAutoSyncMut = trpc.crm.toggleAutoSync.useMutation({
+    onSuccess: (r) => {
+      toast.success(r.success ? 'Auto-sync toggled' : 'Toggle failed');
+      utils.crm.autoSyncStatus.invalidate();
+    },
+    onError: (e) => toast.error(`Toggle failed: ${e.message}`),
+  });
+
+  // Refresh auto-sync mutation
+  const refreshAutoSyncMut = trpc.crm.refreshAutoSync.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Auto-sync refreshed — ${r.jobsRegistered} jobs registered`);
+      utils.crm.autoSyncStatus.invalidate();
+    },
+    onError: (e) => toast.error(`Refresh failed: ${e.message}`),
   });
 
   const registerWebhookMut = trpc.crm.registerWebhooks.useMutation({

@@ -8537,3 +8537,26 @@
 - [x] 73/73 vitest tests passing across 3 test files
 - [ ] GHL webhook manual registration in GHL Settings → Webhooks (browser unavailable — user can do manually)
 - [ ] Connect Dripify, SMS-iT, Workable, LinkedIn API credentials (user action needed)
+
+## Pass 64d-ext2 — Next Steps Execution
+- [ ] Register GHL webhook URL in GHL Settings via browser
+- [ ] Research and connect Dripify API credentials
+- [ ] Research and connect SMS-iT API credentials
+- [ ] Research and connect Workable API credentials
+- [ ] Research and connect LinkedIn/Sales Navigator API credentials
+- [x] Build scheduled auto-sync cron job for incremental pull syncs
+- [x] Add sync scheduler configuration UI
+- [x] Write vitest tests for auto-sync scheduler
+- [ ] Verify all webhook registrations are active
+
+## Pass 64d-ext2 — Completed Items
+- [x] LinkedIn enrichment service (enrichLead, batchEnrichLeads, searchLinkedInPeople, getLinkedInProfile, getCompanyDetails)
+- [x] CRM auto-sync scheduler (initCRMAutoSync, registerSyncJobForConnection, unregisterSyncJobForConnection, getAutoSyncStatus)
+- [x] GHL sync job registered (every 5 min) + LinkedIn enrichment job (every 60 min)
+- [x] New tRPC procedures: crm.autoSyncStatus, crm.toggleAutoSync, crm.refreshAutoSync, crm.connectionInstructions (public), crm.linkedinEnrich, crm.linkedinEnrichBatch
+- [x] initCRMAutoSync hooked into server startup
+- [x] getCRMAdapter guard for non-string/null provider input
+- [x] syncCRM graceful error handling for unsupported providers (returns error result instead of throwing)
+- [x] CRMSyncResult interface updated with optional error field
+- [x] 28/28 ext2 autosync tests passing
+- [x] 101/101 total tests passing across all 4 Pass 64d test files

@@ -24,7 +24,11 @@ describe("crmAdapter.syncCRM", () => {
 
   it("handles unknown provider slug gracefully", async () => {
     const mod = await import("./services/crmAdapter");
-    await expect(mod.syncCRM("nonexistent_provider", {}, "pull")).rejects.toThrow("Unsupported CRM provider");
+    // syncCRM now returns an error result instead of throwing
+    const result = await mod.syncCRM("nonexistent_provider", {}, "pull");
+    expect(result).toHaveProperty("error");
+    expect(result.error).toContain("Unsupported CRM provider");
+    expect(result.contactsSynced).toBe(0);
   });
 });
 

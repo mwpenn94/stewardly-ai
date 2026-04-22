@@ -3,7 +3,7 @@
  * esignature, pdfGenerator, creditBureau, crmAdapter
  */
 import { z } from "zod";
-import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 // ─── eSignature Router ────────────────────────────────────────────────────
@@ -408,4 +408,216 @@ export const crmRouter = router({
         syncedLeads: Number(totalLeads) - Number(unsyncedLeads),
       };
     }),
+
+  /** LinkedIn enrichment — enrich a lead with LinkedIn profile data via Manus Data API */
+  linkedinEnrich: adminProcedure
+    .input(z.object({
+      leadId: z.number().optional(),
+      email: z.string().optional(),
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+      company: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { enrichLeadFromLinkedIn } = await import("../services/linkedinEnrichment");
+      return enrichLeadFromLinkedIn(input);
+    }),
+
+  /** Batch LinkedIn enrichment for multiple leads */
+  linkedinEnrichBatch: adminProcedure
+    .input(z.object({
+      leadIds: z.array(z.number()).max(50),
+    }))
+    .mutation(async ({ input }) => {
+      const { enrichLeadFromLinkedIn } = await import("../services/linkedinEnrichment");
+      const { getRawPool } = await import("../db");
+      const pool = await getRawPool();
+      if (!pool) return { enriched: 0, failed: 0, results: [] };
+
+      const results: Array<{ leadId: number; success: boolean; error?: string }> = [];
+      for (const leadId of input.leadIds) {
+        try {
+          const [rows] = await pool.query(
+            "SELECT firstName, lastName, email, company FROM lead_pipeline WHERE id = ? LIMIT 1",
+            [leadId]
+          ) as any;
+          if (!rows.length) { results.push({ leadId, success: false, error: "Lead not found" }); continue; }
+          const lead = rows[0];
+          const result = await enrichLeadFromLinkedIn({
+            leadId,
+            email: lead.email,
+            firstName: lead.firstName,
+            lastName: lead.lastName,
+            company: lead.company,
+          });
+          results.push({ leadId, success: result.enriched, error: result.error });
+          // Rate limit: 500ms between enrichments
+          await new Promise(r => setTimeout(r, 500));
+        } catch (e: any) {
+          results.push({ leadId, success: false, error: e.message });
+        }
+      }
+      return {
+        enriched: results.filter(r => r.success).length,
+        failed: results.filter(r => !r.success).length,
+        results,
+      };
+    }),
+
+  /** Auto-sync status — get current cron job status for CRM sync */
+  autoSyncStatus: adminProcedure.query(async () => {
+    const { getJobStatus } = await import("../services/cronManager");
+    const allJobs = getJobStatus();
+    const crmJobs = allJobs.filter(j => j.name.toLowerCase().includes("crm") || j.name.toLowerCase().includes("sync"));
+    return { jobs: crmJobs, totalJobs: allJobs.length };
+  }),
+
+  /** Toggle auto-sync job on/off */
+  toggleAutoSync: adminProcedure
+    .input(z.object({ jobId: z.string(), enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const { toggleJob } = await import("../services/cronManager");
+      return { success: toggleJob(input.jobId, input.enabled) };
+    }),
+
+  /** Re-initialize auto-sync (pick up new connections) */
+  refreshAutoSync: adminProcedure.mutation(async () => {
+    const { initCRMAutoSync } = await import("../services/crmAutoSync");
+    await initCRMAutoSync();
+    const { getJobStatus } = await import("../services/cronManager");
+    const crmJobs = getJobStatus().filter(j => j.name.toLowerCase().includes("crm") || j.name.toLowerCase().includes("sync"));
+    return { jobsRegistered: crmJobs.length, jobs: crmJobs };
+  }),
+
+  /** Platform connection instructions — returns setup info for each platform */
+  connectionInstructions: publicProcedure.query(async () => {
+    return [
+      {
+        provider: "gohighlevel",
+        name: "GoHighLevel",
+        status: process.env.GHL_API_KEY ? "connected" : "not_configured",
+        setupSteps: [
+          "Go to GHL Settings > Business Profile > API Keys",
+          "Create a Private Integration Token (PIT) with Contacts, Opportunities, and Calendars scopes",
+          "Copy the API Key and Location ID",
+          "Add them in the Integrations page under GoHighLevel",
+        ],
+        webhookSteps: [
+          "Go to GHL Settings > Webhooks",
+          "Click Add Webhook",
+          "Paste the webhook URL shown in the CRM Sync dashboard",
+          "Select events: Contact Create, Contact Update, Contact Delete",
+          "Save the webhook",
+        ],
+        note: "GHL polling is active as a fallback. Contacts sync every 5 minutes even without webhooks.",
+      },
+      {
+        provider: "smsit",
+        name: "SMS-iT",
+        status: process.env.SMSIT_API_KEY ? "connected" : "not_configured",
+        setupSteps: [
+          "Log in to SMS-iT at https://tool-it.smsit.ai",
+          "Go to Settings > API > Generate API Key",
+          "Copy the API Key",
+          "Add it in the Integrations page under SMS-iT",
+        ],
+        webhookSteps: [
+          "Go to SMS-iT Settings > Webhooks",
+          "Add the webhook URL shown in the CRM Sync dashboard",
+          "Select events: contact.created, contact.updated, contact.opted_out",
+        ],
+        note: "TCPA compliance: opt-out webhooks are processed immediately.",
+      },
+      {
+        provider: "workable",
+        name: "Workable",
+        status: "not_configured",
+        setupSteps: [
+          "Log in to Workable",
+          "Go to Settings > Integrations > Access Tokens",
+          "Generate an API token with Candidates read/write scope",
+          "Copy the token and your Workable subdomain",
+          "Add both in the Integrations page under Workable",
+        ],
+        webhookSteps: [
+          "Go to Workable Settings > Integrations > Webhooks",
+          "Add the webhook URL shown in the CRM Sync dashboard",
+          "Select events: candidate_created, candidate_moved",
+        ],
+        note: "Workable syncs candidates as leads for recruiting pipeline integration.",
+      },
+      {
+        provider: "dripify",
+        name: "Dripify",
+        status: "inbound_only",
+        setupSteps: [
+          "Dripify does not offer a public REST API for pull sync",
+          "Sync is inbound-only via Dripify campaign webhooks",
+          "In Dripify, go to Campaigns > Select a campaign > Settings > Webhooks",
+          "Paste the webhook URL shown in the CRM Sync dashboard",
+        ],
+        webhookSteps: [
+          "Open your Dripify campaign",
+          "Go to Settings > Webhooks",
+          "Add the webhook URL for each campaign you want to sync",
+        ],
+        note: "Dripify is inbound-only. Leads flow in from campaigns but cannot be pushed back.",
+      },
+      {
+        provider: "linkedin",
+        name: "LinkedIn / Sales Navigator",
+        status: "enrichment_available",
+        setupSteps: [
+          "LinkedIn enrichment works automatically via the Manus Data API (no credentials needed)",
+          "For full OAuth sync, connect your LinkedIn account via Settings > Social Accounts",
+          "Sales Navigator requires a LinkedIn Sales Navigator subscription",
+        ],
+        webhookSteps: [],
+        note: "LinkedIn enrichment adds profile data (title, company, location, headline) to existing leads. No webhook available.",
+      },
+      {
+        provider: "wealthbox",
+        name: "Wealthbox",
+        status: "not_configured",
+        setupSteps: [
+          "Log in to Wealthbox",
+          "Go to Settings > API > Generate Access Token",
+          "Copy the token",
+          "Add it in the Integrations page under Wealthbox",
+        ],
+        webhookSteps: ["Wealthbox webhooks are registered automatically when you connect"],
+        note: "Wealthbox is a popular CRM for financial advisors with full bidirectional sync.",
+      },
+      {
+        provider: "salesforce",
+        name: "Salesforce",
+        status: "not_configured",
+        setupSteps: [
+          "Log in to Salesforce",
+          "Go to Setup > Apps > App Manager > New Connected App",
+          "Enable OAuth and add scopes: api, refresh_token",
+          "Copy the Consumer Key and Consumer Secret",
+          "Add them in the Integrations page under Salesforce",
+        ],
+        webhookSteps: [
+          "Salesforce uses Outbound Messages or Platform Events for webhooks",
+          "Configure in Setup > Workflow Rules > Outbound Messages",
+        ],
+        note: "Salesforce requires OAuth2 Connected App setup. Full bidirectional sync supported.",
+      },
+      {
+        provider: "redtail",
+        name: "Redtail CRM",
+        status: "not_configured",
+        setupSteps: [
+          "Log in to Redtail CRM",
+          "Go to Settings > Integrations > API Access",
+          "Generate an API key",
+          "Add it in the Integrations page under Redtail",
+        ],
+        webhookSteps: [],
+        note: "Redtail is a CRM designed for financial advisors. Pull-based sync with incremental updates.",
+      },
+    ];
+  }),
 });
