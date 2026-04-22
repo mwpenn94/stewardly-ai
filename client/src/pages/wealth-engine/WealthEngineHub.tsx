@@ -119,6 +119,7 @@ const NAV_SECTIONS: NavSection[] = [
     { id: "holistic-comparison", label: "Holistic Compare", icon: Target, slug: "holistic-comparison", desc: "Cross-domain holistic comparison" },
     { id: "strategy-archetypes", label: "Archetypes", icon: Target, slug: "strategy-archetypes", desc: "Pre-built strategy templates" },
     { id: "sensitivity", label: "Sensitivity", icon: BarChart3, slug: "sensitivity", desc: "Monte Carlo and sensitivity analysis" },
+    { id: "portfolio-risk", label: "Portfolio Risk", icon: Scale, slug: "portfolio-risk", externalPath: "/portfolio-risk", desc: "Risk metrics & efficient frontier analysis" },
     { id: "what-if", label: "What-If", icon: Zap, slug: "what-if", desc: "Scenario modeling and stress testing" },
     { id: "quick-quote-hub", label: "Quick Quotes", icon: Zap, slug: "quick-quote-hub", desc: "Instant insurance quotes" },
     { id: "configurator", label: "Configurator", icon: Gauge, slug: "configurator", desc: "Engine configuration and assumptions" },

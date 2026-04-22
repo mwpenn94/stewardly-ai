@@ -42,6 +42,7 @@ const EmbedCalculator = lazy(() => import("./pages/EmbedCalculator"));
 // Wealth-engine hub (Phase 4 — single hub with internal sidebar navigation)
 // Legacy shallow hub — replaced by Calculators (Unified Wealth Engine) at /wealth-engine
 // const WealthEngineHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
+const PortfolioRiskMetrics = lazy(() => import("./pages/wealth-engine/PortfolioRiskMetrics"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 const UnifiedAI = lazy(() => import("./pages/UnifiedAI"));
@@ -205,6 +206,7 @@ function Router() {
         <Route path={"/calculators"}>{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path="/my-plan">{() => { window.location.replace('/wealth-engine?panel=myplan'); return null; }}</Route>
         {/* ── Wealth Engine — Unified Wealth Engine (comprehensive calculator + advisory + data hub) ─── */}
+        <Route path="/portfolio-risk">{() => <SectionErrorBoundary sectionName="Portfolio Risk"><PortfolioRiskMetrics /></SectionErrorBoundary>}</Route>
         <Route path="/wealth-engine/:panel">{() => <SectionErrorBoundary sectionName="Wealth Engine"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path="/wealth-engine">{() => <SectionErrorBoundary sectionName="Wealth Engine"><Calculators /></SectionErrorBoundary>}</Route>
         {/* Unified AI Surface (Chat + Code + Agent) */}

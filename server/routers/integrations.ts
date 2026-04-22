@@ -855,6 +855,7 @@ export const integrationsRouter = router({
   pipelineHealth: publicProcedure
     .query(async () => {
       const { getSchedulerStatus } = await import("../services/scheduler");
+      const { assessFreshness } = await import("../services/dataPipelineUtils");
       const status = getSchedulerStatus();
       
       // Return a simplified view without sensitive data
@@ -872,7 +873,6 @@ export const integrationsRouter = router({
           })) || [],
         } : null,
         jobs: status.jobs.map((j: any) => {
-          const { assessFreshness } = require("../services/dataPipelineUtils");
           const DAY_MS = 86_400_000;
           const staleMs = j.name.includes("daily") ? 2 * DAY_MS : DAY_MS / 24;
           const freshness = j.lastRun

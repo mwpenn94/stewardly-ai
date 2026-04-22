@@ -8364,3 +8364,13 @@
 - [x] P62-OSS-8: Testing optimizations (Playwright patterns, load testing patterns)
 - [x] P62-OSS-9: Run full test suite + build verification (42/42 pass62-oss tests pass)
 - [x] P62-OSS-10: Recursive optimization to 3/3 convergence (5 passes: P1=2 fixes, P2=1 fix, P3-P4-P5=0 fixes → 3 consecutive clean)
+
+## Pass 63 — Recommended Next Steps + Recursive Convergence
+- [x] P63-1: Build Learning Analytics dashboard (study trends radar, topic mastery bar, efficiency gauges via Chart.js)
+- [x] P63-2: Build Portfolio Risk Metrics page (efficient frontier scatter, risk/return metrics, custom returns input)
+- [x] P63-3: Write E2E Playwright tests — 3 spec files (31-portfolio-risk, 32-study-analytics, 33-critical-flows)
+- [x] P63-4: Fix require() → import() in wealthEngine.ts, integrations.ts, learning.ts routers
+- [x] P63-5: Add portfolio-risk to WealthEngineHub Protect & Analyze navigation
+- [x] P63-6: Add aria-label to CanvasChart canvases for accessibility (both pages)
+- [x] P63-7: Unit tests 42/42 pass, E2E 26/27 pass (1 flaky), 0 browser console errors
+- [x] P63-8: Recursive optimization to 3/3 convergence (5 passes: P1=1 fix, P2=2 fixes, P3-P4-P5=0 → 3 consecutive clean)

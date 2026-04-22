@@ -1132,7 +1132,7 @@ export const learningRouter = router({
         analyzeTrends,
         buildTopicMastery,
         generateEfficiencyReport,
-      } = require("../services/learning/analyticsAggregation");
+      } = await import("../services/learning/analyticsAggregation");
 
       return {
         sessionCount: sessions.length,

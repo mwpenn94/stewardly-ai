@@ -1438,8 +1438,8 @@ export const wealthEngineRouter = router({
         benchmarkReturns: z.array(z.number()).optional(),
       }),
     )
-    .query(({ input }) => {
-      const { computeRiskMetrics, generateEfficientFrontier } = require("../services/portfolio/optimizationUtils");
+    .query(async ({ input }) => {
+      const { computeRiskMetrics, generateEfficientFrontier } = await import("../services/portfolio/optimizationUtils");
       const metrics = computeRiskMetrics(input.returns, 252, input.riskFreeRate);
       const series = [
         { id: "portfolio", returns: input.returns },
