@@ -8172,3 +8172,11 @@
 - [x] P37-FA2: Full-app assessment Pass 2 — CLEAN (2/3)
 - [x] P37-FA3: Full-app assessment Pass 3 — CLEAN (3/3). 393 tables, 408 services, 112 routers, 203 pages, 124 components. 149 tests passing. CONVERGENCE CONFIRMED.
 - [x] P37-FINAL: Final checkpoint and delivery
+
+## Pass 38 — Build Fix + Next Steps
+- [x] P38-1: Fix PomodoroTimer export mismatch (default vs named export)
+- [ ] P38-2: Seed learning content (disciplines, terms, flashcards, exam tracks)
+- [ ] P38-3: Configure notification routing for Michael Penn (mwpenn94@gmail.com)
+- [ ] P38-4: Virtual e2e walkthrough as each persona (guest, user, advisor, manager, admin)
+- [ ] P38-5: Write vitest tests for new changes
+- [ ] P38-FINAL: Verify build, save checkpoint, deliver

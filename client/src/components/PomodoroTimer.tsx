@@ -30,7 +30,7 @@ const PHASE_LABELS: Record<Phase, string> = {
   longBreak: "Long Break",
 };
 
-export default function PomodoroTimer({ onClose }: PomodoroTimerProps) {
+export function PomodoroTimer({ onClose }: PomodoroTimerProps) {
   const [phase, setPhase] = useState<Phase>("work");
   const [secondsLeft, setSecondsLeft] = useState(DURATIONS.work);
   const [isRunning, setIsRunning] = useState(false);
