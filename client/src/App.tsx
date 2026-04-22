@@ -144,6 +144,16 @@ const CaseStudySimulator = lazy(() => import("./pages/learning/CaseStudySimulato
 const AchievementSystem = lazy(() => import("./pages/learning/AchievementSystem"));
 const ConnectionMap = lazy(() => import("./pages/learning/ConnectionMap"));
 const StudyBuddy = lazy(() => import("./pages/learning/StudyBuddy"));
+// Pass 36 — EMBA parity pages
+const HandsFreeStudy = lazy(() => import("./pages/learning/HandsFreeStudy"));
+const AIQuizPage = lazy(() => import("./pages/learning/AIQuizPage"));
+const FormulaLab = lazy(() => import("./pages/learning/FormulaLab"));
+const StudyAnalytics = lazy(() => import("./pages/learning/StudyAnalytics"));
+const ProgressExport = lazy(() => import("./pages/learning/ProgressExport"));
+const Bookmarks = lazy(() => import("./pages/learning/Bookmarks"));
+const Playlists = lazy(() => import("./pages/learning/Playlists"));
+const StudyGroups = lazy(() => import("./pages/learning/StudyGroups"));
+const DiscoveryHistory = lazy(() => import("./pages/learning/DiscoveryHistory"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
 // Comparables — competitive gap dashboard (hybrid build loop, pass 1)
 const ComparablesPage = lazy(() => import("./pages/Comparables"));
@@ -302,6 +312,16 @@ function Router() {
         <Route path="/learning/connections">{() => <ConnectionMap />}</Route>
         <Route path="/learning/achievements">{() => <AchievementSystem />}</Route>
         <Route path="/learning/study-buddy" component={StudyBuddy} />
+        {/* Pass 36 — EMBA parity routes */}
+        <Route path="/learning/hands-free" component={HandsFreeStudy} />
+        <Route path="/learning/ai-quiz" component={AIQuizPage} />
+        <Route path="/learning/formula-lab" component={FormulaLab} />
+        <Route path="/learning/analytics" component={StudyAnalytics} />
+        <Route path="/learning/export" component={ProgressExport} />
+        <Route path="/learning/bookmarks" component={Bookmarks} />
+        <Route path="/learning/playlists" component={Playlists} />
+        <Route path="/learning/groups" component={StudyGroups} />
+        <Route path="/learning/discovery" component={DiscoveryHistory} />
 
         {/* Consolidated Hub Pages */}
         {/* Comparables — competitive gap dashboard (hybrid build loop pass 1) */}

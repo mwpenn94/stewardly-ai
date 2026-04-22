@@ -849,3 +849,22 @@ export async function listConnections(filters: { status?: string } = {}) {
     return [];
   }
 }
+
+// ─── Formulas ──────────────────────────────────────────────────────────
+export async function listFormulas(filters: { disciplineId?: number; status?: PublishStatus } = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const conditions: any[] = [];
+    if (filters.disciplineId) conditions.push(eq(learningFormulas.disciplineId, filters.disciplineId));
+    conditions.push(eq(learningFormulas.status, (filters.status ?? "published") as any));
+    return db
+      .select()
+      .from(learningFormulas)
+      .where(and(...conditions))
+      .orderBy(learningFormulas.name);
+  } catch (err) {
+    log.warn({ err: String(err) }, "listFormulas failed");
+    return [];
+  }
+}

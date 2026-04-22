@@ -120,7 +120,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
 
 const LEARN_ITEM: NavItem = {
   label: "Learn", icon: GraduationCap, path: "/learning",
-  match: ["/learning", "/learning/tracks", "/learning/exam", "/learning/discipline", "/learning/case", "/learning/connections", "/learning/achievements", "/learning/licenses", "/learning/studio", "/learning/review", "/learning/search", "/learning/flashcards", "/learning/quiz"],
+  match: ["/learning", "/learning/tracks", "/learning/exam", "/learning/discipline", "/learning/case", "/learning/connections", "/learning/achievements", "/learning/licenses", "/learning/studio", "/learning/review", "/learning/search", "/learning/flashcards", "/learning/quiz", "/learning/hands-free", "/learning/ai-quiz", "/learning/formula-lab", "/learning/analytics", "/learning/export", "/learning/bookmarks", "/learning/playlists", "/learning/groups", "/learning/discovery"],
 };
 
 const FOOTER_ITEMS: NavItem[] = [

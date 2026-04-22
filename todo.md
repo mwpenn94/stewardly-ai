@@ -8124,12 +8124,21 @@
 
 ## Pass 36 — EMBA Modules Assessment + Learning Engine Parity Optimization
 
-- [ ] P36-1: Assess EMBA Modules live site (content, UX, features, capabilities)
-- [ ] P36-2: Assess EMBA Modules GitHub repo (code architecture, data models, features)
-- [ ] P36-3: Document comprehensive assessment findings and parity gap analysis
-- [ ] P36-4: Read current Stewardly learning engine code and identify gaps
-- [ ] P36-5: Optimize Stewardly learning engine backend (schema, services, procedures)
-- [ ] P36-6: Optimize Stewardly learning engine frontend (UI, UX, content)
-- [ ] P36-7: Write vitest tests for learning engine optimizations
-- [ ] P36-8: Virtual user assessment of optimized learning engine vs EMBA Modules
-- [ ] P36-FINAL: Final validation, todo update, checkpoint
+- [x] P36-1: Assess EMBA Modules live site (content, UX, features, capabilities)
+- [x] P36-2: Assess EMBA Modules GitHub repo (code architecture, data models, features)
+- [x] P36-3: Document comprehensive assessment findings and parity gap analysis
+- [x] P36-4: Read current Stewardly learning engine code and identify gaps
+- [x] P36-5: Build HandsFreeStudy page (TTS-based audio learning with queue playback)
+- [x] P36-6: Build AIQuiz page (LLM-generated questions with 4 types + difficulty control)
+- [x] P36-7: Build FormulaLab page (interactive calculators with step-by-step breakdowns)
+- [x] P36-8: Build StudyAnalytics page (time tracking, discipline breakdown, streak charts)
+- [x] P36-9: Build ProgressExport page (CSV/JSON mastery data export)
+- [x] P36-10: Build Bookmarks page (cross-content bookmarking with notes)
+- [x] P36-11: Build Playlists page (user-curated content lists with sharing)
+- [x] P36-12: Build StudyGroups page (collaborative study spaces with invite codes)
+- [x] P36-13: Build DiscoveryHistory page (AI follow-up questions log)
+- [x] P36-14: Build PomodoroTimer floating widget component
+- [x] P36-15: Wire all routes in App.tsx and add navigation entries
+- [x] P36-16: Write vitest tests for new pages
+- [x] P36-17: Virtual user assessment of optimized learning engine vs EMBA Modules
+- [x] P36-FINAL: Final validation, todo update, checkpoint

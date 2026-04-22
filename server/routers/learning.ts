@@ -75,6 +75,7 @@ import {
   listCases,
   listFsApplications,
   listConnections,
+  listFormulas,
 } from "../services/learning/content";
 
 import {
@@ -599,6 +600,11 @@ const contentRouter = router({
   // Connections (concept graph edges)
   listConnections: protectedProcedure
     .query(async () => listConnections()),
+
+  // Formulas
+  listFormulas: protectedProcedure
+    .input(z.object({ disciplineId: z.number().int().optional() }).optional())
+    .query(async ({ input }) => listFormulas(input ?? {})),
 
   // Unified search
   search: protectedProcedure

@@ -181,6 +181,16 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Search", label: "Search Content", href: "/learning/search", minRole: "user", section: "learning" },
   { iconName: "Sparkles", label: "Content Studio", href: "/learning/studio", minRole: "advisor", section: "learning" },
   { iconName: "Compass", label: "Sovereign Study", href: "/sovereign-study", minRole: "user", section: "learning" },
+  // Pass 36 — EMBA parity pages
+  { iconName: "Headphones", label: "Hands-Free Study", href: "/learning/hands-free", minRole: "user", section: "learning" },
+  { iconName: "Zap", label: "AI Quiz", href: "/learning/ai-quiz", minRole: "user", section: "learning" },
+  { iconName: "Calculator", label: "Formula Lab", href: "/learning/formula-lab", minRole: "user", section: "learning" },
+  { iconName: "BarChart3", label: "Study Analytics", href: "/learning/analytics", minRole: "user", section: "learning" },
+  { iconName: "Download", label: "Export Progress", href: "/learning/export", minRole: "user", section: "learning" },
+  { iconName: "Bookmark", label: "Bookmarks", href: "/learning/bookmarks", minRole: "user", section: "learning" },
+  { iconName: "ListMusic", label: "Playlists", href: "/learning/playlists", minRole: "user", section: "learning" },
+  { iconName: "Users", label: "Study Groups", href: "/learning/groups", minRole: "user", section: "learning" },
+  { iconName: "Compass", label: "Discovery Log", href: "/learning/discovery", minRole: "user", section: "learning" },
 ];
 
 // ─── ADMIN section ───────────────────────────────────────────────────────────
