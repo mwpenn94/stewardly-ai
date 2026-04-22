@@ -8465,3 +8465,44 @@
 - [x] loadTesting.ts — simulateLoadTest performs real HTTP requests to measure actual latency
 - [x] aiToolCalling.ts — suitabilityScore uses deterministic calculation from goal/risk inputs
 - [x] 35/35 vitest tests passing for all replacements
+
+## Pass 64e — CRM Sync E2E Test + Webhooks + Dashboard
+- [ ] Step 1: Test CRM sync end-to-end using user's GHL browser session
+- [ ] Step 2: Add webhook listeners for real-time CRM push updates (GHL contact.create, contact.update, etc.)
+- [ ] Step 2b: Add webhook listeners for Wealthbox push updates
+- [ ] Step 3: Build sync history dashboard UI (sync logs, error counts, per-provider status, last-synced timestamps)
+- [ ] Write vitest tests for webhook and dashboard features
+- [ ] Verify all tests pass
+
+## Pass 64e — EXPANDED: All Platforms E2E Sync + Webhooks + Dashboard
+- [ ] Audit all platform integration code (GHL, Dripify, LinkedIn, SMS-iT, Workable)
+- [ ] Test GHL sync end-to-end via user's browser session
+- [ ] Test Dripify sync end-to-end via user's browser session
+- [ ] Test LinkedIn/Sales Navigator sync end-to-end via user's browser session
+- [ ] Test SMS-iT sync end-to-end via user's browser session
+- [ ] Test Workable sync end-to-end via user's browser session
+- [ ] Add GHL webhook listeners (contact.create, contact.update, contact.delete, opportunity events)
+- [ ] Add Dripify webhook/polling listeners for lead updates
+- [ ] Add LinkedIn webhook/polling listeners for connection updates
+- [ ] Add SMS-iT webhook listeners for message/campaign events
+- [ ] Add Workable webhook listeners for candidate events
+- [ ] Build unified sync history dashboard UI (all providers, sync logs, error counts, timestamps)
+- [ ] Write vitest tests for all webhook and dashboard features
+- [ ] Verify all tests pass
+
+## Pass 64d — Next Steps Completion
+- [x] Test GHL CRM sync end-to-end (493K contacts, 5 synced to lead_pipeline)
+- [x] Create GHL integration_connection record in DB
+- [x] Build Dripify Express webhook route (/api/webhooks/dripify)
+- [x] Build SMS-iT Express webhook route (/api/webhooks/smsit)
+- [x] Build Workable Express webhook route (/api/webhooks/workable)
+- [x] Build LinkedIn Express webhook route (/api/webhooks/linkedin)
+- [x] Health check endpoint (/api/webhooks/platforms/health)
+- [x] All webhook handlers persist contacts to lead_pipeline
+- [x] Add unifiedDashboard tRPC procedure (cross-platform sync logs)
+- [x] Add platformWebhookEvents tRPC procedure (per-provider event query)
+- [x] Expand CRM sync mutation to accept all 8 providers
+- [x] Build unified CRM Sync dashboard UI with all 8 platforms
+- [x] Dashboard shows per-provider status cards, webhook activity feed, sync logs
+- [x] 15/15 webhook+dashboard tests passing
+- [x] 35/35 simulation replacement tests passing

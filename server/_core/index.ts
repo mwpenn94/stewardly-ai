@@ -10,6 +10,7 @@ import { registerGuestSessionRoutes } from "./guestSession";
 import { registerSocialAuthRoutes } from "../services/socialOAuth";
 import { registerWebhookRoutes } from "../routers/webhookIngestion";
 import { registerGHLWebhookRoutes } from "../routers/ghlWebhook";
+import { registerPlatformWebhookRoutes } from "../routers/platformWebhookRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -203,6 +204,9 @@ async function startServer() {
   registerSocialAuthRoutes(app);
   // GHL inbound webhook endpoint (MUST be before generic webhook routes)
   registerGHLWebhookRoutes(app);
+  // Platform-specific webhook endpoints (Dripify, SMS-iT, Workable, LinkedIn)
+  registerPlatformWebhookRoutes(app);
+
   // Public webhook ingestion endpoints
   registerWebhookRoutes(app);
 

@@ -2,16 +2,16 @@
  * SMS-iT Webhook Router
  * Receives SMS/MMS events from SMS-iT and ingests them as lead activities.
  * Uses smsitSyncLog + integrationWebhookEvents from actual schema.
+ * Express route registered in platformWebhookRoutes.ts
  */
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
-import { getDb } from "../db";
+import { getDb, getRawPool } from "../db";
 import { eq, sql } from "drizzle-orm";
 import {
   integrationWebhookEvents,
   smsitSyncLog,
-  leadPipeline,
 } from "../../drizzle/schema";
 import { nanoid } from "nanoid";
 import crypto from "crypto";
@@ -65,7 +65,7 @@ export async function handleSMSiTWebhook(
   const eventId = nanoid();
 
   try {
-    // CBL17 security hardening: verify webhook signature before processing
+    // Security: verify webhook signature before processing
     const smsitSecret = process.env.SMSIT_WEBHOOK_SECRET || "";
     const signature = headers["x-smsit-signature"] || headers["x-hook-signature"];
     let signatureValid = true;
@@ -102,16 +102,66 @@ export async function handleSMSiTWebhook(
       processingStatus: "pending",
     });
 
-    // Process contact events
+    // Process contact events — upsert into lead_pipeline + smsitSyncLog
     if (eventType.startsWith("contact.")) {
       const contact = (payload.contact || payload.data || payload) as Record<string, unknown>;
       const smsitContactId = (contact.id || contact.contactId || "") as string;
+      const email = ((contact.email || "") as string).toLowerCase().trim();
+      const phone = (contact.phone || contact.mobile || "") as string;
+      const firstName = (contact.firstName || contact.first_name || "") as string;
+      const lastName = (contact.lastName || contact.last_name || "") as string;
 
+      let leadPipelineId: number | null = null;
+
+      // Upsert into lead_pipeline via raw SQL (actual DB columns)
+      if (email || phone) {
+        const rawPool = await getRawPool();
+        if (rawPool) {
+          // Try to find existing lead by email or phone
+          let matchQuery = "SELECT id FROM lead_pipeline WHERE ";
+          const matchParams: any[] = [];
+          if (email) {
+            matchQuery += "email = ?";
+            matchParams.push(email);
+          } else {
+            matchQuery += "phone = ?";
+            matchParams.push(phone);
+          }
+          matchQuery += " LIMIT 1";
+
+          const [rows] = await rawPool.query(matchQuery, matchParams) as any;
+
+          if (rows.length > 0) {
+            leadPipelineId = rows[0].id;
+            // Update existing lead
+            const updateFields: string[] = [];
+            const updateParams: any[] = [];
+            if (firstName) { updateFields.push("firstName = ?"); updateParams.push(firstName); }
+            if (lastName) { updateFields.push("lastName = ?"); updateParams.push(lastName); }
+            if (phone) { updateFields.push("phone = ?"); updateParams.push(phone); }
+            updateFields.push("updated_at = ?"); updateParams.push(Date.now());
+            updateParams.push(leadPipelineId);
+            await rawPool.query(
+              `UPDATE lead_pipeline SET ${updateFields.join(", ")} WHERE id = ?`,
+              updateParams
+            );
+          } else if (eventType !== "contact.opted_out") {
+            // Create new lead (don't create for opt-outs)
+            const [result] = await rawPool.query(
+              "INSERT INTO lead_pipeline (firstName, lastName, email, phone, source, status, crmExternalId, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              [firstName || null, lastName || null, email || null, phone || null, "smsit", "new", smsitContactId || null, Date.now(), Date.now()]
+            ) as any;
+            leadPipelineId = result.insertId;
+          }
+        }
+      }
+
+      // Log sync event
       if (smsitContactId) {
-        // Log sync event
         await db.insert(smsitSyncLog).values({
           syncDirection: "inbound",
           smsitContactId,
+          leadPipelineId,
           syncType: eventType === "contact.opted_out" ? "opt_out" : eventType === "contact.created" ? "create" : "update",
           fieldsSynced: contact as any,
           status: "success",

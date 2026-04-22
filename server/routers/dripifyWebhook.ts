@@ -2,15 +2,15 @@
  * Dripify Webhook Router
  * Receives LinkedIn automation events from Dripify and ingests them as lead activities.
  * Uses dripifyWebhookEvents + leadPipeline tables from actual schema.
+ * Express route registered in platformWebhookRoutes.ts
  */
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { logger } from "../_core/logger";
-import { getDb } from "../db";
+import { getDb, getRawPool } from "../db";
 import { eq, sql } from "drizzle-orm";
 import {
   dripifyWebhookEvents,
-  leadPipeline,
 } from "../../drizzle/schema";
 import crypto from "crypto";
 
@@ -65,12 +65,12 @@ export async function handleDripifyWebhook(
   if (!db) return { status: 503, body: { error: "Database unavailable" } };
 
   try {
-    // CBL17 security hardening: verify webhook signature before processing
+    // Security: verify webhook signature before processing
     const dripifySecret = process.env.DRIPIFY_WEBHOOK_SECRET || "";
     const signature = headers["x-dripify-signature"] || headers["x-hook-signature"];
     const signatureValid = dripifySecret
       ? verifyDripifySignature(rawBody, signature, dripifySecret)
-      : true; // no secret configured = skip verification
+      : true;
 
     if (dripifySecret && !signatureValid) {
       logger.warn("Dripify webhook rejected: invalid signature");
@@ -90,30 +90,44 @@ export async function handleDripifyWebhook(
       processed: false,
     }).$returningId();
 
-    // Process lead events
+    // Process lead events — upsert into lead_pipeline via raw SQL (actual DB columns)
     if (eventType.startsWith("lead.")) {
       const lead = (payload.lead || payload.data || payload) as Record<string, unknown>;
-      const email = (lead.email || "") as string;
-      const linkedinUrl = (lead.profileUrl || lead.linkedin_url || "") as string;
+      const email = ((lead.email || "") as string).toLowerCase().trim();
+      const firstName = (lead.firstName || lead.first_name || "") as string;
+      const lastName = (lead.lastName || lead.last_name || "") as string;
+      const dripifyLeadId = (lead.id || lead.leadId || "") as string;
 
-      if (email || linkedinUrl) {
-        // Try to match to existing lead
-        if (email) {
-          const emailHash = crypto.createHash("sha256").update(email.toLowerCase().trim()).digest("hex");
-          const [existing] = await db.select().from(leadPipeline).where(eq(leadPipeline.emailHash, emailHash)).limit(1);
+      let leadPipelineId: number | null = null;
 
-          if (existing) {
-            // Update the webhook event with lead pipeline ID
-            await db.update(dripifyWebhookEvents)
-              .set({ leadPipelineId: existing.id, processed: true })
-              .where(eq(dripifyWebhookEvents.id, inserted.id));
+      if (email) {
+        const rawPool = await getRawPool();
+        if (rawPool) {
+          const [rows] = await rawPool.query(
+            "SELECT id FROM lead_pipeline WHERE email = ? LIMIT 1",
+            [email]
+          ) as any;
+
+          if (rows.length > 0) {
+            leadPipelineId = rows[0].id;
+            await rawPool.query(
+              "UPDATE lead_pipeline SET updated_at = ? WHERE id = ?",
+              [Date.now(), leadPipelineId]
+            );
+          } else {
+            // Create new lead from Dripify data
+            const [result] = await rawPool.query(
+              "INSERT INTO lead_pipeline (firstName, lastName, email, source, status, crmExternalId, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+              [firstName || null, lastName || null, email, "dripify", "new", dripifyLeadId || null, Date.now(), Date.now()]
+            ) as any;
+            leadPipelineId = result.insertId;
           }
         }
       }
 
-      // Mark processed
+      // Link webhook event to lead pipeline
       await db.update(dripifyWebhookEvents)
-        .set({ processed: true, processedAt: new Date() })
+        .set({ leadPipelineId, processed: true, processedAt: new Date() })
         .where(eq(dripifyWebhookEvents.id, inserted.id));
     }
 
