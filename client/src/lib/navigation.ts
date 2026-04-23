@@ -142,6 +142,8 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Stethoscope", label: "Medicare", href: "/medicare", minRole: "user", section: "intelligence" },
   { iconName: "Package", label: "Products", href: "/products", minRole: "user", section: "intelligence" },
   { iconName: "Lightbulb", label: "Product Intelligence", href: "/product-intelligence", minRole: "advisor", section: "intelligence" },
+  { iconName: "Gauge", label: "AI Usage", href: "/ai-usage", minRole: "advisor", section: "intelligence" },
+  { iconName: "Database", label: "Data Engine", href: "/data-engine", minRole: "advisor", section: "intelligence" },
 
   // ── RELATIONSHIPS — client + document + integration management
   { iconName: "LayoutGrid", label: "Command Center", href: "/command-center", minRole: "advisor", section: "relationships" },
@@ -166,6 +168,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Link2", label: "Integrations", href: "/integrations", minRole: "user", section: "relationships" },
   { iconName: "Plug", label: "Dynamic Integrations", href: "/dynamic-integrations", minRole: "advisor", section: "relationships" },
   { iconName: "HeartPulse", label: "Integration Health", href: "/integration-health", minRole: "advisor", section: "relationships" },
+  { iconName: "Activity", label: "Activity Timeline", href: "/activity-timeline", minRole: "user", section: "relationships" },
   { iconName: "ArrowLeftRight", label: "Sync Dashboard", href: "/sync-dashboard", minRole: "advisor", section: "relationships" },
   { iconName: "Globe", label: "Location Analytics", href: "/location-analytics", minRole: "admin", section: "relationships" },
   { iconName: "Shield", label: "Permissions", href: "/permissions", minRole: "admin", section: "relationships" },
@@ -197,6 +200,7 @@ export const TOOLS_NAV: NavItemDef[] = [
   { iconName: "Users", label: "Study Groups", href: "/learning/groups", minRole: "user", section: "learning" },
   { iconName: "Compass", label: "Discovery Log", href: "/learning/discovery", minRole: "user", section: "learning" },
   { iconName: "Users2", label: "Peer Groups", href: "/learning/peer-groups", minRole: "user", section: "learning" },
+  { iconName: "Trophy", label: "Leaderboard", href: "/learning/leaderboard", minRole: "user", section: "learning" },
 ];
 
 // ─── ADMIN section ───────────────────────────────────────────────────────────

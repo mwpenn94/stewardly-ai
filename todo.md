@@ -8887,3 +8887,21 @@
 - [x] Run intelligence engine tests — 24/24 pass
 - [x] Run pass46 gap tests — 33/33 pass
 - [x] Dev server verified running, 0 browser console errors
+
+## Sidebar Navigation + WebSocket + E2E Validation (2026-04-23)
+
+### Sidebar Navigation Wiring
+- [x] Add AI Usage Dashboard to Intelligence section in sidebar — navigation.ts updated
+- [x] Add Data Engine Dashboard to Platform section in sidebar — navigation.ts updated
+- [x] Add Activity Timeline to People section in sidebar — navigation.ts updated
+- [x] Add Global Leaderboard to Learning section in sidebar — navigation.ts updated
+
+### Real-Time WebSocket Updates
+- [x] Add WebSocket infrastructure for real-time data push — realtimeChannels.ts + useRealtimeChannel.ts
+- [x] Wire Activity Timeline to receive live event updates — Live toggle, toast notifications, auto-invalidate
+- [x] Wire Data Engine Dashboard to receive live cache stats — Live toggle, connection status, auto-refresh
+
+### End-to-End User Flow Validation
+- [x] Validate full user flow: 123/123 targeted tests pass across 6 test suites
+- [x] Verify all new sidebar links navigate correctly — navReachability 6/6 pass
+- [x] Verify WebSocket connections establish and update UI — realtimeChannels 26/26 pass

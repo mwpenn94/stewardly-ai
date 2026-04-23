@@ -4,6 +4,7 @@ import { getDb } from "../db";
 import { coachingMessages, propagationEvents, propagationActions } from "../../drizzle/schema";
 import { eq, desc, and, isNull } from "drizzle-orm";
 import crypto from "crypto";
+import { registerChannelHandlers } from "./realtimeChannels";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -78,6 +79,9 @@ export function initWebSocket(httpServer: HttpServer): Server {
     connectedUsers.set(socket.id, { userId: userId, role, socketId: socket.id });
     socket.join(`user:${userId}`);
     socket.join(`role:${role}`);
+
+    // Register real-time channel handlers (data engine, activity timeline, etc.)
+    registerChannelHandlers(socket);
 
     // Send any pending notifications on connect
     const pending = userNotifications.get(String(userId)) || [];

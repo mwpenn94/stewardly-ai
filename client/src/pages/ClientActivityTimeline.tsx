@@ -5,13 +5,14 @@
  * association changes into a single chronological timeline view.
  * Part of the People Hub 4.0+ maturity push.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,8 +21,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft, Activity, MessageSquare, FileText, Database,
   Users, Clock, TrendingUp, ChevronRight, Filter,
-  BarChart3, Zap, Shield, CheckCircle2,
+  BarChart3, Zap, Shield, CheckCircle2, Radio,
 } from "lucide-react";
+import { toast } from "sonner";
 
 const EVENT_ICONS: Record<string, React.ReactNode> = {
   conversation: <MessageSquare className="h-4 w-4 text-blue-400" />,
@@ -52,6 +54,9 @@ function formatRelativeTime(timestamp: number): string {
 export default function ClientActivityTimeline() {
   const { user } = useAuth();
   const [category, setCategory] = useState<"all" | "conversation" | "plan" | "data" | "association">("all");
+  const [liveMode, setLiveMode] = useState(false);
+
+  const utils = trpc.useUtils();
 
   const { data: timeline, isLoading: timelineLoading } = trpc.clientPortal.activityTimeline.useQuery(
     { category, limit: 100 },
@@ -62,6 +67,22 @@ export default function ClientActivityTimeline() {
     undefined,
     { enabled: !!user }
   );
+
+  // Real-time WebSocket channel for live activity events
+  const { connected: wsConnected, lastUpdate, eventCount, data: liveEvent } = useRealtimeChannel<any>({
+    channel: "activity:timeline",
+    userId: user?.id,
+    enabled: liveMode && !!user,
+    onEvent: useCallback((event: any) => {
+      if (event?.type === "connected") return; // Skip connection ack
+      // Auto-refresh timeline when new events arrive
+      utils.clientPortal.activityTimeline.invalidate();
+      utils.clientPortal.engagementSummary.invalidate();
+      if (event?.title) {
+        toast.info(event.title, { description: event.description?.slice(0, 80) });
+      }
+    }, [utils]),
+  });
 
   if (!user) {
     return (
@@ -95,7 +116,28 @@ export default function ClientActivityTimeline() {
               Unified view of all client interactions, plans, and data access
             </p>
           </div>
+          <Button
+            variant={liveMode ? "default" : "outline"}
+            size="sm"
+            onClick={() => setLiveMode(!liveMode)}
+            className={liveMode ? "bg-green-600 hover:bg-green-700" : ""}
+          >
+            <Radio className={`h-4 w-4 mr-1 ${liveMode ? "animate-pulse" : ""}`} />
+            Live
+            {wsConnected && liveMode && (
+              <span className="ml-1 h-2 w-2 rounded-full bg-green-300 animate-pulse" />
+            )}
+          </Button>
         </div>
+        {liveMode && (
+          <div className="text-xs text-muted-foreground mb-4 text-right">
+            {wsConnected ? (
+              <span className="text-green-400">Connected · {eventCount} updates{lastUpdate ? ` · Last: ${new Date(lastUpdate).toLocaleTimeString()}` : ""}</span>
+            ) : (
+              <span className="text-yellow-400">Connecting...</span>
+            )}
+          </div>
+        )
 
         {/* Engagement Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

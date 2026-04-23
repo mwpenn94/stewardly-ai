@@ -8,13 +8,14 @@
  * - Data freshness indicators
  * - Cache invalidation controls
  */
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useRealtimeChannel } from "@/hooks/useRealtimeChannel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,7 @@ import {
   Database, ArrowLeft, Activity, Zap, Shield,
   RefreshCw, Trash2, CheckCircle2, AlertTriangle,
   XCircle, Clock, BarChart3, HardDrive, Gauge,
-  Server, Wifi, WifiOff,
+  Server, Wifi, WifiOff, Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -78,11 +79,24 @@ function HitRateGauge({ rate, label }: { rate: number; label: string }) {
 
 export default function DataEngineDashboard() {
   const { user } = useAuth();
+  const [liveMode, setLiveMode] = useState(false);
 
   const { data: cacheData, isLoading: cacheLoading, refetch: refetchCache } = trpc.financialData.cacheStats.useQuery(undefined, { enabled: !!user });
   const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = trpc.financialData.adapterHealth.useQuery();
   const { data: rateData, isLoading: rateLoading } = trpc.financialData.rateLimitStats.useQuery(undefined, { enabled: !!user });
   const { data: freshnessData, isLoading: freshnessLoading } = trpc.financialData.dataFreshness.useQuery(undefined, { enabled: !!user });
+
+  // Real-time WebSocket channel for live cache stats
+  const { data: liveCacheStats, connected: wsConnected, lastUpdate, eventCount } = useRealtimeChannel<any>({
+    channel: "dataEngine:cacheStats",
+    userId: user?.id,
+    enabled: liveMode && !!user,
+    onEvent: useCallback(() => {
+      // Auto-refresh tRPC queries when live data arrives
+      refetchCache();
+      refetchHealth();
+    }, [refetchCache, refetchHealth]),
+  });
 
   const invalidateMut = trpc.financialData.invalidateCache.useMutation({
     onSuccess: (result) => {
@@ -124,13 +138,36 @@ export default function DataEngineDashboard() {
               Cache analytics, adapter health, and rate limit monitoring
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => { refetchCache(); refetchHealth(); }}
-          >
-            <RefreshCw className="h-4 w-4 mr-1" /> Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={liveMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setLiveMode(!liveMode)}
+              className={liveMode ? "bg-green-600 hover:bg-green-700" : ""}
+            >
+              <Radio className={`h-4 w-4 mr-1 ${liveMode ? "animate-pulse" : ""}`} />
+              {liveMode ? "Live" : "Live"}
+              {wsConnected && liveMode && (
+                <span className="ml-1 h-2 w-2 rounded-full bg-green-300 animate-pulse" />
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => { refetchCache(); refetchHealth(); }}
+            >
+              <RefreshCw className="h-4 w-4 mr-1" /> Refresh
+            </Button>
+          </div>
+          {liveMode && (
+            <div className="text-xs text-muted-foreground mt-1 text-right">
+              {wsConnected ? (
+                <span className="text-green-400">Connected · {eventCount} updates{lastUpdate ? ` · Last: ${new Date(lastUpdate).toLocaleTimeString()}` : ""}</span>
+              ) : (
+                <span className="text-yellow-400">Connecting...</span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Overview Cards */}
