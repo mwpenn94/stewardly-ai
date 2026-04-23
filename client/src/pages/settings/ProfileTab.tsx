@@ -117,7 +117,7 @@ export default function ProfileTab() {
               )}
             </div>
             <div className="space-y-2 flex-1">
-              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" aria-label="Upload avatar" onChange={handleAvatarUpload} />
               <Button
                 size="sm"
                 className="bg-accent text-accent-foreground hover:bg-accent/90"

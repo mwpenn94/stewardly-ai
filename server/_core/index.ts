@@ -283,7 +283,7 @@ async function startServer() {
       // @ts-expect-error — property access on loosely typed object
       const { getUserLocationIds } = await import("../services/locationAccess");
       const { getRawPool } = await import("../db");
-      const pool = getRawPool();
+      const pool = await getRawPool();
       // Get user's location access scope
       const locationIds = pool
         ? await getUserLocationIds(pool, user.id, (user as any).role || "user")

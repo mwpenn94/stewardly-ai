@@ -31,6 +31,6 @@ export const FEATURES = [
   { featureName: "net_worth_estimate", featureSource: "enrichment", dataType: "numeric" },
 ];
 export async function seed() {
-  console.log(`[seed:14] Propensity features: ${FEATURES.length} features defined`);
+  console.info(`[seed:14] Propensity features: ${FEATURES.length} features defined`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

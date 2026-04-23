@@ -26,6 +26,6 @@ export const LEAD_SOURCES = [
   { sourceName: "GHL Pipeline Import", sourceType: "organic", segment: "client", costModel: "free", qualityScore: "0.60" },
 ];
 export async function seed() {
-  console.log(`[seed:13] Lead sources: ${LEAD_SOURCES.length} sources defined across organic/paid/referral/event/directory/partnership`);
+  console.info(`[seed:13] Lead sources: ${LEAD_SOURCES.length} sources defined across organic/paid/referral/event/directory/partnership`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

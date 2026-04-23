@@ -192,6 +192,13 @@ const EXEMPT_ROUTES = new Set<string>([
   "/people",
   // Pass 130: Agent detail page (reached from /agents list)
   "/agent",
+  // Pass 80: Sub-pages reached from parent hubs
+  "/portfolio-risk",
+  "/learning/formulas",
+  "/learning/cases",
+  "/learning/fs-toolkit",
+  "/learning/connections-browse",
+  "/learning/tracks",
 ]);
 
 describe("Navigation reachability", () => {

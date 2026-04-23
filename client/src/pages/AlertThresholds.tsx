@@ -30,8 +30,8 @@ const METRIC_DEFS: Record<string, {
     unit: "min",
     icon: Clock,
     description: "Minutes since last successful sync",
-    defaultWarning: 30,
-    defaultCritical: 60,
+    defaultWarning: 120,
+    defaultCritical: 480,
   },
   error_rate_pct: {
     label: "Error Rate",

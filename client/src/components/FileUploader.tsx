@@ -89,7 +89,7 @@ export function FileUploader({
           onClick={() => inputRef.current?.click()}
         >
           <input
-            ref={inputRef} type="file" className="hidden"
+            ref={inputRef} type="file" className="hidden" aria-label="Upload file"
             accept={accept.join(",")} multiple={multiple}
             onChange={e => handleFiles(e.target.files)}
           />

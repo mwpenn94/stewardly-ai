@@ -11,7 +11,7 @@ export const PILLAR_PAGES = [
   { slug: "calculator-faq", title: "Financial Calculator FAQ", category: "calculator_faq", seoTitle: "Financial Calculator Help — How to Use Our Planning Tools", seoDescription: "Help guide for all financial calculators: retirement, tax, estate, insurance, education, and business planning." },
 ];
 export async function seed() {
-  console.log(`[seed:18] Content pillar pages: ${PILLAR_PAGES.length} SEO pages defined`);
-  PILLAR_PAGES.forEach(p => console.log(`  - /${p.slug} — ${p.title}`));
+  console.info(`[seed:18] Content pillar pages: ${PILLAR_PAGES.length} SEO pages defined`);
+  PILLAR_PAGES.forEach(p => console.info(`  - /${p.slug} — ${p.title}`));
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

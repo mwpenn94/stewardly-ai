@@ -13,9 +13,9 @@ const BADGES = [
   { badgeType: "nipr", displayName: "Licensed Insurance Producer", issuingAuthority: "National Insurance Producer Registry" },
 ];
 export async function seed() {
-  const db = await getDb(); if (!db) { console.log("[seed:19] No DB — skipping"); return; }
+  const db = await getDb(); if (!db) { console.info("[seed:19] No DB — skipping"); return; }
   const { coiVerificationBadges } = await import("../../drizzle/schema");
   // Badge types are reference data — just log what would be seeded
-  console.log(`[seed:19] Verification badge types: ${BADGES.length} badge types defined`);
+  console.info(`[seed:19] Verification badge types: ${BADGES.length} badge types defined`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

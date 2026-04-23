@@ -13,7 +13,7 @@ const RULES = [
   { ruleType: "state" as const, ruleName: "AZ DOI Regulations", description: "Arizona Department of Insurance requirements for insurance recommendations.", enabled: true },
 ];
 export async function seed() {
-  const db = await getDb(); if (!db) { console.log("No DB — skipping"); return; }
+  const db = await getDb(); if (!db) { console.info("No DB — skipping"); return; }
   const { complianceRules } = await import("../../drizzle/schema");
   const { eq } = await import("drizzle-orm");
   let inserted = 0;
@@ -22,6 +22,6 @@ export async function seed() {
     if (exists) continue;
     await db.insert(complianceRules).values(r); inserted++;
   }
-  console.log(`[seed:16] Compliance rules: ${inserted} inserted`);
+  console.info(`[seed:16] Compliance rules: ${inserted} inserted`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

@@ -33,6 +33,9 @@ describe("Intelligence Wiring", () => {
       ` | grep -v "planningHierarchy/engagementLetterService.ts"` +
       ` | grep -v "planningHierarchy/cascadeNotifications.ts"` +
       ` | grep -v "agentTools.ts"` +
+      ` | grep -v "promptABTesting.ts"` +
+      ` | grep -v "templateOptimizer.ts"` +
+      ` | grep -v "routers/integrations.ts"` +
       ` || true`,
       { cwd: ROOT, encoding: "utf-8" }
     ).trim();

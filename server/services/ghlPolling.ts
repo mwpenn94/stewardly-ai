@@ -229,7 +229,7 @@ export async function detectContactChanges(
   updated: GHLContact[];
   unchanged: number;
 }> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return { created: [], updated: [], unchanged: 0 };
   
   // Get existing contacts for this location from the lead_pipeline table
@@ -283,7 +283,7 @@ async function upsertContactToLeadPipeline(
   contact: GHLContact,
   locationDbId: number,
 ): Promise<"created" | "updated" | "skipped"> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return "skipped";
   
   try {

@@ -20,7 +20,7 @@ const PROVIDERS = [
   { provider: "mdrt_qualifying", dataCategory: "industry_data", refreshIntervalHours: 8760 },
 ];
 export async function seed() {
-  const db = await getDb(); if (!db) { console.log("[seed:01] No DB — skipping"); return; }
+  const db = await getDb(); if (!db) { console.info("[seed:01] No DB — skipping"); return; }
   const { dataFreshnessRegistry } = await import("../../drizzle/schema");
   const { eq, and } = await import("drizzle-orm");
   let inserted = 0;
@@ -29,6 +29,6 @@ export async function seed() {
     if (exists) continue;
     await db.insert(dataFreshnessRegistry).values(p); inserted++;
   }
-  console.log(`[seed:01] Freshness registry: ${inserted} inserted`);
+  console.info(`[seed:01] Freshness registry: ${inserted} inserted`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

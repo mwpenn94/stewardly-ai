@@ -13,7 +13,7 @@ const PROFILES = [
   { provider: "nipr_pdb", domain: "pdb.nipr.com", currentRpm: 5, staticMaximum: 10, safetyFactor: "0.50", isGovernment: false },
 ];
 export async function seed() {
-  const db = await getDb(); if (!db) { console.log("[seed:00] No DB — skipping"); return; }
+  const db = await getDb(); if (!db) { console.info("[seed:00] No DB — skipping"); return; }
   const { rateProfiles } = await import("../../drizzle/schema");
   const { eq } = await import("drizzle-orm");
   let inserted = 0;
@@ -22,6 +22,6 @@ export async function seed() {
     if (exists) continue;
     await db.insert(rateProfiles).values(p); inserted++;
   }
-  console.log(`[seed:00] Rate profiles: ${inserted} inserted, ${PROFILES.length - inserted} skipped`);
+  console.info(`[seed:00] Rate profiles: ${inserted} inserted, ${PROFILES.length - inserted} skipped`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

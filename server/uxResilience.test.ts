@@ -134,11 +134,10 @@ describe("Suspense boundaries with lazy loading", () => {
     expect(appTsx).toContain("</Suspense>");
   });
 
-  it("eagerly loads critical path pages (Landing, Chat, SignIn)", () => {
-    // These should be regular imports, not lazy
-    expect(appTsx).toMatch(/^import Landing from/m);
-    expect(appTsx).toMatch(/^import Chat from/m);
-    expect(appTsx).toMatch(/^import SignIn from/m);
+  it("lazy-loads critical path pages for bundle optimization (Landing, Chat, SignIn)", () => {
+    expect(appTsx).toContain('const Landing = lazy(');
+    expect(appTsx).toContain('const Chat = lazy(');
+    expect(appTsx).toContain('const SignIn = lazy(');
   });
 
   it("lazy-loads non-critical pages", () => {
@@ -158,10 +157,10 @@ describe("Suspense boundaries with lazy loading", () => {
     expect(appTsx).toContain('import("./pages/PartGPages").then(m => ({ default: m.CarrierConnector }))');
   });
 
-  it("keeps Terms, Privacy, Welcome eagerly loaded (public critical)", () => {
-    expect(appTsx).toMatch(/^import Terms from/m);
-    expect(appTsx).toMatch(/^import Privacy from/m);
-    expect(appTsx).toMatch(/^import Welcome from/m);
+  it("lazy-loads Terms, Privacy, Welcome for bundle optimization", () => {
+    expect(appTsx).toContain('const Terms = lazy(');
+    expect(appTsx).toContain('const Privacy = lazy(');
+    expect(appTsx).toContain('const Welcome = lazy(');
   });
 });
 

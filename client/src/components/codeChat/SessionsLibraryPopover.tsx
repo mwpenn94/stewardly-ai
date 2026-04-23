@@ -534,7 +534,7 @@ export default function SessionsLibraryPopover({
             {/* Pass 228: import library from JSON file */}
             <input
               ref={importInputRef}
-              type="file"
+              type="file" aria-label="Import session file"
               accept="application/json,.json"
               className="hidden"
               onChange={async (e) => {

@@ -99,7 +99,7 @@ export interface EventTypeBreakdown {
  */
 export async function recordSyncEvent(input: RecordSyncEventInput): Promise<number | null> {
   try {
-    const pool = getRawPool();
+    const pool = await getRawPool();
     if (!pool) {
       log.warn("[SyncMetrics] Pool unavailable, skipping metric recording");
       return null;
@@ -186,7 +186,7 @@ export async function getChannelMetrics(
   since?: number,
   locationId?: string,
 ): Promise<ChannelMetrics> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   const empty: ChannelMetrics = {
     channel,
     totalEvents: 0,
@@ -348,7 +348,7 @@ export async function getHourlyTimeline(
   since?: number,
   locationId?: string,
 ): Promise<TimelinePoint[]> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return [];
 
   const cutoff = since ?? Date.now() - 86400000; // default: last 24h
@@ -414,7 +414,7 @@ export async function getEventTypeBreakdown(
   since?: number,
   locationId?: string,
 ): Promise<EventTypeBreakdown[]> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return [];
 
   const cutoff = since ?? Date.now() - 86400000;
@@ -478,7 +478,7 @@ async function getCoverageComparison(
   since?: number,
   locationId?: string,
 ): Promise<ChannelComparison["coverageComparison"]> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) {
     return { webhookOnly: 0, pollingOnly: 0, bothChannels: 0, description: "No data available" };
   }

@@ -11,6 +11,6 @@ export const CHANNELS = [
 export async function seed() {
   const totalSpend = CHANNELS.reduce((s, c) => s + c.monthlySpend, 0);
   const totalLeads = CHANNELS.reduce((s, c) => s + c.estLeads, 0);
-  console.log(`[seed:32] AZ Region 1 pilot: ${CHANNELS.length} channels, $${totalSpend}/mo, ~${totalLeads} leads/mo`);
+  console.info(`[seed:32] AZ Region 1 pilot: ${CHANNELS.length} channels, $${totalSpend}/mo, ~${totalLeads} leads/mo`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

@@ -1,6 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
@@ -28,13 +27,14 @@ import { LiveAnnouncer } from "./lib/multisensory/LiveAnnouncer";
 import { GlobalVoiceFAB } from "./components/GlobalVoiceFAB";
 import { useGlobalShortcuts } from "./lib/multisensory/useGlobalShortcuts";
 
-// ── Eagerly loaded (critical path — instant navigation) ──────────────
-import Landing from "./pages/Landing";
-import SignIn from "./pages/SignIn";
-import Chat from "./pages/Chat";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import Welcome from "./pages/Welcome";
+// ── Lazy loaded (critical path — still code-split for bundle size) ────
+const Landing = lazy(() => import("./pages/Landing"));
+const SignIn = lazy(() => import("./pages/SignIn"));
+const Chat = lazy(() => import("./pages/Chat"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ── Lazy loaded (code-split — loaded on demand) ──────────────────────
 const Calculators = lazy(() => import("./pages/Calculators"));

@@ -143,7 +143,7 @@ export const systemRouter = router({
       const now = Date.now();
       for (const err of input.errors) {
         errorBuffer.push({ ...err, receivedAt: now });
-        console.log(`[ClientError] ${err.source} | ${err.message} | ${err.url}`);
+        console.warn(`[ClientError] ${err.source} | ${err.message} | ${err.url}`);
       }
       while (errorBuffer.length > MAX_BUFFER) {
         errorBuffer.shift();

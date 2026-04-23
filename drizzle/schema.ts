@@ -5507,6 +5507,7 @@ export const financialProtectionScores = mysqlTable("financial_protection_scores
   userId: int("user_id"),
   sessionId: varchar("session_id", { length: 100 }),
   emailHash: varchar("email_hash", { length: 64 }),
+  phoneHash: varchar("phone_hash", { length: 64 }),
   firstName: varchar("first_name", { length: 100 }),
   overallScore: int("overall_score"),
   dimensionScores: json("dimension_scores"),

@@ -1,6 +1,6 @@
 import { getDb } from "../db";
 export async function seed() {
-  const db = await getDb(); if (!db) { console.log("[seed:ads] No DB"); return; }
+  const db = await getDb(); if (!db) { console.info("[seed:ads] No DB"); return; }
   const { adPlacements } = await import("../../drizzle/schema");
   const { eq } = await import("drizzle-orm");
   const ADS = [
@@ -19,6 +19,6 @@ export async function seed() {
     if (exists) continue;
     await db.insert(adPlacements).values(ad); inserted++;
   }
-  console.log(`[seed:ads] Ad placements: ${inserted} inserted, ${ADS.length - inserted} skipped`);
+  console.info(`[seed:ads] Ad placements: ${inserted} inserted, ${ADS.length - inserted} skipped`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

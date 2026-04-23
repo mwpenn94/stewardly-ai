@@ -364,7 +364,7 @@ export default function PromptTemplatesPopover({
             {/* Pass 231: import templates from JSON file */}
             <input
               ref={importInputRef}
-              type="file"
+              type="file" aria-label="Import template file"
               accept="application/json,.json"
               className="hidden"
               onChange={async (e) => {

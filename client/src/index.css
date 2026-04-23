@@ -1047,3 +1047,40 @@ body.keyboard-nav :focus-visible {
     background-color: Canvas;
   }
 }
+
+/* === Mobile Responsiveness Fixes (Pass 2B) === */
+@media (max-width: 640px) {
+  /* Increase minimum touch target size */
+  button, a, [role="button"], input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Ensure badge text is readable on mobile */
+  .badge, [class*="badge"], [class*="Badge"] {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+  
+  /* Increase card description text on mobile */
+  .text-xs {
+    font-size: 0.8125rem !important;
+    line-height: 1.25rem !important;
+  }
+  
+  /* Ensure table cells have minimum padding */
+  td, th {
+    padding: 0.5rem !important;
+    font-size: 0.8125rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Ensure form inputs are large enough for touch */
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="search"], input[type="tel"],
+  input[type="url"], select, textarea {
+    min-height: 48px;
+    font-size: 1rem !important;
+  }
+}

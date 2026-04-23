@@ -28,6 +28,6 @@ export const ACTIONS = [
   { domain: "cash_flow", score: 3, action: "Annual cash flow optimization review", products: "Advisory", cadence: "annual" },
 ];
 export async function seed() {
-  console.log(`[seed:31] Holistic summary actions: ${ACTIONS.length} action items defined (9 domains × 3 score levels)`);
+  console.info(`[seed:31] Holistic summary actions: ${ACTIONS.length} action items defined (9 domains × 3 score levels)`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

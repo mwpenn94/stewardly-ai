@@ -334,8 +334,13 @@ export default function CRMSync({ embedded = false }: { embedded?: boolean } = {
     }
     return map;
   }, [unifiedData.platforms, providerRows]);
-
-  // Aggregate stats
+  // Alias for provider card derivation
+  const providerMap = platformMap;
+  // Sync history loading state
+  const syncHistoryLoading = syncHistory.isLoading;
+  // Empty state message for sync history
+  const emptySyncMessage = historyRows.length === 0 ? "No sync history yet" : null;
+  // Aggregate statss
   const totalRecords = useMemo(() => {
     return Object.values(platformMap).reduce((sum: number, p: any) => sum + (Number(p.totalRecordsSynced) || 0), 0);
   }, [platformMap]);
@@ -1695,7 +1700,7 @@ function GHLConnectPanel() {
               className="w-full"
               onClick={() => {
                 if (oauthUrl.data?.url) {
-                  window.open(oauthUrl.data.url, "_blank");
+                  window.open(oauthUrl.data.url, "_blank", "noopener,noreferrer");
                   toast.info("Redirecting to GHL authorization...");
                 }
               }}

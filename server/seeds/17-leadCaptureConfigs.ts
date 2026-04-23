@@ -18,7 +18,7 @@ const CONFIGS = [
   { calculatorType: "term_quote", gateType: "results_summary" as const, valueProposition: "View your estimated term life insurance quotes." },
 ];
 export async function seed() {
-  const db = await getDb(); if (!db) { console.log("[seed:17] No DB — skipping"); return; }
+  const db = await getDb(); if (!db) { console.info("[seed:17] No DB — skipping"); return; }
   const { leadCaptureConfig } = await import("../../drizzle/schema");
   const { eq } = await import("drizzle-orm");
   let inserted = 0;
@@ -27,6 +27,6 @@ export async function seed() {
     if (exists) continue;
     await db.insert(leadCaptureConfig).values(c); inserted++;
   }
-  console.log(`[seed:17] Lead capture configs: ${inserted} inserted`);
+  console.info(`[seed:17] Lead capture configs: ${inserted} inserted`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

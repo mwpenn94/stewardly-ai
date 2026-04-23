@@ -2740,8 +2740,8 @@ export default function Chat() {
             )}
 
             {/* Hidden file inputs */}
-            <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
-            <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
+            <input ref={fileInputRef} type="file" className="hidden" aria-label="Upload documents" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
+            <input ref={imageInputRef} type="file" className="hidden" aria-label="Upload images" multiple accept="image/*" onChange={handleFileSelect} />
 
             {/* Textarea — full width, rounded pill */}
             <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-accent/20 shadow-[0_0_8px_-3px_oklch(0.76_0.14_80_/_0.08)] focus-within:border-accent/50 focus-within:shadow-[0_0_24px_-4px_oklch(0.76_0.14_80_/_0.25)] transition-all duration-300 px-3 py-1.5">

@@ -283,7 +283,7 @@ export default function KnowledgeBaseTab() {
             </div>
             <input
               ref={fileInputRef}
-              type="file"
+              type="file" aria-label="Upload knowledge base file"
               className="hidden"
               onChange={handleFileSelect}
               accept=".txt,.md,.pdf,.doc,.docx,.csv,.json,.xlsx,.pptx,.rtf,.html,.xml,.yaml,.yml"

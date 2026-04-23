@@ -335,7 +335,7 @@ function PfmImportWizard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">CSV File</Label>
-              <Input ref={fileRef} type="file" accept=".csv" className="mt-1 text-xs" />
+              <Input ref={fileRef} type="file" accept=".csv" aria-label="Upload CSV data file" className="mt-1 text-xs" />
             </div>
             <div>
               <Label className="text-xs">Format (optional)</Label>

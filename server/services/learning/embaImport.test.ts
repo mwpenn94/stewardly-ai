@@ -35,6 +35,17 @@ vi.mock("./content", () => {
     listDefinitions: vi.fn(async () => []),
     listQuestionsForTrack: vi.fn(async () => []),
     listFlashcardsForTrack: vi.fn(async () => []),
+    createFormula: vi.fn(async () => nextId()),
+    createCase: vi.fn(async () => nextId()),
+    createFsApplication: vi.fn(async () => nextId()),
+    createConnection: vi.fn(async () => nextId()),
+    listFormulas: vi.fn(async () => []),
+    listCases: vi.fn(async () => []),
+    listFsApplications: vi.fn(async () => []),
+    listConnections: vi.fn(async () => []),
+    updateTrackExamOverview: vi.fn(async () => undefined),
+    updateTrackDiagrams: vi.fn(async () => undefined),
+    getTrack: vi.fn(async () => null),
   };
 });
 
@@ -242,6 +253,9 @@ describe("learning/embaImport", () => {
   });
 
   it("skips definitions whose term already exists in the same discipline", async () => {
+    // First call: allDefs for connections (line 481)
+    (content.listDefinitions as any).mockResolvedValueOnce([]);
+    // Second call: termsFor(disciplineId) for dedup
     (content.listDefinitions as any).mockResolvedValueOnce([
       { term: "NPV" },
     ]);

@@ -46,7 +46,7 @@ interface PurgeResult {
  * Required by GDPR Article 5(1)(e) — storage limitation.
  */
 async function purgeEnrichmentLogs(): Promise<PurgeResult> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return { table: "auth_enrichment_log", rowsDeleted: 0, retentionDays: RETENTION_POLICIES.enrichmentLogs, error: "No DB" };
 
   try {
@@ -69,7 +69,7 @@ async function purgeEnrichmentLogs(): Promise<PurgeResult> {
  * Purge expired notification log entries older than 180 days.
  */
 async function purgeNotificationLogs(): Promise<PurgeResult> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return { table: "notification_log", rowsDeleted: 0, retentionDays: RETENTION_POLICIES.notificationLogs, error: "No DB" };
 
   try {
@@ -91,7 +91,7 @@ async function purgeNotificationLogs(): Promise<PurgeResult> {
  * Purge data access audit entries older than 1 year.
  */
 async function purgeDataAccessAudit(): Promise<PurgeResult> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return { table: "data_access_audit", rowsDeleted: 0, retentionDays: RETENTION_POLICIES.dataAccessAudit, error: "No DB" };
 
   try {
@@ -113,7 +113,7 @@ async function purgeDataAccessAudit(): Promise<PurgeResult> {
  * Purge expired temporary tokens (magic links, MFA backup codes).
  */
 async function purgeExpiredTokens(): Promise<PurgeResult> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return { table: "magic_link_tokens", rowsDeleted: 0, retentionDays: RETENTION_POLICIES.temporaryTokens, error: "No DB" };
 
   try {
@@ -135,7 +135,7 @@ async function purgeExpiredTokens(): Promise<PurgeResult> {
  * Purge failed login attempts older than 90 days.
  */
 async function purgeFailedLoginAttempts(): Promise<PurgeResult> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return { table: "login_attempts", rowsDeleted: 0, retentionDays: RETENTION_POLICIES.failedLoginAttempts, error: "No DB" };
 
   try {
@@ -210,7 +210,7 @@ export function getRetentionPolicies(): typeof RETENTION_POLICIES {
 export async function estimateRetentionPurge(): Promise<{
   estimates: Array<{ table: string; estimatedRows: number; retentionDays: number }>;
 }> {
-  const pool = getRawPool();
+  const pool = await getRawPool();
   if (!pool) return { estimates: [] };
 
   const estimates: Array<{ table: string; estimatedRows: number; retentionDays: number }> = [];

@@ -11,6 +11,6 @@ export const MAPPINGS = [
   { name: "vCard Import", source: "manual_vcf", columns: { "FN": "firstName", "N": "lastName", "EMAIL": "email", "TEL": "phone", "ORG": "company", "TITLE": "title" } },
 ];
 export async function seed() {
-  console.log(`[seed:22] Import field mappings: ${MAPPINGS.length} system mappings defined`);
+  console.info(`[seed:22] Import field mappings: ${MAPPINGS.length} system mappings defined`);
 }
 if (import.meta.url === `file://${process.argv[1]}`) seed();

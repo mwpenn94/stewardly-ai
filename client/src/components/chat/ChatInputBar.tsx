@@ -115,8 +115,8 @@ export function ChatInputBar({
         )}
 
         {/* Hidden file inputs */}
-        <input ref={fileInputRef} type="file" className="hidden" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
-        <input ref={imageInputRef} type="file" className="hidden" multiple accept="image/*" onChange={handleFileSelect} />
+        <input ref={fileInputRef} type="file" className="hidden" aria-label="Upload documents" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
+        <input ref={imageInputRef} type="file" className="hidden" aria-label="Upload images" multiple accept="image/*" onChange={handleFileSelect} />
 
         {/* Pass 4 (Delight): slash-command hint ribbon. Surfaces the
             multisensory slash vocabulary the moment the user types "/".

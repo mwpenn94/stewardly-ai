@@ -67,7 +67,7 @@ describe("Router completeness — every router file exports a router", () => {
     const noExport: string[] = [];
     for (const f of files) {
       const content = readFile(path.join(routersDir, f));
-      if (!content.includes("export const") && !content.includes("export function") && !content.includes("export {")) {
+      if (!content.includes("export const") && !content.includes("export function") && !content.includes("export async function") && !content.includes("export {")) {
         noExport.push(f);
       }
     }

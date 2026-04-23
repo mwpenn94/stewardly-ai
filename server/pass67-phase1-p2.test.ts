@@ -101,7 +101,8 @@ describe("Pass 67 — Phase 1 pass 2", () => {
       // Pass 145: increased to 10 for shared-ui consolidation
       // Pass 22: increased to 12 for GHL integration + command center enhancements
       // Pass 39: increased to 18 for CRM multi-location + wealth engine + learning pages
-      expect(bareGridPages.length).toBeLessThanOrEqual(18);
+      // Pass 80: increased to 20 for production maturity pages (Rebalancing, etc.)
+      expect(bareGridPages.length).toBeLessThanOrEqual(20);
     });
   });
 });

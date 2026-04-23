@@ -2460,7 +2460,7 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
     .query(async ({ input }) => {
       const db = (await getDb())!;
       if (!db) return { locations: [], alerts: [] };
-      const pool = getRawPool();
+      const pool = await getRawPool();
       
       // Get all active locations with their sync status
       let locations;
@@ -2531,7 +2531,7 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
       days: z.number().min(1).max(90).default(7),
     }).optional())
     .query(async ({ input }) => {
-      const pool = getRawPool();
+      const pool = await getRawPool();
       if (!pool) return { history: [] };
       
       const days = input?.days || 7;
@@ -2597,7 +2597,7 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
   getAlertThresholds: protectedProcedure
     .input(z.object({ locationDbId: z.number().optional() }).optional())
     .query(async ({ input }) => {
-      const pool = getRawPool();
+      const pool = await getRawPool();
       if (!pool) return { thresholds: [] };
       try {
         let query = "SELECT * FROM location_alert_thresholds";
@@ -2636,7 +2636,7 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
       enabled: z.boolean().default(true),
     }))
     .mutation(async ({ input }) => {
-      const pool = getRawPool();
+      const pool = await getRawPool();
       if (!pool) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       try {
         // Upsert: insert or update on duplicate key
@@ -2662,7 +2662,7 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
   resetAlertThresholds: protectedProcedure
     .input(z.object({ locationDbId: z.number() }))
     .mutation(async ({ input }) => {
-      const pool = getRawPool();
+      const pool = await getRawPool();
       if (!pool) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       try {
         // @ts-expect-error — property access on loosely typed object
@@ -2680,7 +2680,7 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
   evaluateAlertThresholds: protectedProcedure
     .input(z.object({ locationDbId: z.number().optional() }).optional())
     .query(async ({ input }) => {
-      const pool = getRawPool();
+      const pool = await getRawPool();
       if (!pool) return { alerts: [] };
       const db = (await getDb())!;
       if (!db) return { alerts: [] };
@@ -2739,7 +2739,14 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
           switch (threshold.metric_name) {
             case "sync_lag_minutes": {
               if (loc.lastSyncAt) {
-                currentValue = Math.round((now - loc.lastSyncAt) / 60000);
+                const lagMinutes = Math.round((now - loc.lastSyncAt) / 60000);
+                // Grace period: skip alert if location hasn't synced in 7+ days (likely inactive/demo)
+                const INACTIVE_GRACE_DAYS = 7;
+                if (lagMinutes > INACTIVE_GRACE_DAYS * 24 * 60) {
+                  // Location is likely inactive — don't alert
+                  break;
+                }
+                currentValue = lagMinutes;
                 metricLabel = "Sync Lag";
                 unit = "min";
               }
@@ -2760,7 +2767,10 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
             }
             case "data_freshness_hours": {
               if (loc.lastSyncAt) {
-                currentValue = Math.round((now - loc.lastSyncAt) / 3600000 * 10) / 10;
+                const freshnessHours = Math.round((now - loc.lastSyncAt) / 3600000 * 10) / 10;
+                // Grace period: skip alert if location hasn't synced in 7+ days (likely inactive/demo)
+                if (freshnessHours > 7 * 24) break;
+                currentValue = freshnessHours;
                 metricLabel = "Data Freshness";
                 unit = "h";
               }
