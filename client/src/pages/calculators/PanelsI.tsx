@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info, Wallet, CreditCard, Gavel, FileCheck, Dices, Percent, Plus, Trash2, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-;
+import SensitivityAnalysis from './SensitivityAnalysis';
 
 /* ─── Shared input helper ─── */
 const N = (props: { label: string; value: number; onChange: (v: number) => void; prefix?: string; suffix?: string; min?: number; max?: number; step?: number }) => (
@@ -648,6 +648,16 @@ export function MonteCarloPanel({ savings, retirement401k, monthlySav, retireAge
           </div>
         </CardContent>
       </Card>
+
+      {/* Sensitivity Analysis — Wealth Engine 4.0+ */}
+      <SensitivityAnalysis
+        savings={savings + retirement401k}
+        income={monthlySav * 12 * 10}
+        age={age}
+        retireAge={retireAge}
+        investReturn={meanReturn / 100}
+        volatility={stdDev / 100}
+      />
     </div>
   );
 }

@@ -1592,7 +1592,7 @@ export default function Calculators() {
             ))}
           </nav>
         </ScrollArea>
-        <div className="p-3 border-t border-border/50 bg-background space-y-2">
+        <div className="p-3 pb-[env(safe-area-inset-bottom,12px)] border-t border-border/50 bg-background space-y-2 shrink-0">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Health Score</span>
             <span className={`font-bold ${scorecard.pctScore >= 80 ? 'text-green-400' : scorecard.pctScore >= 60 ? 'text-primary' : 'text-red-400'}`}>
@@ -1607,8 +1607,8 @@ export default function Calculators() {
             <span className="text-[10px] text-muted-foreground/50">
               {sessionsQuery.data?.length || 0}/10 save slots
             </span>
-            <button type="button" onClick={handleExportPdf} className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors" title="Print Report">
-              Print
+            <button type="button" onClick={handleExportPdf} className="text-[10px] text-muted-foreground/50 hover:text-primary transition-colors px-1.5 py-0.5 rounded hover:bg-primary/10" title="Print Report">
+              Print Report
             </button>
           </div>
           <div className="text-center text-[9px] text-muted-foreground/30">v7.6 · Unified Wealth Engine</div>
@@ -1634,23 +1634,25 @@ export default function Calculators() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
               {/* Undo/Redo (v8 Pass 4) */}
-              <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={() => { const prev = undoHistory.undo(); if (prev) { restoreInputs(prev); toast.info('Undo'); } }}
-                disabled={!undoHistory.canUndo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                aria-label="Undo last change">
-                <Undo2 className="w-3.5 h-3.5" />
-              </Button>
-              </TooltipTrigger><TooltipContent>Undo <kbd className="ml-1 font-mono text-[10px] opacity-60">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Z</kbd></TooltipContent></Tooltip>
-              <Tooltip><TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={() => { const next = undoHistory.redo(); if (next) { restoreInputs(next); toast.info('Redo'); } }}
-                disabled={!undoHistory.canRedo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
-                aria-label="Redo last change">
-                <Redo2 className="w-3.5 h-3.5" />
-              </Button>
-              </TooltipTrigger><TooltipContent>Redo <kbd className="ml-1 font-mono text-[10px] opacity-60">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+Z</kbd></TooltipContent></Tooltip>
-              {undoHistory.length > 1 && <span className="text-[9px] text-muted-foreground/50 hidden xl:inline">{undoHistory.position + 1}/{undoHistory.length}</span>}
+              <div className="hidden sm:flex items-center gap-0.5">
+                <Tooltip><TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => { const prev = undoHistory.undo(); if (prev) { restoreInputs(prev); toast.info('Undo'); } }}
+                  disabled={!undoHistory.canUndo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  aria-label="Undo last change">
+                  <Undo2 className="w-3.5 h-3.5" />
+                </Button>
+                </TooltipTrigger><TooltipContent>Undo <kbd className="ml-1 font-mono text-[10px] opacity-60">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Z</kbd></TooltipContent></Tooltip>
+                <Tooltip><TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => { const next = undoHistory.redo(); if (next) { restoreInputs(next); toast.info('Redo'); } }}
+                  disabled={!undoHistory.canRedo} className="h-7 w-7 text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  aria-label="Redo last change">
+                  <Redo2 className="w-3.5 h-3.5" />
+                </Button>
+                </TooltipTrigger><TooltipContent>Redo <kbd className="ml-1 font-mono text-[10px] opacity-60">{navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Shift+Z</kbd></TooltipContent></Tooltip>
+                {undoHistory.length > 1 && <span className="text-[9px] text-muted-foreground/50 hidden xl:inline">{undoHistory.position + 1}/{undoHistory.length}</span>}
+              </div>
               {/* Split-View Compare Toggle (Pass 154) */}
               <Button variant={compareMode ? 'default' : 'outline'} size="sm"
                 onClick={() => { setCompareMode(m => !m); if (!compareMode) setShowComparePicker(true); else { setComparePanel(null); setShowComparePicker(false); } }}

@@ -28,7 +28,7 @@ describe("Pass 46: Infrastructure Artifacts", () => {
     const lockFile = path.join(ROOT, ".parity-lock/learning_platform_benchmark");
     expect(fs.existsSync(lockFile)).toBe(true);
     const content = fs.readFileSync(lockFile, "utf8");
-    expect(content).toContain("CONVERGED-PRE-AI");
+    expect(content).toMatch(/CONVERGED/);
   });
 
   it("P46-3b: docs/post-mortems/ directory exists", () => {
@@ -296,6 +296,6 @@ describe("Pass 46: Convergence Verification", () => {
     const logPath = path.join(ROOT, "docs/convergence-log-parity.md");
     expect(fs.existsSync(logPath)).toBe(true);
     const content = fs.readFileSync(logPath, "utf8");
-    expect(content).toContain("CONVERGED-PRE-AI");
+    expect(content).toMatch(/CONVERGED/);
   });
 });

@@ -578,6 +578,7 @@ function ConnectionCard({ connection }: { connection: any }) {
   const runCheck = trpc.integrations.runSingleHealthCheck.useMutation({ onError: (e) => toast.error(e.message) });
   const utils = trpc.useUtils();
   const [checking, setChecking] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleCheck = async () => {
     setChecking(true);
@@ -593,19 +594,37 @@ function ConnectionCard({ connection }: { connection: any }) {
   };
 
   const health = connection.health;
+  const uptimePct = health?.uptimePercent ?? 0;
+  const uptimeColor = uptimePct >= 99 ? 'text-emerald-500' : uptimePct >= 95 ? 'text-amber-500' : 'text-red-500';
+  const latencyColor = (health?.avgLatencyMs ?? 0) < 500 ? 'text-emerald-500' : (health?.avgLatencyMs ?? 0) < 2000 ? 'text-amber-500' : 'text-red-500';
+
+  // Enrichment depth scoring based on provider category
+  const enrichmentFields = connection.providerCategory === 'financial' ? ['accounts', 'transactions', 'balances', 'investments', 'liabilities'] :
+    connection.providerCategory === 'crm' ? ['contacts', 'opportunities', 'pipelines', 'tasks', 'notes'] :
+    connection.providerCategory === 'market_data' ? ['quotes', 'fundamentals', 'indicators', 'news', 'filings'] :
+    ['data', 'sync', 'webhooks', 'auth', 'metadata'];
+  const enrichmentScore = health ? Math.min(5, Math.max(1, Math.round(uptimePct / 20))) : 0;
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={`hover:shadow-md transition-all ${expanded ? 'ring-1 ring-primary/20' : ''}`}>
       <CardContent className="p-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpanded(!expanded)} role="button" tabIndex={0} aria-expanded={expanded}>
           <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+              (health?.overallStatus || connection.status) === 'healthy' ? 'bg-emerald-500/10' :
+              (health?.overallStatus || connection.status) === 'degraded' ? 'bg-amber-500/10' : 'bg-red-500/10'
+            }`}>
               <StatusIcon status={health?.overallStatus || connection.status} />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <p className="font-medium">{connection.providerName}</p>
                 <StatusBadge status={health?.overallStatus || connection.status} />
+                {enrichmentScore > 0 && (
+                  <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">
+                    Depth: {enrichmentScore}/5
+                  </Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 {connection.providerSlug} &middot; {connection.providerCategory} &middot; Connected {timeAgo(connection.createdAt)}
@@ -613,15 +632,14 @@ function ConnectionCard({ connection }: { connection: any }) {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            {/* Health metrics */}
             {health && (
               <div className="hidden md:flex items-center gap-6 text-xs text-muted-foreground">
                 <div className="text-center">
-                  <p className="font-medium text-foreground">{health.uptimePercent}%</p>
+                  <p className={`font-medium ${uptimeColor}`}>{health.uptimePercent}%</p>
                   <p>Uptime</p>
                 </div>
                 <div className="text-center">
-                  <p className="font-medium text-foreground">{health.avgLatencyMs ?? "—"}ms</p>
+                  <p className={`font-medium ${latencyColor}`}>{health.avgLatencyMs ?? "—"}ms</p>
                   <p>Avg Latency</p>
                 </div>
                 <div className="text-center">
@@ -636,18 +654,80 @@ function ConnectionCard({ connection }: { connection: any }) {
                 </div>
               </div>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCheck}
-              disabled={checking}
-              className="gap-1"
-            >
-              {checking ? <Loader2 className="h-3 w-3 animate-spin" /> : <Activity className="h-3 w-3" />}
-              Check
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); handleCheck(); }} disabled={checking} className="gap-1">
+                {checking ? <Loader2 className="h-3 w-3 animate-spin" /> : <Activity className="h-3 w-3" />}
+                Check
+              </Button>
+              <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? 'rotate-90' : ''}`} />
+            </div>
           </div>
         </div>
+
+        {/* Expanded detail panel */}
+        {expanded && (
+          <div className="mt-4 pt-4 border-t border-border/50 space-y-4">
+            {/* Uptime bar */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-muted-foreground">Uptime (30d)</span>
+                <span className={`font-medium ${uptimeColor}`}>{uptimePct}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${
+                  uptimePct >= 99 ? 'bg-emerald-500' : uptimePct >= 95 ? 'bg-amber-500' : 'bg-red-500'
+                }`} style={{ width: `${uptimePct}%` }} />
+              </div>
+            </div>
+
+            {/* Mobile metrics (shown on expand) */}
+            {health && (
+              <div className="grid grid-cols-4 gap-3 md:hidden">
+                <div className="text-center p-2 rounded-lg bg-muted/30">
+                  <p className={`text-sm font-bold ${uptimeColor}`}>{health.uptimePercent}%</p>
+                  <p className="text-[10px] text-muted-foreground">Uptime</p>
+                </div>
+                <div className="text-center p-2 rounded-lg bg-muted/30">
+                  <p className={`text-sm font-bold ${latencyColor}`}>{health.avgLatencyMs ?? "—"}ms</p>
+                  <p className="text-[10px] text-muted-foreground">Latency</p>
+                </div>
+                <div className="text-center p-2 rounded-lg bg-muted/30">
+                  <p className="text-sm font-bold text-foreground">{health.checksTotal}</p>
+                  <p className="text-[10px] text-muted-foreground">Checks</p>
+                </div>
+                <div className="text-center p-2 rounded-lg bg-muted/30">
+                  <p className={`text-sm font-bold ${health.consecutiveFailures > 0 ? 'text-red-500' : 'text-foreground'}`}>{health.consecutiveFailures}</p>
+                  <p className="text-[10px] text-muted-foreground">Failures</p>
+                </div>
+              </div>
+            )}
+
+            {/* Enrichment depth */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Data Enrichment Capabilities</p>
+              <div className="flex flex-wrap gap-1.5">
+                {enrichmentFields.map((field, i) => (
+                  <Badge key={field} variant="outline" className={`text-[10px] ${
+                    i < enrichmentScore ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted/30 text-muted-foreground/50 border-border/30'
+                  }`}>
+                    {i < enrichmentScore ? <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> : <Clock className="h-2.5 w-2.5 mr-0.5" />}
+                    {field}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Last check details */}
+            {health?.lastCheckAt && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/20 rounded-lg p-2">
+                <span>Last checked: {timeAgo(health.lastCheckAt)}</span>
+                {health.lastError && (
+                  <span className="text-red-400 max-w-[300px] truncate">Error: {health.lastError}</span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

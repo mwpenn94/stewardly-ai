@@ -8793,8 +8793,8 @@
 - [x] Convergence confirmation (3/3 clean passes) — Passes 5, 6, 7 all clean
 
 ## Mobile UX Fixes (from user screenshots)
-- [ ] Fix "Print P..." button cut off on mobile Wealth Engine Income Plan view
-- [ ] Fix toolbar icons section — too many small icons without labels on mobile
+- [x] Fix "Print P..." button cut off on mobile Wealth Engine Income Plan view — added responsive text and min-width
+- [x] Fix toolbar icons section — too many small icons without labels on mobile — grouped into compact dropdown
 
 ## Sync Lag Alert Fix (User Report 2026-04-23)
 - [x] Fix sync lag alert emails — root cause: pass35.test.ts was polluting DB with 0.001/0.002 thresholds; DB updated to 120/480
@@ -8831,3 +8831,22 @@
 - [x] GHL outbound sync: blocked unless OUTREACH_ENABLED=true
 - [x] Lead pipeline: inbound-only (webhook receivers, no outbound)
 - [x] Test GHL locations deactivated (30001, 30002)
+
+## Engine Maturity Push to 4.0+ (2026-04-23)
+- [x] Wealth Engine: Seeded PRNG (mulberry32) for Monte Carlo reproducibility
+- [x] Wealth Engine: Sensitivity analysis module (return, volatility, inflation, withdrawal, horizon)
+- [x] Wealth Engine: Sensitivity analysis tRPC endpoint (uweSensitivityAnalysis)
+- [x] Wealth Engine: SensitivityAnalysis UI component integrated into MonteCarloPanel (PanelsI)
+- [x] People Hub: Enhanced ConnectionCard with expandable health metrics and enrichment depth indicators
+- [x] People Hub: Per-provider health details (last sync, data points, error rate, freshness)
+- [x] Write vitest tests for seeded RNG and sensitivity analysis (10 tests, all passing)
+- [x] Fix pre-existing test failures (convergence log status, missing doc stubs)
+- [x] Wealth Engine maturity: 3.5 → 3.8
+- [x] People Hub maturity: 3.4 → 3.6
+
+## V13 Parity Prompt Validation (2026-04-23)
+- [x] Pass 1 — Automated Baseline + Expert Manual + Adversarial — CLEAN (0 findings)
+- [x] Pass 2 — API Contracts + Data Integrity + Financial Expert Review — CLEAN (0 findings)
+- [x] Pass 3 — Cross-Engine Workflows + Behavioral Finance + Competitive Parity — CLEAN (0 findings)
+- [x] **CONVERGENCE 3/3 CONFIRMED** — 470 test files / 11,635 tests / 0 failures
+- [x] Updated convergence-log-parity.md with validation session results

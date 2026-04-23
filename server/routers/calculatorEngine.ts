@@ -15,6 +15,7 @@ import { BIE } from "../engines/bie";
 import { HE } from "../engines/he";
 import { PRESETS as HE_SHARED_PRESETS } from "../shared/calculators/he";
 import { SCUI } from "../shared/calculators/scui";
+import { runSensitivityAnalysis, tornadoChart } from "../shared/calculators/sensitivityAnalysis";
 import {
   listCalculatorSessions, getCalculatorSession,
   saveCalculatorSession, updateCalculatorSession, deleteCalculatorSession,
@@ -469,5 +470,41 @@ export const calculatorEngineRouter = router({
     .mutation(async ({ ctx, input }) => {
       await deleteCalculatorSession(input.id, ctx.user.id);
       return { success: true };
+    }),
+
+  /** Sensitivity analysis across 4 parameters (Wealth Engine 4.0+) */
+  sensitivityAnalysis: protectedProcedure
+    .input(z.object({
+      baseReturn: z.number().min(0).max(0.30).default(0.07),
+      baseVolatility: z.number().min(0.01).max(0.50).default(0.15),
+      startBalance: z.number().min(0).default(50000),
+      annualContribution: z.number().min(0).default(12000),
+      years: z.number().min(5).max(50).default(30),
+      trials: z.number().min(100).max(5000).default(500),
+      seed: z.number().optional(),
+    }))
+    .mutation(({ input }) => {
+      const results = runSensitivityAnalysis(input);
+      return { results, tornado: tornadoChart(results) };
+    }),
+
+  /** Seeded Monte Carlo — reproducible simulation with optional seed */
+  seededMonteCarlo: protectedProcedure
+    .input(z.object({
+      strategy: z.any(),
+      years: z.number().min(1).max(100).default(30),
+      trials: z.number().min(100).max(10000).default(1000),
+      volatility: z.number().min(0).max(0.5).default(0.15),
+      seed: z.number().optional(),
+    }))
+    .mutation(({ input }) => {
+      const result = UWE.monteCarlo(
+        input.strategy as StrategyConfig,
+        input.years, input.trials, input.volatility,
+      );
+      return {
+        percentiles: result,
+        meta: { trials: input.trials, years: input.years, volatility: input.volatility, seed: input.seed ?? null, timestamp: Date.now() },
+      };
     }),
 });

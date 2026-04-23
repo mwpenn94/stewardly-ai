@@ -787,8 +787,8 @@ export function MyPlanPanel(p: PracticeProps) {
             {plan.onTrack ? '✓ On Track' : `Gap: ${fmtSm(plan.totalGap)}`}
           </Badge>
           <RefTip text="Unified income planning: set a target income, allocate across channels, and the engine calculates what's needed in each channel to hit your goal. Defaults based on role-specific industry benchmarks." refId="commission" />
-          <div className="ml-auto flex flex-wrap gap-1">
-            <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
+          <div className="ml-auto flex flex-wrap gap-1 shrink-0">
+            <Button variant="outline" size="sm" className="h-6 text-[10px] px-2 whitespace-nowrap" onClick={() => {
               const exportData: ExportPlanData = {
                 role: p.role, targetIncome: p.targetIncome, incomeSplits: p.incomeSplits,
                 enabledChannels: p.enabledChannels, plan, economics, sensitivity,
