@@ -12,6 +12,7 @@ function CascadeToastBridge({ data }: { data: WealthEngineData }) {
 import AppShell from '@/components/AppShell';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -29,7 +30,7 @@ import {
   Database, Zap, Sparkles, ShieldCheck,
   ClipboardList, FileBarChart, UsersRound, Search, Star,
   Banknote, Crown, SlidersHorizontal,
-  Home, Columns2, GripVertical, HelpCircle, Keyboard, Undo2, Redo2
+  Home, Columns2, GripVertical, HelpCircle, Keyboard, Undo2, Redo2, MoreHorizontal
 } from 'lucide-react';
 
 import {
@@ -1671,31 +1672,99 @@ export default function Calculators() {
                >
                 <FolderOpen className="w-3 h-3" /> <span className="hidden sm:inline">Load</span>
               </Button>
+              {/* ─── MOBILE: Export dropdown (md and below) ─── */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="md:hidden h-7 gap-1" aria-label="Export & import options">
+                    <Download className="w-3 h-3" /> <MoreHorizontal className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="text-xs">Export</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={handleExportPdf}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    import('./calculators/exportUnifiedPlan').then(m => m.exportUnifiedPlanPDF(weData));
+                    toast.success('Unified plan report opened in new tab — use Print to save as PDF');
+                  }}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> <span className="text-primary">⭐ Full Plan</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    import('./calculators/exportUnifiedPlan').then(m => m.exportUnifiedPlanExcel(weData));
+                    toast.success('Unified plan Excel downloaded');
+                  }}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportCsv}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => {
+                    const json = JSON.stringify(gatherInputs(), null, 2);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url; a.download = `WealthBridge-${clientName || 'Session'}-${new Date().toISOString().slice(0,10)}.json`;
+                    a.click(); URL.revokeObjectURL(url);
+                    toast.success('JSON exported!');
+                  }}>
+                    <Download className="w-3.5 h-3.5 mr-2" /> JSON
+                  </DropdownMenuItem>
+                  {user && (
+                    <DropdownMenuItem onClick={() => bulkExportMut.mutate()} disabled={bulkExportMut.isPending}>
+                      <Download className="w-3.5 h-3.5 mr-2" /> {bulkExportMut.isPending ? 'Exporting...' : 'All Scenarios'}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs">Import</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file'; input.accept = '.json';
+                    input.onchange = (e) => {
+                      const file = (e.target as HTMLInputElement).files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = (ev) => {
+                        try {
+                          const data = JSON.parse(ev.target?.result as string);
+                          restoreInputs(data);
+                          toast.success('Session imported from JSON');
+                        } catch { toast.error('Invalid JSON file'); }
+                      };
+                      reader.readAsText(file);
+                    };
+                    input.click();
+                  }}>
+                    <Upload className="w-3.5 h-3.5 mr-2" /> Import JSON
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              {/* ─── DESKTOP: Individual export buttons (hidden on mobile) ─── */}
               <Button variant="outline" size="sm" onClick={handleExportPdf}
-               >
-                <Download className="w-3 h-3" /> <span className="hidden sm:inline">PDF</span>
+                className="hidden md:flex">
+                <Download className="w-3 h-3" /> <span className="hidden lg:inline">PDF</span>
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
                 import('./calculators/exportUnifiedPlan').then(m => m.exportUnifiedPlanPDF(weData));
                 toast.success('Unified plan report opened in new tab — use Print to save as PDF');
-              }} className="text-xs gap-1 h-7 border-primary/30 text-primary" aria-label="Export unified plan as PDF">
-                <Download className="w-3 h-3" /> <span className="hidden sm:inline">⭐ Full Plan</span>
+              }} className="hidden md:flex text-xs gap-1 h-7 border-primary/30 text-primary" aria-label="Export unified plan as PDF">
+                <Download className="w-3 h-3" /> <span className="hidden lg:inline">⭐ Full Plan</span>
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
                 import('./calculators/exportUnifiedPlan').then(m => m.exportUnifiedPlanExcel(weData));
                 toast.success('Unified plan Excel downloaded');
-              }} aria-label="Export unified plan as Excel">
-                <Download className="w-3 h-3" /> <span className="hidden sm:inline">Excel</span>
+              }} className="hidden md:flex" aria-label="Export unified plan as Excel">
+                <Download className="w-3 h-3" /> <span className="hidden lg:inline">Excel</span>
               </Button>
               <Button variant="outline" size="sm" onClick={handleExportCsv}
-                aria-label="Export as CSV">
-                <Download className="w-3 h-3" /> <span className="hidden sm:inline">CSV</span>
+                className="hidden md:flex" aria-label="Export as CSV">
+                <Download className="w-3 h-3" /> <span className="hidden lg:inline">CSV</span>
               </Button>
               {user && (
                 <Button variant="outline" size="sm" onClick={() => bulkExportMut.mutate()}
                   disabled={bulkExportMut.isPending}
-                  className="text-xs gap-1 h-7 border-emerald-500/30 text-emerald-400 hover:text-emerald-300" aria-label="Export all saved scenarios as Excel workbook">
-                  <Download className={`w-3 h-3 ${bulkExportMut.isPending ? 'animate-spin' : ''}`} /> <span className="hidden sm:inline">{bulkExportMut.isPending ? 'Exporting...' : 'All Scenarios'}</span>
+                  className="hidden md:flex text-xs gap-1 h-7 border-emerald-500/30 text-emerald-400 hover:text-emerald-300" aria-label="Export all saved scenarios as Excel workbook">
+                  <Download className={`w-3 h-3 ${bulkExportMut.isPending ? 'animate-spin' : ''}`} /> <span className="hidden lg:inline">{bulkExportMut.isPending ? 'Exporting...' : 'All Scenarios'}</span>
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => {
@@ -1715,8 +1784,8 @@ export default function Calculators() {
                   reader.readAsText(file);
                 };
                 input.click();
-              }} aria-label="Import session from JSON file">
-                <Upload className="w-3 h-3" /> <span className="hidden sm:inline">Import</span>
+              }} className="hidden md:flex" aria-label="Import session from JSON file">
+                <Upload className="w-3 h-3" /> <span className="hidden lg:inline">Import</span>
               </Button>
               <Button variant="outline" size="sm" onClick={() => {
                 const json = JSON.stringify(gatherInputs(), null, 2);
@@ -1726,8 +1795,8 @@ export default function Calculators() {
                 a.href = url; a.download = `WealthBridge-${clientName || 'Session'}-${new Date().toISOString().slice(0,10)}.json`;
                 a.click(); URL.revokeObjectURL(url);
                 toast.success('JSON exported!');
-              }} aria-label="Export session as JSON">
-                <Download className="w-3 h-3" /> <span className="hidden sm:inline">JSON</span>
+              }} className="hidden md:flex" aria-label="Export session as JSON">
+                <Download className="w-3 h-3" /> <span className="hidden lg:inline">JSON</span>
               </Button>
               <Button variant="ghost" size="sm" onClick={() => {
                 if (confirm('Reset all inputs to defaults? This cannot be undone.')) {
@@ -1739,7 +1808,7 @@ export default function Calculators() {
               </Button>
               <ShareButton contentType="calculator" contentId={String(activeSessionId || 'unsaved')} contentTitle={`WealthBridge Calculator — ${clientName || 'Session'}`} variant="outline" size="sm" />
               {user && (
-                <div className="flex items-center gap-1">
+                <div className="hidden md:flex items-center gap-1">
                   <select
                     value={shareExpiry}
                     onChange={e => setShareExpiry(Number(e.target.value) as 7 | 30 | 90 | 365)}

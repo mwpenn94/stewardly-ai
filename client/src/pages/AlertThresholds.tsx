@@ -558,7 +558,7 @@ export default function AlertThresholds() {
         <span>Thresholds are evaluated every 30s against live metrics</span>
         <span>&middot;</span>
         <Activity className="h-3 w-3" />
-        <span>Unconfigured locations use system defaults (30min warning, 60min critical)</span>
+        <span>Unconfigured locations use system defaults (120min warning, 480min critical)</span>
       </div>
     </div>
   );

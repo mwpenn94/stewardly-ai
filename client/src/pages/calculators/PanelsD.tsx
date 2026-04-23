@@ -780,14 +780,14 @@ export function MyPlanPanel(p: PracticeProps) {
 
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base flex flex-wrap items-center gap-2">
           <span className="text-primary">Income Plan</span>
           <Badge variant="outline" className="text-[10px]">{HIER_NAMES[p.role]}</Badge>
           <Badge variant="outline" className={`text-[10px] ${plan.onTrack ? 'text-green-400 border-green-400/30' : 'text-amber-400 border-amber-400/30'}`}>
             {plan.onTrack ? '✓ On Track' : `Gap: ${fmtSm(plan.totalGap)}`}
           </Badge>
           <RefTip text="Unified income planning: set a target income, allocate across channels, and the engine calculates what's needed in each channel to hit your goal. Defaults based on role-specific industry benchmarks." refId="commission" />
-          <div className="ml-auto flex gap-1">
+          <div className="ml-auto flex flex-wrap gap-1">
             <Button variant="outline" size="sm" className="h-6 text-[10px] px-2" onClick={() => {
               const exportData: ExportPlanData = {
                 role: p.role, targetIncome: p.targetIncome, incomeSplits: p.incomeSplits,
@@ -2338,7 +2338,7 @@ export function ProductsPanel(p: PracticeProps) {
     <p className="text-sm text-muted-foreground mb-4">Set your product allocation percentages. Mix impacts weighted GDC, commission rates, and revenue projections.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base flex flex-wrap items-center gap-2">
           <span className="text-primary">Products & Mix</span>
           <RefTip text="Product mix based on NLG 2026 commission schedules. FYC rates: IUL 90-110%, WL 55-80%, Term 80-100%. Target premium allocations per LIMRA industry averages." refId="commission" />
           <label className="flex items-center gap-1.5 text-[11px] cursor-pointer ml-auto font-normal">
@@ -2917,7 +2917,7 @@ export function PnLPanel(p: PracticeProps) {
     <p className="text-sm text-muted-foreground mb-4">Individual or team-level profit and loss with EBIT, net income, and back-plan goal tracking.</p>
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base flex flex-wrap items-center gap-2">
           <span className="text-primary">P&L (Profit & Loss)</span>
           <RefTip text="P&L follows standard financial statement format. OpEx benchmarks from LIMRA Agent Compensation Study 2024. Tax rates per IRS 2024 brackets." refId="commission" />
           <Badge variant="outline" className="text-[10px]">{p.pnlLevel === 'ind' ? 'Individual' : 'Team/Agency'}</Badge>

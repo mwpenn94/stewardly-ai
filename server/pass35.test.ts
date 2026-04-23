@@ -334,19 +334,33 @@ describe("integrations.evaluateAlertThresholds", () => {
       expect(err.message).toMatch(/pool|Database|execute/);
       return;
     }
-    const result = await caller.integrations.evaluateAlertThresholds();
-    // May or may not have alerts depending on whether location exists
-    for (const alert of result.alerts) {
-      expect(alert).toHaveProperty("locationDbId");
-      expect(alert).toHaveProperty("locationId");
-      expect(alert).toHaveProperty("locationName");
-      expect(alert).toHaveProperty("metricName");
-      expect(alert).toHaveProperty("currentValue");
-      expect(alert).toHaveProperty("warningThreshold");
-      expect(alert).toHaveProperty("criticalThreshold");
-      expect(alert).toHaveProperty("severity");
-      expect(alert).toHaveProperty("message");
-      expect(["warning", "critical"]).toContain(alert.severity);
+    try {
+      const result = await caller.integrations.evaluateAlertThresholds();
+      // May or may not have alerts depending on whether location exists
+      for (const alert of result.alerts) {
+        expect(alert).toHaveProperty("locationDbId");
+        expect(alert).toHaveProperty("locationId");
+        expect(alert).toHaveProperty("locationName");
+        expect(alert).toHaveProperty("metricName");
+        expect(alert).toHaveProperty("currentValue");
+        expect(alert).toHaveProperty("warningThreshold");
+        expect(alert).toHaveProperty("criticalThreshold");
+        expect(alert).toHaveProperty("severity");
+        expect(alert).toHaveProperty("message");
+        expect(["warning", "critical"]).toContain(alert.severity);
+      }
+    } finally {
+      // Restore production-safe thresholds to avoid polluting other tests
+      try {
+        await caller.integrations.setAlertThreshold({
+          locationDbId: 1,
+          locationId: "test-loc-001",
+          metricName: "sync_lag_minutes",
+          warningThreshold: 120,
+          criticalThreshold: 480,
+          enabled: true,
+        });
+      } catch { /* best-effort cleanup */ }
     }
   });
 

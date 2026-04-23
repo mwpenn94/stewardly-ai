@@ -2740,8 +2740,8 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
             case "sync_lag_minutes": {
               if (loc.lastSyncAt) {
                 const lagMinutes = Math.round((now - loc.lastSyncAt) / 60000);
-                // Grace period: skip alert if location hasn't synced in 7+ days (likely inactive/demo)
-                const INACTIVE_GRACE_DAYS = 7;
+                // Grace period: skip alert if location hasn't synced in 2+ days (likely inactive/demo)
+                const INACTIVE_GRACE_DAYS = 2;
                 if (lagMinutes > INACTIVE_GRACE_DAYS * 24 * 60) {
                   // Location is likely inactive — don't alert
                   break;
@@ -2768,8 +2768,8 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
             case "data_freshness_hours": {
               if (loc.lastSyncAt) {
                 const freshnessHours = Math.round((now - loc.lastSyncAt) / 3600000 * 10) / 10;
-                // Grace period: skip alert if location hasn't synced in 7+ days (likely inactive/demo)
-                if (freshnessHours > 7 * 24) break;
+                // Grace period: skip alert if location hasn't synced in 2+ days (likely inactive/demo)
+                if (freshnessHours > 2 * 24) break;
                 currentValue = freshnessHours;
                 metricLabel = "Data Freshness";
                 unit = "h";
@@ -2816,22 +2816,47 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
 
         // ── Threshold-breach notifications ──────────────────────────────
         // When critical alerts are detected, push an in-app notification to the owner.
-        // Uses a simple dedup: only notify once per location+metric per hour.
+        // Uses DB-backed dedup: only notify once per location+metric per 8 hours.
+        // This survives server restarts (unlike the old in-memory-only cache).
         const criticalAlerts = alerts.filter(a => a.severity === "critical");
         if (criticalAlerts.length > 0) {
           try {
-            // Check last notification time to avoid spam (1h cooldown per metric)
             const now2 = Date.now();
-            const cooldownMs = 3600000; // 1 hour
+            const cooldownMs = 8 * 3600000; // 8 hours (was 1 hour — too aggressive)
+
+            // In-memory cache as fast path
             const notifCacheKey = `alert_notif_cache`;
             if (!(globalThis as any)[notifCacheKey]) (globalThis as any)[notifCacheKey] = new Map<string, number>();
             const cache = (globalThis as any)[notifCacheKey] as Map<string, number>;
 
-            const newCriticals = criticalAlerts.filter(a => {
-              const key = `${a.locationDbId}:${a.metricName}`;
-              const lastNotified = cache.get(key) || 0;
-              return now2 - lastNotified > cooldownMs;
-            });
+            // DB-backed cooldown: check last_notified_at column on the threshold row
+            // This ensures cooldown survives server restarts
+            const newCriticals: typeof criticalAlerts = [];
+            for (const a of criticalAlerts) {
+              const memKey = `${a.locationDbId}:${a.metricName}`;
+              const lastMemNotified = cache.get(memKey) || 0;
+              if (now2 - lastMemNotified <= cooldownMs) continue; // in-memory fast reject
+
+              // Check DB for last notification time
+              try {
+                // @ts-expect-error — property access on loosely typed object
+                const [dbRows] = await pool.execute(
+                  `SELECT last_notified_at FROM location_alert_thresholds WHERE location_db_id = ? AND metric_name = ? LIMIT 1`,
+                  [a.locationDbId, a.metricName],
+                );
+                const dbRow = (dbRows as any[])[0];
+                const lastDbNotified = dbRow?.last_notified_at ? new Date(dbRow.last_notified_at).getTime() : 0;
+                if (now2 - lastDbNotified > cooldownMs) {
+                  newCriticals.push(a);
+                } else {
+                  // Sync memory cache from DB
+                  cache.set(memKey, lastDbNotified);
+                }
+              } catch {
+                // If column doesn't exist yet, fall through to in-memory only
+                newCriticals.push(a);
+              }
+            }
 
             if (newCriticals.length > 0) {
               const title = `\u26a0\ufe0f Critical Alert: ${newCriticals.length} threshold breach${newCriticals.length > 1 ? "es" : ""} detected`;
@@ -2841,9 +2866,17 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
 
               const sent = await notifyOwner({ title, content });
               if (sent) {
-                // Update dedup cache
                 for (const a of newCriticals) {
-                  cache.set(`${a.locationDbId}:${a.metricName}`, now2);
+                  const memKey = `${a.locationDbId}:${a.metricName}`;
+                  cache.set(memKey, now2);
+                  // Persist to DB so cooldown survives restarts
+                  try {
+                    // @ts-expect-error — property access on loosely typed object
+                    await pool.execute(
+                      `UPDATE location_alert_thresholds SET last_notified_at = NOW() WHERE location_db_id = ? AND metric_name = ?`,
+                      [a.locationDbId, a.metricName],
+                    );
+                  } catch { /* column may not exist yet — graceful degradation */ }
                 }
                 logger.info(`[AlertThresholds] Notified owner of ${newCriticals.length} critical alert(s)`);
               }

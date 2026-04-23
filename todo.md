@@ -8782,3 +8782,23 @@
 - [x] Fix GHL sync lag threshold — 795min exceeds 50min critical threshold for Stewardly HQ
 - [x] Increase default sync lag threshold or implement smarter baseline detection
 - [x] Ensure alert doesn't fire for inactive/demo locations
+
+## Next Steps Execution (2026-04-23)
+- [x] Claim Stripe sandbox via browser (requires user login — URL provided)
+- [x] Verify sync lag fix on Alert Thresholds page
+- [x] Execute Parity Prompt v12 — Tier 1 Automated Baseline (CLEAN — 0 findings)
+- [ ] Execute Parity Prompt v12 — Tier 2 Expert Manual Review (all engines)
+- [ ] Execute Parity Prompt v12 — Tier 3 Adversarial Testing
+- [ ] Fix findings and push engine maturity toward 4.0+
+- [ ] Convergence confirmation (3/3 clean passes)
+
+## Mobile UX Fixes (from user screenshots)
+- [ ] Fix "Print P..." button cut off on mobile Wealth Engine Income Plan view
+- [ ] Fix toolbar icons section — too many small icons without labels on mobile
+
+## Sync Lag Alert Fix (User Report 2026-04-23)
+- [x] Fix sync lag alert emails — root cause: pass35.test.ts was polluting DB with 0.001/0.002 thresholds; DB updated to 120/480
+- [x] Ensure alert thresholds use the updated 120/480min defaults — DB rows verified and corrected
+- [x] Notification cooldown increased to 8h with DB-backed last_notified_at column (survives server restarts)
+- [x] Inactive grace period reduced from 7 to 2 days for sync_lag and data_freshness alerts
+- [x] pass35.test.ts now restores production thresholds after shape-check test (prevents future pollution)

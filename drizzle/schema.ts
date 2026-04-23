@@ -7509,6 +7509,7 @@ export const locationAlertThresholds = mysqlTable("location_alert_thresholds", {
   warningThreshold: float("warning_threshold").notNull(),
   criticalThreshold: float("critical_threshold").notNull(),
   enabled: mysqlBoolean("enabled").default(true),
+  lastNotifiedAt: timestamp("last_notified_at"), // DB-backed cooldown for notification dedup
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
