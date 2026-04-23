@@ -215,13 +215,14 @@ describe("Location Health — Route & Navigation", () => {
 
 // ─── Scheduler Integration ───────────────────────────────────────────────
 describe("Scheduler Integration", () => {
-  it("scheduler.ts contains ghl_contact_polling job (NOT auto-activated)", async () => {
+  it("scheduler.ts contains ghl_contact_polling job with auto-activation for active locations", async () => {
     const fs = await import("fs");
     const schedulerCode = fs.readFileSync("server/services/scheduler.ts", "utf-8");
     expect(schedulerCode).toContain("ghl_contact_polling");
     expect(schedulerCode).toContain("scheduledPollHandler");
-    // Should NOT auto-activate — user enables via Location Health dashboard
-    expect(schedulerCode).not.toContain("setPollingActive(true)");
+    // Auto-activates when GHL_API_KEY is set and active locations exist
+    expect(schedulerCode).toContain("setPollingActive(true)");
+    expect(schedulerCode).toContain("Auto-activated GHL polling");
   });
 
   it("ghlPolling.ts exports all required functions", async () => {

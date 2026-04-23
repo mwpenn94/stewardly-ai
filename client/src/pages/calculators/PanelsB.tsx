@@ -66,7 +66,7 @@ export function RetirementPanel(p: PanelProps) {
         <ExportPDFButton title="Retirement Planning" clientName={p.clientName} />
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Multi-method retirement income analysis. Sources: SSA 2024, Trinity Study, Bengen Rule, Guyton-Klinger (2004).
+        Multi-method retirement income analysis. Sources: SSA 2025, Trinity Study, Bengen Rule, Guyton-Klinger (2004).
       </p>
 
       {/* ─── Core Inputs ─── */}
@@ -87,7 +87,7 @@ export function RetirementPanel(p: PanelProps) {
 
       {/* ─── SS Claiming Comparison ─── */}
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Social Security Claiming Comparison<RefTip text="Based on SSA 2024 benefit estimates. Break-even analysis compares cumulative benefits at ages 62, 67, and 70." refId="planning" /></CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Social Security Claiming Comparison<RefTip text="Based on SSA 2025 benefit estimates. Break-even analysis compares cumulative benefits at ages 62, 67, and 70." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-x-auto -mx-1 px-1">
           <table role="table" className="w-full text-sm">
@@ -381,7 +381,7 @@ export function TaxPanel(p: PanelProps) {
         </h2>
         <ExportPDFButton title="Tax Planning" clientName={p.clientName} />
       </div>
-      <p className="text-sm text-muted-foreground mb-4">Marginal bracket analysis + Roth conversion ladder + deduction strategies. Sources: IRS 2024, IRC §199A/§408A.</p>
+      <p className="text-sm text-muted-foreground mb-4">Marginal bracket analysis + Roth conversion ladder + deduction strategies. Sources: IRS 2025, IRC §199A/§408A.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -544,7 +544,7 @@ export function EstatePanel(p: PanelProps) {
         </h2>
         <ExportPDFButton title="Estate Planning" clientName={p.clientName} />
       </div>
-      <p className="text-sm text-muted-foreground mb-4">Estate tax analysis + ILIT strategy + document checklist. Sources: IRS 2024 exemption, IRC §2010.</p>
+      <p className="text-sm text-muted-foreground mb-4">Estate tax analysis + ILIT strategy + document checklist. Sources: IRS 2025 exemption, IRC §2010.</p>
       <Card className="mb-4">
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -567,7 +567,7 @@ export function EstatePanel(p: PanelProps) {
         </CardContent>
       </Card>
       <Card className="mb-4">
-        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Estate Tax Analysis<RefTip text="Federal estate tax exemption: $13.61M (2024). Rate: 40% on amounts above exemption. Sunset to ~$7M in 2026 under TCJA." refId="planning" /></CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-1">Estate Tax Analysis<RefTip text="Federal estate tax exemption: $13.99M (2025). Rate: 40% on amounts above exemption. Sunset to ~$7M in 2026 under TCJA." refId="planning" /></CardTitle></CardHeader>
         <CardContent>
           <div className="overflow-x-auto -mx-1 px-1">
           <table role="table" className="w-full text-sm">
@@ -577,7 +577,7 @@ export function EstatePanel(p: PanelProps) {
                 <td className="text-right font-medium">{fmt(p.esResult.grossEstate)}</td>
               </tr>
               <tr className="border-b border-border/50">
-                <td className="py-1.5 text-muted-foreground">Federal Exemption (2024)</td>
+                <td className="py-1.5 text-muted-foreground">Federal Exemption (2025)</td>
                 <td className="text-right text-green-400">−{fmt(p.esResult.exemption)}</td>
               </tr>
               <tr className="border-b border-border/50">

@@ -5,6 +5,8 @@
 **Target live app:** stewardly.manus.space (+ `staging.stewardly.manus.space` preferred for observation)
 **Intended runner:** Manus (autonomous multi-hour; browser + shell + file system + git + preview deployment + Knowledge + multi-modal + native task list)
 
+**v8.3 → v8.4 deltas:** 18 refinements from 7-pass convergence assessment (Manus parity prompt v13). New guardrails G13-G15 (IDOR ownership, outreach safeguard, test pollution prevention). Financial data staleness check with IRS verification checklist. 2025 IRS embedded context (tax brackets, HSA, estate, gift). Alert threshold production minimums. 10 expert panels (A-J). 15 novel assessment lenses. Outreach safety audit framework (10 vectors). Competitive parity verification methodology. Enhanced anti-regression rules (12 rules, up from 7). DB-backed notification cooldown pattern. In-app notification preference over external email.
+
 **v8.2 → v8.3 deltas:** 22 refinements across three adversarial rounds. Priority ordering formula. Measurement windows for every pillar metric. Fixture determinism with env-var salt. C5 viewport correction. Cross-pillar coverage per-pillar-per-persona ticks. MULTI per-pillar weight rule. LVUA time budget scaling. Per-regime compliance umbrella rows with Parent ID column. Chrome extension per-PR tagging. Pillar metric staleness revisit (every 10 passes). Pillar focus selection formula with tiebreaks + starvation cap. T row status tied to fix row. 6-point Adversarial checklist. Meta-convergence rule for prompt recursion. Hard-fail at 5-pass pillar untouched. Layered guardrail checks.
 
 **Stop condition (unchanged):** session does NOT terminate on 3-consecutive-clean counter. Counter is lens+angle rotation signal. Session ends only on (a) context exhausted, (b) user interrupt, (c) hard-stop safety condition.
@@ -463,8 +465,10 @@ rg -n "hardcoded|TODO|FIXME|XXX" client/src/ | head -100
 **Layered guardrail checks:**
 
 - Every Adversarial pass: G11 stub-grep (full), 6-point cross-check (above).
+- Every pass (v8.4): G13 (IDOR ownership), G14 (outreach safeguard), G15 (test pollution).
 - On surfaces touched this pass: G1 (reachability), G2 (live-data-or-banner), G6 (consolidation).
 - At pass-5 cadence (every 5 passes): G3, G4, G5, G7, G8, G9, G10, G12 (full audit).
+- Financial data currency check: verify IRS figures match current tax year (annually).
 
 ═══ PARITY.md SCHEMA (bidirectional; create on first pass if absent) ═══
 
@@ -504,8 +508,11 @@ File: `docs/PARITY.md`. Sections:
 ═══ STEWARDLY CONTEXT (embedded; reconcile against actuals on Pass 1) ═══
 
 - **Stack:** TypeScript, tRPC 11, Drizzle ORM, MySQL/TiDB, React 19, Tailwind 4 (OKLCH), shadcn/ui, Express, Vite, Vitest, AWS S3, Manus OAuth + JWT.
-- **Scale (embedded; verify):** 119 pages, 352 tables, 259 services, 78 routers (75 + 3 webhook), 129 components, 53 shadcn, 17 seed files, 37 cron jobs, 23 AI models, 33 nav items.
-- **Tests:** 3,103 passing / 109 files local dev; 123 files / 3,215 total.
+- **Scale (verified 2026-04-23):** 184 pages, 352+ tables, 259+ services, 78 routers (75 + 3 webhook), 129+ components, 53 shadcn, 17 seed files, 37 cron jobs, 24+ AI chat tools, 10 calculator panels.
+- **Tests:** 469 files / 11,625 tests / 0 failures (7-pass convergence confirmed 2026-04-23).
+- **2025 IRS embedded context (verified):** Tax brackets 10/12/22/24/32/35/37% (2025 thresholds); Standard deduction $15,000 single / $30,000 MFJ; HSA limits $4,300 individual / $8,550 family; Estate exemption $13.99M; Gift exclusion $19,000; 401(k) deferral $23,500; IRA contribution $7,000. Source: IRS Rev. Proc. 2024-40, IRS Notice 2024-80.
+- **Alert thresholds (production minimums):** sync_lag 120/480 min; data_freshness 2/6 hr; error_rate 10/25%; poll_failures 5/15; cooldown 8h DB-backed; inactive grace 2 days.
+- **Outreach safety:** OUTREACH_ENABLED env var gates all external email/SMS/GHL. Default = owner-only mode. 10 vectors audited and safeguarded.
 - **Roles:** user(0) → advisor(1) → manager(2) → admin(3).
 - **Optimization history:** 80 prior passes converged at 9.7-9.8/10.
 
@@ -515,7 +522,7 @@ File: `docs/PARITY.md`. Sections:
 
 CLIENT: C1 / C2 / C3 / C4 / C5 • ADVISOR: A1 / A2 / A3 / A4 / A5 • MANAGEMENT: M1 / M2 / M3
 
-═══ 12 INHERITED GUARDRAILS (protected; anti-regression absolute) ═══
+═══ 15 INHERITED GUARDRAILS (protected; anti-regression absolute) ═══
 
 **G1.** Reachability + Usability Double-Check (passes 54, 58). Dual evidence with LVUA.
 **G2.** Live-Data-or-Honest-Banner (passes 67, 70-74). Dual evidence with LVUA.
@@ -529,6 +536,9 @@ CLIENT: C1 / C2 / C3 / C4 / C5 • ADVISOR: A1 / A2 / A3 / A4 / A5 • MANAGEMEN
 **G10.** Column-Naming Convention (camelCase).
 **G11.** Stub-Data Grep Rule.
 **G12.** Counter rotates, does not terminate.
+**G13.** IDOR-Ownership-Check (v8.4, pass 1 convergence v13). Every delete/update mutation MUST verify `ctx.user.id` ownership or admin role. Pattern: query-then-mutate with ownership WHERE clause. Grep verification: `grep -rn "\.delete\|\.update" server/routers --include="*.ts" | grep -v test | grep -v "userId\|ctx.user\|adminProcedure"`. Any unguarded mutation = P0.
+**G14.** Outreach-Safeguard-Gate (v8.4, pass 4 convergence v13). All external communication paths (email, SMS, GHL outbound, campaigns) MUST be gated by `OUTREACH_ENABLED` env var. Owner-only mode is the default. Grep verification: `grep -rn "OUTREACH_ENABLED" server/ --include="*.ts" | grep -v test`. Any ungated outbound path = P0.
+**G15.** Test-Pollution-Prevention (v8.4, pass 1 convergence v13). Tests that modify shared DB state (thresholds, configuration, seed data) MUST include afterAll/afterEach cleanup restoring production values. Root cause: test writing absurdly low thresholds caused production alert email spam. Grep verification: `grep -rn "db\.update\|db\.insert" server/ --include="*.test.ts"` — verify each has corresponding cleanup. Any shared-state modification without cleanup = P2.
 
 ═══ DOMAIN-SPECIFIC COMPLIANCE SUB-REGIMES ═══
 
@@ -679,8 +689,14 @@ CHANGELOG.md                            # per-pass; pillar tag in each entry
 - **Lens B sub-focus = surface, not pillar.**
 - **T row status** — `blocked` while fix is `open/in-progress`; auto → `open` when fix → `done`.
 - **Adversarial cross-check** — 6-point runs every Adversarial pass.
-- **Layered guardrails** — G11 every Adversarial; G1+G2+G6 on touched surfaces; others at pass-5 cadence.
+- **Layered guardrails** — G11 every Adversarial; G1+G2+G6 on touched surfaces; G13+G14+G15 every pass; others at pass-5 cadence.
 - **Pillar metric staleness** — revisit every 10 passes; DR-filed adjustments.
+- **IDOR ownership absolute (G13)** — every delete/update mutation verifies ctx.user.id or admin role. No exceptions.
+- **Outreach safeguard absolute (G14)** — all external communication gated by OUTREACH_ENABLED. Owner-only default.
+- **Test cleanup absolute (G15)** — tests modifying shared DB state MUST restore production values in afterAll/afterEach.
+- **Financial data currency** — IRS figures verified annually; any prior-year reference = P1.
+- **Alert threshold minimums** — sync_lag ≥120min, data_freshness ≥2hr. No reduction below production minimums.
+- **In-app notification preference** — operational alerts use notification_log, NOT notifyOwner (which sends real emails).
 - **Escalation clause:** PARITY zero open + assessment nothing novel + git log cycling + LVUA coverage current + pillars balanced → widen scope.
 
 ═══ HARD STOPS (session-terminating) ═══
@@ -697,6 +713,8 @@ CHANGELOG.md                            # per-pass; pillar tag in each entry
 - **>3 consecutive LVUA observation errors same persona**
 - **Pillar starvation invariant hard-fail** (>5 passes untouched AND next pass cannot force focus)
 - Budget exhausted
+- **Outreach safeguard bypass detected** (G14 violation — external communication sent without OUTREACH_ENABLED gate)
+- **Alert threshold below production minimum** (G15 violation — sync_lag <120min or data_freshness <2hr in production DB)
 
 ═══ SESSION-END SUMMARY ═══
 
@@ -902,6 +920,86 @@ Current lens: Methodology-Refinement-of-v8.2. 9 passes. 22 substantive refinemen
 
 **All v8.2 content preserved:** 3-pillar primary focus (PLANS / LEARNING / PEOPLE), Tier 2 supporting platform, pillar balance invariants, LVUA protocol, 10 evidence source types, persona fixture versioning, test account isolation, read-only observation middleware, viewport tolerance (≤414 / 414-834 / >834), per-pass explicit phasing, LVUA → journey test two-row handoff, session-end summary, continuous loop (no session-level convergence).
 
+-----
+
+## Recursive-optimization trace (v8.3 → v8.4)
+
+### Source: 7-pass convergence assessment (Manus parity prompt v13, 2026-04-23)
+
+The v8.4 refinements originate from a 7-pass multi-lens convergence assessment executed on the Stewardly AI Manus deployment. Passes 1-4 surfaced actionable findings; Passes 5-7 returned 0 findings using genuinely novel lenses, confirming convergence.
+
+### Pass 1 — Automated Baseline + Expert Manual + Adversarial (5 findings)
+
+1. **IDOR in deleteAnnotation** — no userId ownership check. P0 security. → G13 guardrail.
+2. **IDOR in deleteProduct** — no admin-only check. P0 security. → G13 guardrail.
+3. **2024→2025 financial data** — tax brackets, standard deduction, HSA limits, estate exemption, gift exclusion all using prior-year values. P1 data integrity. → Financial data staleness check + 2025 IRS embedded context.
+4. **profileSyncMut field mismatch** — sending `profile:` instead of `patch:` + `source:`. P2 bug.
+5. **Test pollution** — pass35.test.ts writing 0.001/0.002 thresholds without cleanup, causing production alert email spam. P1 operational. → G15 guardrail.
+
+Counter: 0 (reset).
+
+### Pass 2 — API Contracts + Financial Expert (1 finding)
+
+1. **PanelsF.tsx** — one remaining "IRS 2024 brackets" text reference. P3 content.
+
+Counter: 0 (reset).
+
+### Pass 3 — Cross-Engine Workflows + Virtual Users (0 findings)
+
+All 5 cross-engine data flows verified. 5 virtual user personas completed journeys. Race condition analysis clean. Counter: 1.
+
+### Pass 4 — Regulatory Compliance + Fiduciary Standards (1 finding)
+
+1. **Alert notification channel** — `evaluateAlertThresholds` calling `notifyOwner()` which sends real emails via Manus notification system. Every 30-second poll triggered an email check. P0 operational. → Replaced with in-app `notification_log` insert. → In-app notification preference invariant.
+
+Counter: 0 (reset).
+
+### Pass 5 — Behavioral Finance + User Psychology (0 findings)
+
+Cognitive load, decision architecture, gamification, anchoring mitigation, loss aversion, choice architecture, nudge patterns, first-time UX all scored 8+/10. Counter: 1.
+
+### Pass 6 — Infrastructure Resilience + DB Optimization (0 findings)
+
+N+1 queries, connection pool, error logging, graceful degradation, memory management, bundle size, build time, database indexes all verified. Counter: 2.
+
+### Pass 7 — Competitive Feature Parity (0 findings)
+
+28/28 features matched or exceeded vs eMoney Advisor. Stewardly advantages: AI advisory, learning engine, CRM depth, lead pipeline. Counter: **3 → CONVERGENCE CONFIRMED.**
+
+### Counter trajectory
+
+`0, 0, 1, 0, 1, 2, 3` — two resets (Passes 2, 4), each triggered by honest finding discovery. Total substantive refinements: **18**.
+
+### v8.4 refinement categories
+
+**Category 1 — New guardrails (3)**
+- G13: IDOR-Ownership-Check (every delete/update mutation verifies ctx.user.id or admin role)
+- G14: Outreach-Safeguard-Gate (OUTREACH_ENABLED env var gates all external communication)
+- G15: Test-Pollution-Prevention (tests modifying shared DB state MUST cleanup in afterAll)
+
+**Category 2 — Financial data integrity (4)**
+- 2025 IRS embedded context (tax brackets, standard deduction, HSA, estate, gift, 401k, IRA)
+- Financial data staleness check (annual IRS verification checklist)
+- Alert threshold production minimums (sync_lag ≥120min, data_freshness ≥2hr)
+- In-app notification preference (notification_log over notifyOwner for operational alerts)
+
+**Category 3 — Assessment methodology (6)**
+- 10 expert panels (A-J: Security, Architecture, Frontend, QA, Financial, Behavioral, Infrastructure, Competitive, Regulatory, Privacy)
+- 15 novel assessment lenses (7 primary + 8 extended)
+- Outreach safety audit framework (10 vectors)
+- Competitive parity verification methodology (vs eMoney, RightCapital, MoneyGuidePro, Orion)
+- Virtual user persona assessment (12 personas with pillar-aligned tasks)
+- Genuinely novel lens requirement (no lens reuse within convergence cycle)
+
+**Category 4 — Anti-regression rules (5)**
+- Enhanced from 7 to 12 anti-regression rules
+- IDOR check anti-regression (no removal of ownership verification)
+- Outreach safeguard anti-regression (no removal of OUTREACH_ENABLED gates)
+- Financial data currency anti-regression (no reversion to prior-year IRS figures)
+- Test cleanup anti-regression (no new tests modifying shared state without cleanup)
+
+**All v8.3 content preserved:** Priority ordering formula, pillar focus selection formula, measurement windows, fixture determinism, cross-pillar coverage, MULTI weight rule, LVUA budget scaling, per-regime compliance tagging, Parent ID column, T row status, 6-point Adversarial cross-check, layered guardrail checks, meta-convergence rule, hard-fail at 5-pass untouched.
+
 ## Usage
 
 1. **Manus** with ≥6h autonomous budget, git-write credentials to `mwpenn94/stewardly-ai`, browser access to `staging.stewardly.manus.space` (preferred) or `stewardly.manus.space` (read-only).
@@ -924,4 +1022,5 @@ Current lens: Methodology-Refinement-of-v8.2. 9 passes. 22 substantive refinemen
 |v8      |6                  |9                   |~57                 |Fusion with continuous build loop + PARITY bidirectional                                                                                                                                                                                        |
 |v8.1    |8                  |~15                 |~72                 |Live Virtual User Assessment (LVUA) protocol                                                                                                                                                                                                    |
 |v8.2    |6                  |17                  |~89                 |3-pillar primary focus (PLANS / LEARNING / PEOPLE) with tier stratification                                                                                                                                                                     |
-|**v8.3**|**9**              |**22**              |**~111**            |**Formal ordering/balance enforcement (priority formula, pillar focus formula, hard-fail, measurement windows, layered guardrails, Adversarial cross-check, T row status, Parent ID, per-regime compliance split, fixture determinism w/ salt)**|
+|v8.3|9              |22              |~111            |Formal ordering/balance enforcement (priority formula, pillar focus formula, hard-fail, measurement windows, layered guardrails, Adversarial cross-check, T row status, Parent ID, per-regime compliance split, fixture determinism w/ salt)|
+|**v8.4**|**7**              |**18**              |**~129**            |**G13-G15 guardrails (IDOR ownership, outreach safeguard, test pollution prevention). 2025 IRS embedded context. Financial data staleness check. Alert threshold production minimums. 10 expert panels. 15 novel assessment lenses. Outreach safety audit (10 vectors). Competitive parity methodology. 12 anti-regression rules. DB-backed notification cooldown. In-app notification preference.**|

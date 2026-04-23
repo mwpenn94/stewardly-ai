@@ -2919,7 +2919,7 @@ export function PnLPanel(p: PracticeProps) {
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex flex-wrap items-center gap-2">
           <span className="text-primary">P&L (Profit & Loss)</span>
-          <RefTip text="P&L follows standard financial statement format. OpEx benchmarks from LIMRA Agent Compensation Study 2024. Tax rates per IRS 2024 brackets." refId="commission" />
+          <RefTip text="P&L follows standard financial statement format. OpEx benchmarks from LIMRA Agent Compensation Study 2024. Tax rates per IRS 2025 brackets." refId="commission" />
           <Badge variant="outline" className="text-[10px]">{p.pnlLevel === 'ind' ? 'Individual' : 'Team/Agency'}</Badge>
           {pnl.backPlanned && <Badge variant="outline" className="text-[10px] text-primary">Back-Planned</Badge>}
         </CardTitle>

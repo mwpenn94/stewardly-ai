@@ -35,7 +35,23 @@ export interface SyncResult {
  * Pre-checks GHL for existing contacts by email/phone before creating,
  * preventing duplicates even in race conditions.
  */
+/**
+ * OUTREACH SAFEGUARD: All GHL outbound sync is disabled until external outreach is explicitly enabled.
+ * This prevents any automated workflows, emails, or SMS from being triggered via GHL.
+ * To enable: set OUTREACH_ENABLED=true in environment variables.
+ */
+const OUTREACH_ENABLED = (process.env.OUTREACH_ENABLED || "false").toLowerCase() === "true";
+
 export async function pushLeadToGHL(lead: LeadToSync): Promise<SyncResult> {
+  // Owner-only safeguard: block all GHL outbound sync unless explicitly enabled
+  if (!OUTREACH_ENABLED) {
+    logger.info(
+      { email: lead.email },
+      "[GHL Outbound] Blocked — outreach disabled (OUTREACH_ENABLED=false). Contact NOT pushed to GHL."
+    );
+    return { success: false, message: "Outreach disabled (owner-only mode)", mode: "skipped" };
+  }
+
   if (!GHL_API_KEY || !GHL_LOCATION_ID) {
     logger.info("GHL credentials not configured — skipping outbound sync");
     return { success: false, message: "GHL not configured", mode: "skipped" };

@@ -843,11 +843,31 @@ export function initScheduler(): void {
     }
     
     // ─── GHL POLLING FALLBACK ────────────────────────────────────────
-    // Registered but NOT auto-activated — user enables via Location Health dashboard
+    // Auto-activate when GHL_API_KEY is set and active locations exist
     registerJob("ghl_contact_polling", MINS(5), async () => {
       const { scheduledPollHandler } = await import("./ghlPolling");
       await scheduledPollHandler();
     });
+
+    // Auto-enable polling if GHL is configured
+    if (process.env.GHL_API_KEY) {
+      try {
+        const { getDb } = await import("../db");
+        const { ghlLocations } = await import("../../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db) {
+          const locs = await db.select().from(ghlLocations).where(eq(ghlLocations.isActive, 1 as any));
+          if (locs.length > 0) {
+            const { setPollingActive } = await import("./ghlPolling");
+            setPollingActive(true);
+            logger.info({ operation: "scheduler" }, `[Scheduler] Auto-activated GHL polling for ${locs.length} active location(s)`);
+          }
+        }
+      } catch (e: any) {
+        logger.warn({ operation: "scheduler" }, `[Scheduler] Could not auto-activate GHL polling: ${e.message}`);
+      }
+    }
 
     // Start all jobs with staggered delays
     let stagger = 0;

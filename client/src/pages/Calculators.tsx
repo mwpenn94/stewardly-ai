@@ -621,16 +621,16 @@ export default function Calculators() {
       profileSyncTimer.current = setTimeout(() => {
         profileSyncTimer.current = null;
         profileSyncMut.mutate({
-          // @ts-expect-error — excess property in object literal
-          profile: {
+          patch: {
             age, income, netWorth: nw, savings, monthlySavings: monthlySav,
             dependents: dep, mortgage, debts: debt, marginalRate: stateRate,
             equitiesReturn: iulReturn, existingInsurance: existIns,
             isBizOwner: isBiz, retirementAge: retireAge,
-            yearsInRetirement: replaceYrs, stateOfResidence: undefined,
+            yearsInRetirement: replaceYrs,
             filingStatus: filing as any, lifeInsuranceCoverage: pfFace,
             businessRevenue: bizRevenue, businessEmployees: bizEmployees,
-          },
+          } as any,
+          source: "user",
         });
       }, 5000);
     }

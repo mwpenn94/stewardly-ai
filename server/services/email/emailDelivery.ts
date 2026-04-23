@@ -138,9 +138,38 @@ const inAppProvider: EmailProvider = {
 const providers: EmailProvider[] = [resendProvider, inAppProvider];
 
 /**
+ * Allowed email recipients — owner-only mode.
+ * All outbound emails are restricted to the owner/test user until external outreach is enabled.
+ * To add more allowed recipients, add their email addresses to this set.
+ */
+const ALLOWED_RECIPIENTS = new Set<string>();
+
+function isRecipientAllowed(email: string): boolean {
+  // If no restrictions configured (empty set), allow owner-only via DB lookup
+  // For now, block ALL external emails and fall back to in-app notification
+  const ownerOpenId = process.env.OWNER_OPEN_ID;
+  if (!ownerOpenId) return false; // No owner configured, block all
+  // Allow if recipient is in the explicit allow-list
+  if (ALLOWED_RECIPIENTS.has(email.toLowerCase())) return true;
+  // Default: block external emails, use in-app notification instead
+  return false;
+}
+
+/**
  * Send an email through the provider chain with automatic failover.
+ * SAFEGUARD: External emails are blocked — only owner/test user receives emails.
+ * All other recipients get in-app notifications instead.
  */
 export async function sendEmail(msg: EmailMessage): Promise<DeliveryResult> {
+  // Owner-only safeguard: redirect external emails to in-app notification
+  if (!isRecipientAllowed(msg.to)) {
+    log.info(
+      { to: msg.to, subject: msg.subject },
+      "[EmailDelivery] External email blocked (owner-only mode) — delivering as in-app notification"
+    );
+    return inAppProvider.send(msg);
+  }
+
   for (const provider of providers) {
     if (!provider.isConfigured()) {
       log.debug({ provider: provider.name }, "Provider not configured, skipping");

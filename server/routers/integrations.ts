@@ -15,6 +15,7 @@ import {
   integrationImprovementLog,
   carrierImportTemplates,
   ghlLocations,
+  notificationLog,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql, lte } from "drizzle-orm";
 import { encrypt, decrypt, encryptCredentials, decryptCredentials } from "../services/encryption";
@@ -2864,22 +2865,33 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
                 `\u2022 ${a.message}`
               ).join("\n") + "\n\nReview thresholds at Platform > Alert Thresholds.";
 
-              const sent = await notifyOwner({ title, content });
-              if (sent) {
-                for (const a of newCriticals) {
-                  const memKey = `${a.locationDbId}:${a.metricName}`;
-                  cache.set(memKey, now2);
-                  // Persist to DB so cooldown survives restarts
-                  try {
-                    // @ts-expect-error — property access on loosely typed object
-                    await pool.execute(
-                      `UPDATE location_alert_thresholds SET last_notified_at = NOW() WHERE location_db_id = ? AND metric_name = ?`,
-                      [a.locationDbId, a.metricName],
-                    );
-                  } catch { /* column may not exist yet — graceful degradation */ }
+              // In-app notification only (no email) per user preference
+              try {
+                const db2 = await getDb();
+                if (db2) {
+                  await db2.insert(notificationLog).values({
+                    userId: ctx.user.id,
+                    type: "alert",
+                    channel: "in_app",
+                    urgency: "high",
+                    title,
+                    content,
+                  });
                 }
-                logger.info(`[AlertThresholds] Notified owner of ${newCriticals.length} critical alert(s)`);
+              } catch { /* graceful degradation */ }
+              for (const a of newCriticals) {
+                const memKey = `${a.locationDbId}:${a.metricName}`;
+                cache.set(memKey, now2);
+                // Persist to DB so cooldown survives restarts
+                try {
+                  // @ts-expect-error — property access on loosely typed object
+                  await pool.execute(
+                    `UPDATE location_alert_thresholds SET last_notified_at = NOW() WHERE location_db_id = ? AND metric_name = ?`,
+                    [a.locationDbId, a.metricName],
+                  );
+                } catch { /* column may not exist yet — graceful degradation */ }
               }
+              logger.info(`[AlertThresholds] In-app notification for ${newCriticals.length} critical alert(s)`);
             }
           } catch (notifErr) {
             logger.warn({ err: notifErr }, "[AlertThresholds] Failed to send threshold-breach notification");

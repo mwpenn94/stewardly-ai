@@ -577,6 +577,7 @@ describe("reconcile — full bidirectional sync", () => {
 
 describe("outbound sync integration", () => {
   it("pushLeadToGHL uses dedupSafePush under the hood", async () => {
+    const outreachEnabled = (process.env.OUTREACH_ENABLED || "false").toLowerCase() === "true";
     const { pushLeadToGHL } = await import("./services/ghlOutboundSync");
 
     mockFetch.mockResolvedValueOnce({
@@ -592,6 +593,13 @@ describe("outbound sync integration", () => {
       firstName: "Test",
       email: "test-dedup@example.com",
     });
+
+    if (!outreachEnabled) {
+      // Outreach safeguard active — should skip without calling GHL
+      expect(result.mode).toBe("skipped");
+      expect(result.message).toContain("owner-only");
+      return;
+    }
 
     expect(result.success).toBe(true);
     expect(result.ghlContactId).toBe("new-via-dedup");

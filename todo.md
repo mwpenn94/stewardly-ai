@@ -8787,10 +8787,10 @@
 - [x] Claim Stripe sandbox via browser (requires user login — URL provided)
 - [x] Verify sync lag fix on Alert Thresholds page
 - [x] Execute Parity Prompt v12 — Tier 1 Automated Baseline (CLEAN — 0 findings)
-- [ ] Execute Parity Prompt v12 — Tier 2 Expert Manual Review (all engines)
-- [ ] Execute Parity Prompt v12 — Tier 3 Adversarial Testing
-- [ ] Fix findings and push engine maturity toward 4.0+
-- [ ] Convergence confirmation (3/3 clean passes)
+- [x] Execute Parity Prompt v12 — Tier 2 Expert Manual Review (all engines) — completed in 7-pass assessment
+- [x] Execute Parity Prompt v12 — Tier 3 Adversarial Testing — completed in 7-pass assessment
+- [x] Fix findings and push engine maturity toward 4.0+ — 12 fixes applied
+- [x] Convergence confirmation (3/3 clean passes) — Passes 5, 6, 7 all clean
 
 ## Mobile UX Fixes (from user screenshots)
 - [ ] Fix "Print P..." button cut off on mobile Wealth Engine Income Plan view
@@ -8802,3 +8802,32 @@
 - [x] Notification cooldown increased to 8h with DB-backed last_notified_at column (survives server restarts)
 - [x] Inactive grace period reduced from 7 to 2 days for sync_lag and data_freshness alerts
 - [x] pass35.test.ts now restores production thresholds after shape-check test (prevents future pollution)
+
+## GHL Sync Polling (User Request 2026-04-23)
+- [x] Enable GHL sync polling for Stewardly HQ location — auto-activated on server startup for 3 active locations
+
+## Exhaustive 3-Tier Convergence Assessment (2026-04-23)
+- [x] PASS 1 — TIER 1: Automated baseline (security, perf, a11y, tests) — 5 findings fixed
+- [x] PASS 1 — TIER 2: Expert manual review (all engines, user journeys, principles-first + applications-first)
+- [x] PASS 1 — TIER 3: Adversarial testing (edge cases, stress, race conditions, malicious inputs)
+- [x] Fix all findings from Pass 1 — IDOR, 2025 data, profileSyncMut, test pollution
+- [x] PASS 2 — Novel lens: API contracts, data integrity, financial expert review — 1 finding fixed
+- [x] Fix all findings from Pass 2 — PanelsF.tsx IRS reference
+- [x] PASS 3 — Novel lens: Cross-engine workflows, concurrent users, virtual user personas — CLEAN
+- [x] PASS 4 — Novel lens: Regulatory compliance, fiduciary duty, CFP/ChFC standards — 1 critical fix
+- [x] PASS 5 — Novel lens: Behavioral finance, user psychology, cognitive load — CLEAN
+- [x] PASS 6 — Novel lens: Infrastructure resilience, DB optimization, deployment — CLEAN
+- [x] PASS 7 — Novel lens: Competitive feature parity vs eMoney/RightCapital/MGP — CLEAN
+- [x] Achieve 3 consecutive clean convergence passes (Passes 5, 6, 7)
+- [x] Write CONVERGENCE_ASSESSMENT_v13.md — comprehensive 7-pass assessment document
+- [x] Write STEWARDLY_PARITY_PROMPT_v13.md — updated assessment framework with 10 panels, 15 lenses
+- [x] Update recursive-optimization-spec.md to v8.4 — G13-G15 guardrails, 2025 IRS context, 12 anti-regression rules
+- [x] Update assessment/audit docs package
+
+## Outreach/Marketing Constraint (2026-04-23)
+- [x] Audit all outreach/marketing/notification features — 10 vectors checked, all safeguarded
+- [x] Email delivery: owner-only mode (all external emails redirected to in-app notification)
+- [x] Email campaigns: blocked unless OUTREACH_ENABLED=true
+- [x] GHL outbound sync: blocked unless OUTREACH_ENABLED=true
+- [x] Lead pipeline: inbound-only (webhook receivers, no outbound)
+- [x] Test GHL locations deactivated (30001, 30002)

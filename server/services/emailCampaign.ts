@@ -205,6 +205,12 @@ Recipient type: ${params.recipientType || "client"}`
 
 // ─── Send Campaign ───────────────────────────────────────────────────────
 export async function sendCampaign(campaignId: number, userId: number) {
+  // OUTREACH SAFEGUARD: Block campaign dispatch unless explicitly enabled
+  const outreachEnabled = (process.env.OUTREACH_ENABLED || "false").toLowerCase() === "true";
+  if (!outreachEnabled) {
+    throw new Error("Email campaigns are disabled (owner-only mode). Set OUTREACH_ENABLED=true in environment to enable external outreach.");
+  }
+
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 

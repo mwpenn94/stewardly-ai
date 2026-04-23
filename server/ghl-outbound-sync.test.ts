@@ -30,6 +30,14 @@ describe("GHL Outbound Sync Service", () => {
       source: "vitest-pass23",
     });
 
+    const outreachEnabled = (process.env.OUTREACH_ENABLED || "false").toLowerCase() === "true";
+    if (!outreachEnabled) {
+      // Outreach safeguard active — should skip
+      expect(result.mode).toBe("skipped");
+      expect(result.message).toContain("owner-only");
+      return;
+    }
+
     if (!GHL_API_KEY || !GHL_LOCATION_ID) {
       // No credentials — should gracefully skip
       expect(result.mode).toBe("skipped");

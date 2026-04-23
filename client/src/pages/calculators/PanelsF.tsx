@@ -246,7 +246,7 @@ export function IncomeStreamsPanel({ incomeStreams, setIncomeStreams, scores }: 
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-1">
                 Tax Treatment Analysis
-                <RefTip text="Different income types have different tax rates. W-2 income: ~30% effective. 1099: ~35% (includes SE tax). Passive/capital gains: ~20%. Tax-free (Roth/Muni): 0%. Source: IRS 2024 brackets." refId="tax" />
+                <RefTip text="Different income types have different tax rates. W-2 income: ~30% effective. 1099: ~35% (includes SE tax). Passive/capital gains: ~20%. Tax-free (Roth/Muni): 0%. Source: IRS 2025 brackets." refId="tax" />
               </CardTitle>
             </CardHeader>
             <CardContent>

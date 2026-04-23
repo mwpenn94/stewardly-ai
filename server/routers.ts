@@ -1358,7 +1358,15 @@ const documentsRouter = router({
 
   deleteAnnotation: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // IDOR fix: verify annotation belongs to user's documents
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const { documentAnnotations: da, documents: docs } = await import("../drizzle/schema");
+      const [ann] = await db.select({ documentId: da.documentId }).from(da).where(eq(da.id, input.id));
+      if (!ann) throw new TRPCError({ code: "NOT_FOUND", message: "Annotation not found" });
+      const [doc] = await db.select({ userId: docs.userId }).from(docs).where(eq(docs.id, ann.documentId));
+      if (!doc || doc.userId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND", message: "Annotation not found" });
       await deleteAnnotation(input.id);
       return { success: true };
     }),
@@ -1437,8 +1445,8 @@ const productsRouter = router({
       return updateProduct(id, data as any);
     }),
 
-  /** Delete a product (non-platform only) */
-  delete: protectedProcedure
+  /** Delete a product (non-platform only, admin-only) */
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       return deleteProduct(input.id);

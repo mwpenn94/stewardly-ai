@@ -15,8 +15,8 @@ export const RATES = {
   aumFee: (aum: number) => { if(aum>=5e6) return .006; if(aum>=1e6) return .0085; if(aum>=5e5) return .01; return .0125; },
   fiaRiderFee: .01,
   groupPerEmp: 7911,
-  bracketsMFJ: [[23200,.10],[94300,.12],[201050,.22],[383900,.24],[487450,.32],[731200,.35],[1e9,.37]] as [number,number][],
-  bracketsSingle: [[11600,.10],[47150,.12],[100525,.22],[191950,.24],[243725,.32],[609350,.35],[1e9,.37]] as [number,number][],
+  bracketsMFJ: [[23850,.10],[96950,.12],[206700,.22],[394600,.24],[501050,.32],[751600,.35],[1e9,.37]] as [number,number][],
+  bracketsSingle: [[11925,.10],[48475,.12],[103350,.22],[197300,.24],[250525,.32],[626350,.35],[1e9,.37]] as [number,number][],
 };
 
 /* ═══ HELPER FUNCTIONS ═══ */
@@ -429,9 +429,9 @@ export const CALC_METHODS = [
   { domain: 'Cash Flow', method: 'Gross-to-net budget analysis with DTI ratio', source: 'BLS Consumer Expenditure Survey 2024' },
   { domain: 'Protection', method: 'DIME method (Debt + Income + Mortgage + Education)', source: 'LIMRA 2024, SOA mortality tables' },
   { domain: 'Growth', method: 'Future value with monthly contributions, multi-vehicle comparison', source: 'Morningstar 2024 capital market assumptions' },
-  { domain: 'Retirement', method: 'SS claiming age comparison + 4% withdrawal rule', source: 'SSA 2024, Trinity Study (Bengen)' },
-  { domain: 'Tax', method: 'Marginal bracket analysis + deduction optimization', source: 'IRS Rev Proc 2024-40, IRC §199A/§408A' },
-  { domain: 'Estate', method: 'Gross estate minus exemption, 40% federal rate', source: 'IRC §2010, 2024 exemption $13.61M' },
+  { domain: 'Retirement', method: 'SS claiming age comparison + 4% withdrawal rule', source: 'SSA 2025, Trinity Study (Bengen)' },
+  { domain: 'Tax', method: 'Marginal bracket analysis + deduction optimization', source: 'IRS Rev Proc 2024-40 (updated 2025), IRC §199A/§408A' },
+  { domain: 'Estate', method: 'Gross estate minus exemption, 40% federal rate', source: 'IRC §2010, 2025 exemption $13.99M' },
   { domain: 'Education', method: '529 FV projection with inflation-adjusted cost', source: 'College Board 2024, Vanguard 529' },
   { domain: 'Cost-Benefit', method: 'Multi-horizon NPV across all product dimensions', source: 'Industry actuarial tables, carrier illustrations' },
   { domain: 'Premiums', method: 'Age-interpolated rate tables (term/IUL/WL/DI/LTC)', source: 'NLG, Guardian, Lincoln, Athene rate sheets' },
@@ -518,7 +518,7 @@ export function calcAdvanced(
   };
 
   /* ILIT */
-  const annualGiftExclusion = ilCr * 18000; // 2024 annual exclusion per beneficiary
+  const annualGiftExclusion = ilCr * 19000; // 2025 annual exclusion per beneficiary
   const estateTaxSaved = Math.round(ilDB * (ilTx / 100));
   const ilit = {
     deathBenefit: ilDB, premium: ilPr, crummey: ilCr, estateTaxRate: ilTx,
@@ -969,15 +969,15 @@ export interface ConfigurableDefaults {
 
 export const CONFIGURABLE_DEFAULTS: ConfigurableDefaults = {
   federalBrackets: RATES.bracketsMFJ,
-  standardDeduction: { single: 14600, mfj: 29200, hoh: 21900 },
+  standardDeduction: { single: 15000, mfj: 30000, hoh: 22500 },
   max401k: 23500,
-  maxHSA: { single: 4150, family: 8300 },
+  maxHSA: { single: 4300, family: 8550 },
   maxIRA: 7000,
   catchUp401k: 7500,
   catchUpIRA: 1000,
-  federalExemption: 13610000,
+  federalExemption: 13990000,
   estateTaxRate: 0.40,
-  annualGiftExclusion: 18000,
+  annualGiftExclusion: 19000,
   ssColaRate: 0.032,
   rmdDivisor: 27.4,
   defaultWithdrawalRate: 0.04,
