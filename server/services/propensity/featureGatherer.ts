@@ -16,8 +16,8 @@ export async function gatherFeatures(leadId: number): Promise<Record<string, num
     const [lead] = await db.select().from(leadPipeline).where(eq(leadPipeline.id, leadId)).limit(1);
     if (!lead) return features;
 
-    features.has_email = lead.emailHash ? 1 : 0;
-    features.has_phone = lead.phoneHash ? 1 : 0;
+    features.has_email = lead.email ? 1 : 0;
+    features.has_phone = lead.phone ? 1 : 0;
     features.has_linkedin = lead.linkedinUrl ? 1 : 0;
     features.has_company = lead.company ? 1 : 0;
 

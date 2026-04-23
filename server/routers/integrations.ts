@@ -667,7 +667,6 @@ export const integrationsRouter = router({
             // Insert into lead_pipeline table based on carrier data
             const { leadPipeline } = await import("../../drizzle/schema");
             await db.insert(leadPipeline).values({
-              id: crypto.randomUUID(),
               firstName: record.first_name || record.firstName || "",
               lastName: record.last_name || record.lastName || "",
               email: record.email || null,
@@ -677,10 +676,10 @@ export const integrationsRouter = router({
               status: "new",
               pipelineStage: "lead",
               tags: JSON.stringify([template.carrierSlug, template.reportType]),
-              customFields: JSON.stringify(record),
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            }).onDuplicateKeyUpdate({ set: { updatedAt: new Date(), customFields: JSON.stringify(record) } });
+              enrichmentData: JSON.stringify(record),
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            }).onDuplicateKeyUpdate({ set: { updatedAt: Date.now(), enrichmentData: JSON.stringify(record) } });
             recordsProcessed++;
           } catch (e: any) {
             recordsFailed++;
@@ -720,7 +719,6 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
           for (const record of records) {
             try {
               await db.insert(leadPipeline).values({
-                id: crypto.randomUUID(),
                 firstName: record.first_name || record.firstName || "",
                 lastName: record.last_name || record.lastName || "",
                 email: record.email || null,
@@ -730,10 +728,10 @@ PDF Content:\n${input.fileContent.slice(0, 8000)}`;
                 status: "new",
                 pipelineStage: "lead",
                 tags: JSON.stringify([template.carrierSlug, template.reportType, "pdf_extracted"]),
-                customFields: JSON.stringify(record),
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              }).onDuplicateKeyUpdate({ set: { updatedAt: new Date(), customFields: JSON.stringify(record) } });
+                enrichmentData: JSON.stringify(record),
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+              }).onDuplicateKeyUpdate({ set: { updatedAt: Date.now(), enrichmentData: JSON.stringify(record) } });
               recordsProcessed++;
             } catch (e: any) {
               recordsFailed++;

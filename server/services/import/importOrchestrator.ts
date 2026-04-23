@@ -49,28 +49,30 @@ export async function startImport(params: {
 
       // Validate + sanitize (CSV injection protection)
       const sanitized = sanitizeRecord(mapped);
-      const emailH = hashEmail(sanitized.email);
-      const phoneH = sanitized.phone ? hashPhone(sanitized.phone) : null;
+      const normalizedEmail = sanitized.email.trim().toLowerCase();
+      const phone = sanitized.phone || null;
 
       // Dedupe check
       const { eq } = await import("drizzle-orm");
-      const existing = await db.select().from(leadPipeline).where(eq(leadPipeline.emailHash, emailH)).limit(1);
+      const existing = await db.select().from(leadPipeline).where(eq(leadPipeline.email, normalizedEmail)).limit(1);
 
       if (existing.length > 0) {
         updated++;
       } else {
         await db.insert(leadPipeline).values({
-          leadSourceId: null,
           firstName: sanitized.firstName || null,
           lastName: sanitized.lastName || null,
-          emailHash: emailH,
-          phoneHash: phoneH,
+          email: normalizedEmail,
+          phone,
           linkedinUrl: sanitized.linkedinUrl || null,
           company: sanitized.company || null,
           title: sanitized.title || null,
           city: sanitized.city || null,
           state: sanitized.state || null,
           zip: sanitized.zip || null,
+          status: "new",
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         });
         imported++;
       }

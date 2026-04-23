@@ -801,26 +801,27 @@ export async function persistContactsToLeadPipeline(
 
   for (const contact of contacts) {
     try {
-      // Generate emailHash for dedup (required field)
-      const email = contact.email?.toLowerCase().trim();
+      // Normalize email for dedup
+      const email = contact.email?.toLowerCase().trim() || null;
       if (!email) {
-        // No email — use phone hash or skip
+        // No email — skip if also no phone
         if (!contact.phone) {
           errors++;
           continue;
         }
       }
-      const emailH = email ? hashEmail(email) : hashPhone(contact.phone || "");
-      const phoneH = contact.phone ? hashPhone(contact.phone) : null;
+      const phone = contact.phone || null;
 
       // Build the ghlContactId field based on provider
       const ghlContactId = provider === "gohighlevel" ? contact.externalId : null;
 
-      // Check if contact already exists by emailHash
-      const existing = await db.select({ id: leadPipeline.id })
-        .from(leadPipeline)
-        .where(eq(leadPipeline.emailHash, emailH))
-        .limit(1);
+      // Check if contact already exists by email
+      const existing = email
+        ? await db.select({ id: leadPipeline.id })
+            .from(leadPipeline)
+            .where(eq(leadPipeline.email, email))
+            .limit(1)
+        : [];
 
       if (existing.length > 0) {
         // Update existing contact
@@ -828,7 +829,7 @@ export async function persistContactsToLeadPipeline(
           .set({
             firstName: contact.firstName || undefined,
             lastName: contact.lastName || undefined,
-            phoneHash: phoneH || undefined,
+            phone: phone || undefined,
             company: contact.company || undefined,
             title: contact.title || undefined,
             city: contact.city || undefined,
@@ -836,17 +837,17 @@ export async function persistContactsToLeadPipeline(
             linkedinUrl: contact.linkedinUrl || undefined,
             enrichmentData: contact.customFields ? JSON.stringify(contact.customFields) : undefined,
             ...(ghlContactId ? { ghlContactId } : {}),
-            updatedAt: new Date(),
+            updatedAt: Date.now(),
           })
           .where(eq(leadPipeline.id, existing[0]!.id));
         updated++;
       } else {
         // Insert new contact
         await db.insert(leadPipeline).values({
-          emailHash: emailH,
+          email,
           firstName: contact.firstName || null,
           lastName: contact.lastName || null,
-          phoneHash: phoneH,
+          phone,
           company: contact.company || null,
           title: contact.title || null,
           city: contact.city || null,
@@ -855,6 +856,8 @@ export async function persistContactsToLeadPipeline(
           enrichmentData: contact.customFields ? JSON.stringify(contact.customFields) : null,
           ghlContactId,
           status: "new",
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         });
         created++;
       }

@@ -5345,37 +5345,57 @@ export const leadSources = mysqlTable("lead_sources", {
 
 export const leadPipeline = mysqlTable("lead_pipeline", {
   id: int("id").autoincrement().primaryKey(),
-  leadSourceId: int("lead_source_id"),
-  firstName: varchar("first_name", { length: 100 }),
-  lastName: varchar("last_name", { length: 100 }),
-  emailHash: varchar("email_hash", { length: 64 }).notNull(),
-  phoneHash: varchar("phone_hash", { length: 64 }),
-  linkedinUrl: varchar("linkedin_url", { length: 500 }),
+  // Original camelCase columns from initial DB creation
+  firmId: int("firmId"),
+  professionalId: int("professionalId"),
+  firstName: varchar("firstName", { length: 255 }),
+  lastName: varchar("lastName", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  source: varchar("source", { length: 100 }),
+  status: mysqlEnum("status", ["new", "enriched", "scored", "qualified", "contacted", "meeting", "proposal", "converted", "disqualified"]).default("new"),
+  propensityScore: decimal("propensityScore", { precision: 5, scale: 2 }),
+  primaryInterest: varchar("primaryInterest", { length: 100 }),
+  estimatedIncome: decimal("estimatedIncome", { precision: 15, scale: 2 }),
+  protectionScore: decimal("protectionScore", { precision: 5, scale: 2 }),
+  notesJson: json("notesJson"),
+  crmExternalId: varchar("crmExternalId", { length: 255 }),
+  // Timestamps (bigint unix ms)
+  createdAt: bigint("created_at", { mode: "number" }),
+  updatedAt: bigint("updated_at", { mode: "number" }),
+  // Location
+  locationId: int("location_id"),
+  // JSON data (added ext6)
+  enrichmentData: json("enrichment_data"),
+  segmentData: json("segment_data"),
+  // Professional info (added ext7)
   company: varchar("company", { length: 200 }),
   title: varchar("title", { length: 200 }),
+  linkedinUrl: varchar("linkedin_url", { length: 500 }),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 50 }),
   zip: varchar("zip", { length: 20 }),
+  // Segmentation (added ext7)
   targetSegment: varchar("target_segment", { length: 100 }),
-  segmentData: json("segment_data"),
-  enrichmentData: json("enrichment_data"),
-  propensityScore: decimal("propensity_score", { precision: 5, scale: 4 }),
   propensityTier: mysqlEnum("propensity_tier", ["hot", "warm", "cool", "cold"]),
-  status: mysqlEnum("status", ["new", "enriched", "scored", "qualified", "assigned", "contacted", "meeting", "proposal", "converted", "disqualified", "dormant"]).default("new"),
+  // Assignment (added ext7)
   assignedAdvisorId: int("assigned_advisor_id"),
-  assignedAt: timestamp("assigned_at"),
+  assignedAt: bigint("assigned_at", { mode: "number" }),
+  // Compliance (added ext7)
   isControlGroup: mysqlBoolean("is_control_group").default(false),
   emailConsentGranted: mysqlBoolean("email_consent_granted").default(false),
   unsubscribed: mysqlBoolean("unsubscribed").default(false),
   piiDeletionRequested: mysqlBoolean("pii_deletion_requested").default(false),
+  // GHL integration (added ext7)
   ghlContactId: varchar("ghl_contact_id", { length: 200 }),
   ghlOpportunityId: varchar("ghl_opportunity_id", { length: 200 }),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  // Pipeline management (added ext7)
+  pipelineStage: varchar("pipeline_stage", { length: 50 }),
+  tags: json("tags"),
 }, (table) => ({
-  emailHashIdx: index("idx_lead_pipeline_email_hash").on(table.emailHash),
-  statusIdx: index("idx_lead_pipeline_status").on(table.status),
-  advisorIdx: index("idx_lead_pipeline_advisor").on(table.assignedAdvisorId),
+  statusIdx: index("idx_lp_status").on(table.status),
+  ghlContactIdx: index("idx_lp_ghl_contact").on(table.ghlContactId),
+  advisorIdx: index("idx_lp_assigned_advisor").on(table.assignedAdvisorId),
 }));
 
 export const leadSourcePerformance = mysqlTable("lead_source_performance", {

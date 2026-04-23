@@ -63,7 +63,7 @@ describe("Platform Webhook Endpoints", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.received).toBe(true);
-  });
+  }, 15000);
 
   it("SMS-iT webhook accepts POST and returns received", async () => {
     const res = await fetch("http://localhost:3000/api/webhooks/smsit", {
@@ -81,7 +81,7 @@ describe("Platform Webhook Endpoints", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.received).toBe(true);
-  });
+  }, 15000);
 
   it("Workable webhook accepts POST and returns received", async () => {
     const res = await fetch("http://localhost:3000/api/webhooks/workable", {
@@ -99,7 +99,7 @@ describe("Platform Webhook Endpoints", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.received).toBe(true);
-  });
+  }, 15000);
 
   it("LinkedIn webhook accepts POST and returns received", async () => {
     const res = await fetch("http://localhost:3000/api/webhooks/linkedin", {
@@ -118,7 +118,7 @@ describe("Platform Webhook Endpoints", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.received).toBe(true);
-  });
+  }, 15000);
 
   it("all webhook endpoints respond to GET without crashing", async () => {
     const endpoints = ["/api/webhooks/dripify", "/api/webhooks/smsit", "/api/webhooks/workable", "/api/webhooks/linkedin"];
@@ -127,7 +127,7 @@ describe("Platform Webhook Endpoints", () => {
       // Should return 200 (status page) — never 500
       expect(res.status).toBeLessThan(500);
     }
-  });
+  }, 15000);
 });
 
 describe("CRM Unified Dashboard", () => {

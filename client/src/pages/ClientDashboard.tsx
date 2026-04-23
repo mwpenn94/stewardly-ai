@@ -21,7 +21,7 @@ import {
   Loader2, Shield, TrendingUp, Heart, FileText,
   DollarSign, Users, Umbrella, GraduationCap, Clock,
   CheckCircle2, ChevronRight, AlertTriangle, ArrowRight,
-  MessageSquare, BookOpen, Activity,
+  MessageSquare, BookOpen, Activity, RefreshCw, Wifi, WifiOff,
 } from "lucide-react";
 import { ExportDataButton } from "@/components/ExportDataButton";
 import { useLocation } from "wouter";
@@ -50,6 +50,104 @@ function statusBadge(status: PlanDomain["status"]) {
     case "in-progress": return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">In Progress</Badge>;
     case "not-started": return <Badge variant="outline">Not Started</Badge>;
   }
+}
+
+/** Compact CRM Sync Health Summary Widget */
+function SyncHealthWidget() {
+  const [, navigate] = useLocation();
+  const summary = trpc.crm.timelineSummary.useQuery(undefined, {
+    refetchInterval: 60_000,
+    retry: 1,
+  });
+  const connections = trpc.crm.getConnectionStatus.useQuery(undefined, {
+    refetchInterval: 60_000,
+    retry: 1,
+  });
+
+  const data = summary.data;
+  const conns = connections.data || [];
+  const activeConns = conns.filter((c: any) => c.status === "active").length;
+  const totalConns = conns.length;
+
+  if (summary.isLoading && connections.isLoading) {
+    return (
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center gap-3">
+            <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Loading sync status...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const lastSync = data?.lastSyncAt
+    ? new Date(data.lastSyncAt).toLocaleString()
+    : "Never";
+
+  return (
+    <Card
+      className="cursor-pointer hover:bg-muted/30 transition-colors border-l-4 border-l-primary/60"
+      onClick={() => navigate("/crm-sync")}
+    >
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            <RefreshCw className="w-4 h-4" />
+            CRM Sync Health
+          </CardTitle>
+          <Badge
+            variant="outline"
+            className={activeConns > 0
+              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+              : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+            }
+          >
+            {activeConns > 0 ? (
+              <><Wifi className="w-3 h-3 mr-1" /> {activeConns}/{totalConns} Connected</>
+            ) : (
+              <><WifiOff className="w-3 h-3 mr-1" /> No Connections</>
+            )}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pb-4 px-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Last Sync</p>
+            <p className="text-sm font-medium tabular-nums">{lastSync}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Contacts Synced</p>
+            <p className="text-sm font-medium tabular-nums">{data?.totalContactsSynced?.toLocaleString() ?? "0"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Success Rate</p>
+            <p className={`text-sm font-medium tabular-nums ${
+              (data?.successRate ?? 0) >= 90 ? "text-emerald-600" :
+              (data?.successRate ?? 0) >= 70 ? "text-amber-600" : "text-red-600"
+            }`}>{data?.successRate ?? 0}%</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Errors</p>
+            <p className={`text-sm font-medium tabular-nums ${
+              (data?.totalErrors ?? 0) === 0 ? "text-emerald-600" : "text-red-600"
+            }`}>{data?.totalErrors ?? 0}</p>
+          </div>
+        </div>
+        {data && Object.keys(data.eventsByProvider).length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {Object.entries(data.eventsByProvider).map(([provider, count]) => (
+              <Badge key={provider} variant="secondary" className="text-xs">
+                {provider}: {String(count)}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function ClientDashboard() {
@@ -185,6 +283,9 @@ export default function ClientDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* CRM Sync Health Summary */}
+        <SyncHealthWidget />
 
         {/* Domain cards */}
         <div className="space-y-3">

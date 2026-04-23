@@ -288,12 +288,11 @@ export async function runLiveSyncTest(): Promise<LiveSyncTestResult> {
   const db = await getDb();
   if (db) {
     const { leadPipeline } = await import("../../drizzle/schema");
-    const { hashEmail } = await import("./crmAdapter");
 
     for (const ghlContact of realContacts.slice(0, 20)) {
       if (!ghlContact.email) continue;
-      const emailH = hashEmail(ghlContact.email);
-      const existing = await db.select().from(leadPipeline).where(eq(leadPipeline.emailHash, emailH)).limit(1);
+      const normalizedEmail = ghlContact.email.trim().toLowerCase();
+      const existing = await db.select().from(leadPipeline).where(eq(leadPipeline.email, normalizedEmail)).limit(1);
 
       if (existing.length > 0) {
         const local = existing[0];

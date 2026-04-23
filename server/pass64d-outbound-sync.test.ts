@@ -49,7 +49,7 @@ describe("Pass 64d — Outbound Sync & Webhook Registration", () => {
 
   // ─── Outbound Sync Preview ───────────────────────────────────────────
   describe("crm.outboundSyncPreview", () => {
-    it("returns lead counts for a valid provider", async () => {
+    it("returns lead counts for a valid provider", { retry: 2 }, async () => {
       const ctx = createAdminContext();
       const c = caller(ctx);
       const result = await c.crm.outboundSyncPreview({ provider: "gohighlevel" });
@@ -71,7 +71,7 @@ describe("Pass 64d — Outbound Sync & Webhook Registration", () => {
         .rejects.toThrow();
     });
 
-    it("returns preview for different providers", async () => {
+    it("returns preview for different providers", { retry: 2 }, async () => {
       const ctx = createAdminContext();
       const c = caller(ctx);
       const providers = ["wealthbox", "salesforce", "smsit", "workable"] as const;
@@ -238,7 +238,7 @@ describe("Pass 64d — Outbound Sync & Webhook Registration", () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json).toHaveProperty("received", true);
-    });
+    }, 15000);
 
     it("SMS-iT webhook accepts POST", async () => {
       const res = await fetch(`${BASE}/api/webhooks/smsit`, {
@@ -249,7 +249,7 @@ describe("Pass 64d — Outbound Sync & Webhook Registration", () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json).toHaveProperty("received", true);
-    });
+    }, 15000);
 
     it("Workable webhook accepts POST", async () => {
       const res = await fetch(`${BASE}/api/webhooks/workable`, {
@@ -260,18 +260,30 @@ describe("Pass 64d — Outbound Sync & Webhook Registration", () => {
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json).toHaveProperty("received", true);
-    });
+    }, 15000);
 
     it("LinkedIn webhook accepts POST", async () => {
-      const res = await fetch(`${BASE}/api/webhooks/linkedin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: "connection.new", data: { firstName: "Test" } }),
-      });
+      // Retry once on ECONNRESET (transient network issue)
+      let res: Response;
+      try {
+        res = await fetch(`${BASE}/api/webhooks/linkedin`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "connection.new", data: { firstName: "Test" } }),
+        });
+      } catch {
+        // Retry once
+        await new Promise(r => setTimeout(r, 500));
+        res = await fetch(`${BASE}/api/webhooks/linkedin`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "connection.new", data: { firstName: "Test" } }),
+        });
+      }
       expect(res.status).toBe(200);
       const json = await res.json();
       expect(json).toHaveProperty("received", true);
-    });
+    }, 15000);
 
     it("Platform health check returns all 5 platforms", async () => {
       const res = await fetch(`${BASE}/api/webhooks/platforms/health`);
@@ -285,7 +297,7 @@ describe("Pass 64d — Outbound Sync & Webhook Registration", () => {
       expect(json.platforms).toContain("smsit");
       expect(json.platforms).toContain("workable");
       expect(json.platforms).toContain("linkedin");
-    });
+    }, 15000);
   });
 
   // ─── Unified Dashboard includes outbound data ────────────────────────

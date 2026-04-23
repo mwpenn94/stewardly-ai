@@ -1655,20 +1655,28 @@ function GHLConnectPanel() {
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Setup Steps */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {[
-              { step: 1, text: "Create a Private App at GHL Marketplace Developer Portal", done: false },
-              { step: 2, text: "Add scopes: contacts.readonly, contacts.write, webhooks.write", done: false },
-              { step: 3, text: `Set redirect URL to: ${window.location.origin}/api/ghl/oauth/callback`, done: false },
-              { step: 4, text: `Set webhook URL to: ${webhookUrl}`, done: false },
-              { step: 5, text: "Copy Client ID & Secret → Credentials tab → ghl_oauth", done: oauthUrl.data?.configured || false },
-              { step: 6, text: "Click 'Connect GHL' below to authorize", done: status?.oauthConfigured || false },
-            ].map(({ step, text, done }) => (
-              <div key={step} className="flex items-start gap-2 text-sm">
-                <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs ${done ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                  {done ? "✓" : step}
+              { step: 1, text: "Create a Private App at GHL Marketplace Developer Portal", detail: "Go to marketplace.gohighlevel.com → My Apps → Create App → choose 'Private'", link: "https://marketplace.gohighlevel.com/apps", done: false },
+              { step: 2, text: "Add scopes: contacts.readonly, contacts.write, webhooks.write", detail: "In your app settings → Scopes tab → enable these 3 scopes minimum. Add opportunities.readonly and opportunities.write for deal sync.", done: false },
+              { step: 3, text: `Set redirect URL to: ${window.location.origin}/api/ghl/oauth/callback`, detail: "In your app settings → Auth tab → add this exact URL as an authorized redirect URI", done: false },
+              { step: 4, text: `Set webhook URL to: ${webhookUrl}`, detail: "In your app settings → Webhooks tab → add this URL and select ContactCreate, ContactUpdate, ContactDelete events", done: false },
+              { step: 5, text: "Copy Client ID & Secret → Credentials tab → ghl_oauth", detail: "From your app's Auth tab, copy Client ID and Client Secret. Go to Stewardly Credentials tab → select 'ghl_oauth' → paste both values", done: oauthUrl.data?.configured || false },
+              { step: 6, text: "Click 'Connect GHL' below to authorize", detail: "This redirects you to GHL to approve the app. After approval, webhooks are automatically registered.", done: status?.oauthConfigured || false },
+            ].map(({ step, text, detail, link, done }) => (
+              <div key={step} className={`rounded-lg border p-3 ${done ? 'border-green-500/30 bg-green-500/5' : 'border-border'}`}>
+                <div className="flex items-start gap-2">
+                  <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${done ? 'bg-green-500 text-white' : 'bg-primary/10 text-primary'}`}>
+                    {done ? '✓' : step}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${done ? 'line-through text-muted-foreground' : ''}`}>{text}</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">{detail}</p>
+                    {link && !done && (
+                      <a href={link} target="_blank" rel="noopener" className="text-xs text-primary underline mt-1 inline-block">Open GHL Marketplace →</a>
+                    )}
+                  </div>
                 </div>
-                <span className={done ? "line-through text-muted-foreground" : ""}>{text}</span>
               </div>
             ))}
           </div>

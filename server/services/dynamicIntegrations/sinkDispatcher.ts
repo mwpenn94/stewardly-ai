@@ -124,12 +124,12 @@ async function writeLeadPipeline(
         result.skipped++;
         continue;
       }
-      const emailHash = sha256Hex(rawEmail);
-      // Dedup on emailHash
+      const normalizedEmail = rawEmail.trim().toLowerCase();
+      // Dedup on email
       const existing = await db
         .select()
         .from(leadPipeline)
-        .where(eq(leadPipeline.emailHash, emailHash))
+        .where(eq(leadPipeline.email, normalizedEmail))
         .limit(1);
       if (existing.length > 0) {
         result.skipped++;
@@ -140,7 +140,7 @@ async function writeLeadPipeline(
           resolveField(record, sink.fieldMap, "phone_number") ??
           "",
       );
-      const phoneHash = rawPhone ? sha256Hex(rawPhone) : null;
+      const phone = rawPhone || null;
       const firstName = asString(
         resolveField(record, sink.fieldMap, "first_name") ??
           resolveField(record, sink.fieldMap, "firstName") ??
@@ -172,11 +172,10 @@ async function writeLeadPipeline(
       const zip = asString(resolveField(record, sink.fieldMap, "zip") ?? resolveField(record, sink.fieldMap, "postal_code") ?? "").slice(0, 20);
 
       await db.insert(leadPipeline).values({
-        leadSourceId: null,
         firstName: firstName || null,
         lastName: lastName || null,
-        emailHash,
-        phoneHash,
+        email: normalizedEmail,
+        phone,
         linkedinUrl: linkedinUrl || null,
         company: company || null,
         title: title || null,
@@ -184,9 +183,11 @@ async function writeLeadPipeline(
         state: state || null,
         zip: zip || null,
         targetSegment,
-        segmentData: { blueprintId: blueprint.id, blueprintSlug: blueprint.slug } as unknown,
-        enrichmentData: record as unknown,
-        status: "new" as never,
+        segmentData: JSON.stringify({ blueprintId: blueprint.id, blueprintSlug: blueprint.slug }),
+        enrichmentData: JSON.stringify(record),
+        status: "new",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       } as never);
       result.written++;
     } catch (e: unknown) {
