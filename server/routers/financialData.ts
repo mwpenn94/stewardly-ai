@@ -9,6 +9,9 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getAdapterRegistry } from "../services/financialData/registry";
+import { getCacheStats, invalidateAdapter as invalidateCacheAdapter, invalidateAll as invalidateAllCache } from "../services/financialData/responseCache";
+import { getAllUsageStats, resetUsage } from "../services/financialData/apiRateLimiter";
+import { dataCache } from "../services/financialData/dataCache";
 import { parsePfmCsv } from "../services/financialData/pfmParser/csvParser";
 import { getDb } from "../db";
 import { dataAccessAudit, pfmImports, dataAuthorizations } from "../../drizzle/schema";
@@ -309,4 +312,64 @@ export const financialDataRouter = router({
         .where(and(...conditions))
         .orderBy(desc(dataAuthorizations.grantedAt));
     }),
+
+  /* ─── Cache & Rate Limit Analytics (Data Engine 4.0+) ─── */
+
+  cacheStats: protectedProcedure.query(async () => {
+    const responseCache = getCacheStats();
+    const advancedCache = dataCache.getStats();
+    return {
+      responseCache,
+      advancedCache,
+      combined: {
+        totalEntries: responseCache.size + advancedCache.totalEntries,
+        hitRate: advancedCache.hitRate,
+        totalHits: responseCache.hits + advancedCache.hitCount,
+        totalMisses: responseCache.misses + advancedCache.missCount,
+        staleHits: advancedCache.staleHitCount,
+        evictions: advancedCache.evictionCount,
+      },
+    };
+  }),
+
+  rateLimitStats: protectedProcedure.query(async () => {
+    return getAllUsageStats();
+  }),
+
+  invalidateCache: protectedProcedure
+    .input(z.object({ adapterId: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      if (input.adapterId) {
+        const count = invalidateCacheAdapter(input.adapterId);
+        const advCount = dataCache.invalidate(input.adapterId);
+        return { invalidated: count + advCount, scope: input.adapterId };
+      }
+      const count = invalidateAllCache();
+      dataCache.clear();
+      return { invalidated: count, scope: "all" };
+    }),
+
+  dataFreshness: protectedProcedure.query(async () => {
+    const registry = getAdapterRegistry();
+    const health = await registry.healthCheckAll();
+    const cacheStats = getCacheStats();
+    return {
+      adapters: health.map(h => ({
+        id: h.adapterId,
+        name: h.name,
+        status: h.status,
+        tier: h.tier,
+        keyConfigured: h.keyConfigured,
+        lastChecked: h.lastChecked,
+      })),
+      cache: {
+        size: cacheStats.size,
+        hits: cacheStats.hits,
+        misses: cacheStats.misses,
+        hitRate: cacheStats.hits + cacheStats.misses > 0
+          ? cacheStats.hits / (cacheStats.hits + cacheStats.misses)
+          : 0,
+      },
+    };
+  }),
 });

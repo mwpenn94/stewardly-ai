@@ -2240,6 +2240,7 @@ import { billingRouter } from "./stripe/billingRouter";
 import { videoConferencingRouter } from "./routers/videoConferencing";
 import { planningHierarchyRouter } from "./routers/planningHierarchy";
 import { usageAnalyticsRouter } from "./routers/usageAnalytics";
+import { intelligenceEngineRouter } from "./routers/intelligenceEngine";
 
 const clientErrorsRouter = router({
   report: publicProcedure
@@ -2441,6 +2442,7 @@ export const appRouter = router({
   scenarioExport: scenarioExportRouter,
   pfrReport: pfrReportRouter,
   usageAnalytics: usageAnalyticsRouter,
+  intelligenceEngine: intelligenceEngineRouter,
 });
 
 export type AppRouter = typeof appRouter;

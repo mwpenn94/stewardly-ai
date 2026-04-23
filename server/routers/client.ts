@@ -14,8 +14,11 @@ import {
   conversations,
   memories,
   users,
+  clientAssociations,
+  clientPlanOutcomes,
+  dataAccessAudit,
 } from "../../drizzle/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and, gte } from "drizzle-orm";
 
 /* ── Helpers ─────────────────────────────────────────────────── */
 
@@ -216,4 +219,154 @@ export const clientRouter = router({
       // For now, return success — the UI handles optimistic updates.
       return { success: true };
     }),
+
+  /* ═══ Client Activity Timeline (People Hub 4.0+) ═══ */
+
+  /**
+   * Get unified activity timeline for a client — aggregates conversations,
+   * plan outcomes, data access events, and association changes.
+   */
+  activityTimeline: protectedProcedure
+    .input(z.object({
+      clientId: z.number().optional(),
+      limit: z.number().min(1).max(200).default(50),
+      offset: z.number().default(0),
+      category: z.enum(["all", "conversation", "plan", "data", "association"]).default("all"),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { events: [], total: 0 };
+      const userId = ctx.user!.id;
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const category = input?.category ?? "all";
+
+      const events: Array<{
+        id: string;
+        type: "conversation" | "plan_outcome" | "data_access" | "association";
+        title: string;
+        description: string;
+        timestamp: number;
+        metadata?: Record<string, unknown>;
+      }> = [];
+
+      // Conversations
+      if (category === "all" || category === "conversation") {
+        try {
+          const convos = await db.select()
+            .from(conversations)
+            .where(eq(conversations.userId, userId))
+            .orderBy(desc(conversations.createdAt))
+            .limit(limit);
+          for (const c of convos) {
+            events.push({
+              id: `conv-${c.id}`,
+              type: "conversation",
+              title: c.title || "Conversation",
+              description: `Chat session${c.messageCount ? ` (${c.messageCount} messages)` : ""}`,
+              timestamp: c.createdAt ? new Date(c.createdAt).getTime() : Date.now(),
+            });
+          }
+        } catch { /* table may not exist */ }
+      }
+
+      // Plan outcomes
+      if (category === "all" || category === "plan") {
+        try {
+          const plans = await db.select()
+            .from(clientPlanOutcomes)
+            .where(eq(clientPlanOutcomes.advisorId, userId))
+            .orderBy(desc(clientPlanOutcomes.id))
+            .limit(limit);
+          for (const p of plans) {
+            events.push({
+              id: `plan-${p.id}`,
+              type: "plan_outcome",
+              title: `${(p.planArea || "Plan").replace("_", " ")} — ${p.implementationStatus || "recommended"}`,
+              description: p.targetMetric || "Plan outcome recorded",
+              timestamp: p.planDate ? new Date(p.planDate).getTime() : Date.now(),
+              metadata: {
+                planArea: p.planArea,
+                status: p.implementationStatus,
+                targetValue: p.targetValue,
+                currentValue: p.currentValue,
+                gapValue: p.gapValue,
+              },
+            });
+          }
+        } catch { /* table may not exist */ }
+      }
+
+      // Data access events
+      if (category === "all" || category === "data") {
+        try {
+          const audits = await db.select()
+            .from(dataAccessAudit)
+            .where(eq(dataAccessAudit.userId, userId))
+            .orderBy(desc(dataAccessAudit.timestamp))
+            .limit(Math.min(limit, 20));
+          for (const a of audits) {
+            events.push({
+              id: `data-${a.id}`,
+              type: "data_access",
+              title: `Data query: ${a.adapterId} → ${a.action}`,
+              description: `Status: ${a.responseStatus}${a.latencyMs ? ` (${a.latencyMs}ms)` : ""}`,
+              timestamp: a.timestamp || Date.now(),
+              metadata: { adapterId: a.adapterId, action: a.action, latencyMs: a.latencyMs },
+            });
+          }
+        } catch { /* table may not exist */ }
+      }
+
+      // Sort all events by timestamp descending
+      events.sort((a, b) => b.timestamp - a.timestamp);
+
+      return {
+        events: events.slice(offset, offset + limit),
+        total: events.length,
+      };
+    }),
+
+  /**
+   * Get client engagement summary — aggregated metrics across all activity types.
+   */
+  engagementSummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { totalConversations: 0, totalPlans: 0, totalDataQueries: 0, activeGoals: 0, lastActivity: null };
+    const userId = ctx.user!.id;
+
+    let totalConversations = 0;
+    let totalPlans = 0;
+    let totalDataQueries = 0;
+    let lastActivity: number | null = null;
+
+    try {
+      const [convCount] = await db.select({ count: sql<number>`count(*)` })
+        .from(conversations)
+        .where(eq(conversations.userId, userId));
+      totalConversations = Number(convCount?.count) || 0;
+    } catch { /* graceful */ }
+
+    try {
+      const [planCount] = await db.select({ count: sql<number>`count(*)` })
+        .from(clientPlanOutcomes)
+        .where(eq(clientPlanOutcomes.advisorId, userId));
+      totalPlans = Number(planCount?.count) || 0;
+    } catch { /* graceful */ }
+
+    try {
+      const [dataCount] = await db.select({ count: sql<number>`count(*)` })
+        .from(dataAccessAudit)
+        .where(eq(dataAccessAudit.userId, userId));
+      totalDataQueries = Number(dataCount?.count) || 0;
+    } catch { /* graceful */ }
+
+    return {
+      totalConversations,
+      totalPlans,
+      totalDataQueries,
+      activeGoals: 0,
+      lastActivity,
+    };
+  }),
 });

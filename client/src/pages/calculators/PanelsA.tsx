@@ -10,6 +10,7 @@ import {
   Clock, Home, Heart, GraduationCap, Landmark, Gift
 } from 'lucide-react';
 import { FormInput, ScoreBadge, ResultBadge, KPI, ScoreGauge, RefTip, PillarTooltip, CrossCalcRecs, ExportPDFButton, type PanelProps } from './shared';
+import { SharePlanButton } from './SharePlanButton';
 
 export function ProfilePanel(p: PanelProps) {
   const keyMetrics: Record<string, string> = {
@@ -27,7 +28,10 @@ export function ProfilePanel(p: PanelProps) {
         <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
           <User className="w-5 h-5 text-primary" /> Client Profile
         </h2>
-        <ExportPDFButton title="Client Profile" clientName={p.clientName} />
+        <div className="flex items-center gap-2">
+          <SharePlanButton contentType="plan_summary" contentId={1} title="Client Profile" />
+          <ExportPDFButton title="Client Profile" clientName={p.clientName} />
+        </div>
       </div>
       <p className="text-sm text-muted-foreground mb-4">Enter client information. All fields auto-calculate across every panel.</p>
 

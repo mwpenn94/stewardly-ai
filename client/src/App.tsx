@@ -81,6 +81,9 @@ const SuitabilityPanel = lazy(() => import("./pages/SuitabilityPanel"));
 const ProficiencyDashboard = lazy(() => import("./pages/ProficiencyDashboard"));
 const ProductIntelligence = lazy(() => import("./pages/ProductIntelligence"));
 const AdminIntelligenceDashboard = lazy(() => import("./pages/AdminIntelligenceDashboard"));
+const AIUsageDashboard = lazy(() => import("./pages/AIUsageDashboard"));
+const DataEngineDashboard = lazy(() => import("./pages/DataEngineDashboard"));
+const ClientActivityTimeline = lazy(() => import("./pages/ClientActivityTimeline"));
 const PlatformGuide = lazy(() => import("./pages/PlatformGuide"));
 const PassiveActions = lazy(() => import("./pages/PassiveActions"));
 const MarketData = lazy(() => import("./pages/MarketData"));
@@ -164,6 +167,7 @@ const ConnectionsPage = lazy(() => import("./pages/learning/ConnectionsPage"));
 const TracksIndex = lazy(() => import("./pages/learning/TracksIndex"));
 const StudySession = lazy(() => import("./pages/learning/StudySession"));
 const SharedPlaylist = lazy(() => import("./pages/learning/SharedPlaylist"));
+const GlobalLeaderboard = lazy(() => import("./pages/learning/GlobalLeaderboard"));
 const AudioPreferences = lazy(() => import("./pages/settings/AudioPreferences"));
 // Comparables — competitive gap dashboard (hybrid build loop, pass 1)
 const ComparablesPage = lazy(() => import("./pages/Comparables"));
@@ -259,6 +263,9 @@ function Router() {
         <Route path={"/proficiency"} component={ProficiencyDashboard} />
         <Route path={"/product-intelligence"} component={ProductIntelligence} />
         <Route path={"/admin/intelligence"} component={AdminIntelligenceDashboard} />
+        <Route path={"/ai-usage"} component={AIUsageDashboard} />
+        <Route path={"/data-engine"} component={DataEngineDashboard} />
+        <Route path={"/activity-timeline"} component={ClientActivityTimeline} />
         <Route path={"/admin/guide"} component={PlatformGuide} />
         <Route path={"/passive-actions"} component={PassiveActions} />
         <Route path={"/market-data"} component={MarketData} />
@@ -342,6 +349,7 @@ function Router() {
         <Route path="/learning/tracks" component={TracksIndex} />
         <Route path="/learning/session/:trackSlug" component={StudySession} />
         <Route path="/learning/shared/:shareToken" component={SharedPlaylist} />
+        <Route path="/learning/leaderboard" component={GlobalLeaderboard} />
 
         {/* Consolidated Hub Pages */}
         {/* Comparables — competitive gap dashboard (hybrid build loop pass 1) */}
