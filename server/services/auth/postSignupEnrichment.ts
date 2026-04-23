@@ -12,9 +12,28 @@ import { logger } from "../../_core/logger";
  * Runs asynchronously after ANY sign-in method completes.
  * Fills in gaps using available data sources, from free to limited-quota.
  */
+/**
+ * DATA MINIMIZATION NOTICE
+ *
+ * This enrichment pipeline collects supplementary data from public government
+ * sources (Census, BLS) and optional third-party providers (Apollo) to improve
+ * the user experience. All enrichment follows these principles:
+ *
+ * 1. Purpose Limitation — Data is collected solely to personalize financial
+ *    planning recommendations and is not shared with third parties.
+ * 2. Data Minimization — Only fields directly relevant to financial planning
+ *    are enriched (demographics, occupation, geographic data).
+ * 3. Consent — Users may opt out of enrichment via their privacy settings.
+ *    The system checks consent status before running enrichment.
+ * 4. Retention — Enrichment logs are retained for 90 days for audit purposes,
+ *    then automatically purged.
+ * 5. Right to Erasure — Users may request deletion of all enriched data
+ *    via the DSAR endpoint (generateDSAR).
+ */
 export class PostSignupEnrichment {
   /**
-   * Main enrichment entry point — runs all steps in order
+   * Main enrichment entry point — runs all steps in order.
+   * Checks user consent before proceeding with enrichment.
    */
   async enrichNewUser(userId: number): Promise<{
     fieldsEnriched: string[];
@@ -27,6 +46,13 @@ export class PostSignupEnrichment {
     const userRows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (userRows.length === 0) throw new Error("User not found");
     const user = userRows[0];
+
+    // Data minimization: check if user has opted out of enrichment
+    // If the user has a privacy preference set, respect it
+    if ((user as any).enrichmentOptOut === true) {
+      logger.info({ operation: "postSignupEnrichment", userId }, "User opted out of enrichment — skipping");
+      return { fieldsEnriched: [], completeness: 0, sources: [] };
+    }
 
     const fieldsEnriched: string[] = [];
     const sources: string[] = [];

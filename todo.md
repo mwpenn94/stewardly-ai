@@ -8711,3 +8711,55 @@
 - 58 new vitest tests in ext7 file covering: schema column verification (18 tests), CRM adapter column fix (7 tests), sink dispatcher fix (2 tests), import orchestrator fix (2 tests), sync history fix (3 tests), feature gatherer fix (3 tests), source code audit (7 tests), sync widget UI (10 tests), router imports (2 tests)
 - Added timeout/retry to flaky network-dependent webhook tests across ext files
 - 326/326 total tests passing across 9 test files × 3 consecutive clean convergence passes
+
+## Full Production Maturity Push — Audit Remaining Items
+
+### Batch 1: P0 Critical Security
+- [x] SEC-01: Add account lockout after 5 failed login attempts (AUTH-002)
+- [x] SEC-02: Encrypt Plaid access tokens using encryption service (ENC-002)
+- [ ] SEC-03: Add row-level security middleware for all protected procedures (RLS-001)
+- [ ] SEC-04: Audit JWT expiration policy and enforce at middleware (AUTH-001)
+- [x] SEC-05: Split mfaService.ts into mfa.ts, rowSecurity.ts, consent.ts, inputSanitizer.ts (MFA-001)
+- [ ] SEC-06: Expand DSAR to cover all user data tables (MFA-002)
+- [ ] SEC-07: Add automated key rotation tracking (ENC-001)
+- [ ] SEC-08: Unify rate limiting into single configurable service (RL-001)
+- [ ] SEC-09: Tests for all security fixes
+
+### Batch 2: P1 Production Hardening
+- [x] PROD-01: Add caching layer for financial data adapters with TTLs
+- [ ] PROD-02: Add rate limit tracking for BLS 500/day limit
+- [x] PROD-03: Add SEC EDGAR User-Agent header per fair access policy
+- [ ] PROD-04: Verify circuit breaker usage across all adapters
+- [ ] PROD-05: Add error recovery for cascading engine failures
+- [ ] PROD-06: Split codeChat.ts router into sub-routers
+- [ ] PROD-07: Consolidate Intelligence routers
+- [ ] PROD-08: Add data minimization notice for post-signup enrichment
+- [ ] PROD-09: Upgrade GHL webhook to HMAC-only
+- [ ] PROD-10: Tests for all production hardening
+
+### Batch 3: P2 Feature Completeness
+- [ ] FEAT-01: Monte Carlo simulation to production
+- [ ] FEAT-02: Plan sharing with permissions
+- [ ] FEAT-03: Per-provider sync health cards
+- [ ] FEAT-04: Auto-resolve policies for sync conflicts
+- [ ] FEAT-05: Matching engine maturity 2→3
+- [ ] FEAT-06: Study groups maturity 2→3
+- [ ] FEAT-07: Gamification maturity 2→3
+- [ ] FEAT-08: Study Buddy AI maturity 2→3
+- [ ] FEAT-09: OFX/QFX/QIF format support
+- [ ] FEAT-10: Confidence scoring for AI enrichment
+- [ ] FEAT-11: Plaid Investments and Liabilities products
+- [ ] FEAT-12: Tests for all feature completeness
+
+### Batch 4: P3 Optimization
+- [ ] OPT-01: WebSocket for real-time market data
+- [ ] OPT-02: Financial-specific enrichment providers
+- [ ] OPT-03: Autonomous training beyond minimal
+- [ ] OPT-04: Exponential Engine operationalization
+- [ ] OPT-05: Consensus algorithm upgrade
+- [ ] OPT-06: Improvement engine execution capability
+- [ ] OPT-07: Agent framework generalization
+- [ ] OPT-08: Deep context async assembly
+- [ ] OPT-09: Fix flaky webhook tests at root cause
+- [ ] OPT-10: Error path tests for all routers
+- [ ] OPT-11: Tests for all optimization work

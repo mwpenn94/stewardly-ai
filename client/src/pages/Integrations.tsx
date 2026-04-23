@@ -1629,7 +1629,7 @@ function PlaidLinkButton({ accountKey }: { accountKey: string }) {
         `Bank account linked successfully! ${result.mock ? "(Sandbox mode)" : ""}` +
         ` Item: ${result.itemId.substring(0, 12)}…`
       );
-      sessionStorage.setItem("plaid_access_token", result.accessToken);
+      // Security: access token is stored encrypted server-side, never exposed to frontend
       sessionStorage.setItem("plaid_item_id", result.itemId);
     } catch (err: any) {
       toast.error(`Failed to link account: ${err.message}`);

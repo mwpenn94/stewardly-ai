@@ -289,7 +289,7 @@ async function upsertContactToLeadPipeline(
   try {
     // Check if contact already exists
     // @ts-expect-error — property access on loosely typed object
-    const [existing] = await pool.execute(
+    const [existing] = await pool.query(
       `SELECT id FROM lead_pipeline WHERE crmExternalId = ? LIMIT 1`,
       [contact.id],
     );

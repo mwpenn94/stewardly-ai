@@ -7744,3 +7744,25 @@ export const peerGroupMessages = mysqlTable("peer_group_messages", {
   groupIdx: index("idx_pgmsg_group").on(table.groupId),
 }));
 export type PeerGroupMessage = typeof peerGroupMessages.$inferSelect;
+
+// ─── Plaid Items (Encrypted Token Storage) ────────────────────────
+export const plaidItems = mysqlTable("plaid_items", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("user_id").notNull(),
+  itemId: varchar("item_id", { length: 255 }).notNull(),
+  accessTokenEncrypted: text("access_token_encrypted").notNull(),
+  institutionId: varchar("institution_id", { length: 100 }),
+  institutionName: varchar("institution_name", { length: 255 }),
+  status: varchar("status", { length: 50 }).notNull().default("active"),
+  consentExpiresAt: bigint("consent_expires_at", { mode: "number" }),
+  lastSyncedAt: bigint("last_synced_at", { mode: "number" }),
+  errorCode: varchar("error_code", { length: 100 }),
+  errorMessage: text("error_message"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_plaid_items_user_id").on(table.userId),
+  itemIdIdx: index("idx_plaid_items_item_id").on(table.itemId),
+}));
+export type PlaidItem = typeof plaidItems.$inferSelect;
+export type InsertPlaidItem = typeof plaidItems.$inferInsert;

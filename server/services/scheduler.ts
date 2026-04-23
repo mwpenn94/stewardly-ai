@@ -515,6 +515,15 @@ export function initScheduler(): void {
     });
   });
 
+  registerJob("data_retention_purge", DAYS(1), async () => {
+    const { runMonitoredCron } = await import("./monitoring/healthMonitor");
+    await runMonitoredCron("data_retention_purge", async () => {
+      const { runDataRetentionJobs } = await import("./dataRetention");
+      const result = await runDataRetentionJobs();
+      logger.info({ operation: "scheduler", totalDeleted: result.totalDeleted }, "Data retention purge complete");
+    });
+  });
+
   // ─── WEEKLY JOBS ───────────────────────────────────────────────────
   registerJob("reverify_credentials", WEEKS(1), async () => {
     const { runMonitoredCron } = await import("./monitoring/healthMonitor");

@@ -317,13 +317,14 @@ export async function batchEnrichLeads(limit: number = 10): Promise<{
   const pool = await getRawPool();
   
   // Find leads without LinkedIn enrichment
+  // MySQL prepared statements require LIMIT to be an integer, not a parameter
+  const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 10)));
   const [rows] = await pool.execute(
     `SELECT id FROM lead_pipeline 
      WHERE (enrichment_data IS NULL OR JSON_EXTRACT(enrichment_data, '$.linkedin_enriched') IS NULL)
      AND status != 'disqualified'
      ORDER BY created_at DESC
-     LIMIT ?`,
-    [limit]
+     LIMIT ${safeLimit}`
   ) as any;
 
   const results: EnrichmentResult[] = [];

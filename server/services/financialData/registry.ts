@@ -10,6 +10,8 @@
 import type { FinancialDataAdapter, AdapterHealth, AdapterQueryResult } from "./types";
 import { getDb } from "../../db";
 import { dataAccessAudit } from "../../../drizzle/schema";
+import { getCached, setCached, invalidateAdapter, invalidateAll, getCacheStats } from "./responseCache";
+import { checkRateLimit, recordApiCall, getAllUsageStats } from "./apiRateLimiter";
 
 // ─── ADAPTER MANIFEST ─────────────────────────────────────────────
 
@@ -105,7 +107,7 @@ export async function getAdapterHealth(adapterId: string): Promise<AdapterHealth
   return adapter.healthCheck();
 }
 
-/** Query a specific adapter with audit trail */
+/** Query a specific adapter with audit trail and response caching */
 export async function queryAdapter(
   adapterId: string,
   action: string,
@@ -118,22 +120,38 @@ export async function queryAdapter(
     throw new Error(`Adapter '${adapterId}' not found`);
   }
 
+  // Check response cache first
+  const cachedResult = getCached(adapterId, action, params);
+  if (cachedResult) {
+    await writeAuditEntry(adapterId, action, userId, clientId, params, "success", 0);
+    return cachedResult;
+  }
+
+  // Check rate limits before making the API call
+  const rateLimitCheck = checkRateLimit(adapterId);
+  if (!rateLimitCheck.allowed) {
+    await writeAuditEntry(adapterId, action, userId, clientId, params, "rate_limited", 0);
+    throw new Error(`Rate limit exceeded for ${adapterId}: ${rateLimitCheck.reason}. Retry after ${Math.ceil((rateLimitCheck.retryAfterMs || 60000) / 1000)}s`);
+  }
+
   const start = Date.now();
   let result: AdapterQueryResult;
   let status: "success" | "error" = "success";
 
   try {
     result = await adapter.query(action, params);
+    recordApiCall(adapterId);
   } catch (err) {
     status = "error";
-    // Write audit entry even on error
     await writeAuditEntry(adapterId, action, userId, clientId, params, status, Date.now() - start);
     throw err;
   }
 
+  // Cache the successful response
+  setCached(adapterId, action, params, result);
+
   // Write audit entry on success
   await writeAuditEntry(adapterId, action, userId, clientId, params, status, Date.now() - start);
-
   return result;
 }
 
@@ -217,3 +235,6 @@ export async function getFredSeries(seriesId: string, userId: number): Promise<A
     return null;
   }
 }
+
+// ─── CACHE MANAGEMENT (exported for tRPC router) ──────────────────
+export { invalidateAdapter, invalidateAll, getCacheStats };
