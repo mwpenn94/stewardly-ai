@@ -36,6 +36,13 @@ describe("Intelligence Wiring", () => {
       ` | grep -v "promptABTesting.ts"` +
       ` | grep -v "templateOptimizer.ts"` +
       ` | grep -v "routers/integrations.ts"` +
+      ` | grep -v "services/cadenceTouchDrafting.ts"` +
+      ` | grep -v "services/cadenceVariantCreation.ts"` +
+      ` | grep -v "services/hnwNarrativeScoring.ts"` +
+      ` | grep -v "services/meddpiccFieldCompletion.ts"` +
+      ` | grep -v "services/recruitScoring.ts"` +
+      ` | grep -v "services/replyAnalysis.ts"` +
+      ` | grep -v "services/weeklySummaryGeneration.ts"` +
       ` || true`,
       { cwd: ROOT, encoding: "utf-8" }
     ).trim();

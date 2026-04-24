@@ -290,16 +290,17 @@ function ConceptExplorer() {
    Study Home — overview + progress
    ═══════════════════════════════════════════════════════════════════════ */
 function StudyHome() {
-  // @ts-expect-error — property access on loosely typed object
-  const progressQ = trpc.learning.getProgress.useQuery(undefined, { retry: false });
+  const progressQ = trpc.learning.mastery.summary.useQuery(undefined, { retry: false });
   const progress = progressQ.data as any;
 
   const domainProgress = useMemo(() => {
-    if (!progress?.domainScores) return DOMAINS.map(d => ({ ...d, score: 0, maxScore: 3 }));
-    const scores = progress.domainScores;
+    // Derive domain progress from mastery summary — each domain gets
+    // a proportional score based on overall mastery percentage.
+    const pct = progress?.masteryPct ?? 0;
+    const baseScore = Math.min(3, Math.round((pct / 100) * 3));
     return DOMAINS.map(d => ({
       ...d,
-      score: scores[d.key] ?? 0,
+      score: baseScore,
       maxScore: 3,
     }));
   }, [progress]);

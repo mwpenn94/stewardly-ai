@@ -44,7 +44,7 @@ describe("Feature 1: Notification Badges — Parity Convergence", () => {
     it("reads from real tRPC procedures (not mock endpoints)", () => {
       const src = fs.readFileSync(path.join(ROOT, "client/src/hooks/useNavBadges.ts"), "utf8");
       expect(src).toContain("trpc.exponentialEngine.getUnreadChangelogCount");
-      expect(src).toContain("trpc.learning.dueReview");
+      expect(src).toContain("trpc.learning.mastery.dueReview");
     });
 
     it("uses WebSocket-driven notification count", () => {

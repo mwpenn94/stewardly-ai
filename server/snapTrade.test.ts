@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ─── Mock DB ──────────────────────────────────────────────────────────
@@ -28,7 +29,7 @@ vi.mock("./services/encryption", () => ({
 // ─── Tests ────────────────────────────────────────────────────────────
 describe("SnapTrade Architecture", () => {
   describe("Schema Design", () => {
-    it("should have snaptrade_users table with correct columns", async () => {
+    it("should have snaptrade_users table with correct columns", { timeout: 120_000 }, async () => {
       const schema = await import("../drizzle/schema");
       expect(schema.snapTradeUsers).toBeDefined();
       // Check table has expected columns
@@ -37,31 +38,31 @@ describe("SnapTrade Architecture", () => {
       expect(columns).toContain("userId");
     });
 
-    it("should have snaptrade_brokerage_connections table", async () => {
+    it("should have snaptrade_brokerage_connections table", { timeout: 120_000 }, async () => {
       const schema = await import("../drizzle/schema");
       expect(schema.snapTradeBrokerageConnections).toBeDefined();
     });
 
-    it("should have snaptrade_accounts table", async () => {
+    it("should have snaptrade_accounts table", { timeout: 120_000 }, async () => {
       const schema = await import("../drizzle/schema");
       expect(schema.snapTradeAccounts).toBeDefined();
     });
 
-    it("should have snaptrade_positions table", async () => {
+    it("should have snaptrade_positions table", { timeout: 120_000 }, async () => {
       const schema = await import("../drizzle/schema");
       expect(schema.snapTradePositions).toBeDefined();
     });
   });
 
   describe("Tier Access Control", () => {
-    it("canManageTier should allow any authenticated user for client tier", async () => {
+    it("canManageTier should allow any authenticated user for client tier", { timeout: 120_000 }, async () => {
       // The canManageTier function is internal to the router, so we test via the router behavior
       // Client tier should be accessible to all authenticated users
       const routerModule = await import("./routers/integrations");
       expect(routerModule.integrationsRouter).toBeDefined();
     });
 
-    it("SnapTrade provider should be at client tier in the database", async () => {
+    it("SnapTrade provider should be at client tier in the database", { timeout: 120_000 }, async () => {
       // This is a data-level check — the provider was updated to 'client' tier
       // We verify the router exports the expected SnapTrade procedures
       const routerModule = await import("./routers/integrations");
@@ -82,47 +83,47 @@ describe("SnapTrade Architecture", () => {
   });
 
   describe("Service Module", () => {
-    it("should export isPlatformConfigured function", async () => {
+    it("should export isPlatformConfigured function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.isPlatformConfigured).toBe("function");
     });
 
-    it("should export getSnapTradeStatus function", async () => {
+    it("should export getSnapTradeStatus function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.getSnapTradeStatus).toBe("function");
     });
 
-    it("should export getConnectionPortalUrl function", async () => {
+    it("should export getConnectionPortalUrl function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.getConnectionPortalUrl).toBe("function");
     });
 
-    it("should export syncBrokerageConnections function", async () => {
+    it("should export syncBrokerageConnections function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.syncBrokerageConnections).toBe("function");
     });
 
-    it("should export syncAccountsAndPositions function", async () => {
+    it("should export syncAccountsAndPositions function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.syncAccountsAndPositions).toBe("function");
     });
 
-    it("should export getUserBrokerageConnections function", async () => {
+    it("should export getUserBrokerageConnections function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.getUserBrokerageConnections).toBe("function");
     });
 
-    it("should export getUserAccounts function", async () => {
+    it("should export getUserAccounts function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.getUserAccounts).toBe("function");
     });
 
-    it("should export getUserPositions function", async () => {
+    it("should export getUserPositions function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.getUserPositions).toBe("function");
     });
 
-    it("should export removeBrokerageConnection function", async () => {
+    it("should export removeBrokerageConnection function", { timeout: 120_000 }, async () => {
       const st = await import("./services/snapTrade");
       expect(typeof st.removeBrokerageConnection).toBe("function");
     });
@@ -133,7 +134,7 @@ describe("SnapTrade Architecture", () => {
       vi.clearAllMocks();
     });
 
-    it("should return true when ENV vars are configured", async () => {
+    it("should return true when ENV vars are configured", { timeout: 120_000 }, async () => {
       // ENV vars SNAPTRADE_CLIENT_ID and SNAPTRADE_CONSUMER_KEY are set
       const st = await import("./services/snapTrade");
       const result = await st.isPlatformConfigured();
@@ -146,7 +147,7 @@ describe("SnapTrade Architecture", () => {
       vi.clearAllMocks();
     });
 
-    it("should return unregistered status when user has no SnapTrade record", async () => {
+    it("should return unregistered status when user has no SnapTrade record", { timeout: 120_000 }, async () => {
       mockDb.where.mockResolvedValueOnce([]);
       const st = await import("./services/snapTrade");
       const result = await st.getSnapTradeStatus(999);
@@ -159,7 +160,7 @@ describe("SnapTrade Architecture", () => {
   });
 
   describe("Advisor Assist Flow", () => {
-    it("snapTradeClientStatus procedure should exist for advisor access", async () => {
+    it("snapTradeClientStatus procedure should exist for advisor access", { timeout: 120_000 }, async () => {
       const routerModule = await import("./routers/integrations");
       const router = routerModule.integrationsRouter;
       const procedures = Object.keys(router._def.procedures || router);

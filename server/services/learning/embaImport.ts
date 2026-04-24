@@ -689,11 +689,16 @@ async function importTrack(
       result.skipped.flashcards += 1;
       continue;
     }
+    // Strip tab-separated metadata from definitions (e.g. "def text\tSourceManual\tCh.1")
+    const rawDef = card.definition;
+    const tabParts = rawDef.split("\t");
+    const cleanDef = tabParts[0]!.trim();
+    const inferredSource = tabParts.length > 1 ? tabParts[1]!.trim() : undefined;
     const row = await createFlashcard({
       trackId,
-      term: card.term,
-      definition: card.definition,
-      sourceLabel: card.sourceLabel ?? card.source ?? "emba_modules",
+      term: card.term.trim(),
+      definition: cleanDef,
+      sourceLabel: card.sourceLabel ?? inferredSource ?? card.source ?? "emba_modules",
       createdBy: null,
       source: "manual",
       tags: card.tags ?? undefined,

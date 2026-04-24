@@ -80,7 +80,7 @@ describe("Pass 109 — SovereignStudy page", () => {
   it("links to learning hub", () => expect(src).toContain("/learning"));
   it("has reference library section", () => expect(src).toContain("Reference Library"));
   it("has domain mastery progress", () => expect(src).toContain("Domain Mastery"));
-  it("uses trpc.learning.getProgress", () => expect(src).toContain("learning.getProgress"));
+  it("uses trpc.learning.mastery.summary", () => expect(src).toContain("learning.mastery.summary"));
 });
 
 describe("Pass 109 — App.tsx routing", () => {

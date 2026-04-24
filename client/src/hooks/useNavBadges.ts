@@ -4,7 +4,7 @@
  * Sources:
  * 1. Notifications (WebSocket-driven unread count)
  * 2. Changelog (unread changelog entries via exponentialEngine.getUnreadChangelogCount)
- * 3. Learning (due review items via learning.dueReview)
+ * 3. Learning (due review items via learning.mastery.dueReview)
  *
  * Returns a Map<string, BadgeInfo> keyed by sidebar path.
  * The sidebar NavBtn reads from this map to render badge indicators.
@@ -38,7 +38,7 @@ export function useNavBadges(): NavBadgeMap {
   );
 
   // 3. Learning due review count (polled every 2 min)
-  const { data: reviewData } = trpc.learning.dueReview.useQuery(
+  const { data: reviewData } = trpc.learning.mastery.dueReview.useQuery(
     { limit: 1 },
     { refetchInterval: 120_000, staleTime: 60_000 }
   );

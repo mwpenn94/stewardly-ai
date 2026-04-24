@@ -162,8 +162,7 @@ export default function ClientDashboard() {
   const conversations = trpc.conversation.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
-  // @ts-expect-error — property access on loosely typed object
-  const learningProgress = trpc.learning.dashboard.useQuery(undefined, {
+  const learningProgress = trpc.learning.mastery.summary.useQuery(undefined, {
     enabled: isAuthenticated,
   });
 
@@ -266,7 +265,7 @@ export default function ClientDashboard() {
                 <BookOpen className="w-5 h-5 text-emerald-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold tabular-nums">{learningProgress.data?.mastery?.totalMastered ?? 0}</p>
+                <p className="text-2xl font-bold tabular-nums">{learningProgress.data?.mastered ?? 0}</p>
                 <p className="text-xs text-muted-foreground">Topics Mastered</p>
               </div>
             </CardContent>

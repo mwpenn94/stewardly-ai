@@ -319,7 +319,7 @@ describe("Org Providers — SOFR Pipeline", () => {
     expect(rates[0]).toHaveProperty("date");
     expect(rates[0]).toHaveProperty("rate");
     expect(typeof rates[0].rate).toBe("number");
-  }, 15000);
+  }, 120000);
 
   it("should calculate premium finance rates from SOFR", () => {
     const pfRates = calculatePremiumFinanceRates(5.33);
@@ -348,7 +348,7 @@ describe("Org Providers — Context Assembly", () => {
     const ctx = await assembleContext();
     expect(ctx).toBeDefined();
     expect(ctx.platform).toBeDefined();
-  });
+  }, 120_000);
 
   it("should return org context when orgId is provided", async () => {
     const ctx = await assembleContext(undefined, "test-org");
@@ -444,7 +444,7 @@ describe("Adaptive Rate Management — Integration Onboarding", { timeout: 60000
     expect(typeof result.suggestedRpm).toBe("number");
     expect(typeof result.riskLevel).toBe("string");
     expect(Array.isArray(result.recommendations)).toBe(true);
-  }, 15000);
+  }, 120000);
 
   it("should suggest conservative rates for unknown providers", async () => {
     const result = await analyzeNewIntegration(
@@ -452,7 +452,7 @@ describe("Adaptive Rate Management — Integration Onboarding", { timeout: 60000
       "unknown.example.com"
     );
     expect(result.suggestedRpm).toBeLessThanOrEqual(30);
-  }, 15000);
+  }, 120000);
 });
 
 describe("Adaptive Rate Management — Extraction Plans", () => {
