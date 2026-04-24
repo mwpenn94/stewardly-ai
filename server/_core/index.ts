@@ -575,6 +575,30 @@ async function startServer() {
     }
   });
 
+  // ─── Scheduled Task: Learning Content Import ──────────────────────────
+  app.post("/api/scheduled/learning-import", async (req, res) => {
+    try {
+      let user;
+      try {
+        user = await sdk.authenticateRequest(req);
+      } catch {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      // Allow user role (scheduled tasks get user role)
+      if (!['user', 'advisor', 'manager', 'admin'].includes(user.role ?? 'user')) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      const { importEMBAFromGitHub } = await import("../services/learning/embaImport");
+      const result = await importEMBAFromGitHub();
+      logger.info({ operation: 'scheduled.learningImport', userId: user.id, counts: result.counts, errors: result.errors.length }, '[Scheduled] Learning import complete');
+      res.json({ ok: result.ok, counts: result.counts, errors: result.errors, durationMs: result.durationMs });
+    } catch (err: any) {
+      logger.error({ operation: 'scheduled.learningImport', error: err.message }, '[Scheduled] Learning import failed');
+      res.status(500).json({ error: 'Learning import failed', message: err.message });
+    }
+  });
+
   // ─── Scheduled Task: Weekly Summary (GAP-A2-02) ──────────────────────
   app.post("/api/scheduled/weekly-summary", async (req, res) => {
     try {

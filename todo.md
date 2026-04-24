@@ -9088,3 +9088,13 @@
 - [x] 20 expert pass test files + convergence-engines.test.ts recreated (324 tests)
 - [x] Full suite: 505 files, 12,330 tests — 100% passing (3 consecutive clean passes)
 - [ ] Deploy and verify all learning module fixes work in production
+
+## Learning Content — Actually Make It Work
+- [ ] Verify deployed database has learning content (tracks, flashcards, questions, definitions)
+- [ ] If content is missing, create an API endpoint to trigger import and run it
+- [ ] Generate 50+ additional practice questions per track using AI content generation
+- [ ] Generate additional flashcards for tracks with thin coverage
+- [ ] Verify in live deployed browser: flashcards render with visible text
+- [ ] Verify in live deployed browser: practice questions work end-to-end
+- [ ] Verify in live deployed browser: no "procedure not found" errors
+- [ ] Verify in live deployed browser: chapter content is readable and complete
