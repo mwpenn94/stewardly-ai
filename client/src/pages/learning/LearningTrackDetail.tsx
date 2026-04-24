@@ -112,24 +112,7 @@ export default function LearningTrackDetail() {
   );
 
   // Conditional returns AFTER all hooks
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Please sign in to access this page.</p>
-        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
-      </div>
-    );
-  }
-
-  if (trackQ.isLoading) {
+  if (trackQ.isLoading || authLoading) {
     return (
       <AppShell title="Track">
       <SEOHead title="Track" description="Track chapters and study materials" />

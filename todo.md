@@ -9105,3 +9105,10 @@
 - [x] Apply same fix to getTrack and getTrackBySlug via shared trackSelectFields constant
 - [x] Add content.test.ts with 5 passing tests for track count queries
 - [x] Verify all 21 tracks display correct counts (e.g., EMBA: 9 chapters, 167 flashcards, 117 questions)
+
+## Fix: Learning Engine Live Validation Issues (April 24, 2026)
+- [x] Track detail page blocks guests entirely — should show content with sign-in CTA for interactive features
+- [x] Flashcard study page blocks guests entirely — same fix needed
+- [x] Remove duplicate Series 7 track (series-7 slug has 0 content, series7 has real content)
+- [x] Make listTracks, getTrackBySlug, listChapters, listFlashcards, listQuestions public procedures (read-only content should be accessible)
+- [ ] Validate all fixes on LIVE deployed site (not just local dev) — pending deployment

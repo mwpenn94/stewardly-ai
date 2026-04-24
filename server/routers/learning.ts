@@ -16,7 +16,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import type { ActingUser } from "../services/learning/permissions";
 import { assertCanEdit, canPublish, canSeedContent } from "../services/learning/permissions";
 
@@ -490,7 +490,7 @@ const contentRouter = router({
     }),
 
   // Tracks
-  listTracks: protectedProcedure
+  listTracks: publicProcedure
     .input(
       z
         .object({
@@ -503,11 +503,11 @@ const contentRouter = router({
     )
     .query(async ({ input }) => listTracks(input ?? {})),
 
-  getTrack: protectedProcedure
+  getTrack: publicProcedure
     .input(z.object({ id: z.number().int() }))
     .query(async ({ input }) => getTrack(input.id)),
 
-  getTrackBySlug: protectedProcedure
+  getTrackBySlug: publicProcedure
     .input(z.object({ slug: z.string().min(1).max(128) }))
     .query(async ({ input }) => getTrackBySlug(input.slug)),
 
@@ -560,11 +560,11 @@ const contentRouter = router({
     }),
 
   // Chapters / subsections
-  listChapters: protectedProcedure
+  listChapters: publicProcedure
     .input(z.object({ trackId: z.number().int() }))
     .query(async ({ input }) => listChaptersForTrack(input.trackId)),
 
-  listSubsections: protectedProcedure
+  listSubsections: publicProcedure
     .input(z.object({ chapterId: z.number().int() }))
     .query(async ({ input }) => listSubsectionsForChapter(input.chapterId)),
 
@@ -601,7 +601,7 @@ const contentRouter = router({
     }),
 
   // Practice questions
-  listQuestions: protectedProcedure
+  listQuestions: publicProcedure
     .input(z.object({ trackId: z.number().int() }))
     .query(async ({ input }) => listQuestionsForTrack(input.trackId)),
 
@@ -624,7 +624,7 @@ const contentRouter = router({
     }),
 
   // Flashcards
-  listFlashcards: protectedProcedure
+  listFlashcards: publicProcedure
     .input(z.object({ trackId: z.number().int() }))
     .query(async ({ input }) => listFlashcardsForTrack(input.trackId)),
 

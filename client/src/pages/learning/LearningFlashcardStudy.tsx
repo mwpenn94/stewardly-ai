@@ -122,18 +122,19 @@ export default function LearningFlashcardStudy() {
     if (!current) return;
     studySession.recordItem();
     if (correct) studySession.recordMastery();
-    // Fire-and-forget SRS update — if it fails we still advance, but we
-    // surface the error via toast so learners know their progress may
-    // not have been saved (e.g. DB unavailable).
-    recordReview
-      .mutateAsync({
-        itemKey: `flashcard:${current.id}`,
-        itemType: "flashcard",
-        correct,
-      })
-      .catch((err) => {
-        toast.error(`Review not saved: ${err.message ?? "network error"}`);
-      });
+    // Fire-and-forget SRS update — only for authenticated users.
+    // Guests can still study but progress won't be saved.
+    if (isAuthenticated) {
+      recordReview
+        .mutateAsync({
+          itemKey: `flashcard:${current.id}`,
+          itemType: "flashcard",
+          correct,
+        })
+        .catch((err) => {
+          toast.error(`Review not saved: ${err.message ?? "network error"}`);
+        });
+    }
 
     // Pass 7 — streak-day tracker (idempotent per-day).
     recordStudyNow();
@@ -167,24 +168,7 @@ export default function LearningFlashcardStudy() {
     setStarted(true);
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Please sign in to access this page.</p>
-        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
-      </div>
-    );
-  }
-
-  if (trackQ.isLoading || flashcardsQ.isLoading) {
+  if (authLoading || trackQ.isLoading || flashcardsQ.isLoading) {
     return (
       <AppShell title="Flashcards">
         <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />

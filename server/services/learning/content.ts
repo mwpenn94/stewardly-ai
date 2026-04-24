@@ -297,7 +297,12 @@ export async function listTracks(filters: ListFilters = {}) {
   if (!db) return [];
   try {
     const conds: any[] = [];
-    if (filters.status) conds.push(eq(learningTracks.status, filters.status));
+    if (filters.status) {
+      conds.push(eq(learningTracks.status, filters.status));
+    } else {
+      // By default, exclude archived tracks
+      conds.push(sql`${learningTracks.status} != 'archived'`);
+    }
     if (filters.visibility) conds.push(eq(learningTracks.visibility, filters.visibility));
     if (filters.search) conds.push(like(learningTracks.name, `%${filters.search}%`));
     const rows = await db

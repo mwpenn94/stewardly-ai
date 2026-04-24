@@ -44,6 +44,7 @@ import {
 import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { useStudySession } from "@/hooks/useStudySession";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 
 export default function LearningQuizRunner() {
@@ -59,7 +60,9 @@ export default function LearningQuizRunner() {
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
   );
+  const { isAuthenticated } = useAuth();
   const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, {
+    enabled: isAuthenticated,
     refetchOnWindowFocus: false,
   });
   const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
@@ -122,15 +125,18 @@ export default function LearningQuizRunner() {
       pil.giveFeedback("learning.answer_incorrect");
     }
 
-    recordReview
-      .mutateAsync({
-        itemKey: `question:${current.id}`,
-        itemType: "question",
-        correct,
-      })
-      .catch((err) => {
-        toast.error(`Review not saved: ${err.message ?? "network error"}`);
-      });
+    // Only save review progress for authenticated users.
+    if (isAuthenticated) {
+      recordReview
+        .mutateAsync({
+          itemKey: `question:${current.id}`,
+          itemType: "question",
+          correct,
+        })
+        .catch((err) => {
+          toast.error(`Review not saved: ${err.message ?? "network error"}`);
+        });
+    }
 
     // Pass 7 — streak day marker (idempotent per-day).
     recordStudyNow();
