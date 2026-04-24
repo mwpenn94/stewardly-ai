@@ -23,6 +23,7 @@ import {
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useTranslation } from "react-i18next";
+import { useNavBadges, formatBadgeCount, type BadgeInfo } from "@/hooks/useNavBadges";
 
 export type Role = "guest" | "user" | "advisor" | "manager" | "admin";
 
@@ -173,6 +174,20 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
   const convoGroups = useMemo(() => groupConvos(conversations), [conversations]);
   const { level: disclosureLevel } = useDisclosure();
   const { t } = useTranslation();
+  const badges = useNavBadges();
+
+  /** Resolve badge for a nav item by checking its path and match paths */
+  const getBadge = (item: NavItem): BadgeInfo | undefined => {
+    // Direct path match
+    const direct = badges.get(item.path);
+    if (direct) return direct;
+    // Check match paths (e.g., /learning matches /learning/review)
+    for (const m of item.match) {
+      const b = badges.get(m);
+      if (b) return b;
+    }
+    return undefined;
+  };
 
   // Filter layers by role AND disclosure level
   const visibleLayers = useMemo(() => {
@@ -190,20 +205,45 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
 
   const NavBtn = ({ item }: { item: NavItem }) => {
     const active = isActive(item);
+    const badge = getBadge(item);
     return (
       <button type="button"
         onClick={() => { navigate(item.path); onNavigate?.(); }}
         aria-current={active ? "page" : undefined}
-        aria-label={item.label}
+        aria-label={badge ? `${item.label} (${badge.count} unread)` : item.label}
         className={`w-full flex items-center gap-2.5 rounded-lg cursor-pointer transition-colors leading-tight focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
           px-2.5
           ${isMobile ? "py-[10px] text-[14px] min-h-[44px]" : "py-[7px] text-[13px]"}
           ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}
           ${collapsed ? "justify-center px-1.5" : ""}`}
-        title={collapsed ? item.label : undefined}
+        title={collapsed ? (badge ? `${item.label} (${badge.count})` : item.label) : undefined}
       >
-        <item.icon className={`w-[17px] h-[17px] flex-none ${active ? "text-primary" : ""}`} />
-        {!collapsed && <span className="truncate">{item.label}</span>}
+        <span className="relative flex-none">
+          <item.icon className={`w-[17px] h-[17px] ${active ? "text-primary" : ""}`} />
+          {badge && collapsed && (
+            <span className={`absolute -top-1 -right-1.5 flex items-center justify-center min-w-[14px] h-[14px] text-[9px] font-bold rounded-full
+              ${badge.variant === "urgent" ? "bg-destructive text-destructive-foreground animate-pulse" : badge.variant === "count" ? "bg-primary text-primary-foreground" : "bg-muted-foreground"}
+              ${badge.variant === "dot" ? "w-[7px] h-[7px] min-w-0" : "px-[3px]"}`}
+              aria-hidden="true"
+            >
+              {badge.variant !== "dot" && formatBadgeCount(badge.count)}
+            </span>
+          )}
+        </span>
+        {!collapsed && (
+          <>
+            <span className="truncate flex-1">{item.label}</span>
+            {badge && (
+              <span className={`flex items-center justify-center min-w-[18px] h-[18px] text-[10px] font-semibold rounded-full ml-auto flex-none
+                ${badge.variant === "urgent" ? "bg-destructive text-destructive-foreground animate-pulse" : badge.variant === "count" ? "bg-primary/15 text-primary" : "bg-muted-foreground/20 text-muted-foreground"}
+                ${badge.variant === "dot" ? "w-[8px] h-[8px] min-w-0 bg-muted-foreground/50" : "px-1"}`}
+                aria-hidden="true"
+              >
+                {badge.variant !== "dot" && formatBadgeCount(badge.count)}
+              </span>
+            )}
+          </>
+        )}
       </button>
     );
   };

@@ -8905,3 +8905,37 @@
 - [x] Validate full user flow: 123/123 targeted tests pass across 6 test suites
 - [x] Verify all new sidebar links navigate correctly — navReachability 6/6 pass
 - [x] Verify WebSocket connections establish and update UI — realtimeChannels 26/26 pass
+
+## Feature Implementation with Parity Convergence (2026-04-23)
+
+### Feature 1: Notification Badges on Sidebar Items
+- [x] Implement unread count tracking — useNavBadges.ts aggregates notifications, changelog, learning reviews
+- [x] Create NotificationBadge component — integrated into PersonaSidebar5.tsx NavBtn rendering
+- [x] Wire badge counts to real-time updates — 120s polling with staleTime
+- [x] PARITY PASS 1: CLEAN — no XSS, try/catch for localStorage, aria-label on badges
+- [x] PARITY PASS 2: CLEAN — polling interval appropriate, no cognitive overload
+- [x] PARITY PASS 3: CLEAN — 24/24 tests pass, CONVERGED
+
+### Feature 2: Continuous Self-Discovery
+- [x] Self-discovery engine already built — 393-line service, 207-line hook, 108-line router, 144-line bubble
+- [x] Inactivity detection with configurable timeout — idleThresholdMs in service
+- [x] Settings toggle added to AITuningTab — enabled, direction, idle threshold, continuous mode
+- [x] Wired to LLM infrastructure — uses invokeLLM with direction-specific prompts
+- [x] PARITY PASS 1: CLEAN — no external outreach, no XSS, server-side only
+- [x] PARITY PASS 2: CLEAN — settings UI intuitive, direction options clear
+- [x] PARITY PASS 3: CLEAN — CONVERGED
+
+### Feature 3: AI-Guided Onboarding Tour
+- [x] Tour already built — 433-line component, 18 steps, spotlight highlighting, progress bar
+- [x] Enhanced with role-adaptive paths — ROLE_STEP_MAP (advisor:16, client:12, admin:9 steps)
+- [x] Server-side progress persistence — roleOnboarding.ts with DB tracking
+- [x] Resume capability added — localStorage step persistence, skip preserves progress
+- [x] Restart Tour via notification bell — ?startTour=true URL param
+- [x] PARITY PASS 1: CLEAN — no XSS, aria-labels, try/catch for localStorage
+- [x] PARITY PASS 2: CLEAN — role-appropriate step counts, resume UX
+- [x] PARITY PASS 3: CLEAN — CONVERGED
+
+### Cross-Feature Convergence
+- [x] Run full test suite — 142/142 tests pass across 6 suites (0 failures)
+- [x] Cross-feature integration validation — 34/34 featureConvergence.test.ts pass
+- [x] Final convergence pass — CLEAN, all 3 features CONVERGED independently + together

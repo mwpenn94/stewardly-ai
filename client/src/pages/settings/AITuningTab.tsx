@@ -203,6 +203,12 @@ function UserPreferencesEditor() {
   const [citationStyle, setCitationStyle] = useState("none");
   const [reasoningTransparency, setReasoningTransparency] = useState(false);
 
+  // Self-Discovery Loop settings
+  const [discoveryEnabled, setDiscoveryEnabled] = useState(false);
+  const [discoveryDirection, setDiscoveryDirection] = useState("auto");
+  const [discoveryIdleMs, setDiscoveryIdleMs] = useState(120000);
+  const [discoveryContinuous, setDiscoveryContinuous] = useState(false);
+
   useEffect(() => {
     if (query.data) {
       setPromptOverlay(query.data.customPromptAdditions || "");
@@ -220,6 +226,11 @@ function UserPreferencesEditor() {
       setCrossModelVerify(query.data.crossModelVerify ?? false);
       setCitationStyle(query.data.citationStyle || "none");
       setReasoningTransparency(query.data.reasoningTransparency ?? false);
+      // Self-Discovery
+      setDiscoveryEnabled(query.data.discoveryContinuous !== undefined ? (query.data.autoFollowUp ?? false) : false);
+      setDiscoveryDirection(query.data.discoveryDirection || "auto");
+      setDiscoveryIdleMs(query.data.discoveryIdleThresholdMs ?? 120000);
+      setDiscoveryContinuous(query.data.discoveryContinuous ?? false);
     }
   }, [query.data]);
 
@@ -240,6 +251,9 @@ function UserPreferencesEditor() {
     crossModelVerify,
     citationStyle: citationStyle as any,
     reasoningTransparency,
+    discoveryDirection: discoveryDirection as any,
+    discoveryIdleThresholdMs: discoveryIdleMs,
+    discoveryContinuous,
   });
 
   return (
@@ -418,6 +432,76 @@ function UserPreferencesEditor() {
                 <Switch checked={autoFollowUp} onCheckedChange={setAutoFollowUp} />
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Self-Discovery Loop ── */}
+      <Card className="bg-card/40 border-border/40">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-medium">Self-Discovery Loop</h3>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            After you stop interacting, the AI generates a follow-up exploration query based on your last conversation — helping you discover new insights without asking.
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="text-xs">Enable Discovery</Label>
+                <TuningTooltip tip="When enabled, the AI will suggest follow-up exploration queries after a period of inactivity.">
+                  <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                </TuningTooltip>
+              </div>
+              <Switch checked={discoveryEnabled} onCheckedChange={(v) => { setDiscoveryEnabled(v); if (v) setAutoFollowUp(true); }} />
+            </div>
+
+            {discoveryEnabled && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Direction</Label>
+                  <Select value={discoveryDirection} onValueChange={setDiscoveryDirection}>
+                    <SelectTrigger className="bg-secondary border-border h-7 w-28 text-[11px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">Auto</SelectItem>
+                      <SelectItem value="deeper">Go Deeper</SelectItem>
+                      <SelectItem value="broader">Explore Broader</SelectItem>
+                      <SelectItem value="applied">Apply It</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs">Idle Threshold</Label>
+                    <TuningTooltip tip="How long to wait after your last message before suggesting a discovery query.">
+                      <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                    </TuningTooltip>
+                  </div>
+                  <Select value={String(discoveryIdleMs)} onValueChange={(v) => setDiscoveryIdleMs(Number(v))}>
+                    <SelectTrigger className="bg-secondary border-border h-7 w-28 text-[11px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30000">30 seconds</SelectItem>
+                      <SelectItem value="60000">1 minute</SelectItem>
+                      <SelectItem value="120000">2 minutes</SelectItem>
+                      <SelectItem value="300000">5 minutes</SelectItem>
+                      <SelectItem value="600000">10 minutes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs">Continuous Mode</Label>
+                    <TuningTooltip tip="When enabled, the discovery loop continues indefinitely. When disabled, it stops after the max follow-up count.">
+                      <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+                    </TuningTooltip>
+                  </div>
+                  <Switch checked={discoveryContinuous} onCheckedChange={setDiscoveryContinuous} />
+                </div>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

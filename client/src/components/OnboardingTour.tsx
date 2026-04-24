@@ -207,13 +207,56 @@ interface OnboardingTourProps {
   isOpen: boolean;
 }
 
+/**
+ * Role-adaptive tour mapping: maps server-side role steps to client-side tour steps.
+ * The server returns role-specific steps (advisor/client/admin), and we map them
+ * to the appropriate TOUR_STEPS entries for spotlight highlighting.
+ */
+const ROLE_STEP_MAP: Record<string, string[]> = {
+  advisor: ["welcome", "chat", "voice-mode", "sidebar-nav", "financial-tools", "wealth-engine", "client-profile", "client-wealth-hub", "practice-management", "compliance", "data-intelligence", "settings", "email-campaigns", "products-marketplace", "help-system", "complete"],
+  client: ["welcome", "chat", "voice-mode", "voice-commands", "context-sharing", "sidebar-nav", "financial-tools", "wealth-engine", "settings", "guest-access", "help-system", "complete"],
+  admin: ["welcome", "sidebar-nav", "data-intelligence", "compliance", "settings", "email-campaigns", "products-marketplace", "help-system", "complete"],
+};
+
 export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlightRect, setSpotlightRect] = useState<DOMRect | null>(null);
+  const [userRole, setUserRole] = useState<string>("advisor");
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  const step = TOUR_STEPS[currentStep];
-  const progress = ((currentStep + 1) / TOUR_STEPS.length) * 100;
+  // Determine role-filtered steps
+  const roleStepIds = ROLE_STEP_MAP[userRole] || ROLE_STEP_MAP.advisor;
+  const filteredSteps = TOUR_STEPS.filter(s => roleStepIds.includes(s.id));
+  const step = filteredSteps[currentStep] || TOUR_STEPS[0];
+  const progress = ((currentStep + 1) / filteredSteps.length) * 100;
+
+  // Load user role from localStorage (set during auth)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("stewardly_user_role");
+      if (stored && ROLE_STEP_MAP[stored]) setUserRole(stored);
+    } catch { /* ignore */ }
+  }, []);
+
+  // Resume: load last step from localStorage when tour opens
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        const savedStep = localStorage.getItem("onboarding_tour_step");
+        if (savedStep) {
+          const parsed = parseInt(savedStep, 10);
+          if (parsed >= 0 && parsed < filteredSteps.length) setCurrentStep(parsed);
+        }
+      } catch { /* ignore */ }
+    }
+  }, [isOpen, filteredSteps.length]);
+
+  // Persist current step for resume
+  useEffect(() => {
+    if (isOpen) {
+      try { localStorage.setItem("onboarding_tour_step", String(currentStep)); } catch { /* ignore */ }
+    }
+  }, [currentStep, isOpen]);
 
   // Find and highlight target element
   useEffect(() => {
@@ -233,20 +276,22 @@ export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
   }, [currentStep, isOpen, step?.target]);
 
   const handleNext = useCallback(() => {
-    if (currentStep < TOUR_STEPS.length - 1) {
+    if (currentStep < filteredSteps.length - 1) {
       sendFeedback("onboarding.step_complete");
       setCurrentStep(c => c + 1);
     } else {
-      sendFeedback("onboarding.complete", { persona: "tour" });
+      sendFeedback("onboarding.complete", { persona: "tour", role: userRole });
+      try { localStorage.removeItem("onboarding_tour_step"); } catch { /* ignore */ }
       onComplete();
     }
-  }, [currentStep, onComplete]);
+  }, [currentStep, filteredSteps.length, onComplete, userRole]);
 
   const handlePrev = useCallback(() => {
     if (currentStep > 0) setCurrentStep(c => c - 1);
   }, [currentStep]);
 
   const handleSkip = useCallback(() => {
+    // Don't remove step — allows resume later
     onComplete();
   }, [onComplete]);
 
@@ -358,7 +403,7 @@ export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
             {/* Navigation */}
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {currentStep + 1} of {TOUR_STEPS.length}
+                {currentStep + 1} of {filteredSteps.length}
               </span>
               <div className="flex gap-1.5">
                 {currentStep > 0 && (
@@ -367,8 +412,8 @@ export function OnboardingTour({ onComplete, isOpen }: OnboardingTourProps) {
                   </Button>
                 )}
                 <Button size="sm" className="text-xs" onClick={handleNext}>
-                  {currentStep === TOUR_STEPS.length - 1 ? "Get Started" : "Next"}
-                  {currentStep < TOUR_STEPS.length - 1 && <ChevronRight className="w-3.5 h-3.5 ml-0.5" />}
+                  {currentStep === filteredSteps.length - 1 ? "Get Started" : "Next"}
+                  {currentStep < filteredSteps.length - 1 && <ChevronRight className="w-3.5 h-3.5 ml-0.5" />}
                 </Button>
               </div>
             </div>
