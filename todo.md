@@ -9098,3 +9098,10 @@
 - [ ] Verify in live deployed browser: practice questions work end-to-end
 - [ ] Verify in live deployed browser: no "procedure not found" errors
 - [ ] Verify in live deployed browser: chapter content is readable and complete
+
+## Fix: Learning Track Counts Display (April 24, 2026)
+- [x] Fix listTracks to include computed chapterCount, flashcardCount, questionCount via SQL subqueries
+- [x] Fix Drizzle ORM subquery column reference (use table-qualified `learning_tracks.id` instead of bare `id`)
+- [x] Apply same fix to getTrack and getTrackBySlug via shared trackSelectFields constant
+- [x] Add content.test.ts with 5 passing tests for track count queries
+- [x] Verify all 21 tracks display correct counts (e.g., EMBA: 9 chapters, 167 flashcards, 117 questions)

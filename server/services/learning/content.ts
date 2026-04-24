@@ -267,6 +267,31 @@ export async function archiveDefinition(id: number, changedBy: number, reason?: 
 
 // ─── Tracks CRUD ─────────────────────────────────────────────────────────
 
+/** Shared select fields for track queries (includes computed counts) */
+const trackSelectFields = {
+  id: learningTracks.id,
+  slug: learningTracks.slug,
+  name: learningTracks.name,
+  category: learningTracks.category,
+  title: learningTracks.title,
+  subtitle: learningTracks.subtitle,
+  description: learningTracks.description,
+  color: learningTracks.color,
+  emoji: learningTracks.emoji,
+  tagline: learningTracks.tagline,
+  examOverview: learningTracks.examOverview,
+  createdBy: learningTracks.createdBy,
+  visibility: learningTracks.visibility,
+  status: learningTracks.status,
+  version: learningTracks.version,
+  sortOrder: learningTracks.sortOrder,
+  createdAt: learningTracks.createdAt,
+  updatedAt: learningTracks.updatedAt,
+  chapterCount: sql<number>`(SELECT COUNT(*) FROM learning_chapters WHERE track_id = learning_tracks.id)`.as('chapter_count'),
+  flashcardCount: sql<number>`(SELECT COUNT(*) FROM learning_flashcards WHERE track_id = learning_tracks.id)`.as('flashcard_count'),
+  questionCount: sql<number>`(SELECT COUNT(*) FROM learning_practice_questions WHERE track_id = learning_tracks.id)`.as('question_count'),
+};
+
 export async function listTracks(filters: ListFilters = {}) {
   const db = await getDb();
   if (!db) return [];
@@ -275,12 +300,13 @@ export async function listTracks(filters: ListFilters = {}) {
     if (filters.status) conds.push(eq(learningTracks.status, filters.status));
     if (filters.visibility) conds.push(eq(learningTracks.visibility, filters.visibility));
     if (filters.search) conds.push(like(learningTracks.name, `%${filters.search}%`));
-    return await db
-      .select()
+    const rows = await db
+      .select(trackSelectFields)
       .from(learningTracks)
       .where(conds.length ? and(...conds) : undefined)
       .orderBy(learningTracks.sortOrder)
       .limit(filters.limit ?? 100);
+    return rows;
   } catch (err) {
     log.warn({ err: String(err) }, "listTracks failed");
     return [];
@@ -291,7 +317,7 @@ export async function getTrack(id: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const [row] = await db.select().from(learningTracks).where(eq(learningTracks.id, id));
+    const [row] = await db.select(trackSelectFields).from(learningTracks).where(eq(learningTracks.id, id));
     return row ?? null;
   } catch (err) {
     log.warn({ err: String(err) }, "getTrack failed");
@@ -303,7 +329,7 @@ export async function getTrackBySlug(slug: string) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const [row] = await db.select().from(learningTracks).where(eq(learningTracks.slug, slug));
+    const [row] = await db.select(trackSelectFields).from(learningTracks).where(eq(learningTracks.slug, slug));
     return row ?? null;
   } catch (err) {
     log.warn({ err: String(err) }, "getTrackBySlug failed");
