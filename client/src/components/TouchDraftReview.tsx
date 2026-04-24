@@ -76,8 +76,8 @@ export function TouchDraftReview({
       channel,
       status: "approved",
       subjectLine: draft?.subjectLine ?? "",
-      bodyPreview: editedBody || draft?.body?.substring(0, 500) ?? "",
-      complianceGrade: draft?.complianceGrade as any ?? "Pass",
+      bodyPreview: editedBody || (draft?.body?.substring(0, 500) ?? ""),
+      complianceGrade: (draft?.complianceGrade as any) ?? "Pass",
       complianceNotes: (draft?.complianceIssues ?? []).join("; "),
     });
     toast.success("Touch approved and logged");
