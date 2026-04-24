@@ -88,6 +88,7 @@ import { estateRouter } from "./routers/estate";
 import { reportsFiduciaryRouter } from "./routers/reportsFiduciary";
 import { dynamicIntegrationsRouter } from "./routers/dynamicIntegrations";
 import { plaidRouter } from "./routers/plaid";
+import { cadenceEngineRouter } from "./routers/cadenceEngine";
 import { sharingRouter } from "./routers/sharing";
 import { financialDataRouter } from "./routers/financialData";
 
@@ -2443,6 +2444,7 @@ export const appRouter = router({
   pfrReport: pfrReportRouter,
   usageAnalytics: usageAnalyticsRouter,
   intelligenceEngine: intelligenceEngineRouter,
+  cadenceEngine: cadenceEngineRouter,
 });
 
 export type AppRouter = typeof appRouter;

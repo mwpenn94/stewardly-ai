@@ -7768,3 +7768,186 @@ export const plaidItems = mysqlTable("plaid_items", {
 }));
 export type PlaidItem = typeof plaidItems.$inferSelect;
 export type InsertPlaidItem = typeof plaidItems.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CADENCE ENGINE TABLES (Expert Panel A — Convergence Pass)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const cadenceEnrollments = mysqlTable("cadence_enrollments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  leadId: int("lead_id").notNull(),
+  cadenceId: varchar("cadence_id", { length: 100 }).notNull(),
+  status: mysqlEnum("cadence_status", ["active", "paused", "completed", "stopped", "opted_out"]).default("active"),
+  currentTouchNumber: int("current_touch_number").default(0),
+  totalTouches: int("total_touches").notNull(),
+  enrolledAt: bigint("enrolled_at", { mode: "number" }).notNull(),
+  pausedAt: bigint("paused_at", { mode: "number" }),
+  pauseReason: varchar("pause_reason", { length: 255 }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  stoppedAt: bigint("stopped_at", { mode: "number" }),
+  stopReason: varchar("stop_reason", { length: 255 }),
+  nextTouchDueAt: bigint("next_touch_due_at", { mode: "number" }),
+  esiPreApprovalId: varchar("esi_pre_approval_id", { length: 100 }),
+  esiPreApprovalExpiry: bigint("esi_pre_approval_expiry", { mode: "number" }),
+  antiRebateVerified: mysqlBoolean("anti_rebate_verified").default(false),
+  metadata: json("metadata"),
+}, (table) => ({
+  userLeadIdx: index("idx_ce_user_lead").on(table.userId, table.leadId),
+  statusIdx: index("idx_ce_status").on(table.status),
+  nextTouchIdx: index("idx_ce_next_touch").on(table.nextTouchDueAt),
+}));
+export type CadenceEnrollment = typeof cadenceEnrollments.$inferSelect;
+export type InsertCadenceEnrollment = typeof cadenceEnrollments.$inferInsert;
+
+export const cadenceTouchLog = mysqlTable("cadence_touch_log", {
+  id: int("id").autoincrement().primaryKey(),
+  enrollmentId: int("enrollment_id").notNull(),
+  userId: int("user_id").notNull(),
+  leadId: int("lead_id").notNull(),
+  cadenceId: varchar("cadence_id", { length: 100 }).notNull(),
+  touchNumber: int("touch_number").notNull(),
+  channel: varchar("channel", { length: 50 }).notNull(),
+  status: mysqlEnum("touch_status", ["drafted", "approved", "sent", "delivered", "opened", "replied", "bounced", "failed", "skipped"]).default("drafted"),
+  subjectLine: varchar("subject_line", { length: 500 }),
+  bodyPreview: text("body_preview"),
+  esiPreApprovalId: varchar("esi_pre_approval_id", { length: 100 }),
+  complianceGrade: mysqlEnum("compliance_grade", ["Pass", "Conditional Pass", "Fail"]),
+  complianceNotes: text("compliance_notes"),
+  sentAt: bigint("sent_at", { mode: "number" }),
+  deliveredAt: bigint("delivered_at", { mode: "number" }),
+  openedAt: bigint("opened_at", { mode: "number" }),
+  repliedAt: bigint("replied_at", { mode: "number" }),
+  replyClassification: varchar("reply_classification", { length: 50 }),
+  replyAnalysisJson: json("reply_analysis_json"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  enrollmentIdx: index("idx_ctl_enrollment").on(table.enrollmentId),
+  userLeadIdx: index("idx_ctl_user_lead").on(table.userId, table.leadId),
+  statusIdx: index("idx_ctl_status").on(table.status),
+  sentAtIdx: index("idx_ctl_sent_at").on(table.sentAt),
+}));
+export type CadenceTouchLogEntry = typeof cadenceTouchLog.$inferSelect;
+export type InsertCadenceTouchLogEntry = typeof cadenceTouchLog.$inferInsert;
+
+export const cadenceComplianceAudit = mysqlTable("cadence_compliance_audit", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  auditId: varchar("audit_id", { length: 100 }).notNull(),
+  auditType: mysqlEnum("audit_type", ["daily_random", "monthly_full", "ad_hoc"]).notNull(),
+  touchLogId: int("touch_log_id"),
+  grade: mysqlEnum("grade", ["Pass", "Conditional Pass", "Fail"]).notNull(),
+  findingsJson: json("findings_json"),
+  remediationJson: json("remediation_json"),
+  auditorNotes: text("auditor_notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  userIdx: index("idx_cca_user").on(table.userId),
+  auditTypeIdx: index("idx_cca_type").on(table.auditType),
+  gradeIdx: index("idx_cca_grade").on(table.grade),
+}));
+export type CadenceComplianceAuditEntry = typeof cadenceComplianceAudit.$inferSelect;
+export type InsertCadenceComplianceAuditEntry = typeof cadenceComplianceAudit.$inferInsert;
+
+export const cadenceOptOutRegistry = mysqlTable("cadence_opt_out_registry", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  leadId: int("lead_id").notNull(),
+  optOutChannel: varchar("opt_out_channel", { length: 50 }).notNull(),
+  scope: varchar("scope", { length: 50 }).notNull().default("all_channels"),
+  optOutText: text("opt_out_text"),
+  optOutAt: bigint("opt_out_at", { mode: "number" }).notNull(),
+  processedBy: varchar("processed_by", { length: 100 }),
+  referenceId: varchar("reference_id", { length: 100 }),
+}, (table) => ({
+  userLeadIdx: index("idx_cor_user_lead").on(table.userId, table.leadId),
+  optOutAtIdx: index("idx_cor_opt_out_at").on(table.optOutAt),
+}));
+export type CadenceOptOut = typeof cadenceOptOutRegistry.$inferSelect;
+export type InsertCadenceOptOut = typeof cadenceOptOutRegistry.$inferInsert;
+
+export const meddpiccScores = mysqlTable("meddpicc_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  leadId: int("lead_id").notNull(),
+  metrics: int("metrics").default(0),
+  economicBuyer: int("economic_buyer").default(0),
+  decisionCriteria: int("decision_criteria").default(0),
+  decisionProcess: int("decision_process").default(0),
+  paperProcess: int("paper_process").default(0),
+  identifyPain: int("identify_pain").default(0),
+  champion: int("champion").default(0),
+  competition: int("competition").default(0),
+  compositeScore: decimal("composite_score", { precision: 5, scale: 2 }),
+  tier: varchar("tier", { length: 20 }),
+  notesJson: json("notes_json"),
+  lastScoredAt: bigint("last_scored_at", { mode: "number" }).notNull(),
+  scoredBy: varchar("scored_by", { length: 100 }),
+}, (table) => ({
+  userLeadIdx: index("idx_meddpicc_user_lead").on(table.userId, table.leadId),
+  tierIdx: index("idx_meddpicc_tier").on(table.tier),
+}));
+export type MeddpiccScore = typeof meddpiccScores.$inferSelect;
+export type InsertMeddpiccScore = typeof meddpiccScores.$inferInsert;
+
+export const recruitDimensionScores = mysqlTable("recruit_dimension_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  leadId: int("lead_id").notNull(),
+  productionFit: int("production_fit").default(0),
+  culturalFit: int("cultural_fit").default(0),
+  geographicFit: int("geographic_fit").default(0),
+  networkLeverage: int("network_leverage").default(0),
+  compliancePosture: int("compliance_posture").default(0),
+  engagementSignal: int("engagement_signal").default(0),
+  compositeScore: int("composite_score").default(0),
+  tier: varchar("tier", { length: 20 }),
+  cascadePotentialCount: int("cascade_potential_count").default(0),
+  cascadeRationale: text("cascade_rationale"),
+  priorityActionsJson: json("priority_actions_json"),
+  fullResultJson: json("full_result_json"),
+  scoredAt: bigint("scored_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  userLeadIdx: index("idx_rds_user_lead").on(table.userId, table.leadId),
+  tierIdx: index("idx_rds_tier").on(table.tier),
+  compositeIdx: index("idx_rds_composite").on(table.compositeScore),
+}));
+export type RecruitDimensionScoreRow = typeof recruitDimensionScores.$inferSelect;
+export type InsertRecruitDimensionScoreRow = typeof recruitDimensionScores.$inferInsert;
+
+export const hnwNarrativeScores = mysqlTable("hnw_narrative_scores", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  leadId: int("lead_id").notNull(),
+  wealthSignalStrength: varchar("wealth_signal_strength", { length: 20 }),
+  funnelFit: varchar("funnel_fit", { length: 20 }),
+  engagementDifficulty: varchar("engagement_difficulty", { length: 20 }),
+  summaryParagraph: text("summary_paragraph"),
+  recommendedCadence: varchar("recommended_cadence", { length: 100 }),
+  personalizationJson: json("personalization_json"),
+  complianceFlagsJson: json("compliance_flags_json"),
+  scoredAt: bigint("scored_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  userLeadIdx: index("idx_hns_user_lead").on(table.userId, table.leadId),
+  cadenceIdx: index("idx_hns_cadence").on(table.recommendedCadence),
+}));
+export type HnwNarrativeScoreRow = typeof hnwNarrativeScores.$inferSelect;
+export type InsertHnwNarrativeScoreRow = typeof hnwNarrativeScores.$inferInsert;
+
+export const patternTransitionAssessments = mysqlTable("pattern_transition_assessments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  currentPattern: varchar("current_pattern", { length: 20 }).notNull(),
+  readinessScore: int("readiness_score").default(0),
+  recommendation: varchar("recommendation", { length: 50 }),
+  rationale: text("rationale"),
+  metricsJson: json("metrics_json"),
+  gatingFactorsJson: json("gating_factors_json"),
+  nextReviewDate: varchar("next_review_date", { length: 10 }),
+  assessedAt: bigint("assessed_at", { mode: "number" }).notNull(),
+}, (table) => ({
+  userIdx: index("idx_pta_user").on(table.userId),
+  assessedAtIdx: index("idx_pta_assessed_at").on(table.assessedAt),
+}));
+export type PatternTransitionAssessment = typeof patternTransitionAssessments.$inferSelect;
+export type InsertPatternTransitionAssessment = typeof patternTransitionAssessments.$inferInsert;

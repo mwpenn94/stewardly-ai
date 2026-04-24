@@ -8987,3 +8987,39 @@
 - [x] Run full test suite — 0 failures (all 8 previously-failing suites fixed, 232 tests pass)
 - [x] Cross-feature integration validation
 - [x] Final convergence pass (clean)
+
+## People + Data Engine Convergence (Expert Panel Loop)
+
+### Expert Panel A — CRITICAL Gaps
+- [x] GAP-01: Cadence engine — integrate cadence_library.json (7 cadences, touch sequences, compliance overlays, ESI gates)
+- [x] GAP-02: 6-dimension recruit scoring (production_fit, cultural_fit, geographic_fit, network_leverage, compliance_posture, engagement_signal)
+- [x] GAP-03: HNW narrative scoring (wealth signal, funnel fit, engagement difficulty, cadence recommendation)
+- [x] GAP-04: Cadence touch drafting with compliance gates (ESI verification, anti-rebate, FINRA 2210, TCPA)
+- [x] GAP-05: MEDDPICC tracking fields on lead_pipeline (Metrics, EconomicBuyer, DecisionCriteria, DecisionProcess, PaperProcess, IdentifyPain, Champion, Competition)
+- [x] GAP-06: Reply analysis + cadence pause (auto-pause on reply, OOO detection, manual queue routing)
+- [x] GAP-07: Delivery throttling (per-channel rate limits: 50 email/domain/day, 25 LinkedIn/day, 10 InMail/day, 100 calls/day)
+
+### Expert Panel A — HIGH Gaps
+- [x] GAP-08: Compliance audit cadence (daily 1-2 random sample, monthly 20-message audit, Pass/ConditionalPass/Fail log)
+- [x] GAP-09: Pattern transition engine (AUM signed/month, >$500K threshold, active affiliates, new producers)
+- [x] GAP-10: Cascade tracking (Tier 1 signs → auto-queue colleague outreach)
+- [x] GAP-11: Signal monitoring integration points (n8n workflow stubs for SEC Form 4, county recorder, etc.)
+- [x] GAP-12: Variable naming convention alignment to cadence_library.json
+
+### Expert Panel A — MODERATE Gaps
+- [x] GAP-13: Reply classification (interested/objection/info_request/opt_out/OOO/wrong_person)
+- [x] GAP-14: Daily KPI dashboard alignment (pipeline coverage health, conversion rate benchmarks)
+- [x] GAP-15: ESI pre-approval ID tracking fields (AntiRebateLanguageVerified, ESIPreApprovalID, ESIPreApprovalExpiry)
+
+### E2E Smoke Tests
+- [x] Virtual user persona: Marcus (Team Lead, Recruiting Focus) — full pipeline workflow
+- [x] Virtual user persona: Sarah (Solo RIA, Pattern 4 HNW) — scoring + cadence + MEDDPICC lifecycle
+- [x] Virtual user persona: Elena (Pattern 3, 200-lead pipeline) — HNW narrative scoring + cadence
+- [x] Virtual user persona: David (Pattern 1, compliance-sensitive) — audit trail + opt-out
+- [x] Cross-feature regression — 410 tests pass across all suites
+
+### Convergence Tracking
+- [x] Expert Panel A: Assess ✓ → Optimize ✓ → Validate ✓ (57/57 E2E tests)
+- [x] Expert Panel B: Assess ✓ → Optimize ✓ → Validate ✓ (27/27 E2E tests + 57 regression)
+- [x] Expert Panel C: Assess ✓ → Optimize ✓ → Validate ✓ (32/32 + 116 regression + 294 full regression)
+- [x] CONVERGENCE CONFIRMED: 3 consecutive clean passes (0 changes needed in passes 2 and 3)
