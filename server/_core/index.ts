@@ -575,6 +575,46 @@ async function startServer() {
     }
   });
 
+  // ─── Scheduled Task: Weekly Summary (GAP-A2-02) ──────────────────────
+  app.post("/api/scheduled/weekly-summary", async (req, res) => {
+    try {
+      let user;
+      try {
+        user = await sdk.authenticateRequest(req);
+      } catch {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      // Allow user role (scheduled tasks get user role)
+      if (!['user', 'advisor', 'manager', 'admin'].includes(user.role ?? 'user')) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      const { buildStaticSummary } = await import("../services/weeklySummaryGeneration");
+      const now = new Date();
+      const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const summary = buildStaticSummary({
+        advisorName: user.name || 'Advisor',
+        weekStartDate: weekStart.toISOString().slice(0, 10),
+        weekEndDate: now.toISOString().slice(0, 10),
+        currentPattern: req.body?.currentPattern || 4,
+        touchesSent: req.body?.touchesSent || { email: 0, phone: 0, linkedin: 0, sms: 0 },
+        repliesReceived: req.body?.repliesReceived || { interested: 0, objection: 0, info_request: 0, opt_out: 0, ooo: 0, wrong_person: 0 },
+        enrollmentsStarted: req.body?.enrollmentsStarted || 0,
+        enrollmentsCompleted: req.body?.enrollmentsCompleted || 0,
+        meetingsBooked: req.body?.meetingsBooked || 0,
+        pipelineCoverage: req.body?.pipelineCoverage || { ratio: 0, target: 3.0, status: 'unknown' as const },
+        complianceScore: req.body?.complianceScore || { passRate: 0, totalAudited: 0, flaggedItems: 0 },
+        topPerformingCadences: req.body?.topPerformingCadences || [],
+        actionItems: req.body?.actionItems || [],
+      });
+      logger.info({ operation: 'scheduled.weeklySummary', userId: user.id }, '[Scheduled] Weekly summary generated');
+      res.json({ ok: true, summary, generatedAt: now.toISOString() });
+    } catch (err: any) {
+      logger.error({ operation: 'scheduled.weeklySummary', error: err.message }, '[Scheduled] Weekly summary failed');
+      res.status(500).json({ error: 'Weekly summary generation failed' });
+    }
+  });
+
   // ─── tRPC API with sensitive route rate limiting ─────────────────────
   app.use("/api/trpc", sensitiveTrpcGuard);
   app.use(

@@ -485,7 +485,11 @@ export const cadenceEngineRouter = router({
       auditorNotes: r.auditorNotes || "",
     }));
 
-    return generateMonthlySummary(audits);
+    const summary = generateMonthlySummary(audits);
+    const monthlyNarrative = summary.totalAudited > 0
+      ? `${summary.period}: ${summary.totalAudited} audits — ${summary.passCount} Pass, ${summary.conditionalPassCount} Conditional, ${summary.failCount} Fail (${(summary.passRate * 100).toFixed(0)}% pass rate). Grade: ${summary.overallGrade}.`
+      : "No audits recorded this period.";
+    return { ...summary, audits, monthlyNarrative };
   }),
 
   // ─── Pattern Transition ──────────────────────────────────────────────

@@ -18,13 +18,15 @@ import {
   ArrowLeft, Mail, Phone, Calendar, MapPin, DollarSign, FileText,
   MessageSquare, Clock, Loader2, TrendingUp, TrendingDown, Minus,
   Activity, Shield, Database, RefreshCw, BarChart3, AlertTriangle,
-  CheckCircle2, Info, Zap, Globe, Building2, User,
+  CheckCircle2, Info, Zap, Globe, Building2, User, Target,
 } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useState } from "react";
+import { MeddpiccScorecard } from "@/components/MeddpiccScorecard";
+import { CadenceEnrollmentDialog } from "@/components/CadenceEnrollmentDialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 /* ---------- Score History Sparkline ---------- */
@@ -163,6 +165,19 @@ function ComplianceBadge({ lead }: { lead: any }) {
   );
 }
 
+/* ---------- Cadence Enroll Button ---------- */
+function CadenceEnrollButton({ leadId, leadName }: { leadId: number; leadName: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="outline" className="w-full justify-start text-sm" onClick={() => setOpen(true)}>
+        <Target className="h-4 w-4 mr-2" /> Enroll in Cadence
+      </Button>
+      <CadenceEnrollmentDialog open={open} onOpenChange={setOpen} leadId={leadId} leadName={leadName} />
+    </>
+  );
+}
+
 /* ---------- Main Component ---------- */
 export default function LeadDetail() {
   const [, navigate] = useLocation();
@@ -281,6 +296,7 @@ export default function LeadDetail() {
               <TabsTrigger value="scores">Score History</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="meddpicc">MEDDPICC</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 mt-4">
@@ -459,6 +475,10 @@ export default function LeadDetail() {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            <TabsContent value="meddpicc" className="mt-4">
+              <MeddpiccScorecard leadId={leadId} />
+            </TabsContent>
           </Tabs>
         </div>
 
@@ -482,6 +502,7 @@ export default function LeadDetail() {
               <Button variant="outline" className="w-full justify-start text-sm" onClick={() => navigate('/outreach-automation')}>
                 <MessageSquare className="h-4 w-4 mr-2" /> Send Follow-up
               </Button>
+              <CadenceEnrollButton leadId={leadId} leadName={name} />
               <Button variant="outline" className="w-full justify-start text-sm" onClick={() => navigate('/wealth-engine?panel=quickQuote')}>
                 <DollarSign className="h-4 w-4 mr-2" /> Create Proposal
               </Button>

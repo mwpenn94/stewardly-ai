@@ -1,236 +1,127 @@
 /**
- * OutreachAutomation — Visual outreach workflow automation builder.
- * Phase 5 Command Center — campaign lifecycle automation.
- * Allows creating multi-step outreach sequences (email, SMS, call, wait, condition, task).
+ * OutreachAutomation — Real cadence engine integration with tRPC.
+ * GAP-A2-01: Replaced all static INITIAL_WORKFLOWS mock data with real
+ * trpc.cadenceEngine.* calls: listCadences, getEnrollments, enrollLead,
+ * pauseEnrollment, resumeEnrollment, stopEnrollment, draftTouch, logTouch.
+ *
+ * Tabs: Cadences | Active Enrollments | Touch Queue | Reply Inbox | Compliance
  */
 import { useState, useMemo } from "react";
-import { Plus, Play, Pause, Trash2, Copy, Search, MoreHorizontal, Zap, Clock, Users, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  Plus, Play, Pause, Square, Search, Zap, Clock, Users, CheckCircle2,
+  AlertTriangle, Mail, Phone, MessageSquare, Linkedin, Send, Shield,
+  Loader2, RefreshCw, BarChart3, Target, ArrowRight, Eye,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { SEOHead } from "@/components/SEOHead";
 import AppShell from "@/components/AppShell";
-import OutreachWorkflowBuilder, { type OutreachWorkflow, type WorkflowStep } from "@/components/OutreachWorkflowBuilder";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { CadenceEnrollmentDialog } from "@/components/CadenceEnrollmentDialog";
+import { TouchDraftReview } from "@/components/TouchDraftReview";
+import { ReplyInbox } from "@/components/ReplyInbox";
+import { CadenceComplianceDashboard } from "@/components/CadenceComplianceDashboard";
+import { FunnelMetricsPanel } from "@/components/FunnelMetricsPanel";
 
-const TRIGGER_OPTIONS = [
-  { value: "new_lead", label: "New Lead Created" },
-  { value: "form_submit", label: "Form Submission" },
-  { value: "tag_added", label: "Tag Added" },
-  { value: "stage_change", label: "Pipeline Stage Change" },
-  { value: "no_activity", label: "No Activity (X days)" },
-  { value: "appointment_booked", label: "Appointment Booked" },
-  { value: "manual", label: "Manual Enrollment" },
-  { value: "ghl_webhook", label: "GoHighLevel Webhook" },
-  { value: "dripify_reply", label: "Dripify Reply Received" },
-  { value: "linkedin_connection", label: "LinkedIn Connection Accepted" },
-  { value: "workable_application", label: "Workable Application Received" },
-];
+const channelIcon: Record<string, React.ElementType> = {
+  email: Mail,
+  phone: Phone,
+  sms: MessageSquare,
+  LinkedIn_InMail: Linkedin,
+  LinkedIn: Linkedin,
+  direct_mail: Mail,
+};
 
-const INITIAL_WORKFLOWS: OutreachWorkflow[] = [
-  {
-    id: "ow-1",
-    name: "New Lead Nurture Sequence",
-    trigger: "new_lead",
-    status: "active",
-    steps: [
-      { id: "s1", type: "email", config: { template: "Welcome & Introduction" } },
-      { id: "s2", type: "wait", config: { delayDays: 2 } },
-      { id: "s3", type: "email", config: { template: "Value Proposition & Case Study" } },
-      { id: "s4", type: "wait", config: { delayDays: 3 } },
-      { id: "s5", type: "condition", config: { condition: "opened_email_2 = true" } },
-      { id: "s6", type: "call", config: { duration: 15 } },
-      { id: "s7", type: "task", config: { description: "Send personalized follow-up" } },
-    ],
-    enrolledCount: 142,
-    completedCount: 87,
-    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-  },
-  {
-    id: "ow-2",
-    name: "Client Review Reminder",
-    trigger: "no_activity",
-    status: "active",
-    steps: [
-      { id: "s1", type: "email", config: { template: "Annual Review Reminder" } },
-      { id: "s2", type: "wait", config: { delayDays: 5 } },
-      { id: "s3", type: "sms", config: { message: "Hi {{name}}, just checking in — would you like to schedule your annual review?" } },
-      { id: "s4", type: "wait", config: { delayDays: 3 } },
-      { id: "s5", type: "call", config: { duration: 30 } },
-    ],
-    enrolledCount: 56,
-    completedCount: 34,
-    createdAt: new Date(Date.now() - 86400000 * 15).toISOString(),
-  },
-  {
-    id: "ow-3",
-    name: "Referral Partner Outreach",
-    trigger: "manual",
-    status: "paused",
-    steps: [
-      { id: "s1", type: "email", config: { template: "Partnership Introduction" } },
-      { id: "s2", type: "wait", config: { delayDays: 4 } },
-      { id: "s3", type: "email", config: { template: "Partnership Benefits & Case Studies" } },
-      { id: "s4", type: "wait", config: { delayDays: 7 } },
-      { id: "s5", type: "call", config: { duration: 20 } },
-    ],
-    enrolledCount: 23,
-    completedCount: 8,
-    createdAt: new Date(Date.now() - 86400000 * 45).toISOString(),
-  },
-  {
-    id: "ow-4",
-    name: "LinkedIn Prospecting Sequence",
-    trigger: "linkedin_connection",
-    status: "active",
-    steps: [
-      { id: "s1", type: "linkedin_inmail", config: { template: "Warm Introduction — Value-First" } },
-      { id: "s2", type: "wait", config: { delayDays: 3 } },
-      { id: "s3", type: "dripify_sequence", config: { campaignName: "HNW Advisor Outreach" } },
-      { id: "s4", type: "wait", config: { delayDays: 5 } },
-      { id: "s5", type: "condition", config: { condition: "dripify_replied = true" } },
-      { id: "s6", type: "call", config: { duration: 15 } },
-    ],
-    enrolledCount: 67,
-    completedCount: 12,
-    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
-  },
-  {
-    id: "ow-5",
-    name: "GoHighLevel Lead Nurture",
-    trigger: "ghl_webhook",
-    status: "active",
-    steps: [
-      { id: "s1", type: "email", config: { template: "GHL Welcome — Automated Follow-Up" } },
-      { id: "s2", type: "wait", config: { delayDays: 2 } },
-      { id: "s3", type: "sms", config: { message: "Hi {{name}}, thanks for reaching out! Would you like to schedule a quick call?" } },
-      { id: "s4", type: "wait", config: { delayDays: 3 } },
-      { id: "s5", type: "call", config: { duration: 15 } },
-    ],
-    enrolledCount: 145,
-    completedCount: 38,
-    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-];
-
-const statusConfig: Record<OutreachWorkflow["status"], { label: string; color: string; icon: any }> = {
-  active: { label: "Active", color: "bg-green-500/10 text-green-400 border-green-500/20", icon: CheckCircle2 },
+const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  active: { label: "Active", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20", icon: CheckCircle2 },
   paused: { label: "Paused", color: "bg-amber-500/10 text-amber-400 border-amber-500/20", icon: Pause },
-  draft: { label: "Draft", color: "bg-muted text-muted-foreground", icon: AlertTriangle },
+  completed: { label: "Completed", color: "bg-blue-500/10 text-blue-400 border-blue-500/20", icon: CheckCircle2 },
+  stopped: { label: "Stopped", color: "bg-red-500/10 text-red-400 border-red-500/20", icon: Square },
+  opted_out: { label: "Opted Out", color: "bg-red-500/10 text-red-400 border-red-500/20", icon: Square },
 };
 
 export default function OutreachAutomation({ embedded = false }: { embedded?: boolean } = {}) {
   const Shell = embedded ? (({ children }: any) => <>{children}</>) as any : AppShell;
 
-  const [workflows, setWorkflows] = useState<OutreachWorkflow[]>(INITIAL_WORKFLOWS);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<OutreachWorkflow | null>(null);
-  const [formName, setFormName] = useState("");
-  const [formTrigger, setFormTrigger] = useState("new_lead");
-  const [formSteps, setFormSteps] = useState<WorkflowStep[]>([]);
+  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [selectedCadenceId, setSelectedCadenceId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("cadences");
 
-  const filtered = useMemo(() => {
-    return workflows.filter((w) => {
-      const matchesSearch = search === "" || w.name.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === "all" || w.status === statusFilter;
+  const utils = trpc.useUtils();
+
+  // ─── Real tRPC queries ───────────────────────────────────────────
+  const cadences = trpc.cadenceEngine.listCadences.useQuery();
+  const enrollments = trpc.cadenceEngine.getEnrollments.useQuery();
+  const cadenceDetail = trpc.cadenceEngine.getCadenceDetail.useQuery(
+    { cadenceId: selectedCadenceId! },
+    { enabled: !!selectedCadenceId },
+  );
+
+  // ─── Mutations ───────────────────────────────────────────────────
+  const pauseMutation = trpc.cadenceEngine.pauseEnrollment.useMutation({
+    onSuccess: () => { utils.cadenceEngine.getEnrollments.invalidate(); toast.success("Enrollment paused"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const resumeMutation = trpc.cadenceEngine.resumeEnrollment.useMutation({
+    onSuccess: () => { utils.cadenceEngine.getEnrollments.invalidate(); toast.success("Enrollment resumed"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const stopMutation = trpc.cadenceEngine.stopEnrollment.useMutation({
+    onSuccess: () => { utils.cadenceEngine.getEnrollments.invalidate(); toast.success("Enrollment stopped"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // ─── Derived data ────────────────────────────────────────────────
+  const allEnrollments = enrollments.data ?? [];
+  const activeEnrollments = allEnrollments.filter((e: any) => e.status === "active");
+  const pausedEnrollments = allEnrollments.filter((e: any) => e.status === "paused");
+
+  const filteredEnrollments = useMemo(() => {
+    return allEnrollments.filter((e: any) => {
+      const matchesSearch = search === "" || (e.cadenceId ?? "").toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === "all" || e.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [workflows, search, statusFilter]);
+  }, [allEnrollments, search, statusFilter]);
 
   const stats = useMemo(() => ({
-    total: workflows.length,
-    active: workflows.filter((w) => w.status === "active").length,
-    enrolled: workflows.reduce((sum, w) => sum + w.enrolledCount, 0),
-    completed: workflows.reduce((sum, w) => sum + w.completedCount, 0),
-  }), [workflows]);
+    totalCadences: (cadences.data ?? []).length,
+    activeEnrollments: activeEnrollments.length,
+    pausedEnrollments: pausedEnrollments.length,
+    totalEnrollments: allEnrollments.length,
+  }), [cadences.data, activeEnrollments, pausedEnrollments, allEnrollments]);
 
-  const openCreate = () => {
-    setEditing(null);
-    setFormName("");
-    setFormTrigger("new_lead");
-    setFormSteps([]);
-    setFormOpen(true);
-  };
-
-  const openEdit = (wf: OutreachWorkflow) => {
-    setEditing(wf);
-    setFormName(wf.name);
-    setFormTrigger(wf.trigger);
-    setFormSteps([...wf.steps]);
-    setFormOpen(true);
-  };
-
-  const handleSave = () => {
-    if (!formName.trim()) { toast.error("Please enter a workflow name"); return; }
-    if (formSteps.length === 0) { toast.error("Please add at least one step"); return; }
-
-    if (editing) {
-      setWorkflows((prev) => prev.map((w) => w.id === editing.id ? { ...w, name: formName, trigger: formTrigger, steps: formSteps } : w));
-      toast.success(`Workflow "${formName}" updated`);
-    } else {
-      const newWf: OutreachWorkflow = {
-        id: `ow-${Date.now()}`,
-        name: formName,
-        trigger: formTrigger,
-        status: "draft",
-        steps: formSteps,
-        enrolledCount: 0,
-        completedCount: 0,
-        createdAt: new Date().toISOString(),
-      };
-      setWorkflows((prev) => [...prev, newWf]);
-      toast.success(`Workflow "${formName}" created`);
-    }
-    setFormOpen(false);
-  };
-
-  const toggleStatus = (id: string) => {
-    setWorkflows((prev) => prev.map((w) => {
-      if (w.id !== id) return w;
-      const newStatus = w.status === "active" ? "paused" : "active";
-      return { ...w, status: newStatus };
-    }));
-  };
-
-  const duplicateWorkflow = (wf: OutreachWorkflow) => {
-    const dup: OutreachWorkflow = {
-      ...wf,
-      id: `ow-${Date.now()}`,
-      name: `${wf.name} (Copy)`,
-      status: "draft",
-      enrolledCount: 0,
-      completedCount: 0,
-      createdAt: new Date().toISOString(),
-      steps: wf.steps.map((s) => ({ ...s, id: `step-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` })),
-    };
-    setWorkflows((prev) => [...prev, dup]);
-    toast.success("Workflow duplicated");
-  };
-
-  const deleteWorkflow = (id: string) => {
-    setWorkflows((prev) => prev.filter((w) => w.id !== id));
-    toast.success("Workflow deleted");
-  };
+  // Touch queue: active enrollments that need next touch
+  const touchQueue = useMemo(() => {
+    return activeEnrollments
+      .filter((e: any) => (e.currentTouchNumber ?? 0) < e.totalTouches)
+      .sort((a: any, b: any) => (a.nextTouchDueAt ?? 0) - (b.nextTouchDueAt ?? 0));
+  }, [activeEnrollments]);
 
   return (
     <Shell>
-      <SEOHead title="Outreach Automation" description="Visual workflow automation for marketing sequences" />
+      <SEOHead title="Outreach Automation" description="Cadence-powered outreach automation engine" />
       <div className="container max-w-6xl py-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Outreach Automation</h1>
-            <p className="text-sm text-muted-foreground mt-1">Build multi-step outreach sequences with email, SMS, calls, and conditions</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Cadence-powered multi-touch sequences with compliance guardrails
+            </p>
           </div>
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="w-4 h-4" /> New Workflow
+          <Button onClick={() => setEnrollDialogOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" /> Enroll Lead
           </Button>
         </div>
 
@@ -238,185 +129,322 @@ export default function OutreachAutomation({ embedded = false }: { embedded?: bo
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card className="text-center">
             <CardContent className="py-4">
-              <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-              <p className="text-xs text-muted-foreground">Total Workflows</p>
+              <p className="text-2xl font-bold text-foreground">
+                {cadences.isLoading ? <Skeleton className="h-8 w-8 mx-auto" /> : stats.totalCadences}
+              </p>
+              <p className="text-xs text-muted-foreground">Cadences</p>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="py-4">
-              <p className="text-2xl font-bold text-green-400">{stats.active}</p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {enrollments.isLoading ? <Skeleton className="h-8 w-8 mx-auto" /> : stats.activeEnrollments}
+              </p>
               <p className="text-xs text-muted-foreground">Active</p>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="py-4">
-              <p className="text-2xl font-bold text-foreground">{stats.enrolled}</p>
-              <p className="text-xs text-muted-foreground">Total Enrolled</p>
+              <p className="text-2xl font-bold text-amber-400">
+                {enrollments.isLoading ? <Skeleton className="h-8 w-8 mx-auto" /> : stats.pausedEnrollments}
+              </p>
+              <p className="text-xs text-muted-foreground">Paused</p>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="py-4">
-              <p className="text-2xl font-bold text-primary">{stats.completed}</p>
-              <p className="text-xs text-muted-foreground">Completed</p>
+              <p className="text-2xl font-bold text-primary">
+                {enrollments.isLoading ? <Skeleton className="h-8 w-8 mx-auto" /> : touchQueue.length}
+              </p>
+              <p className="text-xs text-muted-foreground">Pending Touches</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Search workflows..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-          </div>
-          <div className="flex gap-2">
-            {["all", "active", "paused", "draft"].map((status) => (
-              <Button
-                key={status}
-                variant={statusFilter === status ? "default" : "outline"}
-                size="sm"
-                onClick={() => setStatusFilter(status)}
-                className="capitalize"
-              >
-                {status === "all" ? "All" : status}
-              </Button>
-            ))}
-          </div>
-        </div>
+        {/* Main Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="flex-wrap">
+            <TabsTrigger value="cadences">Cadences</TabsTrigger>
+            <TabsTrigger value="enrollments">Enrollments</TabsTrigger>
+            <TabsTrigger value="touches">Touch Queue</TabsTrigger>
+            <TabsTrigger value="replies">Reply Inbox</TabsTrigger>
+            <TabsTrigger value="compliance">Compliance</TabsTrigger>
+            <TabsTrigger value="metrics">Metrics</TabsTrigger>
+          </TabsList>
 
-        {/* Workflow Cards */}
-        <div className="space-y-3">
-          {filtered.map((wf) => {
-            const statusCfg = statusConfig[wf.status];
-            const StatusIcon = statusCfg.icon;
-            const triggerLabel = TRIGGER_OPTIONS.find((t) => t.value === wf.trigger)?.label ?? wf.trigger;
-
-            return (
-              <Card key={wf.id} className="hover:border-primary/30 transition-colors cursor-pointer" onClick={() => openEdit(wf)}>
-                <CardContent className="py-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
-                        <Zap className="w-5 h-5 text-primary" />
+          {/* ─── CADENCES TAB ─── */}
+          <TabsContent value="cadences" className="space-y-3 mt-4">
+            {cadences.isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
+              </div>
+            ) : (
+              <>
+                {(cadences.data ?? []).map((c: any) => (
+                  <Card
+                    key={c.id}
+                    className={cn(
+                      "hover:border-primary/30 transition-colors cursor-pointer",
+                      selectedCadenceId === c.id && "border-primary",
+                    )}
+                    onClick={() => setSelectedCadenceId(selectedCadenceId === c.id ? null : c.id)}
+                  >
+                    <CardContent className="py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
+                            <Zap className="w-5 h-5 text-primary" />
+                          </div>
+                          <div>
+                            <h3 className="font-medium text-foreground">{c.name}</h3>
+                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                              <Badge variant="outline" className="text-[10px]">{c.pattern}</Badge>
+                              <span>{c.touches} touches</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                              {(c.channels ?? []).map((ch: string) => {
+                                const Icon = channelIcon[ch] || Zap;
+                                return (
+                                  <span key={ch} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground gap-1">
+                                    <Icon className="h-3 w-3" /> {ch.replace(/_/g, " ")}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); setSelectedCadenceId(c.id); }}
+                        >
+                          <Eye className="h-3.5 w-3.5 mr-1" /> View
+                        </Button>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-medium text-foreground">{wf.name}</h3>
-                          <Badge variant="outline" className={cn("text-[10px]", statusCfg.color)}>
-                            <StatusIcon className="w-3 h-3 mr-1" />
-                            {statusCfg.label}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {triggerLabel}</span>
-                          <span>{wf.steps.length} steps</span>
-                        </div>
-                        {/* Step type summary badges — shows integrations at a glance */}
-                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                          {[...new Set(wf.steps.map((s) => s.type))].filter((t) => t !== "wait" && t !== "condition").map((t) => {
-                            const labels: Record<string, string> = {
-                              email: "Email", sms: "SMS", call: "Call", task: "Task",
-                              linkedin_inmail: "LinkedIn InMail", dripify_sequence: "Dripify",
-                            };
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Cadence detail panel */}
+                {selectedCadenceId && cadenceDetail.data && (
+                  <Card className="border-primary/30">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">{cadenceDetail.data.name} — Touch Sequence</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="max-h-64">
+                        <div className="space-y-2">
+                          {(cadenceDetail.data.touches ?? []).map((t: any, i: number) => {
+                            const Icon = channelIcon[t.channel] || Zap;
                             return (
-                              <span key={t} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
-                                {labels[t] ?? t}
-                              </span>
+                              <div key={i} className="flex items-start gap-3 text-sm">
+                                <div className="flex items-center gap-1.5 min-w-[80px]">
+                                  <span className="text-muted-foreground text-xs w-5 text-right">{i + 1}.</span>
+                                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">Day {t.day}</span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {t.subjectLine && <p className="font-medium text-xs truncate">{t.subjectLine}</p>}
+                                  <p className="text-xs text-muted-foreground line-clamp-2">{t.body?.substring(0, 120)}...</p>
+                                  {t.complianceNotes && (
+                                    <p className="text-[10px] text-amber-400 mt-0.5 flex items-center gap-1">
+                                      <Shield className="h-3 w-3" /> {t.complianceNotes.substring(0, 80)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
-                      </div>
-                    </div>
+                      </ScrollArea>
+                      {cadenceDetail.data.complianceOverlay && (
+                        <div className="mt-3 pt-2 border-t flex flex-wrap gap-1">
+                          {(cadenceDetail.data.complianceOverlay as string[]).map((c: string, i: number) => (
+                            <Badge key={i} variant="outline" className="text-[10px]">
+                              <Shield className="h-3 w-3 mr-1" /> {c}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+          </TabsContent>
 
-                    <div className="flex items-center gap-4 sm:gap-6">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm font-medium text-foreground">{wf.enrolledCount} enrolled</p>
-                        <p className="text-xs text-muted-foreground">{wf.completedCount} completed</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); toggleStatus(wf.id); }}
-                          aria-label={wf.status === "active" ? "Pause workflow" : "Activate workflow"}
-                        >
-                          {wf.status === "active" ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); duplicateWorkflow(wf); }}
-                          aria-label="Duplicate workflow"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={(e) => { e.stopPropagation(); deleteWorkflow(wf.id); }}
-                          aria-label="Delete workflow"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        {filtered.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Zap className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">{search || statusFilter !== "all" ? "No workflows match your filters" : "No outreach workflows yet"}</p>
-              <Button className="mt-4" onClick={openCreate}>Create Your First Workflow</Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Create/Edit Dialog */}
-        <Dialog open={formOpen} onOpenChange={(open) => { if (!open) setFormOpen(false); }}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editing ? "Edit Workflow" : "New Outreach Workflow"}</DialogTitle>
-              <DialogDescription>Build a multi-step outreach sequence with email, SMS, calls, and conditions.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="oa-name">Workflow Name</Label>
-                  <Input id="oa-name" value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. New Lead Nurture Sequence" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="oa-trigger">Trigger</Label>
-                  <Select value={formTrigger} onValueChange={setFormTrigger}>
-                    <SelectTrigger id="oa-trigger">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRIGGER_OPTIONS.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* ─── ENROLLMENTS TAB ─── */}
+          <TabsContent value="enrollments" className="space-y-3 mt-4">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input placeholder="Search enrollments..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
               </div>
-
-              <div className="space-y-1.5">
-                <Label>Workflow Steps</Label>
-                <OutreachWorkflowBuilder steps={formSteps} onChange={setFormSteps} />
+              <div className="flex gap-2 flex-wrap">
+                {["all", "active", "paused", "completed", "stopped"].map((status) => (
+                  <Button
+                    key={status}
+                    variant={statusFilter === status ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setStatusFilter(status)}
+                    className="capitalize"
+                  >
+                    {status === "all" ? "All" : status}
+                  </Button>
+                ))}
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
-              <Button onClick={handleSave}>{editing ? "Update" : "Create"} Workflow</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
+            {enrollments.isLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}
+              </div>
+            ) : filteredEnrollments.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    {search || statusFilter !== "all" ? "No enrollments match your filters" : "No enrollments yet"}
+                  </p>
+                  <Button className="mt-4" onClick={() => setEnrollDialogOpen(true)}>
+                    Enroll Your First Lead
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {filteredEnrollments.map((e: any) => {
+                  const sCfg = statusConfig[e.status ?? "active"] ?? statusConfig.active;
+                  const StatusIcon = sCfg.icon;
+                  const progress = e.totalTouches > 0 ? ((e.currentTouchNumber ?? 0) / e.totalTouches) * 100 : 0;
+
+                  return (
+                    <Card key={e.id} className="hover:border-muted-foreground/30 transition-colors">
+                      <CardContent className="py-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-sm">Lead #{e.leadId}</span>
+                              <Badge variant="outline" className={cn("text-[10px]", sCfg.color)}>
+                                <StatusIcon className="w-3 h-3 mr-1" />
+                                {sCfg.label}
+                              </Badge>
+                              <Badge variant="outline" className="text-[10px]">{e.cadenceId}</Badge>
+                            </div>
+                            <div className="flex items-center gap-3 mt-1.5">
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                Touch {e.currentTouchNumber ?? 0}/{e.totalTouches}
+                              </div>
+                              <Progress value={progress} className="flex-1 max-w-32 h-1.5" />
+                              {e.nextTouchDueAt && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  Next: {new Date(e.nextTouchDueAt).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {e.status === "active" && (
+                              <Button
+                                variant="outline" size="sm"
+                                onClick={() => pauseMutation.mutate({ enrollmentId: e.id })}
+                                disabled={pauseMutation.isPending}
+                                aria-label="Pause"
+                              >
+                                <Pause className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {e.status === "paused" && (
+                              <Button
+                                variant="outline" size="sm"
+                                onClick={() => resumeMutation.mutate({ enrollmentId: e.id })}
+                                disabled={resumeMutation.isPending}
+                                aria-label="Resume"
+                              >
+                                <Play className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                            {(e.status === "active" || e.status === "paused") && (
+                              <Button
+                                variant="outline" size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => stopMutation.mutate({ enrollmentId: e.id })}
+                                disabled={stopMutation.isPending}
+                                aria-label="Stop"
+                              >
+                                <Square className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* ─── TOUCH QUEUE TAB ─── */}
+          <TabsContent value="touches" className="space-y-3 mt-4">
+            {touchQueue.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Send className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No pending touches</p>
+                  <p className="text-xs text-muted-foreground mt-1">Enroll leads in cadences to generate touch drafts</p>
+                </CardContent>
+              </Card>
+            ) : (
+              touchQueue.map((e: any) => (
+                <TouchDraftReview
+                  key={e.id}
+                  enrollmentId={e.id}
+                  leadId={e.leadId}
+                  cadenceId={e.cadenceId}
+                  touchNumber={(e.currentTouchNumber ?? 0) + 1}
+                  channel="email"
+                  leadName={`Lead #${e.leadId}`}
+                  onComplete={() => utils.cadenceEngine.getEnrollments.invalidate()}
+                />
+              ))
+            )}
+          </TabsContent>
+
+          {/* ─── REPLY INBOX TAB ─── */}
+          <TabsContent value="replies" className="mt-4">
+            <ReplyInbox
+              enrollments={allEnrollments.map((e: any) => ({
+                id: e.id,
+                leadId: e.leadId,
+                cadenceId: e.cadenceId,
+                currentTouchNumber: e.currentTouchNumber,
+                status: e.status,
+              }))}
+            />
+          </TabsContent>
+
+          {/* ─── COMPLIANCE TAB ─── */}
+          <TabsContent value="compliance" className="mt-4">
+            <CadenceComplianceDashboard embedded />
+          </TabsContent>
+
+          {/* ─── METRICS TAB ─── */}
+          <TabsContent value="metrics" className="mt-4">
+            <FunnelMetricsPanel embedded />
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Enrollment Dialog */}
+      <CadenceEnrollmentDialog
+        open={enrollDialogOpen}
+        onOpenChange={setEnrollDialogOpen}
+        leadId={0}
+        leadName="Select Lead"
+      />
     </Shell>
   );
 }

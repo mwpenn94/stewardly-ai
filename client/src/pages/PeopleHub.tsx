@@ -24,7 +24,7 @@ import { CascadeFlowIndicator, type CascadeStage } from "@/components/CascadeFlo
 import { DisclosureSection } from "@/components/DisclosureSection";
 import {
   Loader2, Users, Target, RefreshCw, ShieldCheck, Mail, FolderOpen, Zap,
-  LayoutGrid, UserPlus, FileText, Shield, ArrowRight, DollarSign, Home, ChevronRight,
+  LayoutGrid, UserPlus, FileText, Shield, ArrowRight, DollarSign, Home, ChevronRight, TrendingUp,
 } from "lucide-react";
 
 /* ─── Lazy-loaded panels (all existing panels preserved) ─── */
@@ -41,6 +41,12 @@ const ClientOnboarding = lazy(() => import("./ClientOnboarding"));
 const AnnualReview = lazy(() => import("./AnnualReview"));
 const BusinessExit = lazy(() => import("./BusinessExit"));
 const PremiumFinanceRates = lazy(() => import("./PremiumFinanceRates"));
+
+/* ─── Cadence Engine panels (GAP-A2-03, A2-07, A2-08, A2-10) ─── */
+const CadenceComplianceDashboard = lazy(() => import("@/components/CadenceComplianceDashboard").then(m => ({ default: m.CadenceComplianceDashboard })));
+const FunnelMetricsPanel = lazy(() => import("@/components/FunnelMetricsPanel").then(m => ({ default: m.FunnelMetricsPanel })));
+const PatternTransitionBadge = lazy(() => import("@/components/PatternTransitionBadge").then(m => ({ default: m.PatternTransitionBadge })));
+const RecruitScoringPanel = lazy(() => import("@/components/RecruitScoringPanel").then(m => ({ default: m.RecruitScoringPanel })));
 
 /* ─── Tab definitions ─── */
 type HubTab = "pipeline" | "marketing" | "compliance" | "operations";
@@ -72,6 +78,7 @@ const TAB_DEFS: TabDef[] = [
       { id: "relationships", label: "Clients", icon: Users, minRole: "user" },
       { id: "client-onboarding", label: "Onboarding", icon: UserPlus, minRole: "user" },
       { id: "annual-review", label: "Annual Review", icon: FileText, minRole: "advisor" },
+      { id: "pattern-transition", label: "Growth Pattern", icon: TrendingUp, minRole: "advisor" },
     ],
   },
   {
@@ -83,6 +90,7 @@ const TAB_DEFS: TabDef[] = [
       { id: "email-campaigns", label: "Campaigns", icon: Mail, minRole: "advisor" },
       { id: "marketing-assets", label: "Assets", icon: FolderOpen, minRole: "advisor" },
       { id: "outreach", label: "Automation", icon: Zap, minRole: "advisor" },
+      { id: "funnel-metrics", label: "Funnel Metrics", icon: Target, minRole: "advisor" },
     ],
   },
   {
@@ -93,6 +101,7 @@ const TAB_DEFS: TabDef[] = [
     panels: [
       { id: "compliance", label: "Compliance Audit", icon: ShieldCheck, minRole: "advisor" },
       { id: "compliance-copilot", label: "Compliance AI", icon: Shield, minRole: "advisor" },
+      { id: "cadence-compliance", label: "Cadence Audit", icon: ShieldCheck, minRole: "advisor" },
     ],
   },
   {
@@ -104,6 +113,7 @@ const TAB_DEFS: TabDef[] = [
       { id: "crm-sync", label: "CRM Sync", icon: RefreshCw, minRole: "advisor" },
       { id: "business-exit", label: "Business Exit", icon: ArrowRight, minRole: "advisor" },
       { id: "premium-finance", label: "Premium Finance", icon: DollarSign, minRole: "advisor" },
+      { id: "recruit-scoring", label: "Recruit Scoring", icon: UserPlus, minRole: "manager" },
     ],
   },
 ];
@@ -392,6 +402,10 @@ export default function PeopleHub() {
           {activePanel === "crm-sync" && <CRMSync embedded />}
           {activePanel === "business-exit" && <BusinessExit embedded />}
           {activePanel === "premium-finance" && <PremiumFinanceRates embedded />}
+          {activePanel === "cadence-compliance" && <CadenceComplianceDashboard embedded />}
+          {activePanel === "funnel-metrics" && <FunnelMetricsPanel embedded />}
+          {activePanel === "pattern-transition" && <PatternTransitionBadge embedded />}
+          {activePanel === "recruit-scoring" && <RecruitScoringPanel embedded />}
         </Suspense>
       </div>
     </AppShell>

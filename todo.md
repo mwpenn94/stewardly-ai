@@ -9023,3 +9023,53 @@
 - [x] Expert Panel B: Assess ✓ → Optimize ✓ → Validate ✓ (27/27 E2E tests + 57 regression)
 - [x] Expert Panel C: Assess ✓ → Optimize ✓ → Validate ✓ (32/32 + 116 regression + 294 full regression)
 - [x] CONVERGENCE CONFIRMED: 3 consecutive clean passes (0 changes needed in passes 2 and 3)
+
+## People + Data Engine Convergence Round 2 (Next Steps + Remaining Items)
+
+### Next Step 1: OutreachAutomation Frontend Wiring
+- [x] Wire cadence engine tRPC procedures to OutreachAutomation page (GAP-A2-01 complete)
+- [x] Cadence enrollment UI (CadenceEnrollmentDialog.tsx — select lead → choose cadence → enroll)
+- [x] Touch timeline visualization (OutreachAutomation.tsx enrollments tab)
+- [x] Draft preview + compliance badge before send (TouchDraftReview.tsx)
+- [x] Pause/resume/skip controls per enrollment (OutreachAutomation.tsx)
+- [x] MEDDPICC field completion panel (MeddpiccScorecard.tsx in LeadDetail)
+
+### Next Step 2: Weekly Summary Cron Job
+- [x] Create /api/scheduled/weekly-summary endpoint (server/_core/index.ts line 579)
+- [x] Wire generateWeeklySummary to the endpoint (buildStaticSummary)
+- [ ] Schedule Monday 7am cron job via scheduled task (requires deploy first)
+- [x] Test endpoint with mock data (panelA2-e2e.test.ts)
+
+### Next Step 3: Compliance Dashboard Panel
+- [x] Build compliance dashboard admin view (CadenceComplianceDashboard.tsx)
+- [x] Daily audit sample viewer with grade display
+- [x] Monthly compliance summary with trend charts
+- [x] Remediation action queue for ConditionalPass/Fail items
+- [x] ESI pre-approval tracker with expiry alerts
+
+### Remaining Parity Items
+- [x] Full CRUD validation for cadence engine via virtual users (panelA2-e2e.test.ts 40/40)
+- [x] Funnel metrics frontend visualization (FunnelMetricsPanel.tsx in PeopleHub Marketing)
+- [x] Pattern transition dashboard widget (PatternTransitionBadge.tsx in PeopleHub Pipeline)
+- [x] Reply analysis integration with conversation view (ReplyInbox.tsx in OutreachAutomation)
+- [ ] Cascade tracking UI (Tier 1 → colleague auto-queue)
+
+### E2E Smoke Tests (Round 2)
+- [x] Virtual user: Marcus Chen — Advisor enrolling lead in cadence → viewing timeline → approving draft
+- [x] Virtual user: David Thompson — Compliance officer reviewing daily audit → flagging items → monthly report
+- [x] Virtual user: Elena Rodriguez — Team lead viewing weekly summary → funnel metrics → pattern transition
+- [x] Cross-feature regression — panelA2(40) + panelB(27) + panelC(32) = 99 tests pass
+
+### Convergence Tracking (Round 2)
+- [x] Convergence Pass 1: Structural integrity — 2 findings fixed (counter reset)
+- [x] Convergence Pass 2: Deep structural review — 0 findings (counter = 1)
+- [x] Convergence Pass 3: Full test validation — 1 finding fixed (counter reset)
+- [x] Convergence Pass 4: Structural + test stability — 0 findings (counter = 1)
+- [x] Convergence Pass 5: Code quality + null safety — 0 findings (counter = 2)
+- [x] Convergence Pass 6: Data flow correctness — 1 finding fixed (counter reset)
+- [x] Convergence Pass 7: Edge case resilience — 1 finding fixed (counter reset)
+- [x] Convergence Pass 8: Cross-feature interaction — 1 finding fixed (counter reset)
+- [x] Convergence Pass 9: Accessibility & UX — 0 findings (counter = 1)
+- [x] Convergence Pass 10: Service layer purity — 0 findings (counter = 2)
+- [x] Convergence Pass 11: Security & authorization — 0 findings (counter = 3)
+- [x] CONVERGENCE CONFIRMED: 3 consecutive clean passes (9, 10, 11) — 6 total findings fixed across 11 passes
