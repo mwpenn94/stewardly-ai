@@ -137,7 +137,7 @@ export default function ClientActivityTimeline() {
               <span className="text-yellow-400">Connecting...</span>
             )}
           </div>
-        )
+        )}
 
         {/* Engagement Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
