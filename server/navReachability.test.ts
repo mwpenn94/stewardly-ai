@@ -135,6 +135,8 @@ const EXEMPT_ROUTES = new Set<string>([
   "/ai-settings",
   "/suitability",
   "/changelog",
+  // Global search (reachable via CommandPalette "View all results" link)
+  "/search",
   // Legacy → hub redirects (handled by wouter <Redirect>)
   "/my-plan",
   "/study",

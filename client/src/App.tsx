@@ -5,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import ConsentBanner from "./components/ConsentBanner";
+import WhatsNewModal from "./components/WhatsNewModal";
 import OfflineBanner from "./components/OfflineBanner";
 import { GuestBanner } from "./components/GuestBanner";
 import { ContextualHelp } from "./components/ContextualHelp";
@@ -192,6 +193,7 @@ const EnrichmentAdmin = lazy(() => import("./pages/EnrichmentAdmin"));
 const PortalAnalytics = lazy(() => import("./pages/PortalAnalytics"));
 const SovereignStudy = lazy(() => import("./pages/SovereignStudy"));
 const SharedPlanView = lazy(() => import("./pages/SharedPlanView"));
+const SearchResults = lazy(() => import("./pages/SearchResults"));
 const ClientSegmentation = lazy(() => import("./pages/ClientSegmentation"));
 // Hub pages with internal sidebars (Phase 3 — sidebar simplification)
 const PeopleHub = lazy(() => import("./pages/PeopleHub"));
@@ -213,6 +215,7 @@ function Router() {
         <Route path="/plan/:token">{() => <SharedPlanView />}</Route>
 
         {/* Core app routes */}
+        <Route path="/search" component={SearchResults} />
         <Route path="/chat/:id?">{() => <SectionErrorBoundary sectionName="Chat"><Chat /></SectionErrorBoundary>}</Route>
         <Route path="/calculators/:panel">{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
         <Route path={"/calculators"}>{() => <SectionErrorBoundary sectionName="Calculators"><Calculators /></SectionErrorBoundary>}</Route>
@@ -498,6 +501,7 @@ function AppContent() {
       <ServiceStatusBanner />
       <Router />
       <ConsentBanner />
+      <WhatsNewModal />
       {/* GlobalFooter removed permanently — user requested no footer nav */}
       <GlobalVoiceFAB />
       <ContextualHelp />

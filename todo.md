@@ -8953,3 +8953,37 @@
 - [x] PARITY PASS 1: CLEAN — no XSS, no dangerouslySetInnerHTML, aria-labels on all interactive elements, useMemo for filtering, focus trap
 - [x] PARITY PASS 2: CLEAN — search auto-focus, empty state, clear button, stable category ordering, clean architecture separation
 - [x] PARITY PASS 3: CLEAN — 15/15 overlay↔hook chord parity verified, G13/G14/G15 clean, 23/23 tests pass — CONVERGED
+
+## Feature Set: Changelog + Read-Only Portal + Global Search (2026-04-24)
+
+### Feature 1: What's New Changelog Modal
+- [x] Create changelog data structure (version, date, title, description, category)
+- [x] Create WhatsNewModal component with categorized entries and dismiss tracking
+- [x] Wire to show on first login after updates (localStorage + server-side version tracking)
+- [x] Add "What's New" entry in sidebar or help menu
+- [x] PARITY PASS 1: Security + Performance + Accessibility audit
+- [x] PARITY PASS 2: UX expert + Behavioral finance lens
+- [x] PARITY PASS 3: Convergence confirmation (clean pass)
+
+### Feature 2: Client-Facing Read-Only Portal
+- [x] Create read-only plan viewer page at /shared/:token route
+- [x] Wire to existing sharedLinks infrastructure (getByToken procedure)
+- [x] Render plan summary with charts, projections, and key metrics (no edit controls)
+- [x] Add branded header with advisor info and disclaimer
+- [x] PARITY PASS 1: Security + Performance + Accessibility audit
+- [x] PARITY PASS 2: UX expert + Financial advisor + Fiduciary lens
+- [x] PARITY PASS 3: Convergence confirmation (clean pass)
+
+### Feature 3: Global Search Results Page
+- [x] Create GlobalSearchResults page with unified search across conversations, documents, contacts, scenarios
+- [x] Extend Ctrl+K command palette to navigate to full search results
+- [x] Add search result cards with type badges, relevance scoring, and highlighted matches
+- [x] Wire to existing search/filter endpoints across routers
+- [x] PARITY PASS 1: Security + Performance + Accessibility audit
+- [x] PARITY PASS 2: UX expert + Behavioral finance lens
+- [x] PARITY PASS 3: Convergence confirmation (clean pass)
+
+### Cross-Feature Convergence
+- [x] Run full test suite — 0 failures (all 8 previously-failing suites fixed, 232 tests pass)
+- [x] Cross-feature integration validation
+- [x] Final convergence pass (clean)

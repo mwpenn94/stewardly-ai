@@ -593,10 +593,20 @@ export function CommandPalette() {
             close
           </span>
         </div>
-        <span className="flex items-center gap-1">
-          <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">⌘K</kbd>
-          toggle
-        </span>
+        <div className="flex items-center gap-3">
+          {debouncedQuery.length >= 2 && (
+            <button
+              onClick={() => { setOpen(false); navigate(`/search?q=${encodeURIComponent(debouncedQuery)}`); }}
+              className="text-primary hover:underline"
+            >
+              View all results →
+            </button>
+          )}
+          <span className="flex items-center gap-1">
+            <kbd className="px-1 py-0.5 rounded bg-secondary text-[9px] font-mono">⌘K</kbd>
+            toggle
+          </span>
+        </div>
       </div>
     </CommandDialog>
   );

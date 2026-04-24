@@ -365,7 +365,7 @@ describe("App.tsx integrations", () => {
 
 // ── 10. WhatsNewModal "View all releases" link ─────────────────────
 
-describe("WhatsNewModal data exports (modal removed)", () => {
+describe("WhatsNewModal data exports (modal restored via popup queue)", () => {
   const filePath = path.resolve(__dirname, "../client/src/components/WhatsNewModal.tsx");
   const src = fs.readFileSync(filePath, "utf-8");
 
@@ -381,10 +381,10 @@ describe("WhatsNewModal data exports (modal removed)", () => {
     expect(src).toContain("export const CATEGORY_STYLES");
   });
 
-  it("does not contain modal UI (Dialog, handleDismiss)", () => {
-    expect(src).not.toContain("<Dialog");
-    expect(src).not.toContain("handleDismiss");
-    expect(src).not.toContain("export default function");
+  it("contains modal UI managed by popup queue", () => {
+    expect(src).toContain("<Dialog");
+    expect(src).toContain("export default function WhatsNewModal");
+    expect(src).toContain("usePopupSlot");
   });
 });
 

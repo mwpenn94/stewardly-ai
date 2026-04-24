@@ -177,14 +177,14 @@ describe("Keyboard Shortcut Hint in Sidebar", () => {
 describe("Expanded WhatsNewModal Changelog", () => {
   const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
 
-  it("should have version bumped to 2026.04.15", () => {
-    expect(source).toContain('CURRENT_VERSION = "2026.04.15"');
+  it("should have version bumped to 2026.04.23", () => {
+    expect(source).toContain('CURRENT_VERSION = "2026.04.23"');
   });
 
-  it("should have 6 changelog releases", () => {
+  it("should have 7 changelog releases", () => {
     const versionMatches = source.match(/version:\s*"/g);
     expect(versionMatches).toBeTruthy();
-    expect(versionMatches!.length).toBe(6);
+    expect(versionMatches!.length).toBe(7);
   });
 
   it("should have the latest release about keyboard shortcuts", () => {
@@ -234,11 +234,11 @@ describe("Expanded WhatsNewModal Changelog", () => {
 // ─── Integration: Shortcuts + Changelog coexist ────────────────────────────
 
 describe("Feature Integration — Shortcuts and Changelog", () => {
-  it("should have KeyboardShortcuts in App.tsx (WhatsNewModal removed — data-only)", () => {
+  it("should have KeyboardShortcuts and WhatsNewModal in App.tsx", () => {
     const appSource = fs.readFileSync("client/src/App.tsx", "utf-8");
     expect(appSource).toContain("KeyboardShortcuts");
-    // WhatsNewModal is now a data-only export, not rendered in App.tsx
-    expect(appSource).not.toContain("WhatsNewModal");
+    // WhatsNewModal restored as popup queue modal in App.tsx
+    expect(appSource).toContain("WhatsNewModal");
   });
 
   it("should have '?' shortcut listed in KeyboardShortcuts", () => {

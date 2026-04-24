@@ -1,10 +1,10 @@
 /**
  * Tests for Popup Queue, Sidebar UI consistency, and mobile safety.
  *
- * Current state (2026-04-02):
+ * Current state (2026-04-23):
  * - GuidedTour: REMOVED entirely
- * - WhatsNewModal: converted to data-only export (no modal popup)
- * - ConsentBanner: only remaining auto-show popup
+ * - WhatsNewModal: RESTORED as popup queue modal (no stacking)
+ * - ConsentBanner: auto-show popup via popup queue
  * - Sidebar: AppShell updated with collapsible sections matching Chat sidebar
  */
 import { describe, it, expect, beforeEach } from "vitest";
@@ -88,15 +88,15 @@ describe("Removed popup components", () => {
     expect(appSource).not.toContain("GuidedTour");
   });
 
-  it("App.tsx should not reference WhatsNewModal", () => {
+  it("App.tsx should reference WhatsNewModal (restored via popup queue)", () => {
     const appSource = fs.readFileSync(
       path.resolve(__dirname, "../client/src/App.tsx"),
       "utf-8"
     );
-    expect(appSource).not.toContain("WhatsNewModal");
+    expect(appSource).toContain("WhatsNewModal");
   });
 
-  it("WhatsNewModal.tsx should be data-only (no modal UI)", () => {
+  it("WhatsNewModal.tsx should export data AND modal UI (popup queue managed)", () => {
     const source = fs.readFileSync(
       path.resolve(__dirname, "../client/src/components/WhatsNewModal.tsx"),
       "utf-8"
@@ -104,8 +104,10 @@ describe("Removed popup components", () => {
     expect(source).toContain("export const CHANGELOG");
     expect(source).toContain("export const CURRENT_VERSION");
     expect(source).toContain("export const CATEGORY_STYLES");
-    expect(source).not.toContain("<Dialog");
-    expect(source).not.toContain("export default function");
+    // Modal restored — uses Dialog + popup queue system
+    expect(source).toContain("<Dialog");
+    expect(source).toContain("export default function WhatsNewModal");
+    expect(source).toContain("usePopupSlot");
   });
 });
 
@@ -214,14 +216,14 @@ describe("Mobile Interaction Safety", () => {
     expect(source).toMatch(/localStorage|safeStorage|safeGetItem|safeSetItem/);
   });
 
-  it("no popup stacking on mobile — only consent banner auto-shows", () => {
+  it("no popup stacking on mobile — popups managed by queue system", () => {
     const appSource = fs.readFileSync(
       path.resolve(__dirname, "../client/src/App.tsx"),
       "utf-8"
     );
-    // GuidedTour and WhatsNewModal should NOT be in App.tsx
+    // GuidedTour should NOT be in App.tsx
     expect(appSource).not.toContain("GuidedTour");
-    expect(appSource).not.toContain("WhatsNewModal");
+    // WhatsNewModal is allowed — managed by popup queue (no stacking)
     // ConsentBanner should still be present
     expect(appSource).toContain("ConsentBanner");
   });

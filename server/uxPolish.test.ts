@@ -30,21 +30,22 @@ describe("What's New Changelog Modal", () => {
     expect(source).toContain("export const CATEGORY_STYLES");
   });
 
-  it("should not render a modal popup (moved to notifications)", async () => {
+  it("should render a modal popup via popup queue system", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync("client/src/components/WhatsNewModal.tsx", "utf-8");
 
-    // Modal UI has been removed — no Dialog, no localStorage, no setTimeout
-    expect(source).not.toContain("export default function");
-    expect(source).not.toContain("<Dialog");
+    // Modal UI restored — uses Dialog + popup queue (not raw localStorage)
+    expect(source).toContain("export default function WhatsNewModal");
+    expect(source).toContain("<Dialog");
+    expect(source).toContain("usePopupSlot");
   });
 
-  it("should not be mounted in App.tsx (popup removed)", async () => {
+  it("should be mounted in App.tsx via popup queue", async () => {
     const fs = await import("fs");
     const appSource = fs.readFileSync("client/src/App.tsx", "utf-8");
 
-    // WhatsNewModal is no longer rendered as a popup in App.tsx
-    expect(appSource).not.toContain("WhatsNewModal");
+    // WhatsNewModal is rendered in App.tsx, managed by popup queue
+    expect(appSource).toContain("WhatsNewModal");
   });
 });
 
