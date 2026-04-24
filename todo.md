@@ -8939,3 +8939,17 @@
 - [x] Run full test suite — 142/142 tests pass across 6 suites (0 failures)
 - [x] Cross-feature integration validation — 34/34 featureConvergence.test.ts pass
 - [x] Final convergence pass — CLEAN, all 3 features CONVERGED independently + together
+
+## Keyboard Shortcuts Overlay (2026-04-24)
+
+### Implementation
+- [x] useKeyboardShortcuts hook already existed (163 lines) — enhanced with 6 new G-chords (A, R, M, D, N, P) + 3 engine shortcuts (W, E, T)
+- [x] KeyboardShortcuts overlay already existed (206 lines) — enhanced with search/filter, total count badge, empty state, stable category ordering
+- [x] ? key toggles overlay, Escape closes — both already wired, verified working
+- [x] 25 shortcuts across 4 categories: Navigation (15), Voice (4), Chat (3), General (3)
+- [x] Integrated into App.tsx + AppShell.tsx — verified wired
+
+### Parity Convergence
+- [x] PARITY PASS 1: CLEAN — no XSS, no dangerouslySetInnerHTML, aria-labels on all interactive elements, useMemo for filtering, focus trap
+- [x] PARITY PASS 2: CLEAN — search auto-focus, empty state, clear button, stable category ordering, clean architecture separation
+- [x] PARITY PASS 3: CLEAN — 15/15 overlay↔hook chord parity verified, G13/G14/G15 clean, 23/23 tests pass — CONVERGED

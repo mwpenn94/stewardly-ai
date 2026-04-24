@@ -46,6 +46,17 @@ export function useKeyboardShortcuts() {
     { key: "i", chord: "g", label: "Go to Intelligence Hub", action: () => navigate("/intelligence-hub") },
     { key: "l", chord: "g", label: "Go to Lead Pipeline", action: () => navigate("/leads") },
     { key: "o", chord: "g", label: "Go to Operations", action: () => navigate("/operations") },
+    // Pass 6 (G53): wire the 6 previously-unwired G-chord shortcuts
+    { key: "a", chord: "g", label: "Go to Advisory", action: () => navigate("/advisory-execution") },
+    { key: "r", chord: "g", label: "Go to Relationships", action: () => navigate("/relationships") },
+    { key: "m", chord: "g", label: "Go to Market Data", action: () => navigate("/market-data") },
+    { key: "d", chord: "g", label: "Go to Documents", action: () => navigate("/documents") },
+    { key: "n", chord: "g", label: "Go to Integrations", action: () => navigate("/integrations") },
+    { key: "p", chord: "g", label: "Go to Help", action: () => navigate("/help") },
+    // Engine maturity push: new shortcuts for recently built features
+    { key: "w", chord: "g", label: "Go to Wealth Engine", action: () => navigate("/wealth-engine") },
+    { key: "e", chord: "g", label: "Go to People Hub", action: () => navigate("/people") },
+    { key: "t", chord: "g", label: "Go to Learning", action: () => navigate("/learning") },
     // Pass 6 (G15 / G26): Shift+R reads the current page aloud by
     // dispatching `pil:read-page`. AudioCompanion / PIL consumers
     // handle the actual TTS. If no consumer is mounted the event is
