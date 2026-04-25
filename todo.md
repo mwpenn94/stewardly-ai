@@ -9378,3 +9378,9 @@
 - [x] BUG: TTS playing chapter title only (0:08) — fixed: now includes flashcards + practice questions per chapter
 - [x] BUG: Duplicate sidebar/navigation — LearningShell sidebar is expected behavior on mobile
 - [x] Exhaustive virtual user validation — all 18 routes 200, all content types verified per track
+
+## Pass 158b — AudioStudyPage Stalling + Breadcrumb
+- [x] BUG: Audio stalls after first section — fixed: added audio.onerror, playback timeout, zombie cleanup, deferred speakItem in enqueue
+- [x] BUG: Breadcrumb still shows raw slug "Life_health" — fixed: formatSegment now handles underscore_case
+- [x] Fixed /api/tts/batch auth middleware (was unprotected), voice ID mismatch (guy vs en-US-GuyNeural), duplicate auth check, rate limit 30→60/min
+- [x] Exhaustive virtual user validation: 38 routes 200, Playwright 11/11, TTS security 3/3, test suite 12,407 passed (8 pre-existing fails)

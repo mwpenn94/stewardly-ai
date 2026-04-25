@@ -79,10 +79,16 @@ const PATH_LABELS: Record<string, string> = {
 
 function formatSegment(segment: string): string {
   if (PATH_LABELS[segment]) return PATH_LABELS[segment];
-  // Convert kebab-case to Title Case
+  // Convert kebab-case and underscore_case to Title Case
   return segment
+    .replace(/_/g, " ")
     .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((part) =>
+      part
+        .split(" ")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ")
+    )
     .join(" ");
 }
 

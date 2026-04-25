@@ -1,7 +1,7 @@
 /**
  * AudioCompanion.tsx — Universal persistent audio player
  *
- * Pass 102. Platform-wide audio companion that:
+ * Pass 158b. Platform-wide audio companion that:
  * - Plays TTS-optimized scripts for any content
  * - Persists across page navigation (minimized pill mode)
  * - Supports speed control, queue, auto-advance
@@ -25,7 +25,7 @@ import {
 export interface AudioItem {
   id: string;
   type: "definition" | "chapter" | "case_study" | "chat_response" |
-        "market_brief" | "recommendation" | "page_narration" | "quiz_question";
+        "market_brief" | "recommendation" | "page_narration" | "quiz_question" | "question";
   title: string;
   script: string;
   contentId?: string;
@@ -111,7 +111,7 @@ function loadPersistedState(): PersistedAudioState | null {
     // Cap queue size to avoid OOM on corrupted state.
     return {
       currentItem: parsed.currentItem ?? null,
-      queue: parsed.queue.slice(0, 50),
+      queue: parsed.queue.slice(0, 200),
       speed: Math.max(0.5, Math.min(3.0, parsed.speed)),
     };
   } catch {
@@ -160,14 +160,53 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
   const speakItemRef = useRef<((item: AudioItem, speed: number) => Promise<void>) | null>(null);
   const speedRef = useRef(state.speed);
   speedRef.current = state.speed;
+  const playbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Clear any active playback timeout */
+  const clearPlaybackTimeout = useCallback(() => {
+    if (playbackTimeoutRef.current) {
+      clearTimeout(playbackTimeoutRef.current);
+      playbackTimeoutRef.current = null;
+    }
+  }, []);
+
+  /** Auto-advance to next item in queue (used by onerror, timeout, etc.) */
+  const doAutoAdvance = useCallback((reason: string) => {
+    console.log(`[AudioCompanion] Auto-advancing: ${reason}`);
+    clearPlaybackTimeout();
+    setState(prev => {
+      if (prev.queue.length > 0) {
+        const [next, ...rest] = prev.queue;
+        console.log(`[AudioCompanion] → next: "${next.title}" (${rest.length} remaining)`);
+        setTimeout(() => speakItemRef.current?.(next, speedRef.current), 100);
+        return { ...prev, currentItem: next, queue: rest, position: 0 };
+      }
+      console.log("[AudioCompanion] Queue empty, stopping");
+      return { ...prev, playing: false, currentItem: null, mode: "hidden" };
+    });
+  }, [clearPlaybackTimeout]);
 
   const speakItem = useCallback(async (item: AudioItem, speed: number) => {
     const thisGen = ++generationRef.current;
+    console.log(`[AudioCompanion] speakItem gen=${thisGen}: "${item.title}" (${item.script?.length ?? 0} chars)`);
+
+    // Clean up previous audio — detach handlers to prevent zombie callbacks
+    clearPlaybackTimeout();
     window.speechSynthesis?.cancel();
     if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.ontimeupdate = null;
       audioRef.current.pause();
       audioRef.current.src = "";
       audioRef.current = null;
+    }
+
+    // Skip items with empty/very short scripts
+    if (!item.script || item.script.trim().length < 5) {
+      console.log(`[AudioCompanion] Skipping empty script: "${item.title}"`);
+      doAutoAdvance("empty script");
+      return;
     }
 
     try {
@@ -177,25 +216,41 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
         body: JSON.stringify({ text: item.script, speed }),
       });
 
+      if (generationRef.current !== thisGen) {
+        console.log(`[AudioCompanion] Stale gen=${thisGen} (current=${generationRef.current}), discarding`);
+        return;
+      }
+
       if (res.ok) {
-        if (generationRef.current !== thisGen) return; // stale, discard
         const blob = await res.blob();
+        console.log(`[AudioCompanion] TTS blob: ${blob.size} bytes, type=${blob.type}`);
+
+        // Reject empty or suspiciously small audio blobs
+        if (blob.size < 100) {
+          console.log(`[AudioCompanion] TTS blob too small (${blob.size}), skipping`);
+          doAutoAdvance("empty TTS blob");
+          return;
+        }
+
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
         audio.playbackRate = speed;
         audioRef.current = audio;
 
+        // ── onended: auto-advance to next item ──
         audio.onended = () => {
+          console.log(`[AudioCompanion] onended: "${item.title}"`);
+          clearPlaybackTimeout();
           URL.revokeObjectURL(url);
-          setState(prev => {
-            if (prev.queue.length > 0) {
-              const [next, ...rest] = prev.queue;
-              // Auto-advance: speak the next item
-              setTimeout(() => speakItemRef.current?.(next, speedRef.current), 50);
-              return { ...prev, currentItem: next, queue: rest, position: 0 };
-            }
-            return { ...prev, playing: false, currentItem: null, mode: "hidden" };
-          });
+          doAutoAdvance("playback ended");
+        };
+
+        // ── onerror: CRITICAL FIX — auto-advance on decode failure ──
+        audio.onerror = (e) => {
+          console.log(`[AudioCompanion] onerror: "${item.title}"`, e);
+          clearPlaybackTimeout();
+          URL.revokeObjectURL(url);
+          doAutoAdvance("audio decode error");
         };
 
         audio.ontimeupdate = () => {
@@ -206,56 +261,75 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
           }));
         };
 
-        await audio.play();
-        setState(prev => ({ ...prev, playing: true, duration: audio.duration || 0 }));
-        return;
+        try {
+          await audio.play();
+          console.log(`[AudioCompanion] Playing: "${item.title}" (dur=${audio.duration}s)`);
+          setState(prev => ({ ...prev, playing: true, duration: audio.duration || 0 }));
+
+          // ── Playback timeout: auto-advance if onended never fires ──
+          const timeoutMs = Math.max(30000, (audio.duration || 30) * 1000 * 2 / speed);
+          playbackTimeoutRef.current = setTimeout(() => {
+            console.log(`[AudioCompanion] Playback timeout for: "${item.title}"`);
+            if (audioRef.current === audio) {
+              audio.onended = null;
+              audio.onerror = null;
+              audio.pause();
+              URL.revokeObjectURL(url);
+              audioRef.current = null;
+              doAutoAdvance("playback timeout");
+            }
+          }, timeoutMs);
+          return;
+        } catch (playError) {
+          // audio.play() failed (autoplay policy, etc.) — clean up zombie
+          console.log(`[AudioCompanion] audio.play() failed: "${item.title}"`, playError);
+          audio.onended = null;
+          audio.onerror = null;
+          audio.ontimeupdate = null;
+          audioRef.current = null;
+          URL.revokeObjectURL(url);
+          // Fall through to Web Speech API
+        }
+      } else {
+        console.log(`[AudioCompanion] TTS HTTP ${res.status} for: "${item.title}"`);
+        // Fall through to Web Speech API
       }
-    } catch {
-      // Server TTS unavailable — fall through to Web Speech API below
-      if (generationRef.current !== thisGen) return; // stale, discard
+    } catch (fetchError) {
+      console.log(`[AudioCompanion] TTS fetch error for: "${item.title}"`, fetchError);
+      if (generationRef.current !== thisGen) return;
+      // Fall through to Web Speech API
     }
 
     // Fallback: Web Speech API
     if (window.speechSynthesis) {
-      const utterance = new SpeechSynthesisUtterance(item.script);
+      console.log(`[AudioCompanion] Falling back to Web Speech API for: "${item.title}"`);
+      const utterance = new SpeechSynthesisUtterance(item.script.slice(0, 2000));
       utterance.rate = speed;
       utterance.onend = () => {
-        setState(prev => {
-          if (prev.queue.length > 0) {
-            const [next, ...rest] = prev.queue;
-            // Auto-advance: speak the next item
-            setTimeout(() => speakItemRef.current?.(next, speedRef.current), 50);
-            return { ...prev, currentItem: next, queue: rest };
-          }
-          return { ...prev, playing: false, currentItem: null, mode: "hidden" };
-        });
+        console.log(`[AudioCompanion] Web Speech onend: "${item.title}"`);
+        doAutoAdvance("web speech ended");
       };
-      utterance.onerror = () => {
-        // Web Speech API also failed — auto-advance to next item
-        setState(prev => {
-          if (prev.queue.length > 0) {
-            const [next, ...rest] = prev.queue;
-            setTimeout(() => speakItemRef.current?.(next, speedRef.current), 200);
-            return { ...prev, currentItem: next, queue: rest };
-          }
-          return { ...prev, playing: false, currentItem: null, mode: "hidden" };
-        });
+      utterance.onerror = (e) => {
+        console.log(`[AudioCompanion] Web Speech onerror: "${item.title}"`, e);
+        doAutoAdvance("web speech error");
       };
       window.speechSynthesis.speak(utterance);
       setState(prev => ({ ...prev, playing: true }));
+
+      // Timeout for Web Speech API too
+      const wsTimeout = Math.max(30000, item.script.length * 80 / speed);
+      playbackTimeoutRef.current = setTimeout(() => {
+        console.log(`[AudioCompanion] Web Speech timeout for: "${item.title}"`);
+        window.speechSynthesis?.cancel();
+        doAutoAdvance("web speech timeout");
+      }, wsTimeout);
       return;
     }
 
-    // Both TTS and Web Speech API unavailable — auto-advance to prevent silent death
-    setState(prev => {
-      if (prev.queue.length > 0) {
-        const [next, ...rest] = prev.queue;
-        setTimeout(() => speakItemRef.current?.(next, speedRef.current), 200);
-        return { ...prev, currentItem: next, queue: rest };
-      }
-      return { ...prev, playing: false, currentItem: null, mode: "hidden" };
-    });
-  }, []);
+    // Both TTS and Web Speech API unavailable — auto-advance
+    console.log(`[AudioCompanion] No TTS available, auto-advancing past: "${item.title}"`);
+    doAutoAdvance("no TTS engine available");
+  }, [doAutoAdvance, clearPlaybackTimeout]);
 
   // Keep speakItemRef in sync so onended can call it
   speakItemRef.current = speakItem;
@@ -277,18 +351,26 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
       speakItem(item, state.speed);
     },
 
-    enqueue: (items) => setState(prev => {
-      if (!prev.currentItem && items.length > 0) {
-        const [first, ...rest] = items;
-        speakItem(first, prev.speed);
-        return { ...prev, currentItem: first, queue: rest, playing: true, mode: "expanded" };
-      }
-      return { ...prev, queue: [...prev.queue, ...items] };
-    }),
+    enqueue: (items) => {
+      console.log(`[AudioCompanion] enqueue(): ${items.length} items`);
+      setState(prev => {
+        if (!prev.currentItem && items.length > 0) {
+          const [first, ...rest] = items;
+          console.log(`[AudioCompanion] enqueue() starting: "${first.title}" (${rest.length} queued)`);
+          // Use setTimeout to avoid calling async speakItem inside setState
+          setTimeout(() => speakItem(first, prev.speed), 0);
+          return { ...prev, currentItem: first, queue: rest, playing: true, mode: "expanded" };
+        }
+        console.log(`[AudioCompanion] enqueue() appending ${items.length} to queue of ${prev.queue.length}`);
+        return { ...prev, queue: [...prev.queue, ...items] };
+      });
+    },
 
     pause: () => {
+      console.log("[AudioCompanion] pause()");
       window.speechSynthesis?.pause();
       audioRef.current?.pause();
+      clearPlaybackTimeout();
       setState(prev => ({ ...prev, playing: false }));
     },
 
@@ -299,12 +381,18 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
     },
 
     skip: () => {
+      console.log("[AudioCompanion] skip()");
+      clearPlaybackTimeout();
       window.speechSynthesis?.cancel();
-      audioRef.current?.pause();
+      if (audioRef.current) {
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+        audioRef.current.pause();
+      }
       setState(prev => {
         if (prev.queue.length > 0) {
           const [next, ...rest] = prev.queue;
-          speakItem(next, prev.speed);
+          setTimeout(() => speakItem(next, prev.speed), 0);
           return { ...prev, currentItem: next, queue: rest, position: 0 };
         }
         return { ...prev, currentItem: null, playing: false, mode: "hidden" };
@@ -331,8 +419,16 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
     minimize: () => setState(prev => ({ ...prev, mode: "minimized" })),
     expand: () => setState(prev => ({ ...prev, mode: "expanded" })),
     dismiss: () => {
+      console.log("[AudioCompanion] dismiss()");
+      clearPlaybackTimeout();
       window.speechSynthesis?.cancel();
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
+      if (audioRef.current) {
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
       setState(prev => ({ ...prev, currentItem: null, playing: false, queue: [], mode: "hidden" }));
     },
 

@@ -14,9 +14,9 @@ import { logger } from "../_core/logger";
 
 const ttsRouter = Router();
 
-/** Per-user rate limit: max 30 TTS requests per minute */
+/** Per-user rate limit: max 60 TTS requests per minute (increased for audio study sessions) */
 const ttsRateLimits = new Map<number, { count: number; resetAt: number }>();
-const TTS_RATE_LIMIT = 30;
+const TTS_RATE_LIMIT = 60;
 const TTS_RATE_WINDOW_MS = 60_000;
 
 function checkTtsRateLimit(userId: number): boolean {
@@ -35,14 +35,9 @@ ttsRouter.post("/api/tts", async (req, res) => {
   // Auth is enforced by the middleware in index.ts that sets req.__user
   const user = (req as any).__user;
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
-  if (!checkTtsRateLimit(user.id)) { res.status(429).json({ error: "TTS rate limit exceeded (30/min)" }); return; }
+  if (!checkTtsRateLimit(user.id)) { res.status(429).json({ error: "TTS rate limit exceeded (60/min)" }); return; }
   try {
-    // Auth check — injected by the mount-point middleware in _core/index.ts
-    if (!(req as any).__user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    const { text, voice = "en-US-GuyNeural", speed = 1.0, pitch = "default" } = req.body;
+    const { text, voice = "guy", speed = 1.0, pitch = "default" } = req.body;
     if (!text || text.length === 0) return res.status(400).json({ error: "Text is required" });
     if (text.length > 5000) return res.status(400).json({ error: "Text exceeds 5000 character limit" });
 
@@ -81,7 +76,7 @@ ttsRouter.post("/api/tts/batch", async (req, res) => {
   if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
 
   try {
-    const { items, voice = "en-US-GuyNeural", speed = 1.0, pitch = "default" } = req.body;
+    const { items, voice = "guy", speed = 1.0, pitch = "default" } = req.body;
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "items array is required" });
     }

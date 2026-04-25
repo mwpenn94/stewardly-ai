@@ -246,6 +246,7 @@ async function startServer() {
       (req.path === "/api/codechat/stream" && req.method === "POST") ||
       (req.path === "/api/automation/telemetry/stream" && req.method === "GET") ||
       (req.path === "/api/tts" && req.method === "POST") ||
+      (req.path === "/api/tts/batch" && req.method === "POST") ||
       (req.path === "/api/tts/voices" && req.method === "GET") ||
       (req.path === "/mcp/sse" && req.method === "GET") ||
       (req.path === "/mcp/call" && req.method === "POST");
