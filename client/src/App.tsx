@@ -155,6 +155,7 @@ const ConnectionMapPage = lazy(() => import("./pages/learning/ConnectionMap").th
 const StudyBuddy = lazy(() => import("./pages/learning/StudyBuddy"));
 // Pass 36 — EMBA parity pages
 const HandsFreeStudy = lazy(() => import("./pages/learning/HandsFreeStudy"));
+const AudioStudyPage = lazy(() => import("./pages/learning/AudioStudyPage"));
 const AIQuizPage = lazy(() => import("./pages/learning/AIQuizPage"));
 const FormulaLab = lazy(() => import("./pages/learning/FormulaLab"));
 const StudyAnalytics = lazy(() => import("./pages/learning/StudyAnalytics"));
@@ -341,6 +342,7 @@ function Router() {
         <Route path="/learning/study-buddy" component={StudyBuddy} />
         {/* Pass 36 — EMBA parity routes */}
         <Route path="/learning/hands-free" component={HandsFreeStudy} />
+        <Route path="/learning/audio/:slug" component={AudioStudyPage} />
         <Route path="/learning/ai-quiz" component={AIQuizPage} />
         <Route path="/learning/formula-lab" component={FormulaLab} />
         <Route path="/learning/analytics" component={StudyAnalytics} />

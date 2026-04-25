@@ -13,6 +13,7 @@
 
 import { authFetch } from "@/lib/sessionToken";
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
+import { useLocation } from "wouter";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   Volume2, Pause, Play, SkipForward, SkipBack,
@@ -376,12 +377,22 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
 
 function AudioCompanionUI() {
   const audio = useAudioCompanion();
+  const [location] = useLocation();
   // Build Loop Pass 9 (G64): framer-motion's `useReducedMotion` honors
   // the OS-level prefers-reduced-motion setting AND our user-level
   // `body.reduced-motion-user` class (via the matchMedia polyfill the
   // framer hook already respects). When true, we swap `initial`/`animate`
   // props to identity values so no translate / fade is applied on mount.
   const shouldReduceMotion = useReducedMotion();
+
+  // Pass 157: Auto-minimize when on HandsFreeStudy page (it has its own
+  // transport controls — prevents duplicate play/pause/skip buttons).
+  const isHandsFreePage = location.startsWith("/learning/hands-free");
+  useEffect(() => {
+    if (isHandsFreePage && audio.mode === "expanded" && audio.currentItem) {
+      audio.minimize();
+    }
+  }, [isHandsFreePage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (audio.mode === "hidden" || !audio.currentItem) return null;
 

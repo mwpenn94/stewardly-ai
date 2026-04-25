@@ -9329,3 +9329,10 @@
 - [x] Recursion Pass 1: Expert Assessment (5 findings: F1 restore race, F2 skipForward queue desync, F3 speed acceptable, F4 inline logic DRY, F5 repeat mode not handled)
 - [x] Recursion Pass 2: Optimize findings (F1 restore race fixed, F2 skip queue desync fixed, F4 DRY restoreSession extracted, F5 repeat mode re-enqueue added)
 - [x] Recursion Pass 3: Validate convergence (repeat mode race condition fixed with repeatPendingRef, all 227 tests pass, no runtime errors)
+
+## Pass 157 — Critical Regression Fixes
+- [x] BUG: Hands-Free Study content pipeline is shallow — showing "Formula: Formula." instead of actual educational content from Knowledge Explorer
+- [x] BUG: Duplicate audio controls — HandsFreeStudy card controls AND persistent AudioCompanion bar both visible simultaneously
+- [x] BUG: 404 Page Not Found — /learning/audio/:slug route was missing, now created AudioStudyPage.tsx
+- [x] BUG: Learning Engine mobile tabs — already handled with overflow-x-auto scrollbar-none (horizontal scroll on mobile)
+- [x] BUG: Audio Study track detail page — AudioStudyPage.tsx now fetches chapters/subsections/flashcards with actual KE content

@@ -1,10 +1,21 @@
 /**
  * HandsFreeStudy.tsx — KE-style Hands-Free Audio Learning
  *
- * Pass 149. Full rewrite with audio chimes (Web Audio API), section-based content
- * with colored badges, voice/speed settings, circular transport controls,
- * keyboard shortcuts (Space/arrows/Esc), coming-up queue preview, repeat mode,
- * and rich completion screen.
+ * Pass 157. Complete rewrite: uses the exhaustive getHandsFreeContent
+ * procedure that fetches ALL content types (definitions, formulas, cases,
+ * applications, subsections, flashcards, questions) from the Knowledge
+ * Explorer database with pre-formatted TTS scripts.
+ *
+ * Features: audio chimes (Web Audio API), section-based content with
+ * colored badges, voice/speed settings, circular transport controls,
+ * keyboard shortcuts (Space/arrows/Esc), coming-up queue preview,
+ * repeat mode, and rich completion screen.
+ *
+ * Fixes from Pass 156 preserved: session persistence, restore on mount,
+ * speed sync, TTS failure recovery, repeat mode re-enqueue.
+ *
+ * CRITICAL FIX: Hides own transport controls when AudioCompanion expanded
+ * panel is visible (prevents duplicate controls). Uses audio.mode to detect.
  */
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link } from "wouter";
@@ -22,12 +33,14 @@ import {
   Volume2, ArrowLeft, Shuffle, Settings, ChevronDown,
   Brain, BookOpen, Loader2, CheckCircle2, Repeat,
   Calculator, FileText, Briefcase, LogIn,
+  GraduationCap, HelpCircle, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAchievementToast } from "@/components/AchievementToast";
 import { motion, AnimatePresence } from "framer-motion";
 
-type SectionType = "definitions" | "formulas" | "cases" | "applications";
+// ── Extended section types to cover ALL Knowledge Explorer content ──
+type SectionType = "definitions" | "formulas" | "cases" | "applications" | "subsections" | "flashcards" | "questions";
 type Phase = "setup" | "playing" | "complete";
 
 interface ContentItem {
@@ -42,6 +55,9 @@ const SECTION_CONFIG: { type: SectionType; label: string; icon: any; color: stri
   { type: "formulas", label: "Formulas", icon: Calculator, color: "#10B981" },
   { type: "cases", label: "Case Studies", icon: FileText, color: "#F59E0B" },
   { type: "applications", label: "Applications", icon: Briefcase, color: "#8B5CF6" },
+  { type: "subsections", label: "Lessons", icon: Layers, color: "#EC4899" },
+  { type: "flashcards", label: "Flashcards", icon: GraduationCap, color: "#06B6D4" },
+  { type: "questions", label: "Questions", icon: HelpCircle, color: "#EF4444" },
 ];
 
 const SPEED_OPTIONS = [
@@ -98,7 +114,7 @@ export default function HandsFreeStudy() {
   // Session persistence key
   const SESSION_KEY = "stewardly-handsfree-session";
 
-  /* ── Shared session restore helper (FINDING-4 DRY) ── */
+  /* ── Shared session restore helper ── */
   const restoreSession = useCallback(() => {
     try {
       const raw = sessionStorage.getItem(SESSION_KEY);
@@ -117,8 +133,10 @@ export default function HandsFreeStudy() {
     } catch { return false; }
   }, [audio.playing, audio.currentItem?.id]);
 
-  // Settings
-  const [enabledSections, setEnabledSections] = useState<SectionType[]>(["definitions", "formulas", "cases", "applications"]);
+  // Settings — all 7 sections enabled by default
+  const [enabledSections, setEnabledSections] = useState<SectionType[]>(
+    ["definitions", "formulas", "cases", "applications", "subsections", "flashcards", "questions"]
+  );
   const [repeatMode, setRepeatMode] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [speed, setSpeed] = useState(1.0);
@@ -131,10 +149,11 @@ export default function HandsFreeStudy() {
   const [currentSection, setCurrentSection] = useState<SectionType | null>(null);
   const playingRef = useRef(false);
 
-  // Data
-  const tracksQ = trpc.learning.content.listTracks.useQuery(undefined, { enabled: !!isAuthenticated });
-  const defsQ = trpc.learning.content.listDefinitions.useQuery({ limit: 200 }, { enabled: !!isAuthenticated });
-  const reviewQ = trpc.learning.mastery.dueReview.useQuery({ limit: 50, newQuota: 20 }, { enabled: !!isAuthenticated });
+  // ── Data: use the new exhaustive getHandsFreeContent procedure ──
+  const handsFreeQ = trpc.learning.content.getHandsFreeContent.useQuery(
+    { sections: enabledSections, limit: 100 },
+    { enabled: !!isAuthenticated }
+  );
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
   const { showAchievementToast } = useAchievementToast();
   const recordReview = trpc.learning.mastery.recordReview.useMutation({
@@ -151,84 +170,104 @@ export default function HandsFreeStudy() {
     );
   }, []);
 
-  /* ── Build content queue ── */
+  /* ── Build content queue from ACTUAL Knowledge Explorer data ── */
   const buildQueue = useCallback((): ContentItem[] => {
     const items: ContentItem[] = [];
-    const defs = defsQ.data ?? [];
-    const reviewItems = reviewQ.data?.items ?? [];
+    const data = handsFreeQ.data;
+    if (!data) return items;
 
-    if (enabledSections.includes("definitions")) {
-      for (const def of defs.slice(0, 40)) {
+    // 1. Definitions — actual terms + definitions from KE
+    if (enabledSections.includes("definitions") && data.definitions) {
+      for (const def of data.definitions) {
         items.push({
           type: "definitions",
           label: def.term,
-          text: `${def.term}. ${def.definition}`,
+          text: def.ttsScript,
           key: `def-${def.id}`,
         });
       }
     }
 
-    if (enabledSections.includes("formulas")) {
-      // Use flashcards that look like formulas
-      for (const item of reviewItems.slice(0, 15)) {
-        if (item.kind === "flashcard" && item.flashcard) {
-          const front = (item.flashcard as any).front ?? "Formula";
-          const back = (item.flashcard as any).back ?? "";
-          if (front.toLowerCase().includes("formula") || front.includes("=") || back.includes("=")) {
-            items.push({
-              type: "formulas",
-              label: front,
-              text: `Formula: ${front}. ${back}`,
-              key: `formula-${item.flashcard.id}`,
-            });
-          }
-        }
+    // 2. Formulas — actual formulas with variable explanations
+    if (enabledSections.includes("formulas") && data.formulas) {
+      for (const f of data.formulas) {
+        items.push({
+          type: "formulas",
+          label: f.name,
+          text: f.ttsScript,
+          key: `formula-${f.id}`,
+        });
       }
     }
 
-    if (enabledSections.includes("cases")) {
-      // Use flashcards that look like case studies
-      for (const item of reviewItems) {
-        if (item.kind === "flashcard" && item.flashcard) {
-          const front = (item.flashcard as any).front ?? "";
-          if (front.toLowerCase().includes("case") || front.toLowerCase().includes("scenario")) {
-            items.push({
-              type: "cases",
-              label: front,
-              text: `Case Study: ${front}. ${(item.flashcard as any).back ?? ""}`,
-              key: `case-${item.flashcard.id}`,
-            });
-          }
-        }
+    // 3. Cases — actual case study content
+    if (enabledSections.includes("cases") && data.cases) {
+      for (const c of data.cases) {
+        items.push({
+          type: "cases",
+          label: c.title,
+          text: c.ttsScript,
+          key: `case-${c.id}`,
+        });
       }
     }
 
-    if (enabledSections.includes("applications")) {
-      // Use remaining flashcards as applications
-      for (const item of reviewItems.slice(0, 20)) {
-        if (item.kind === "flashcard" && item.flashcard) {
-          const front = (item.flashcard as any).front ?? "Application";
-          const back = (item.flashcard as any).back ?? "";
-          if (!items.some(i => i.key === `formula-${item.flashcard!.id}` || i.key === `case-${item.flashcard!.id}`)) {
-            items.push({
-              type: "applications",
-              label: front,
-              text: `${front}. ${back}`,
-              key: `app-${item.flashcard.id}`,
-            });
-          }
-        }
+    // 4. Applications — actual FS application content
+    if (enabledSections.includes("applications") && data.applications) {
+      for (const a of data.applications) {
+        items.push({
+          type: "applications",
+          label: a.title,
+          text: a.ttsScript,
+          key: `app-${a.id}`,
+        });
       }
     }
 
-    // Shuffle
+    // 5. Subsections — the richest educational content (lesson paragraphs)
+    if (enabledSections.includes("subsections") && data.subsections) {
+      for (const s of data.subsections) {
+        items.push({
+          type: "subsections",
+          label: s.title ?? `Lesson Section ${s.id}`,
+          text: s.ttsScript,
+          key: `subsec-${s.id}`,
+        });
+      }
+    }
+
+    // 6. Flashcards — term + definition pairs
+    if (enabledSections.includes("flashcards") && data.flashcards) {
+      for (const f of data.flashcards) {
+        items.push({
+          type: "flashcards",
+          label: f.term,
+          text: f.ttsScript,
+          key: `fc-${f.id}`,
+        });
+      }
+    }
+
+    // 7. Questions — practice questions with explanations
+    if (enabledSections.includes("questions") && data.questions) {
+      for (const q of data.questions) {
+        items.push({
+          type: "questions",
+          label: q.prompt.slice(0, 80) + (q.prompt.length > 80 ? "..." : ""),
+          text: q.ttsScript,
+          key: `q-${q.id}`,
+        });
+      }
+    }
+
+    // Shuffle (Fisher-Yates)
     for (let i = items.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [items[i], items[j]] = [items[j], items[i]];
     }
 
     return items;
-  }, [enabledSections, defsQ.data, reviewQ.data]);
+  }, [enabledSections, handsFreeQ.data]);
 
   /* ── Sync speed to AudioCompanion ── */
   useEffect(() => {
@@ -239,7 +278,7 @@ export default function HandsFreeStudy() {
   const startPlayback = useCallback(() => {
     const queue = buildQueue();
     if (queue.length === 0) {
-      toast.error("No content available. Import content first.");
+      toast.error("No content available. Import content in the Knowledge Explorer first.");
       return;
     }
     setContentQueue(queue);
@@ -260,9 +299,6 @@ export default function HandsFreeStudy() {
       script: item.text,
       contentId: item.key,
     }));
-    // Only use enqueue — it auto-plays the first item if nothing is playing.
-    // Do NOT also call audio.play() which would double-play and desync the queue.
-    audio.dismiss(); // Clear any previous state first
     audio.enqueue(audioItems);
     toast.success(`Started session with ${queue.length} items`);
   }, [buildQueue, audio, speed]);
@@ -289,7 +325,7 @@ export default function HandsFreeStudy() {
     }
   }, [isPlaying, audio]);
 
-  /* ── Skip forward (FINDING-2: re-enqueue remaining to keep AudioCompanion queue in sync) ── */
+  /* ── Skip forward (re-enqueue remaining to keep AudioCompanion queue in sync) ── */
   const skipForward = useCallback(() => {
     if (currentItemIndex < contentQueue.length - 1) {
       const nextIdx = currentItemIndex + 1;
@@ -314,7 +350,6 @@ export default function HandsFreeStudy() {
       audio.enqueue(remaining);
     } else if (repeatMode) {
       setCurrentItemIndex(0);
-      // Re-enqueue full queue for repeat
       const allItems = contentQueue.map(item => ({
         id: item.key,
         type: "definition" as const,
@@ -329,13 +364,12 @@ export default function HandsFreeStudy() {
     }
   }, [currentItemIndex, contentQueue, audio, repeatMode, stopPlayback, studySession]);
 
-  /* ── Skip backward (FINDING-2: re-enqueue from skip point) ── */
+  /* ── Skip backward (re-enqueue from skip point) ── */
   const skipBackward = useCallback(() => {
     if (currentItemIndex > 0) {
       const prevIdx = currentItemIndex - 1;
       setCurrentItemIndex(prevIdx);
       setCurrentSection(contentQueue[prevIdx].type);
-      // Dismiss + re-enqueue from the skip-back point
       const remaining = contentQueue.slice(prevIdx).map(item => ({
         id: item.key,
         type: "definition" as const,
@@ -348,19 +382,15 @@ export default function HandsFreeStudy() {
     }
   }, [currentItemIndex, contentQueue, audio]);
 
-  /* ── Sync with AudioCompanion auto-advance (FINDING-5: repeat mode support) ── */
+  /* ── Sync with AudioCompanion auto-advance (repeat mode support) ── */
   const repeatPendingRef = useRef(false);
   useEffect(() => {
     if (phase !== "playing" || contentQueue.length === 0) return;
     const currentAudioId = audio.currentItem?.id;
     if (!currentAudioId) {
-      // AudioCompanion finished all items
-      // Use playingRef OR repeatPendingRef to guard against the brief window
-      // where the playing-state sync effect sets playingRef=false before we re-enqueue
       if (playingRef.current || repeatPendingRef.current) {
         repeatPendingRef.current = false;
         if (repeatMode) {
-          // Re-enqueue the full content queue for repeat
           setCurrentItemIndex(0);
           setCurrentSection(contentQueue[0].type);
           const allItems = contentQueue.map(item => ({
@@ -370,7 +400,7 @@ export default function HandsFreeStudy() {
             script: item.text,
             contentId: item.key,
           }));
-          repeatPendingRef.current = true; // Mark pending until audio restarts
+          repeatPendingRef.current = true;
           audio.enqueue(allItems);
           playChime("section");
         } else {
@@ -379,9 +409,7 @@ export default function HandsFreeStudy() {
       }
       return;
     }
-    // Audio is playing an item — clear any repeat pending flag
     repeatPendingRef.current = false;
-    // Find the matching index in our local queue
     const matchIdx = contentQueue.findIndex(item => item.key === currentAudioId);
     if (matchIdx >= 0 && matchIdx !== currentItemIndex) {
       setCurrentItemIndex(matchIdx);
@@ -426,7 +454,7 @@ export default function HandsFreeStudy() {
     }
   }, [phase, contentQueue, currentItemIndex, speed, repeatMode]);
 
-  /* ── Restore session on mount if AudioCompanion is still playing (FINDING-1: proper deps) ── */
+  /* ── Restore session on mount if AudioCompanion is still playing ── */
   const hasRestoredRef = useRef(false);
   useEffect(() => {
     if (hasRestoredRef.current || phase !== "setup" || !audio.currentItem) return;
@@ -436,21 +464,34 @@ export default function HandsFreeStudy() {
     }
   }, [audio.currentItem?.id, phase, restoreSession]);
 
-  /* ── Section counts ── */
+  /* ── Auto-minimize AudioCompanion when HandsFreeStudy is in playing phase ── */
+  useEffect(() => {
+    if (phase === "playing" && audio.mode === "expanded") {
+      audio.minimize();
+    }
+  }, [phase, audio.mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Section counts from actual data ── */
   const sectionCounts = useMemo(() => {
-    const defs = defsQ.data ?? [];
-    const reviewItems = reviewQ.data?.items ?? [];
-    return {
-      definitions: defs.length,
-      formulas: reviewItems.filter((i: any) => i.kind === "flashcard").length,
-      cases: reviewItems.filter((i: any) => i.kind === "flashcard" && ((i.flashcard as any)?.front ?? "").toLowerCase().includes("case")).length,
-      applications: reviewItems.filter((i: any) => i.kind === "flashcard").length,
+    const data = handsFreeQ.data;
+    if (!data) return {
+      definitions: 0, formulas: 0, cases: 0, applications: 0,
+      subsections: 0, flashcards: 0, questions: 0,
     };
-  }, [defsQ.data, reviewQ.data]);
+    return {
+      definitions: data.definitions?.length ?? 0,
+      formulas: data.formulas?.length ?? 0,
+      cases: data.cases?.length ?? 0,
+      applications: data.applications?.length ?? 0,
+      subsections: data.subsections?.length ?? 0,
+      flashcards: data.flashcards?.length ?? 0,
+      questions: data.questions?.length ?? 0,
+    };
+  }, [handsFreeQ.data]);
 
   const currentItem = contentQueue[currentItemIndex];
   const progress = contentQueue.length > 0 ? Math.round(((currentItemIndex + 1) / contentQueue.length) * 100) : 0;
-  const totalAvailable = (defsQ.data?.length ?? 0) + (reviewQ.data?.items?.length ?? 0);
+  const totalAvailable = Object.values(sectionCounts).reduce((a, b) => a + b, 0);
 
   /* ── Auth guard ── */
   if (authLoading) {
@@ -528,7 +569,6 @@ export default function HandsFreeStudy() {
                     <button
                       onClick={() => {
                         if (!restoreSession()) {
-                          // Fallback: just expand the audio companion
                           audio.expand();
                         }
                       }}
@@ -542,8 +582,8 @@ export default function HandsFreeStudy() {
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: "Items Available", value: totalAvailable },
-                    { label: "Due for Review", value: reviewQ.data?.dueTotal ?? 0 },
+                    { label: "Items Available", value: handsFreeQ.isLoading ? "..." : totalAvailable },
+                    { label: "Content Types", value: SECTION_CONFIG.filter(s => sectionCounts[s.type] > 0).length },
                     { label: "Mastered", value: (summaryQ.data as any)?.mastered ?? 0 },
                   ].map(stat => (
                     <div key={stat.label} className="bg-card border border-border rounded-xl p-4 text-center">
@@ -553,13 +593,13 @@ export default function HandsFreeStudy() {
                   ))}
                 </div>
 
-                {/* Section Selection */}
+                {/* Section Selection — all 7 types */}
                 <section>
                   <h2 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
                     <BookOpen className="w-4 h-4 text-primary" />
                     Content Sections
                   </h2>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                     {SECTION_CONFIG.map(sec => {
                       const Icon = sec.icon;
                       const count = sectionCounts[sec.type] ?? 0;
@@ -567,16 +607,16 @@ export default function HandsFreeStudy() {
                         <button
                           key={sec.type}
                           onClick={() => toggleSection(sec.type)}
-                          className={`text-left p-4 rounded-xl border transition-all ${
+                          className={`text-left p-3 sm:p-4 rounded-xl border transition-all ${
                             enabledSections.includes(sec.type)
                               ? "border-primary bg-primary/5"
                               : "border-border opacity-50"
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
-                            <Icon className="w-4 h-4" style={{ color: sec.color }} />
-                            <span className="text-sm font-medium">{sec.label}</span>
-                            <span className="text-[10px] text-muted-foreground ml-auto font-mono">{count}</span>
+                            <Icon className="w-4 h-4 flex-none" style={{ color: sec.color }} />
+                            <span className="text-xs sm:text-sm font-medium truncate">{sec.label}</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto font-mono flex-none">{count}</span>
                           </div>
                           <p className="text-[10px] text-muted-foreground">
                             {enabledSections.includes(sec.type) ? "Included" : "Excluded"}
@@ -646,11 +686,14 @@ export default function HandsFreeStudy() {
                 {/* Start Button */}
                 <button
                   onClick={startPlayback}
-                  disabled={enabledSections.length === 0 || totalAvailable === 0}
+                  disabled={enabledSections.length === 0 || totalAvailable === 0 || handsFreeQ.isLoading}
                   className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Headphones className="w-4 h-4" />
-                  Start Listening Session
+                  {handsFreeQ.isLoading ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Loading content...</>
+                  ) : (
+                    <><Headphones className="w-4 h-4" /> Start Listening Session ({totalAvailable} items)</>
+                  )}
                 </button>
               </motion.div>
             )}
@@ -711,39 +754,41 @@ export default function HandsFreeStudy() {
                     </div>
                   )}
 
-                  {/* Transport Controls */}
-                  <div className="flex items-center justify-center gap-4">
-                    <button
-                      onClick={skipBackward}
-                      disabled={currentItemIndex === 0}
-                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
-                      title="Previous (Left Arrow)"
-                    >
-                      <SkipBack className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={togglePause}
-                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
-                      title="Play/Pause (Space)"
-                    >
-                      {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-                    </button>
-                    <button
-                      onClick={skipForward}
-                      disabled={currentItemIndex >= contentQueue.length - 1 && !repeatMode}
-                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
-                      title="Next (Right Arrow)"
-                    >
-                      <SkipForward className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={stopPlayback}
-                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-destructive/30 text-destructive flex items-center justify-center hover:bg-destructive/10 transition-colors"
-                      title="Stop (Escape)"
-                    >
-                      <Square className="w-4 h-4" />
-                    </button>
-                  </div>
+                  {/* Transport Controls — only show when AudioCompanion is NOT expanded */}
+                  {audio.mode !== "expanded" && (
+                    <div className="flex items-center justify-center gap-4">
+                      <button
+                        onClick={skipBackward}
+                        disabled={currentItemIndex === 0}
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
+                        title="Previous (Left Arrow)"
+                      >
+                        <SkipBack className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={togglePause}
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                        title="Play/Pause (Space)"
+                      >
+                        {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+                      </button>
+                      <button
+                        onClick={skipForward}
+                        disabled={currentItemIndex >= contentQueue.length - 1 && !repeatMode}
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
+                        title="Next (Right Arrow)"
+                      >
+                        <SkipForward className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={stopPlayback}
+                        className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-destructive/30 text-destructive flex items-center justify-center hover:bg-destructive/10 transition-colors"
+                        title="Stop (Escape)"
+                      >
+                        <Square className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
                   {/* Keyboard hints */}
                   <p className="text-center text-[10px] text-muted-foreground mt-4 font-mono">

@@ -135,6 +135,7 @@ import {
   listFsApplications,
   listConnections,
   listFormulas,
+  getHandsFreeContent,
 } from "../services/learning/content";
 
 import {
@@ -724,6 +725,25 @@ const contentRouter = router({
   history: protectedProcedure
     .input(z.object({ contentTable: z.string().max(128), contentId: z.number().int() }))
     .query(async ({ input }) => getContentHistory(input.contentTable, input.contentId)),
+
+  // ── Hands-Free Study: Exhaustive content fetcher (Pass 157) ──
+  getHandsFreeContent: protectedProcedure
+    .input(
+      z.object({
+        sections: z.array(z.enum(["definitions", "formulas", "cases", "applications", "subsections", "flashcards", "questions"])).default(["definitions", "formulas", "cases", "applications", "subsections", "flashcards", "questions"]),
+        limit: z.number().int().min(1).max(200).default(50),
+        disciplineId: z.number().int().optional(),
+        trackId: z.number().int().optional(),
+      }).optional(),
+    )
+    .query(async ({ input }) => {
+      return getHandsFreeContent({
+        sections: input?.sections ?? ["definitions", "formulas", "cases", "applications", "subsections", "flashcards", "questions"],
+        limit: input?.limit ?? 50,
+        disciplineId: input?.disciplineId,
+        trackId: input?.trackId,
+      });
+    }),
 });
 
 function assertCanEditOrThrow(user: ActingUser, row: any) {

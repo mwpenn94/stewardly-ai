@@ -1039,3 +1039,256 @@ export async function updateTrackDiagrams(trackId: number, diagrams: any) {
     return false;
   }
 }
+
+// ─── Hands-Free Study: Exhaustive Content Fetcher (Pass 157) ────────────
+/**
+ * Fetches ALL content types from the Knowledge Explorer for Hands-Free Study.
+ * Returns pre-formatted TTS scripts for each content type.
+ * This replaces the previous shallow approach that only used flashcard heuristics.
+ */
+export async function getHandsFreeContent(opts: {
+  sections: ("definitions" | "formulas" | "cases" | "applications" | "subsections" | "flashcards" | "questions")[];
+  limit?: number;
+  disciplineId?: number;
+  trackId?: number;
+} = { sections: ["definitions", "formulas", "cases", "applications", "subsections", "flashcards", "questions"] }) {
+  const db = await getDb();
+  if (!db) return { definitions: [], formulas: [], cases: [], applications: [], subsections: [], flashcards: [], questions: [] };
+
+  const limit = opts.limit ?? 50;
+  const result: {
+    definitions: { id: number; term: string; definition: string; ttsScript: string }[];
+    formulas: { id: number; name: string; formula: string; variables: any; ttsScript: string }[];
+    cases: { id: number; title: string; content: string; ttsScript: string }[];
+    applications: { id: number; title: string; content: string; ttsScript: string }[];
+    subsections: { id: number; chapterId: number; title: string | null; paragraphs: any; ttsScript: string }[];
+    flashcards: { id: number; term: string; definition: string; ttsScript: string }[];
+    questions: { id: number; prompt: string; explanation: string | null; ttsScript: string }[];
+  } = { definitions: [], formulas: [], cases: [], applications: [], subsections: [], flashcards: [], questions: [] };
+
+  try {
+    // 1. Definitions — the richest glossary content
+    if (opts.sections.includes("definitions")) {
+      const conds: any[] = [eq(learningDefinitions.status, "published")];
+      if (opts.disciplineId) conds.push(eq(learningDefinitions.disciplineId, opts.disciplineId));
+      const defs = await db.select().from(learningDefinitions)
+        .where(and(...conds))
+        .limit(limit);
+      result.definitions = defs.map(d => ({
+        id: d.id,
+        term: d.term,
+        definition: d.definition,
+        ttsScript: hfBuildDefinitionTts(d.term, d.definition),
+      }));
+    }
+
+    // 2. Formulas — actual formula data with variable explanations
+    if (opts.sections.includes("formulas")) {
+      const conds: any[] = [eq(learningFormulas.status, "published" as any)];
+      if (opts.disciplineId) conds.push(eq(learningFormulas.disciplineId, opts.disciplineId));
+      const formulas = await db.select().from(learningFormulas)
+        .where(and(...conds))
+        .limit(limit);
+      result.formulas = formulas.map(f => ({
+        id: f.id,
+        name: f.name,
+        formula: f.formula,
+        variables: f.variables,
+        ttsScript: hfBuildFormulaTts(f.name, f.formula, f.variables),
+      }));
+    }
+
+    // 3. Cases — rich scenario-based content
+    if (opts.sections.includes("cases")) {
+      const conds: any[] = [eq(learningCases.status, "published")];
+      if (opts.disciplineId) conds.push(eq(learningCases.disciplineId, opts.disciplineId));
+      const cases = await db.select().from(learningCases)
+        .where(and(...conds))
+        .limit(limit);
+      result.cases = cases.map(c => ({
+        id: c.id,
+        title: c.title,
+        content: c.content,
+        ttsScript: hfBuildCaseTts(c.title, c.content),
+      }));
+    }
+
+    // 4. FS Applications — practical application content
+    if (opts.sections.includes("applications")) {
+      const conds: any[] = [eq(learningFsApplications.status, "published")];
+      if (opts.disciplineId) conds.push(eq(learningFsApplications.disciplineId, opts.disciplineId));
+      const apps = await db.select().from(learningFsApplications)
+        .where(and(...conds))
+        .limit(limit);
+      result.applications = apps.map(a => ({
+        id: a.id,
+        title: a.title,
+        content: a.content,
+        ttsScript: hfBuildApplicationTts(a.title, a.content),
+      }));
+    }
+
+    // 5. Subsections — the RICHEST educational content (paragraphs + tables)
+    if (opts.sections.includes("subsections")) {
+      let subsections: any[];
+      if (opts.trackId) {
+        const chapters = await db.select({ id: learningChapters.id })
+          .from(learningChapters)
+          .where(eq(learningChapters.trackId, opts.trackId))
+          .orderBy(learningChapters.sortOrder);
+        const chapterIds = chapters.map(c => c.id);
+        if (chapterIds.length > 0) {
+          subsections = await db.select().from(learningSubsections)
+            .where(and(
+              inArray(learningSubsections.chapterId, chapterIds),
+              eq(learningSubsections.status, "published"),
+            ))
+            .orderBy(learningSubsections.sortOrder)
+            .limit(limit);
+        } else {
+          subsections = [];
+        }
+      } else {
+        subsections = await db.select().from(learningSubsections)
+          .where(eq(learningSubsections.status, "published"))
+          .limit(limit);
+      }
+      result.subsections = subsections.map(s => ({
+        id: s.id,
+        chapterId: s.chapterId,
+        title: s.title,
+        paragraphs: s.paragraphs,
+        ttsScript: hfBuildSubsectionTts(s.title, s.paragraphs),
+      }));
+    }
+
+    // 6. Flashcards — term + definition pairs
+    if (opts.sections.includes("flashcards")) {
+      let fcs: any[];
+      if (opts.trackId) {
+        fcs = await db.select().from(learningFlashcards)
+          .where(eq(learningFlashcards.trackId, opts.trackId))
+          .limit(limit);
+      } else {
+        fcs = await db.select().from(learningFlashcards)
+          .where(eq(learningFlashcards.status, "published"))
+          .limit(limit);
+      }
+      result.flashcards = fcs.map(f => ({
+        id: f.id,
+        term: f.term,
+        definition: f.definition,
+        ttsScript: hfBuildFlashcardTts(f.term, f.definition),
+      }));
+    }
+
+    // 7. Practice Questions — prompt + explanation
+    if (opts.sections.includes("questions")) {
+      let qs: any[];
+      if (opts.trackId) {
+        qs = await db.select().from(learningPracticeQuestions)
+          .where(and(
+            eq(learningPracticeQuestions.trackId, opts.trackId),
+            eq(learningPracticeQuestions.status, "published"),
+          ))
+          .limit(limit);
+      } else {
+        qs = await db.select().from(learningPracticeQuestions)
+          .where(eq(learningPracticeQuestions.status, "published"))
+          .limit(limit);
+      }
+      result.questions = qs.map(q => ({
+        id: q.id,
+        prompt: q.prompt,
+        explanation: q.explanation,
+        ttsScript: hfBuildQuestionTts(q.prompt, q.options, q.correctIndex, q.explanation),
+      }));
+    }
+
+    return result;
+  } catch (err) {
+    log.warn({ err: String(err) }, "getHandsFreeContent failed");
+    return result;
+  }
+}
+
+// ─── TTS Script Builders (Pass 157) ─────────────────────────────────────
+
+function hfBuildDefinitionTts(term: string, definition: string): string {
+  const cleanDef = definition.split("\t")[0].trim();
+  if (cleanDef.length < 20) {
+    return `${term}. ${term} stands for ${cleanDef}. This is an important concept in financial services.`;
+  }
+  return `${term}. ${cleanDef}`;
+}
+
+function hfBuildFormulaTts(name: string, formula: string, variables: any): string {
+  let script = `Formula: ${name}. The formula is: ${formula}.`;
+  if (Array.isArray(variables) && variables.length > 0) {
+    script += " Where ";
+    const varDescs = variables.map((v: any) => {
+      const label = v.label || v.name;
+      const unit = v.unit ? ` measured in ${v.unit}` : "";
+      return `${v.name} is ${label}${unit}`;
+    });
+    script += varDescs.join(", ") + ".";
+  }
+  return script;
+}
+
+function hfBuildCaseTts(title: string, content: string): string {
+  let script = `Case Study: ${title}. `;
+  try {
+    const parsed = typeof content === "string" ? JSON.parse(content) : content;
+    if (parsed.scenario) {
+      script += parsed.scenario + " ";
+    }
+    if (parsed.analysis) {
+      script += "Analysis: " + (typeof parsed.analysis === "string" ? parsed.analysis : JSON.stringify(parsed.analysis)) + " ";
+    }
+    if (parsed.keyTakeaways && Array.isArray(parsed.keyTakeaways)) {
+      script += "Key takeaways: " + parsed.keyTakeaways.join(". ") + ".";
+    }
+  } catch {
+    script += content;
+  }
+  return script;
+}
+
+function hfBuildApplicationTts(title: string, content: string): string {
+  return `Financial Services Application: ${title}. ${content}`;
+}
+
+function hfBuildSubsectionTts(title: string | null, paragraphs: any): string {
+  let script = title ? `${title}. ` : "";
+  if (Array.isArray(paragraphs)) {
+    script += paragraphs.join(" ");
+  } else if (typeof paragraphs === "string") {
+    script += paragraphs;
+  }
+  return script || "No content available for this section.";
+}
+
+function hfBuildFlashcardTts(term: string, definition: string): string {
+  const cleanDef = definition.split("\t")[0].trim();
+  return `Flashcard: ${term}. ${cleanDef}`;
+}
+
+function hfBuildQuestionTts(prompt: string, options: any, correctIndex: number | null, explanation: string | null): string {
+  let script = `Practice Question: ${prompt}`;
+  if (Array.isArray(options) && options.length > 0) {
+    const letters = ["A", "B", "C", "D", "E", "F"];
+    script += " Options: " + options.map((opt: any, i: number) => {
+      const text = typeof opt === "string" ? opt : (opt.text ?? opt.label ?? String(opt));
+      return `${letters[i] ?? (i + 1)}: ${text}`;
+    }).join(". ") + ".";
+    if (correctIndex != null && correctIndex >= 0 && correctIndex < options.length) {
+      const correctText = typeof options[correctIndex] === "string" ? options[correctIndex] : (options[correctIndex].text ?? options[correctIndex].label ?? "");
+      script += ` The correct answer is ${letters[correctIndex] ?? (correctIndex + 1)}: ${correctText}.`;
+    }
+  }
+  if (explanation) {
+    script += ` Explanation: ${explanation}`;
+  }
+  return script;
+}

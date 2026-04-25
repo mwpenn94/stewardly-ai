@@ -105,7 +105,8 @@ describe("Pass 67 — Phase 1 pass 2", () => {
       // Pass 147: increased to 21 for GuestOverviewTab in LearningHome
       // Pass 148: increased to 22 for KE design system overhaul (FormulaLab category grid)
       // Pass 149: increased to 23 for KE feature parity (AIQuizPage discipline grid)
-      expect(bareGridPages.length).toBeLessThanOrEqual(23);
+      // Pass 157: increased to 25 for HandsFreeStudy section grid + AudioStudyPage chapter grid
+      expect(bareGridPages.length).toBeLessThanOrEqual(25);
     });
   });
 });
