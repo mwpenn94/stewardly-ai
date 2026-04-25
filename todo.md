@@ -9133,3 +9133,36 @@
 - [x] Backfill 760 flashcards with chapter_id (distributed across chapters per track)
 - [x] GuestOverviewTab — track grid grouped by category, stats, benchmarks for unauthenticated visitors
 - [x] Guest sign-in CTA banner on LearningHome with progressive disclosure
+
+## Recursive Optimization Passes 81-85 (April 24-25, 2026)
+
+### Pass 81 — Learning Engine depth pass
+- [x] Wire StudyGroupCollaboration Discussion panel to real peerGroups.messages tRPC backend (was hardcoded mock)
+- [x] Integrate Discussion tab into StudyGroups GroupDetail view (3-tab layout: Quizzes, Challenges, Discussion)
+- [x] Add getShared public endpoint for playlists (verified working)
+- [x] Wire SharedPlaylist to new getShared tRPC endpoint (was dead placeholder)
+- [x] Design preview banners on Goals/Notes/Activity panels (honest about what's not yet backed)
+
+### Pass 82 — Wealth Engine landscape pass
+- [x] Migrate PortfolioRiskMetrics saved portfolios from localStorage to calculatorPersistence tRPC with localStorage fallback
+- [x] Verify financial advice disclaimers in AI chat system prompt
+- [x] Audit all wealth engine pages for tRPC wiring (all panels confirmed wired)
+
+### Pass 83 — People Engine landscape pass
+- [x] Verify PeopleHub and all lazy-loaded panels have tRPC calls
+- [x] Confirm ClientOnboarding saves to DB via financialProfile.set
+- [x] Audit People Engine for navigation dead-ends (none found)
+
+### Pass 84 — Data Engine depth pass
+- [x] Rewrite DataPipelines from pure hardcoded stub to real tRPC integrations.listConnections + listProviders
+- [x] Add pause/resume/paused/syncing pipeline status management
+- [x] Migrate fieldSharing service from in-memory Map to DB-backed fieldSharingControls table with read-through cache
+- [x] Add await to all async fieldSharing calls in operations router
+- [x] Audit 35 module-level Maps — most are acceptable caches/session state; critical ones (fieldSharing) migrated to DB
+
+### Pass 85 — UI surface adversarial pass
+- [x] Add loading states to StudyBuddy, DisciplineDeepDive, ConnectionMap (were missing isLoading)
+- [x] Verify no invisible text patterns, no nested anchors, no broken image paths
+- [x] Verify no console.log in production pages, no hardcoded localhost URLs
+- [x] Verify no missing alt text on images
+- [x] All 12,335 tests passing (506 test files)

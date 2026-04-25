@@ -10,7 +10,7 @@
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { eq, and, desc } from "drizzle-orm";
 import {
@@ -417,6 +417,20 @@ const playlistsRouter = router({
         permission: input.permission,
       });
       return { id: Number(r.insertId) };
+    }),
+  getShared: publicProcedure
+    .input(z.object({ shareToken: z.string().min(1).max(64) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [playlist] = await db.select().from(learningPlaylists)
+        .where(eq(learningPlaylists.shareToken, input.shareToken))
+        .limit(1);
+      if (!playlist) throw new TRPCError({ code: "NOT_FOUND", message: "Playlist not found or not shared" });
+      const items = await db.select().from(learningPlaylistItems)
+        .where(eq(learningPlaylistItems.playlistId, playlist.id))
+        .orderBy(learningPlaylistItems.sortOrder);
+      return { ...playlist, items };
     }),
 });
 

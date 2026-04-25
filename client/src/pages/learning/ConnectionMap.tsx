@@ -9,7 +9,7 @@ import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide } 
 import { select } from "d3-selection";
 import { zoom as d3Zoom } from "d3-zoom";
 import { drag as d3Drag } from "d3-drag";
-import { Search, Volume2, X } from "lucide-react";
+import { Search, Volume2, X, Loader2 } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { trpc } from "@/lib/trpc";
 
@@ -267,6 +267,17 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
       return { edge: e, node: graphNodes.find(n => n.id === otherId) };
     }).filter(c => c.node);
   }, [selectedNode, graphEdges, graphNodes]);
+
+  if (defsQ.isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground mt-3">Loading concept map…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]" ref={containerRef}>

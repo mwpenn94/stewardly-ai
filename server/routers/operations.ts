@@ -165,21 +165,21 @@ export const operationsRouter = router({
       .input(z.object({ fieldName: z.string() }))
       .query(async ({ input, ctx }) => ({
         fieldName: input.fieldName,
-        visibility: sharing.getFieldVisibility(ctx.user.id, input.fieldName),
+        visibility: await sharing.getFieldVisibility(ctx.user.id, input.fieldName),
       })),
 
     setVisibility: protectedProcedure
       .input(z.object({ fieldName: z.string(), visibility: z.enum(["private", "professional", "management", "admin", "public"]) }))
       .mutation(async ({ input, ctx }) => ({
-        success: sharing.setFieldVisibility(ctx.user.id, input.fieldName, input.visibility),
+        success: await sharing.setFieldVisibility(ctx.user.id, input.fieldName, input.visibility),
       })),
 
     overrides: protectedProcedure
-      .query(async ({ ctx }) => sharing.getUserFieldOverrides(ctx.user.id)),
+      .query(async ({ ctx }) => await sharing.getUserFieldOverrides(ctx.user.id)),
 
     filterForViewer: protectedProcedure
       .input(z.object({ data: z.record(z.string(), z.any()), targetUserId: z.number() }))
-      .query(async ({ input, ctx }) => sharing.filterFieldsForViewer(input.data, input.targetUserId, ctx.user.role ?? "user")),
+      .query(async ({ input, ctx }) => await sharing.filterFieldsForViewer(input.data, input.targetUserId, ctx.user.role ?? "user")),
   }),
 
   // ─── Org AI Config ─────────────────────────────────────────────────

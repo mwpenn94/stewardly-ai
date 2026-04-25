@@ -24,7 +24,7 @@ import {
   BookOpen, Brain, GraduationCap, Sparkles, Target, Clock,
   Flame, Trophy, ArrowRight, Search, FileText, Upload,
   Zap, BarChart3, Shield, Award, ChevronRight, Play,
-  RefreshCw, Lightbulb, CheckCircle2, AlertTriangle,
+  RefreshCw, Lightbulb, CheckCircle2, AlertTriangle, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
@@ -86,6 +86,19 @@ export default function StudyBuddy() {
           <h1 className="text-2xl font-bold mb-2">Study Buddy</h1>
           <p className="text-muted-foreground mb-6">Sign in to access your AI-powered study companion.</p>
           <Button asChild><a href={getLoginUrl("/learning/study-buddy")}>Sign In</a></Button>
+        </div>
+      </LearningShell>
+    );
+  }
+
+  const pageLoading = summaryQ.isLoading || dueQ.isLoading || tracksQ.isLoading;
+  if (pageLoading) {
+    return (
+      <LearningShell>
+        <SEOHead title="Study Buddy" />
+        <div className="container py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground mt-3">Loading study data...</p>
         </div>
       </LearningShell>
     );

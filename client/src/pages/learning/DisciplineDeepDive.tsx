@@ -31,6 +31,7 @@ import {
   RotateCw,
   Play,
   Search,
+  Loader2,
 } from "lucide-react";
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { FORMULA_REGISTRY } from "@/lib/formulaRegistry";
@@ -217,6 +218,18 @@ export default function DisciplineDeepDive() {
     { key: "cases", label: "Cases", icon: <Briefcase className="h-4 w-4" />, count: cases.length },
     { key: "fs-applications", label: "FS Applications", icon: <FileText className="h-4 w-4" />, count: fsApps.length },
   ];
+
+  if (defsQ.isLoading) {
+    return (
+      <LearningShell title="Deep Dive">
+        <SEOHead title="Deep Dive" />
+        <div className="container py-12 text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground mt-3">Loading discipline data…</p>
+        </div>
+      </LearningShell>
+    );
+  }
 
   return (
     <LearningShell title="Deep Dive">

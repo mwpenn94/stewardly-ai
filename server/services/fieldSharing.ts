@@ -1,9 +1,14 @@
 /**
  * Task #46 — Field-Level Sharing Controls Service
- * Granular per-field visibility controls for user profiles and data
+ * Granular per-field visibility controls for user profiles and data.
+ *
+ * Pass 84: Migrated from in-memory Map to DB-backed fieldSharingControls table.
+ * In-memory cache used as read-through layer; writes go to DB first.
  */
 import { getDb } from "../db";
 import { eq, and } from "drizzle-orm";
+import { fieldSharingControls } from "../../drizzle/schema";
+import { logger } from "../_core/logger";
 
 export type VisibilityLevel = "private" | "professional" | "management" | "admin" | "public";
 
@@ -41,34 +46,81 @@ const FIELD_RULES: FieldSharingRule[] = [
   { fieldName: "styleProfile", displayName: "Communication Style", category: "preferences", defaultVisibility: "professional", userOverridable: true, sensitivityLevel: "low" },
 ];
 
-// In-memory user overrides (in production, stored in DB)
-const userOverrides = new Map<string, VisibilityLevel>(); // key: `${userId}:${fieldName}`
+/* ─── Read-through cache: populated from DB on first access per user ─── */
+const userOverridesCache = new Map<string, VisibilityLevel>();
+const loadedUsers = new Set<number>();
+
+async function ensureUserLoaded(userId: number): Promise<void> {
+  if (loadedUsers.has(userId)) return;
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const rows = await db
+      .select()
+      .from(fieldSharingControls)
+      .where(eq(fieldSharingControls.userId, userId));
+    for (const row of rows) {
+      if (row.shareWithRole) {
+        userOverridesCache.set(`${userId}:${row.fieldName}`, row.shareWithRole as VisibilityLevel);
+      }
+    }
+    loadedUsers.add(userId);
+  } catch (e) {
+    logger.warn({ err: e }, "[FieldSharing] Failed to load overrides from DB, using defaults");
+  }
+}
 
 export function getFieldRules(category?: string): FieldSharingRule[] {
   if (category) return FIELD_RULES.filter(r => r.category === category);
   return [...FIELD_RULES];
 }
 
-export function getFieldVisibility(userId: number, fieldName: string): VisibilityLevel {
-  const override = userOverrides.get(`${userId}:${fieldName}`);
+export async function getFieldVisibility(userId: number, fieldName: string): Promise<VisibilityLevel> {
+  await ensureUserLoaded(userId);
+  const override = userOverridesCache.get(`${userId}:${fieldName}`);
   if (override) return override;
   const rule = FIELD_RULES.find(r => r.fieldName === fieldName);
   return rule?.defaultVisibility ?? "private";
 }
 
-export function setFieldVisibility(userId: number, fieldName: string, visibility: VisibilityLevel): boolean {
+export async function setFieldVisibility(userId: number, fieldName: string, visibility: VisibilityLevel): Promise<boolean> {
   const rule = FIELD_RULES.find(r => r.fieldName === fieldName);
   if (!rule || !rule.userOverridable) return false;
-  userOverrides.set(`${userId}:${fieldName}`, visibility);
+
+  // Write to DB first
+  try {
+    const db = await getDb();
+    if (db) {
+      // Upsert: delete existing then insert
+      await db.delete(fieldSharingControls).where(
+        and(
+          eq(fieldSharingControls.userId, userId),
+          eq(fieldSharingControls.fieldName, fieldName),
+        ),
+      );
+      await db.insert(fieldSharingControls).values({
+        userId,
+        fieldName,
+        shareWithRole: visibility,
+      });
+    }
+  } catch (e) {
+    logger.error({ err: e }, "[FieldSharing] Failed to persist override to DB");
+    // Still update cache so current session works
+  }
+
+  // Update cache
+  userOverridesCache.set(`${userId}:${fieldName}`, visibility);
   return true;
 }
 
-export function getUserFieldOverrides(userId: number): Record<string, VisibilityLevel> {
+export async function getUserFieldOverrides(userId: number): Promise<Record<string, VisibilityLevel>> {
+  await ensureUserLoaded(userId);
   const overrides: Record<string, VisibilityLevel> = {};
   const prefix = `${userId}:`;
-  for (const key of Array.from(userOverrides.keys())) {
+  for (const key of Array.from(userOverridesCache.keys())) {
     if (key.startsWith(prefix)) {
-      overrides[key.replace(prefix, "")] = userOverrides.get(key)!;
+      overrides[key.replace(prefix, "")] = userOverridesCache.get(key)!;
     }
   }
   return overrides;
@@ -88,10 +140,10 @@ export function canViewField(viewerRole: string, fieldVisibility: VisibilityLeve
   return viewerLevel >= fieldLevel || fieldVisibility === "public";
 }
 
-export function filterFieldsForViewer(data: Record<string, any>, userId: number, viewerRole: string): Record<string, any> {
+export async function filterFieldsForViewer(data: Record<string, any>, userId: number, viewerRole: string): Promise<Record<string, any>> {
   const filtered: Record<string, any> = {};
   for (const [key, value] of Object.entries(data)) {
-    const visibility = getFieldVisibility(userId, key);
+    const visibility = await getFieldVisibility(userId, key);
     if (canViewField(viewerRole, visibility)) {
       filtered[key] = value;
     }

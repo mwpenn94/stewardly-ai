@@ -28,6 +28,8 @@ import {
   Timer, Trophy, ChevronRight, Play,
 } from "lucide-react";
 import { toast } from "sonner";
+import { DiscussionPanel } from "./StudyGroupCollaboration";
+import { MessageSquare } from "lucide-react";
 
 /* ── Group Detail View (Shared Quizzes + Challenges) ──────────────────────── */
 
@@ -107,12 +109,15 @@ function GroupDetail({ group, userId, onBack }: { group: any; userId: number; on
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="quizzes" className="flex items-center gap-1.5">
             <BookOpen className="h-3.5 w-3.5" /> Shared Quizzes ({quizzes.length})
           </TabsTrigger>
           <TabsTrigger value="challenges" className="flex items-center gap-1.5">
             <Swords className="h-3.5 w-3.5" /> Challenges ({challenges.length})
+          </TabsTrigger>
+          <TabsTrigger value="discussion" className="flex items-center gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" /> Discussion
           </TabsTrigger>
         </TabsList>
 
@@ -171,6 +176,9 @@ function GroupDetail({ group, userId, onBack }: { group: any; userId: number; on
               <ChallengeCard key={c.id} challenge={c} userId={userId} onSubmitScore={(score) => submitScoreMut.mutate({ challengeId: c.id, score })} />
             ))
           )}
+        </TabsContent>
+        <TabsContent value="discussion" className="mt-3">
+          <DiscussionPanel groupId={group.id} />
         </TabsContent>
       </Tabs>
 

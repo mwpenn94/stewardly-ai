@@ -55,10 +55,10 @@ interface SavedPortfolio {
 }
 
 const LS_KEY = "wb-saved-portfolios";
-function loadSaved(): SavedPortfolio[] {
+function loadSavedLocal(): SavedPortfolio[] {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || "[]"); } catch { return []; }
 }
-function persistSaved(list: SavedPortfolio[]) {
+function persistSavedLocal(list: SavedPortfolio[]) {
   localStorage.setItem(LS_KEY, JSON.stringify(list));
 }
 
@@ -111,7 +111,33 @@ export default function PortfolioRiskMetrics() {
   const [useCustom, setUseCustom] = useState(false);
 
   // ── Compare Portfolios state ──
-  const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>(loadSaved);
+  const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>(loadSavedLocal);
+
+  // Sync saved portfolios from server on mount (if authenticated)
+  const savedQ = trpc.addendumFeatures.calculatorPersistence.list.useQuery(
+    { calculatorType: "portfolio-risk" },
+    { enabled: !!isAuthenticated },
+  );
+  const saveMut = trpc.addendumFeatures.calculatorPersistence.save.useMutation();
+  const deleteMut = trpc.addendumFeatures.calculatorPersistence.delete.useMutation();
+  useEffect(() => {
+    if (savedQ.data && savedQ.data.length > 0) {
+      const serverPortfolios: SavedPortfolio[] = savedQ.data.map((s: any, i: number) => ({
+        id: String(s.id),
+        name: s.name,
+        returns: s.inputs?.returns ?? [],
+        riskFreeRate: s.inputs?.riskFreeRate ?? 0.04,
+        color: PALETTE[i % PALETTE.length],
+        visible: true,
+      }));
+      // Merge: server wins for existing IDs, keep local-only ones
+      const serverIds = new Set(serverPortfolios.map(p => p.id));
+      const localOnly = savedPortfolios.filter(p => !serverIds.has(p.id));
+      const merged = [...serverPortfolios, ...localOnly];
+      setSavedPortfolios(merged);
+      persistSavedLocal(merged);
+    }
+  }, [savedQ.data]); // eslint-disable-line react-hooks/exhaustive-deps
   const [saveName, setSaveName] = useState("");
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [compareMode, setCompareMode] = useState(false);
@@ -147,7 +173,16 @@ export default function PortfolioRiskMetrics() {
     };
     const updated = [...savedPortfolios, newPortfolio];
     setSavedPortfolios(updated);
-    persistSaved(updated);
+    persistSavedLocal(updated);
+    // Also persist to server
+    if (isAuthenticated) {
+      saveMut.mutate({
+        calculatorType: "portfolio-risk",
+        name: newPortfolio.name,
+        inputs: { returns: newPortfolio.returns, riskFreeRate: newPortfolio.riskFreeRate },
+        results: null,
+      });
+    }
     setSaveName("");
     setSaveDialogOpen(false);
     toast.success(`Saved "${newPortfolio.name}"`);
@@ -156,7 +191,7 @@ export default function PortfolioRiskMetrics() {
   const toggleVisibility = useCallback((id: string) => {
     setSavedPortfolios(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, visible: !p.visible } : p);
-      persistSaved(updated);
+      persistSavedLocal(updated);
       return updated;
     });
   }, []);
@@ -164,11 +199,16 @@ export default function PortfolioRiskMetrics() {
   const removePortfolio = useCallback((id: string) => {
     setSavedPortfolios(prev => {
       const updated = prev.filter(p => p.id !== id);
-      persistSaved(updated);
+      persistSavedLocal(updated);
       return updated;
     });
+    // Also delete from server
+    const numId = parseInt(id, 10);
+    if (isAuthenticated && !isNaN(numId)) {
+      deleteMut.mutate({ id: numId });
+    }
     toast.success("Portfolio removed");
-  }, []);
+  }, [isAuthenticated, deleteMut]);
 
   // ── Frontier chart config (with compare overlay) ──
   const frontierChartConfig = useMemo(() => {

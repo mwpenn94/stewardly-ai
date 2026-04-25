@@ -4,11 +4,10 @@
  * Pass 64d. Allows users to view a shared playlist via a share token.
  * Shows playlist name, description, and all items in order.
  */
-import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
-// import { trpc } from "@/lib/trpc"; // Will be used when getShared endpoint is built
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,24 +21,17 @@ export default function SharedPlaylist() {
   const [, params] = useRoute("/learning/shared/:shareToken");
   const shareToken = params?.shareToken ?? "";
 
-  // Try to fetch the shared playlist via a public endpoint
-  // Playlists are under learningSocial.playlists
-  // Use a simple fetch since getShared may not exist as a tRPC endpoint
-  const [playlist, setPlaylist] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isError, setIsError] = useState(false);
-
-  useEffect(() => {
-    if (!shareToken) return;
-    // Try to load via the playlists list and find by share token
-    // For now, show a placeholder since the getShared endpoint needs to be built
-    setIsLoading(false);
-    setIsError(true);
-  }, [shareToken]);
+  const playlistQ = trpc.learningSocial.playlists.getShared.useQuery(
+    { shareToken },
+    { enabled: !!shareToken, retry: false },
+  );
+  const playlist = playlistQ.data ?? null;
+  const isLoading = playlistQ.isLoading;
+  const isError = playlistQ.isError;
 
   return (
     <LearningShell>
-      <SEOHead title={playlist?.name ? `Shared: ${playlist.name}` : "Shared Playlist"} description="View a shared study playlist" />
+      <SEOHead title={playlist?.title ? `Shared: ${playlist.title}` : "Shared Playlist"} description="View a shared study playlist" />
       <div className="min-h-screen">
         <div className="px-4 sm:px-6 lg:px-10 py-4 border-b border-border">
           <div className="flex items-center gap-3">
@@ -81,7 +73,7 @@ export default function SharedPlaylist() {
                       <ListMusic className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg">{playlist.name}</CardTitle>
+                      <CardTitle className="text-lg">{playlist.title}</CardTitle>
                       {playlist.description && (
                         <p className="text-sm text-muted-foreground mt-1">{playlist.description}</p>
                       )}
