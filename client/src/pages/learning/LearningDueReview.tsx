@@ -24,7 +24,7 @@
  * points learners at the track list and explains why.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/PullToRefreshIndicator";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
@@ -77,6 +79,9 @@ export default function LearningDueReview() {
     },
     { refetchOnWindowFocus: false },
   );
+  const handlePullRefresh = useCallback(async () => { await deckQ.refetch(); }, [deckQ]);
+  const { pullRef, isRefreshing, pullProgress, pullDistance } = usePullToRefresh({ onRefresh: handlePullRefresh });
+
   const { showAchievementToast } = useAchievementToast();
   const recordReview = trpc.learning.mastery.recordReview.useMutation({
     onError: (e) => toast.error(e.message),
@@ -271,7 +276,8 @@ export default function LearningDueReview() {
   return (
     <LearningShell title="Due Review">
       <SEOHead title="Due Review" description="SRS review across all exam tracks" />
-      <div className="mx-auto max-w-2xl p-6 space-y-4">
+      <div ref={pullRef as any} className="mx-auto max-w-2xl p-6 space-y-4">
+        <PullToRefreshIndicator pullDistance={pullDistance} pullProgress={pullProgress} isRefreshing={isRefreshing} />
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={() => navigate("/learning")}>
             <ArrowLeft className="h-4 w-4 mr-2" /> Back

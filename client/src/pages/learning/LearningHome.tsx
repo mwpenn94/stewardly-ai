@@ -18,7 +18,7 @@
  * - font-mono on metadata/counts
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -48,6 +48,8 @@ import {
 } from "./lib/recentTracks";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/PullToRefreshIndicator";
 import { BenchmarkGrid } from "@/components/InlineBenchmark";
 import { CascadeFlowIndicator, type CascadeStage } from "@/components/CascadeFlowIndicator";
 import { DisclosureSection } from "@/components/DisclosureSection";
@@ -88,6 +90,17 @@ export default function LearningHome() {
   const alertsQ = trpc.learning.licenses.alerts.useQuery(undefined, { enabled: !!isAuthenticated });
   const recsQ = trpc.learning.recommendations.forMe.useQuery(undefined, { enabled: !!isAuthenticated });
   const tracksQ = trpc.learning.content.listTracks.useQuery(undefined);
+
+  const handlePullRefresh = useCallback(async () => {
+    await Promise.all([
+      summaryQ.refetch(),
+      licensesQ.refetch(),
+      alertsQ.refetch(),
+      recsQ.refetch(),
+      tracksQ.refetch(),
+    ]);
+  }, [summaryQ, licensesQ, alertsQ, recsQ, tracksQ]);
+  const { pullRef, isRefreshing, pullProgress, pullDistance } = usePullToRefresh({ onRefresh: handlePullRefresh });
 
   const [streak, setStreak] = useState<StreakSummary>({
     current: 0, longest: 0, lastDay: null, status: "none",
@@ -141,7 +154,8 @@ export default function LearningHome() {
   return (
     <LearningShell title="Learning">
       <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
-      <div className="min-h-screen">
+      <div ref={pullRef as any} className="min-h-screen">
+        <PullToRefreshIndicator pullDistance={pullDistance} pullProgress={pullProgress} isRefreshing={isRefreshing} />
 
         {/* ─── GUEST SIGN-IN CTA ─── */}
         {isGuest && (

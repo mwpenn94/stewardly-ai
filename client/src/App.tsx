@@ -44,6 +44,7 @@ const EmbedCalculator = lazy(() => import("./pages/EmbedCalculator"));
 // Legacy shallow hub — replaced by Calculators (Unified Wealth Engine) at /wealth-engine
 // const WealthEngineHub = lazy(() => import("./pages/wealth-engine/WealthEngineHub"));
 const PortfolioRiskMetrics = lazy(() => import("./pages/wealth-engine/PortfolioRiskMetrics"));
+const ReferenceHub = lazy(() => import("./pages/wealth-engine/ReferenceHub"));
 // Code Chat (Round B5 admin UI)
 const CodeChatPage = lazy(() => import("./pages/CodeChat"));
 const UnifiedAI = lazy(() => import("./pages/UnifiedAI"));
@@ -399,6 +400,9 @@ function Router() {
         <Route path={"/changelog"} component={Changelog} />
 
         {/* C27: Redirects from absorbed Tier 1 pages to hubs */}
+         <Route path="/learning/study-groups"><Redirect to="/learning/groups" /></Route>
+        <Route path="/people/premium-finance"><Redirect to="/premium-finance-rates" /></Route>
+        <Route path="/wealth-engine/references">{() => <ReferenceHub />}</Route>
         <Route path={"/study"}><Redirect to="/chat" /></Route>
         <Route path={"/education"}><Redirect to="/chat" /></Route>
         <Route path={"/meetings"}><Redirect to="/relationships" /></Route>

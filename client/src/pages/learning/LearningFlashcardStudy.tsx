@@ -15,7 +15,7 @@
  * learners could never see the cards.
  */
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -24,6 +24,8 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/PullToRefreshIndicator";
 import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft,
@@ -113,6 +115,11 @@ export default function LearningFlashcardStudy() {
   const rawCards = flashcardsQ.data ?? [];
 
   // Chapter filter state
+  const handlePullRefresh = useCallback(async () => {
+    await Promise.all([flashcardsQ.refetch(), masteryQ.refetch()]);
+  }, [flashcardsQ, masteryQ]);
+  const { pullRef, isRefreshing, pullProgress, pullDistance } = usePullToRefresh({ onRefresh: handlePullRefresh });
+
   const chaptersQ = trpc.learning.content.listChapters.useQuery(
     { trackId: trackQ.data?.id ?? 0 },
     { enabled: !!trackQ.data?.id },
@@ -453,7 +460,8 @@ export default function LearningFlashcardStudy() {
 
   return (
     <LearningShell title={`${track.name} · Flashcards`}>
-      <div className="mx-auto max-w-2xl p-6 space-y-4">
+      <div ref={pullRef as any} className="mx-auto max-w-2xl p-6 space-y-4">
+        <PullToRefreshIndicator pullDistance={pullDistance} pullProgress={pullProgress} isRefreshing={isRefreshing} />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button

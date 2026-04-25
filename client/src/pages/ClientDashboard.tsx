@@ -159,7 +159,7 @@ export default function ClientDashboard() {
     enabled: isAuthenticated,
   });
   // @ts-expect-error — strict mode fix
-  const conversations = trpc.conversation.list.useQuery(undefined, {
+  const conversations = trpc.conversations.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
   const learningProgress = trpc.learning.mastery.summary.useQuery(undefined, {

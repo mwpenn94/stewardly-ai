@@ -24,6 +24,8 @@ import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { PullToRefreshIndicator } from "@/components/PullToRefreshIndicator";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useAudioCompanion, type AudioItem } from "@/components/AudioCompanion";
 import { Badge } from "@/components/ui/badge";
@@ -155,6 +157,11 @@ export default function HandsFreeStudy() {
     { enabled: !!isAuthenticated }
   );
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
+
+  const handlePullRefresh = useCallback(async () => {
+    await Promise.all([handsFreeQ.refetch(), summaryQ.refetch()]);
+  }, [handsFreeQ, summaryQ]);
+  const { pullRef, isRefreshing, pullProgress, pullDistance } = usePullToRefresh({ onRefresh: handlePullRefresh });
   const { showAchievementToast } = useAchievementToast();
   const recordReview = trpc.learning.mastery.recordReview.useMutation({
     onSuccess: (data) => {
@@ -518,7 +525,8 @@ export default function HandsFreeStudy() {
   return (
     <LearningShell>
       <SEOHead title="Hands-Free Study" description="Audio-based learning sessions" />
-      <div className="min-h-screen pb-36">
+      <div ref={pullRef as any} className="min-h-screen pb-36">
+        <PullToRefreshIndicator pullDistance={pullDistance} pullProgress={pullProgress} isRefreshing={isRefreshing} />
         {/* ── Header ── */}
         <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b border-border">
           <div className="flex items-center gap-3">

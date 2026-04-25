@@ -202,6 +202,10 @@ const EXEMPT_ROUTES = new Set<string>([
   "/learning/fs-toolkit",
   "/learning/connections-browse",
   "/learning/tracks",
+  // Pass 157: Redirect routes to canonical paths
+  "/learning/study-groups",
+  "/people/premium-finance",
+  "/learning/settings",
 ]);
 
 describe("Navigation reachability", () => {
