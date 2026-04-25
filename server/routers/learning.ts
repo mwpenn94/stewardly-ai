@@ -89,6 +89,7 @@ import {
   listNewQuestions,
   getNewItemCount,
   buildReviewSession,
+  getReviewForecast,
 } from "../services/learning/mastery";
 
 import { getDueReviewDeck } from "../services/learning/dueReview";
@@ -200,7 +201,18 @@ const masteryRouter = router({
         itemType: input.itemType,
         correct: input.correct,
       });
-      return { ok: row !== null };
+      // Also record streak activity and check for milestones
+      const streakResult = await recordStreakActivity(ctx.user.id);
+      const milestone = (streakResult as any)?.milestone ?? null;
+      return {
+        ok: row !== null,
+        milestone: milestone ? {
+          days: milestone.days,
+          label: milestone.label,
+          icon: milestone.icon,
+          description: milestone.description,
+        } : null,
+      };
     }),
 
   syncBatch: protectedProcedure
@@ -334,6 +346,12 @@ const masteryRouter = router({
         limit: input?.limit,
         kind: input?.kind,
       });
+    }),
+  /** SRS forecast — 30-day predicted review load timeline */
+  forecast: protectedProcedure
+    .input(z.object({ days: z.number().int().min(7).max(90).default(30) }).optional())
+    .query(async ({ ctx, input }) => {
+      return getReviewForecast(ctx.user.id, input?.days ?? 30);
     }),
 });
 

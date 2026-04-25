@@ -31,6 +31,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
+import { useAchievementToast } from "@/components/AchievementToast";
 import BookmarkButton from "@/components/BookmarkButton";
 
 /* ── types ── */
@@ -106,7 +107,14 @@ export default function DisciplineDeepDive() {
   const casesQ = trpc.learning.content.listCases.useQuery(undefined, { enabled: !!isAuthenticated, retry: false });
   const fsAppsQ = trpc.learning.content.listFsApplications.useQuery(undefined, { enabled: !!isAuthenticated, retry: false });
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
-  const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const { showAchievementToast } = useAchievementToast();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({
+    onSuccess: (data) => {
+      if (data?.milestone) {
+        showAchievementToast({ icon: data.milestone.icon, title: data.milestone.label, description: data.milestone.description });
+      }
+    },
+  });
 
   const definitions: DefinitionItem[] = useMemo(() => {
     return (defsQ.data ?? []).map((d: any) => ({

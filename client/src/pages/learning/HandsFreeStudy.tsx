@@ -24,6 +24,7 @@ import {
   Calculator, FileText, Briefcase, LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAchievementToast } from "@/components/AchievementToast";
 import { motion, AnimatePresence } from "framer-motion";
 
 type SectionType = "definitions" | "formulas" | "cases" | "applications";
@@ -113,7 +114,14 @@ export default function HandsFreeStudy() {
   const defsQ = trpc.learning.content.listDefinitions.useQuery({ limit: 200 }, { enabled: !!isAuthenticated });
   const reviewQ = trpc.learning.mastery.dueReview.useQuery({ limit: 50, newQuota: 20 }, { enabled: !!isAuthenticated });
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
-  const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const { showAchievementToast } = useAchievementToast();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({
+    onSuccess: (data) => {
+      if (data?.milestone) {
+        showAchievementToast({ icon: data.milestone.icon, title: data.milestone.label, description: data.milestone.description });
+      }
+    },
+  });
 
   const toggleSection = useCallback((type: SectionType) => {
     setEnabledSections(prev =>

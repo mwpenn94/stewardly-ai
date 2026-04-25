@@ -24,6 +24,7 @@ import {
   ThumbsUp, ThumbsDown, Star, LogIn, Check, X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAchievementToast } from "@/components/AchievementToast";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Difficulty = "easy" | "medium" | "hard";
@@ -81,7 +82,14 @@ export default function AIQuizPage() {
   const disciplinesQ = trpc.learning.content.listDisciplines.useQuery(undefined, { enabled: !!isAuthenticated });
   const existingQ = trpc.learningSocial.aiQuiz.list.useQuery({ limit: 50 }, { enabled: !!isAuthenticated });
   const createMut = trpc.learningSocial.aiQuiz.create.useMutation();
-  const recordReview = trpc.learning.mastery.recordReview.useMutation();
+  const { showAchievementToast } = useAchievementToast();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({
+    onSuccess: (data) => {
+      if (data?.milestone) {
+        showAchievementToast({ icon: data.milestone.icon, title: data.milestone.label, description: data.milestone.description });
+      }
+    },
+  });
 
   const disciplines = useMemo(() => (disciplinesQ.data ?? []).map((d: any) => d.name), [disciplinesQ.data]);
 

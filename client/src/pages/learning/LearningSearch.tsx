@@ -63,6 +63,7 @@ export default function LearningSearch() {
   const [, navigate] = useLocation();
   const [raw, setRaw] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   // 200ms debounce — long enough to avoid thrashing the API,
   // short enough to feel instant to a typing user.
@@ -150,30 +151,55 @@ export default function LearningSearch() {
               )}
             </div>
             {enabled && counts.total > 0 && (
-              <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-                <ListFilter className="h-3 w-3" aria-hidden />
-                <span>
-                  {counts.total} result{counts.total === 1 ? "" : "s"}
-                </span>
+              <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground flex-wrap">
+                <ListFilter className="h-3 w-3 shrink-0" aria-hidden />
+                <button
+                  onClick={() => setActiveFilter(null)}
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${
+                    !activeFilter ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                  }`}
+                >
+                  All ({counts.total})
+                </button>
                 {counts.definitions > 0 && (
-                  <Badge variant="outline" className="text-[10px]">
-                    {counts.definitions} defs
-                  </Badge>
+                  <button
+                    onClick={() => setActiveFilter(activeFilter === "definitions" ? null : "definitions")}
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${
+                      activeFilter === "definitions" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    Definitions ({counts.definitions})
+                  </button>
                 )}
                 {counts.flashcards > 0 && (
-                  <Badge variant="outline" className="text-[10px]">
-                    {counts.flashcards} cards
-                  </Badge>
+                  <button
+                    onClick={() => setActiveFilter(activeFilter === "flashcards" ? null : "flashcards")}
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${
+                      activeFilter === "flashcards" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    Flashcards ({counts.flashcards})
+                  </button>
                 )}
                 {counts.tracks > 0 && (
-                  <Badge variant="outline" className="text-[10px]">
-                    {counts.tracks} tracks
-                  </Badge>
+                  <button
+                    onClick={() => setActiveFilter(activeFilter === "tracks" ? null : "tracks")}
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${
+                      activeFilter === "tracks" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    Tracks ({counts.tracks})
+                  </button>
                 )}
                 {counts.questions > 0 && (
-                  <Badge variant="outline" className="text-[10px]">
-                    {counts.questions} questions
-                  </Badge>
+                  <button
+                    onClick={() => setActiveFilter(activeFilter === "questions" ? null : "questions")}
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-colors cursor-pointer ${
+                      activeFilter === "questions" ? "bg-primary text-primary-foreground" : "bg-muted/50 hover:bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    Questions ({counts.questions})
+                  </button>
                 )}
               </div>
             )}
@@ -206,7 +232,13 @@ export default function LearningSearch() {
           </div>
         ) : (
           <ResultGroups
-            grouped={grouped}
+            grouped={activeFilter ? {
+              definitions: activeFilter === "definitions" ? grouped.definitions : [],
+              flashcards: activeFilter === "flashcards" ? grouped.flashcards : [],
+              tracks: activeFilter === "tracks" ? grouped.tracks : [],
+              questions: activeFilter === "questions" ? grouped.questions : [],
+              other: !activeFilter ? grouped.other : [],
+            } : grouped}
             query={debounced}
             trackById={trackById}
             onNavigate={navigate}

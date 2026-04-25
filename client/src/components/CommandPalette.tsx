@@ -268,6 +268,12 @@ export function CommandPalette() {
     { enabled: isAuthenticated && debouncedQuery.length >= 3 },
   );
 
+  // Search learning content (definitions, flashcards, tracks)
+  const learningSearch = trpc.learning.content.search.useQuery(
+    { query: debouncedQuery, limit: 5 },
+    { enabled: isAuthenticated && debouncedQuery.length >= 2 },
+  );
+
   // ── Keyboard listener ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -542,6 +548,36 @@ export function CommandPalette() {
                 >
                   <MessageSquare className="w-4 h-4 text-muted-foreground" />
                   <span className="truncate">{conv.title || "Untitled conversation"}</span>
+                  <CommandShortcut>
+                    <ArrowRight className="w-3 h-3" />
+                  </CommandShortcut>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </>
+        )}
+
+        {/* Learning content results */}
+        {isAuthenticated && (learningSearch.data?.length ?? 0) > 0 && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading="Learning Content">
+              {learningSearch.data!.slice(0, 5).map((item: any) => (
+                <CommandItem
+                  key={`learn:${item.type}:${item.id}`}
+                  value={`learn:${item.type}:${item.id}`}
+                  keywords={[item.title, item.snippet]}
+                  onSelect={() => {
+                    setOpen(false);
+                    if (item.type === "track") navigate(`/learning/tracks/${item.id}`);
+                    else navigate(`/learning/search?q=${encodeURIComponent(debouncedQuery)}`);
+                  }}
+                >
+                  <GraduationCap className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate text-sm">{item.title}</span>
+                    <span className="truncate text-[10px] text-muted-foreground">{item.type}</span>
+                  </div>
                   <CommandShortcut>
                     <ArrowRight className="w-3 h-3" />
                   </CommandShortcut>

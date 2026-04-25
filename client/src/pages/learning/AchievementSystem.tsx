@@ -212,7 +212,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
   const inProgress = d.achievements.filter(a => a.progress > 0 && a.progress < 100);
 
   // G1: Fire feedback + celebration toast when new achievements are earned
-  const { showAchievement } = useAchievementToast();
+  const { showAchievementToast } = useAchievementToast();
   const prevEarnedRef = useRef<number>(0);
   useEffect(() => {
     if (earned.length > prevEarnedRef.current && prevEarnedRef.current > 0) {
@@ -222,7 +222,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
       if (newest?.category === "streak") sendFeedback("learning.streak_milestone", { streak: d.streak.current });
       // Fire KE-style celebration toast
       if (newest) {
-        showAchievement(newest.title, newest.description);
+        showAchievementToast({ icon: "🏆", title: newest.title, description: newest.description });
       }
     }
     prevEarnedRef.current = earned.length;

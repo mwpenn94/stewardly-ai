@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { useAchievementToast } from "@/components/AchievementToast";
 import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 
@@ -75,7 +76,19 @@ export default function LearningDueReview() {
     },
     { refetchOnWindowFocus: false },
   );
-  const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
+  const { showAchievementToast } = useAchievementToast();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({
+    onError: (e) => toast.error(e.message),
+    onSuccess: (data) => {
+      if (data?.milestone) {
+        showAchievementToast({
+          icon: data.milestone.icon,
+          title: data.milestone.label,
+          description: data.milestone.description,
+        });
+      }
+    },
+  });
   const studySession = useStudySession({ discipline: "due-review" });
 
   const items = deckQ.data?.items ?? [];

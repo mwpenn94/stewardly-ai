@@ -604,12 +604,70 @@ export async function assessTrackReadiness(
     }
   }
 
-  const scored = computeReadiness({
+   const scored = computeReadiness({
     expectedKeys,
     keyToLabel,
     masteryRows,
     legacyPrefix: `track:${trackSlug}:`,
   });
-
   return { trackSlug, ...scored };
+}
+
+// ─── SRS Review Forecast ──────────────────────────────────────────────────
+/**
+ * Returns a 30-day forecast of upcoming review items grouped by date.
+ * Each bucket contains the count of items whose `nextDue` falls on that day.
+ * Items with no `nextDue` are counted as "overdue" (day 0).
+ */
+export interface ForecastBucket {
+  date: string;       // YYYY-MM-DD
+  label: string;      // "Apr 25" display label
+  dueCount: number;   // items due that day
+  cumulative: number; // running total
+}
+
+export async function getReviewForecast(userId: number, days = 30): Promise<ForecastBucket[]> {
+  const items = await getUserMastery(userId);
+  const now = new Date();
+  const msPerDay = 86_400_000;
+
+  // Build a map of date → count
+  const bucketMap = new Map<string, number>();
+
+  // Initialize all days
+  for (let i = 0; i < days; i++) {
+    const d = new Date(now.getTime() + i * msPerDay);
+    const key = d.toISOString().split("T")[0];
+    bucketMap.set(key, 0);
+  }
+
+  const todayStr = now.toISOString().split("T")[0];
+  const endDate = new Date(now.getTime() + days * msPerDay);
+
+  for (const item of items) {
+    if (!item.nextDue) continue;
+    const dueDate = new Date(item.nextDue as any);
+    const dueStr = dueDate.toISOString().split("T")[0];
+
+    if (dueDate <= now) {
+      // Overdue — count in today's bucket
+      bucketMap.set(todayStr, (bucketMap.get(todayStr) ?? 0) + 1);
+    } else if (dueDate <= endDate) {
+      bucketMap.set(dueStr, (bucketMap.get(dueStr) ?? 0) + 1);
+    }
+  }
+
+  // Convert to sorted array with cumulative totals
+  const result: ForecastBucket[] = [];
+  let cumulative = 0;
+  for (let i = 0; i < days; i++) {
+    const d = new Date(now.getTime() + i * msPerDay);
+    const key = d.toISOString().split("T")[0];
+    const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const dueCount = bucketMap.get(key) ?? 0;
+    cumulative += dueCount;
+    result.push({ date: key, label, dueCount, cumulative });
+  }
+
+  return result;
 }

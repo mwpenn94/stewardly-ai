@@ -23,7 +23,7 @@ import {
   BookOpen, Layers, Headphones, HelpCircle, Link2,
   Flame, ChevronLeft, ChevronRight, Menu, Settings,
   GraduationCap, Beaker, Trophy, BarChart3, Users,
-  Bookmark, ListMusic, FileDown, History,
+  Bookmark, ListMusic, FileDown, History, Bell,
 } from "lucide-react";
 import {
   loadStreakFromStorage,
@@ -132,6 +132,19 @@ function SidebarContent({
             )}
           </div>
         </Link>
+        {/* Quick search bar — triggers global Ctrl+K command palette */}
+        {!collapsed && (
+          <button
+            onClick={() => {
+              window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));
+            }}
+            className="mt-3 w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-muted/40 hover:bg-muted/70 border border-border/30 text-xs text-muted-foreground transition-colors cursor-pointer group"
+          >
+            <Search className="h-3 w-3 shrink-0 group-hover:text-foreground transition-colors" />
+            <span className="flex-1 text-left truncate">Search content…</span>
+            <kbd className="hidden sm:inline text-[9px] font-mono px-1 py-0.5 rounded bg-background/50 border border-border/30">⌘K</kbd>
+          </button>
+        )}
       </div>
 
       {/* Navigation sections */}
@@ -167,6 +180,38 @@ function SidebarContent({
           </div>
         ))}
       </ScrollArea>
+
+      {/* Due review notification */}
+      {mastery.dueNow > 0 && (
+        <div className="border-t border-border/30 px-3 py-2">
+          {!collapsed ? (
+            <Link href="/learning/due-review" onClick={onNavigate}>
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-colors cursor-pointer">
+                <div className="relative">
+                  <Bell className="h-3.5 w-3.5 text-amber-500" />
+                  <span className="absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-amber-500 text-[8px] text-white flex items-center justify-center font-bold">
+                    {mastery.dueNow > 9 ? "9+" : mastery.dueNow}
+                  </span>
+                </div>
+                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                  {mastery.dueNow} item{mastery.dueNow === 1 ? "" : "s"} due for review
+                </span>
+              </div>
+            </Link>
+          ) : (
+            <Link href="/learning/due-review" onClick={onNavigate}>
+              <div className="flex flex-col items-center gap-0.5 cursor-pointer" title={`${mastery.dueNow} items due`}>
+                <div className="relative">
+                  <Bell className="h-4 w-4 text-amber-500" />
+                  <span className="absolute -top-1 -right-1.5 w-3 h-3 rounded-full bg-amber-500 text-[8px] text-white flex items-center justify-center font-bold">
+                    {mastery.dueNow > 9 ? "9+" : mastery.dueNow}
+                  </span>
+                </div>
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Footer — streak + mastery stats */}
       <div className="border-t border-border/30 px-3 py-3 space-y-1.5">

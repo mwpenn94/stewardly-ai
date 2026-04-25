@@ -101,6 +101,77 @@ function formatDuration(mins: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+/* ── SRS Review Forecast Chart ── */
+function ForecastChart() {
+  const forecastQ = trpc.learning.mastery.forecast.useQuery(undefined, { staleTime: 60_000 });
+  const data = forecastQ.data;
+  if (!data || data.length === 0) return null;
+
+  const maxDue = Math.max(...data.map(d => d.dueCount), 1);
+  const totalUpcoming = data.reduce((s, d) => s + d.dueCount, 0);
+  const peakDay = data.reduce((a, b) => b.dueCount > a.dueCount ? b : a, data[0]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.78 }}
+      className="bg-card border border-border rounded-xl p-5 mb-8"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Review Forecast</h3>
+          <span className="text-[10px] font-mono text-muted-foreground ml-2">Next 30 days</span>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span>{totalUpcoming} upcoming</span>
+          {peakDay && <span>Peak: {peakDay.label} ({peakDay.dueCount})</span>}
+        </div>
+      </div>
+      <div className="h-48">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+              interval={Math.floor(data.length / 7)}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
+            <Tooltip
+              contentStyle={TOOLTIP_STYLE}
+              formatter={(value: number) => [`${value} items`, "Due"]}
+              labelFormatter={(label) => `${label}`}
+            />
+            <Bar dataKey="dueCount" radius={[3, 3, 0, 0]}>
+              {data.map((entry, i) => (
+                <Cell
+                  key={i}
+                  fill={entry.dueCount === 0 ? "var(--muted)" : entry.dueCount >= maxDue * 0.8 ? "#EF4444" : entry.dueCount >= maxDue * 0.5 ? "#F59E0B" : "#8B5CF6"}
+                  opacity={entry.dueCount === 0 ? 0.3 : 0.85}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex items-center gap-4 mt-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ background: "#8B5CF6" }} /> Light load</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ background: "#F59E0B" }} /> Moderate</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm" style={{ background: "#EF4444" }} /> Heavy</span>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function StudyAnalytics() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
@@ -763,6 +834,9 @@ export default function StudyAnalytics() {
             </motion.div>
           </div>
         )}
+
+        {/* ── SRS Review Forecast ── */}
+        <ForecastChart />
 
         {/* ── Content Breakdown ── */}
         <motion.div

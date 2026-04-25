@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
+import { useAchievementToast } from "@/components/AchievementToast";
 import {
   buildStudyDeck,
   buildMasteryLookup,
@@ -72,7 +73,15 @@ export default function LearningFlashcardStudy() {
   const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, { enabled: isAuthenticated,
     refetchOnWindowFocus: false,
   });
-  const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
+  const { showAchievementToast } = useAchievementToast();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({
+    onError: (e) => toast.error(e.message),
+    onSuccess: (data) => {
+      if (data?.milestone) {
+        showAchievementToast({ icon: data.milestone.icon, title: data.milestone.label, description: data.milestone.description });
+      }
+    },
+  });
   const pil = usePlatformIntelligence();
 
   const track = trackQ.data;

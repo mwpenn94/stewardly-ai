@@ -104,11 +104,57 @@ export async function recordActivity(userId: number): Promise<LearningStreak | n
 
     const [updated] = await db.select().from(learningStreaks)
       .where(eq(learningStreaks.id, streak.id));
-    return updated ?? null;
+
+    // Detect milestone
+    const milestone = detectStreakMilestone(newCurrentStreak, streak.currentStreak);
+    if (milestone && updated) {
+      log.info({ userId, streak: newCurrentStreak, milestone: milestone.label }, "Streak milestone reached");
+    }
+
+    return {
+      ...(updated ?? null),
+      milestone: milestone ?? undefined,
+    };
   } catch (err) {
     log.warn({ err: String(err) }, "recordActivity failed");
     return null;
   }
+}
+
+// ─── Streak Milestone Detection ────────────────────────────────────────────────
+
+const STREAK_MILESTONES = [
+  { days: 3,   label: "3-Day Streak",    icon: "🔥", description: "You're building momentum!" },
+  { days: 7,   label: "Week Warrior",    icon: "⭐", description: "A full week of consistent learning!" },
+  { days: 14,  label: "Fortnight Focus", icon: "💪", description: "Two weeks of dedication!" },
+  { days: 21,  label: "Habit Formed",    icon: "🏆", description: "21 days — this is now a habit!" },
+  { days: 30,  label: "Monthly Master",  icon: "💎", description: "A full month of daily learning!" },
+  { days: 50,  label: "Half Century",    icon: "🚀", description: "50 days of unstoppable progress!" },
+  { days: 100, label: "Century Club",    icon: "👑", description: "100 days — truly exceptional!" },
+  { days: 365, label: "Year of Growth",  icon: "🌟", description: "A full year of daily learning!" },
+];
+
+export interface StreakMilestone {
+  days: number;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+/**
+ * Pure: checks if the new streak count crosses a milestone boundary.
+ * Returns the milestone if crossed, null otherwise.
+ */
+export function detectStreakMilestone(
+  newStreak: number,
+  previousStreak: number,
+): StreakMilestone | null {
+  for (const m of STREAK_MILESTONES) {
+    if (newStreak >= m.days && previousStreak < m.days) {
+      return m;
+    }
+  }
+  return null;
 }
 
 /** Update streak settings (daily goal, nudge preferences) */

@@ -48,6 +48,7 @@ import {
   Flame,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useAchievementToast } from "@/components/AchievementToast";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { recordStudyEvent } from "@/lib/dailyStreak";
 import { KeyboardHelpOverlay } from "@/components/learning/KeyboardHelpOverlay";
@@ -99,7 +100,15 @@ export default function LearningReview() {
     newQuota: 10,
     studyAhead,
   });
-  const recordReview = trpc.learning.mastery.recordReview.useMutation({ onError: (e) => toast.error(e.message) });
+  const { showAchievementToast } = useAchievementToast();
+  const recordReview = trpc.learning.mastery.recordReview.useMutation({
+    onError: (e) => toast.error(e.message),
+    onSuccess: (data) => {
+      if (data?.milestone) {
+        showAchievementToast({ icon: data.milestone.icon, title: data.milestone.label, description: data.milestone.description });
+      }
+    },
+  });
   const celebrate = useCelebration();
 
   // Session state
