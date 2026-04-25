@@ -9265,3 +9265,9 @@
 
 ## Pass 152 Hotfix: Deployment Build Fix
 - [x] Fix LearningSettings.tsx import — replaced non-existent @/hooks/use-toast with sonner toast (matching project convention)
+
+## Pass 153: Recursive Optimization — Expert Assessment
+- [x] GAP-1: SRS Settings Enforcement — dueReview reads srs_daily_review_cap and srs_new_card_quota from learningSettings as dynamic defaults
+- [x] GAP-2: Pomodoro Session Logging — PomodoroTimer records completed work cycles via learningSocial.studySessions.record with duration tracking
+- [x] GAP-3: StudyAnalytics Export Button — Download button in header links to existing /learning/export page
+- [x] GAP-4: PWA Offline Study Enhancement — Separate LEARNING_CACHE with stale-while-revalidate for all learning tRPC procedures

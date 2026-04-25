@@ -1,15 +1,41 @@
 /**
- * P0-6: PWA Offline Service Worker
+ * PWA Offline Service Worker — Pass 153 Enhanced
  *
  * Caching strategy:
  * - App shell (HTML, CSS, JS): Cache-first with network fallback
- * - API calls: Network-first with cache fallback (stale-while-revalidate)
+ * - Learning API calls: Stale-while-revalidate (aggressive caching for flashcards/quizzes)
+ * - Other API calls: Network-first with cache fallback
  * - Static assets: Cache-first
  * - Offline fallback page for navigation requests
  */
 
-const CACHE_NAME = "stewardly-v1";
+const CACHE_NAME = "stewardly-v2";
+const LEARNING_CACHE = "stewardly-learning-v1";
 const OFFLINE_URL = "/offline.html";
+
+// Learning-related tRPC procedure patterns to cache aggressively
+const LEARNING_PATTERNS = [
+  "learning.content.",
+  "learning.mastery.getMine",
+  "learning.mastery.summary",
+  "learning.mastery.dueReview",
+  "learning.mastery.dueNow",
+  "learning.mastery.dueItems",
+  "learning.mastery.dueReviewDeck",
+  "learning.recommendations",
+  "learning.activityCalendar",
+  "learning.studyAnalytics",
+  "learningSocial.settings.",
+];
+
+function isLearningRequest(url) {
+  const pathname = url.pathname;
+  if (!pathname.includes("/api/trpc/")) return false;
+  const procMatch = pathname.match(/\/api\/trpc\/(.+)/);
+  if (!procMatch) return false;
+  const procName = decodeURIComponent(procMatch[1]);
+  return LEARNING_PATTERNS.some((p) => procName.includes(p));
+}
 
 // App shell resources to pre-cache on install
 const PRECACHE_URLS = [
@@ -29,13 +55,14 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean old caches
+// Activate: clean old caches (keep current + learning)
 self.addEventListener("activate", (event) => {
+  const keepCaches = new Set([CACHE_NAME, LEARNING_CACHE]);
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME)
+          .filter((name) => !keepCaches.has(name))
           .map((name) => caches.delete(name))
       );
     })
@@ -54,12 +81,29 @@ self.addEventListener("fetch", (event) => {
   // Skip Chrome extensions and other non-http(s) requests
   if (!url.protocol.startsWith("http")) return;
 
-  // API requests: network-first with cache fallback
+  // Learning API requests: stale-while-revalidate (aggressive caching)
+  if (url.pathname.startsWith("/api/") && isLearningRequest(url)) {
+    event.respondWith(
+      caches.open(LEARNING_CACHE).then((cache) => {
+        return cache.match(request).then((cached) => {
+          const fetchPromise = fetch(request)
+            .then((response) => {
+              if (response.ok) cache.put(request, response.clone());
+              return response;
+            })
+            .catch(() => cached);
+          return cached || fetchPromise;
+        });
+      })
+    );
+    return;
+  }
+
+  // Other API requests: network-first with cache fallback
   if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache successful GET API responses
           if (response.ok) {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {

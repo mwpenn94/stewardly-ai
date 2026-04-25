@@ -19,7 +19,9 @@ import {
   TrendingUp, Target, Flame, BookOpen, Zap,
   Calendar, CheckCircle2, Lightbulb, Gauge,
   Award, Activity, LogIn, ArrowUp, ArrowDown, Minus,
+  Download,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -509,6 +511,14 @@ export default function StudyAnalytics() {
             <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
               Study Analytics
             </h1>
+            <div className="ml-auto">
+              <Link href="/learning/export">
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                  <Download className="w-3.5 h-3.5" />
+                  Export Report
+                </Button>
+              </Link>
+            </div>
           </div>
           <p className="text-sm text-muted-foreground ml-12">
             Track your learning progress, identify strengths, and optimize your study strategy.

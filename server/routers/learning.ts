@@ -270,8 +270,27 @@ const masteryRouter = router({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const limit = input?.limit ?? 20;
-      const newQuota = input?.newQuota ?? 10;
+      // --- SRS Settings Enforcement (Pass 153) ---
+      // Read user's saved settings as dynamic defaults when client doesn't override
+      let settingsLimit = 20;
+      let settingsNewQuota = 10;
+      try {
+        const { getDb: getDbFn } = await import("../db");
+        const { learningSettings } = await import("../../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        const db = await getDbFn();
+        if (db) {
+          const rows = await db.select().from(learningSettings)
+            .where(eq(learningSettings.userId, ctx.user.id));
+          for (const r of rows) {
+            const val = Number(r.settingValue);
+            if (r.settingKey === "srs_daily_review_cap" && val > 0 && val <= 100) settingsLimit = val;
+            if (r.settingKey === "srs_new_card_quota" && val >= 0 && val <= 100) settingsNewQuota = val;
+          }
+        }
+      } catch { /* fallback to defaults */ }
+      const limit = input?.limit ?? settingsLimit;
+      const newQuota = input?.newQuota ?? settingsNewQuota;
       const studyAhead = input?.studyAhead ?? false;
 
       // 1. Hydrate the due queue (or skip it in studyAhead mode).

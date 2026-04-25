@@ -1,15 +1,22 @@
 /**
  * PomodoroTimer.tsx — Floating Pomodoro timer widget
  *
- * Pass 36 / Pass 38 fix. A draggable floating timer that supports work/break cycles.
+ * Pass 36 / Pass 38 fix / Pass 153 session logging.
+ * A draggable floating timer that supports work/break cycles.
  * Can be toggled from any learning page. Persists across navigation.
  *
  * When used globally (no onClose prop), manages its own visibility state.
  * When used with onClose prop, delegates close behavior to parent.
+ *
+ * Pass 153: Now logs completed work cycles as study sessions via
+ * learningSocial.studySessions.record so the activity heatmap populates.
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 import {
   Timer, Play, Pause, RotateCcw, X,
   Coffee, Brain, ChevronDown, ChevronUp,
@@ -42,6 +49,14 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
   const [isMinimized, setIsMinimized] = useState(true);
   const [isHidden, setIsHidden] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const workStartRef = useRef<number>(Date.now());
+
+  const { isAuthenticated } = useAuth();
+  const recordSession = trpc.learningSocial.studySessions.record.useMutation({
+    onSuccess: () => {
+      toast.success("Pomodoro session logged!", { duration: 2000 });
+    },
+  });
 
   const handleClose = useCallback(() => {
     if (onClose) {
@@ -50,6 +65,19 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
       setIsHidden(true);
     }
   }, [onClose]);
+
+  // Log a completed work cycle as a study session
+  const logWorkCycle = useCallback(() => {
+    if (!isAuthenticated) return;
+    const elapsed = Math.floor((Date.now() - workStartRef.current) / 1000);
+    const durationMinutes = Math.max(1, Math.round(elapsed / 60));
+    recordSession.mutate({
+      discipline: "pomodoro",
+      durationMinutes,
+      itemsStudied: 1,
+      itemsMastered: 0,
+    });
+  }, [isAuthenticated, recordSession]);
 
   // Timer logic
   useEffect(() => {
@@ -92,10 +120,12 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
     };
   }, [isRunning, secondsLeft]);
 
-  // Auto-advance phases
+  // Auto-advance phases + log work cycles
   useEffect(() => {
     if (secondsLeft === 0 && !isRunning) {
       if (phase === "work") {
+        // Work cycle just completed — log it as a study session
+        logWorkCycle();
         const newCycles = completedCycles + 1;
         setCompletedCycles(newCycles);
         if (newCycles % 4 === 0) {
@@ -108,9 +138,18 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
       } else {
         setPhase("work");
         setSecondsLeft(DURATIONS.work);
+        // Reset work start time for the next cycle
+        workStartRef.current = Date.now();
       }
     }
-  }, [secondsLeft, isRunning, phase, completedCycles]);
+  }, [secondsLeft, isRunning, phase, completedCycles, logWorkCycle]);
+
+  // Track when a work phase starts running
+  useEffect(() => {
+    if (isRunning && phase === "work") {
+      workStartRef.current = Date.now();
+    }
+  }, [isRunning, phase]);
 
   const toggleTimer = useCallback(() => setIsRunning((r) => !r), []);
   const resetTimer = useCallback(() => {
@@ -177,6 +216,11 @@ export function PomodoroTimer({ onClose }: PomodoroTimerProps = {}) {
         <div className="flex items-center gap-1.5">
           <Timer className="h-4 w-4 text-primary" />
           <span className="text-xs font-medium">Pomodoro</span>
+          {completedCycles > 0 && (
+            <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+              {completedCycles} done
+            </Badge>
+          )}
         </div>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsMinimized(true)}>
