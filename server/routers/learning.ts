@@ -90,6 +90,7 @@ import {
   getNewItemCount,
   buildReviewSession,
   getReviewForecast,
+  previewIntervals,
 } from "../services/learning/mastery";
 
 import { getDueReviewDeck } from "../services/learning/dueReview";
@@ -192,6 +193,7 @@ const masteryRouter = router({
         itemKey: z.string().min(1).max(255),
         itemType: z.string().min(1).max(64),
         correct: z.boolean(),
+        difficulty: z.enum(["again", "hard", "good", "easy"]).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -200,6 +202,7 @@ const masteryRouter = router({
         itemKey: input.itemKey,
         itemType: input.itemType,
         correct: input.correct,
+        difficulty: input.difficulty,
       });
       // Also record streak activity and check for milestones
       const streakResult = await recordStreakActivity(ctx.user.id);
@@ -371,6 +374,13 @@ const masteryRouter = router({
     .input(z.object({ days: z.number().int().min(7).max(90).default(30) }).optional())
     .query(async ({ ctx, input }) => {
       return getReviewForecast(ctx.user.id, input?.days ?? 30);
+    }),
+
+  /** Preview SRS intervals for all 4 difficulty levels at a given confidence (Pass 154) */
+  previewIntervals: publicProcedure
+    .input(z.object({ confidence: z.number().int().min(0).max(5) }))
+    .query(({ input }) => {
+      return previewIntervals(input.confidence);
     }),
 });
 

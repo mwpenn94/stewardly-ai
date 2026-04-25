@@ -130,8 +130,9 @@ export default function LearningDueReview() {
     setSelected(null);
   };
 
-  const submitFlashcard = async (ok: boolean) => {
+  const submitFlashcard = async (difficulty: "again" | "hard" | "good" | "easy") => {
     if (!current || current.kind !== "flashcard") return;
+    const ok = difficulty !== "again";
     studySession.recordItem();
     if (ok) studySession.recordMastery();
     recordReview
@@ -139,6 +140,7 @@ export default function LearningDueReview() {
         itemKey: current.itemKey,
         itemType: "flashcard",
         correct: ok,
+        difficulty,
       })
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
@@ -147,6 +149,7 @@ export default function LearningDueReview() {
     recordStudyNow();
     // Pass 16 — PIL feedback dispatch (G1/G8).
     sendFeedback(ok ? "learning.answer_correct" : "learning.answer_incorrect");
+    sendFeedback("learning.srs_rating", { rating: difficulty });
 
     if (ok) setCorrect((c) => c + 1);
     else setIncorrect((c) => c + 1);
@@ -362,8 +365,8 @@ export default function LearningDueReview() {
                 <FlashcardCard
                   term={current.flashcard.term}
                   definition={current.flashcard.definition}
-                  onCorrect={() => submitFlashcard(true)}
-                  onIncorrect={() => submitFlashcard(false)}
+                  confidence={(current as any).confidence ?? 0}
+                  onDifficulty={submitFlashcard}
                   disabled={recordReview.isPending}
                 />
               ) : (
@@ -390,19 +393,75 @@ export default function LearningDueReview() {
   );
 }
 
-// ─── Flashcard card ───────────────────────────────────────────────────────
+// ─── Difficulty button config (Pass 154) ────────────────────────────────────
+
+type DifficultyLevel = "again" | "hard" | "good" | "easy";
+
+const DIFFICULTY_CONFIG: Record<DifficultyLevel, {
+  label: string;
+  color: string;
+  darkColor: string;
+}> = {
+  again: {
+    label: "Again",
+    color: "border-rose-300 text-rose-700 hover:bg-rose-50 hover:text-rose-800",
+    darkColor: "dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950",
+  },
+  hard: {
+    label: "Hard",
+    color: "border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800",
+    darkColor: "dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950",
+  },
+  good: {
+    label: "Good",
+    color: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800",
+    darkColor: "dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950",
+  },
+  easy: {
+    label: "Easy",
+    color: "border-sky-300 text-sky-700 hover:bg-sky-50 hover:text-sky-800",
+    darkColor: "dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-950",
+  },
+};
+
+/** Pure interval preview — mirrors server SRS logic for instant UI labels */
+const SRS_INTERVALS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
+const DIFF_MULT: Record<DifficultyLevel, number> = { again: 0, hard: 0.5, good: 1.0, easy: 1.5 };
+
+function previewLabel(confidence: number, difficulty: DifficultyLevel): string {
+  let conf = Math.max(0, Math.min(5, confidence));
+  if (difficulty === "again") conf = 0;
+  else conf = Math.min(5, conf + 1);
+  const baseDays = SRS_INTERVALS[conf] ?? 1;
+  const days = Math.max(0, baseDays * DIFF_MULT[difficulty]);
+  if (days < 1 / 1440) return "<1m";
+  if (days < 1 / 24) return `${Math.round(days * 24 * 60)}m`;
+  if (days < 1) return `${Math.round(days * 24)}h`;
+  if (days < 14) return `${Math.round(days)}d`;
+  if (days < 60) return `${Math.round(days / 7)}w`;
+  return `${Math.round(days / 30)}mo`;
+}
+
+const DIFF_ICONS: Record<DifficultyLevel, React.ReactNode> = {
+  again: <RotateCw className="h-3.5 w-3.5" />,
+  hard: <X className="h-3.5 w-3.5" />,
+  good: <Check className="h-3.5 w-3.5" />,
+  easy: <Sparkles className="h-3.5 w-3.5" />,
+};
+
+// ─── Flashcard card with 4-button difficulty (Pass 154) ─────────────────────
 
 function FlashcardCard({
   term,
   definition,
-  onCorrect,
-  onIncorrect,
+  confidence,
+  onDifficulty,
   disabled,
 }: {
   term: string;
   definition: string;
-  onCorrect: () => void;
-  onIncorrect: () => void;
+  confidence: number;
+  onDifficulty: (d: DifficultyLevel) => void;
   disabled?: boolean;
 }) {
   const [flipped, setFlipped] = useState(false);
@@ -412,15 +471,26 @@ function FlashcardCard({
     setFlipped(false);
   }, [term, definition]);
 
-  // Pass 6 (build loop) — keyboard accessibility. The flashcard is
-  // an interactive surface; treat it as a button so screen readers
-  // and keyboard users can flip it. Space/Enter both flip.
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === " " || e.key === "Enter") {
-      e.preventDefault();
-      setFlipped((f) => !f);
+  // Keyboard: Space/Enter flip, 1-4 select difficulty (Pass 154)
+  useEffect(() => {
+    function handle(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+      if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        setFlipped((f) => !f);
+      }
+      if (flipped && !disabled) {
+        const diffMap: Record<string, DifficultyLevel> = { "1": "again", "2": "hard", "3": "good", "4": "easy" };
+        if (diffMap[e.key]) {
+          e.preventDefault();
+          onDifficulty(diffMap[e.key]);
+        }
+      }
     }
-  };
+    window.addEventListener("keydown", handle);
+    return () => window.removeEventListener("keydown", handle);
+  }, [flipped, disabled, onDifficulty]);
 
   return (
     <div className="space-y-4">
@@ -430,7 +500,7 @@ function FlashcardCard({
         aria-pressed={flipped}
         aria-label={
           flipped
-            ? `Definition revealed. ${definition}. Press space to flip back.`
+            ? `Definition revealed. ${definition}. Press 1-4 to rate difficulty.`
             : `Flashcard term: ${term}. Press space or enter to reveal the definition.`
         }
         className={`min-h-[220px] cursor-pointer select-none transition-transform duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
@@ -438,7 +508,6 @@ function FlashcardCard({
         }`}
         style={{ perspective: "600px" }}
         onClick={() => setFlipped((f) => !f)}
-        onKeyDown={handleKeyDown}
       >
         <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
           {flipped ? (
@@ -462,28 +531,32 @@ function FlashcardCard({
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          variant="outline"
-          className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400"
-          onClick={onIncorrect}
-          disabled={!flipped || disabled}
-          aria-label="Mark this card as got it wrong"
-        >
-          <X className="h-4 w-4 mr-2" /> Got it wrong
-        </Button>
-        <Button
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={onCorrect}
-          disabled={!flipped || disabled}
-          aria-label="Mark this card as got it right"
-        >
-          <Check className="h-4 w-4 mr-2" /> Got it right
-        </Button>
+      {/* 4-button difficulty row with interval previews */}
+      <div className="grid grid-cols-4 gap-2">
+        {(["again", "hard", "good", "easy"] as DifficultyLevel[]).map((d) => {
+          const cfg = DIFFICULTY_CONFIG[d];
+          const interval = previewLabel(confidence, d);
+          return (
+            <Button
+              key={d}
+              variant="outline"
+              size="sm"
+              className={`flex flex-col items-center gap-0.5 h-auto py-2 ${cfg.color} ${cfg.darkColor}`}
+              onClick={() => onDifficulty(d)}
+              disabled={!flipped || disabled}
+              aria-label={`Rate ${cfg.label} — next review in ${interval}`}
+            >
+              <span className="flex items-center gap-1 text-xs font-medium">
+                {DIFF_ICONS[d]} {cfg.label}
+              </span>
+              <span className="text-[10px] opacity-70 font-mono">{interval}</span>
+            </Button>
+          );
+        })}
       </div>
       {!flipped && (
         <p className="text-[11px] text-muted-foreground text-center">
-          Reveal the answer before scoring yourself.
+          Reveal the answer before rating difficulty. Keys: 1–4
         </p>
       )}
     </div>

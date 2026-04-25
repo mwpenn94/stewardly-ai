@@ -15,7 +15,7 @@
  * learners could never see the cards.
  */
 
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -55,6 +55,31 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useStudySession } from "@/hooks/useStudySession";
+
+// ─── Difficulty config (Pass 154 — extracted for DRY) ─────────────────────
+type DifficultyLevel = "again" | "hard" | "good" | "easy";
+const DIFFICULTY_LEVELS: DifficultyLevel[] = ["again", "hard", "good", "easy"];
+const DIFF_CONFIG: Record<DifficultyLevel, { label: string; color: string; darkColor: string; icon: React.ReactNode }> = {
+  again: { label: "Again", color: "border-rose-300 text-rose-700 hover:bg-rose-50 hover:text-rose-800", darkColor: "dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950", icon: <RotateCw className="h-3.5 w-3.5" /> },
+  hard: { label: "Hard", color: "border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800", darkColor: "dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950", icon: <X className="h-3.5 w-3.5" /> },
+  good: { label: "Good", color: "border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800", darkColor: "dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950", icon: <Check className="h-3.5 w-3.5" /> },
+  easy: { label: "Easy", color: "border-sky-300 text-sky-700 hover:bg-sky-50 hover:text-sky-800", darkColor: "dark:border-sky-800 dark:text-sky-400 dark:hover:bg-sky-950", icon: <Sparkles className="h-3.5 w-3.5" /> },
+};
+const SRS_IVALS: Record<number, number> = { 0: 0, 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 };
+const SRS_DMULT: Record<string, number> = { again: 0, hard: 0.5, good: 1.0, easy: 1.5 };
+function previewLabelFn(confidence: number, d: DifficultyLevel): string {
+  const conf = Math.max(0, Math.min(5, confidence));
+  const nextConf = d === "again" ? 0 : Math.min(5, conf + 1);
+  const baseDays = SRS_IVALS[nextConf] ?? 1;
+  const days = Math.max(0, baseDays * (SRS_DMULT[d] ?? 1));
+  if (days < 1 / 1440) return "<1m";
+  if (days < 1 / 24) return `${Math.round(days * 24 * 60)}m`;
+  if (days < 1) return `${Math.round(days * 24)}h`;
+  if (days < 14) return `${Math.round(days)}d`;
+  if (days < 60) return `${Math.round(days / 7)}w`;
+  return `${Math.round(days / 30)}mo`;
+}
+
 export default function LearningFlashcardStudy() {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
 
@@ -163,8 +188,9 @@ export default function LearningFlashcardStudy() {
   // Auto-track study session
   const studySession = useStudySession({ discipline: slug, trackKey: slug });
 
-  const mark = async (correct: boolean) => {
+  const mark = async (difficulty: "again" | "hard" | "good" | "easy") => {
     if (!current) return;
+    const correct = difficulty !== "again";
     studySession.recordItem();
     if (correct) studySession.recordMastery();
     // Fire-and-forget SRS update — only for authenticated users.
@@ -175,6 +201,7 @@ export default function LearningFlashcardStudy() {
           itemKey: `flashcard:${current.id}`,
           itemType: "flashcard",
           correct,
+          difficulty,
         })
         .catch((err) => {
           toast.error(`Review not saved: ${err.message ?? "network error"}`);
@@ -186,7 +213,7 @@ export default function LearningFlashcardStudy() {
 
     // Pass 16 — PIL feedback dispatch (G1/G8).
     sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
-    sendFeedback("learning.srs_rating", { rating: correct ? "good" : "again" });
+    sendFeedback("learning.srs_rating", { rating: difficulty });
 
     if (correct) {
       setCorrectCount((c) => c + 1);
@@ -491,6 +518,14 @@ export default function LearningFlashcardStudy() {
                     setFlipped((f) => !f);
                     sendFeedback("learning.flashcard_flip");
                   }
+                  // Pass 154: keyboard shortcuts 1-4 for difficulty
+                  if (flipped && !recordReview.isPending) {
+                    const diffMap: Record<string, "again" | "hard" | "good" | "easy"> = { "1": "again", "2": "hard", "3": "good", "4": "easy" };
+                    if (diffMap[e.key]) {
+                      e.preventDefault();
+                      mark(diffMap[e.key]);
+                    }
+                  }
                 }}
               >
                 <CardContent className="relative p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
@@ -530,28 +565,34 @@ export default function LearningFlashcardStudy() {
                 </CardContent>
               </Card>
 
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400"
-                  onClick={() => mark(false)}
-                  disabled={!flipped || recordReview.isPending}
-                  aria-label="Still learning this card"
-                >
-                  <X className="h-4 w-4 mr-2" /> Still Learning
-                </Button>
-                <Button
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  onClick={() => mark(true)}
-                  disabled={!flipped || recordReview.isPending}
-                  aria-label="Got this card"
-                >
-                  <Check className="h-4 w-4 mr-2" /> Got It
-                </Button>
+              {/* 4-button difficulty row with interval previews (Pass 154) */}
+              <div className="grid grid-cols-4 gap-2">
+                {(DIFFICULTY_LEVELS).map((d) => {
+                  const cfg = DIFF_CONFIG[d];
+                  const currentMasteryRow = (masteryQ.data ?? []).find((m: any) => m.itemKey === `flashcard:${current?.id}`);
+                  const conf = Math.max(0, Math.min(5, (currentMasteryRow as any)?.confidence ?? 0));
+                  const lbl = previewLabelFn(conf, d);
+                  return (
+                    <Button
+                      key={d}
+                      variant="outline"
+                      size="sm"
+                      className={`flex flex-col items-center gap-0.5 h-auto py-2 ${cfg.color} ${cfg.darkColor}`}
+                      onClick={() => mark(d)}
+                      disabled={!flipped || recordReview.isPending}
+                      aria-label={`Rate ${cfg.label} — next review in ${lbl}`}
+                    >
+                      <span className="flex items-center gap-1 text-xs font-medium">
+                        {cfg.icon} {cfg.label}
+                      </span>
+                      <span className="text-[10px] opacity-70 font-mono">{lbl}</span>
+                    </Button>
+                  );
+                })}
               </div>
               {!flipped && (
                 <p className="text-[11px] text-muted-foreground text-center">
-                  Reveal the answer before scoring yourself.
+                  Reveal the answer before rating difficulty. Keys: 1–4
                 </p>
               )}
             </div>

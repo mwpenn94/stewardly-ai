@@ -26,6 +26,7 @@ import {
   Users, ArrowLeft, Plus, Copy, UserPlus,
   Crown, Loader2, LogIn, Swords, BookOpen,
   Timer, Trophy, ChevronRight, Play,
+  BarChart3, Flame, Brain, Medal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DiscussionPanel } from "./StudyGroupCollaboration";
@@ -49,6 +50,10 @@ function GroupDetail({ group, userId, onBack }: { group: any; userId: number; on
   const challengesQ = trpc.learningSocial.challenges.list.useQuery(
     { groupId: group.id },
     { enabled: !!group.id },
+  );
+  const masteryQ = trpc.learningSocial.groupMastery.compare.useQuery(
+    { groupId: group.id },
+    { enabled: !!group.id && tab === "mastery", staleTime: 30_000 },
   );
 
   const createQuizMut = trpc.learningSocial.sharedQuizzes.create.useMutation({
@@ -109,15 +114,18 @@ function GroupDetail({ group, userId, onBack }: { group: any; userId: number; on
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="quizzes" className="flex items-center gap-1.5">
-            <BookOpen className="h-3.5 w-3.5" /> Shared Quizzes ({quizzes.length})
+            <BookOpen className="h-3.5 w-3.5" /> Quizzes
           </TabsTrigger>
           <TabsTrigger value="challenges" className="flex items-center gap-1.5">
-            <Swords className="h-3.5 w-3.5" /> Challenges ({challenges.length})
+            <Swords className="h-3.5 w-3.5" /> Challenges
+          </TabsTrigger>
+          <TabsTrigger value="mastery" className="flex items-center gap-1.5">
+            <BarChart3 className="h-3.5 w-3.5" /> Mastery
           </TabsTrigger>
           <TabsTrigger value="discussion" className="flex items-center gap-1.5">
-            <MessageSquare className="h-3.5 w-3.5" /> Discussion
+            <MessageSquare className="h-3.5 w-3.5" /> Chat
           </TabsTrigger>
         </TabsList>
 
@@ -177,6 +185,71 @@ function GroupDetail({ group, userId, onBack }: { group: any; userId: number; on
             ))
           )}
         </TabsContent>
+        {/* Mastery Comparison Tab (Pass 154) */}
+        <TabsContent value="mastery" className="space-y-3 mt-3">
+          {masteryQ.isLoading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20" />)}</div>
+          ) : !masteryQ.data || masteryQ.data.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <BarChart3 className="mx-auto h-10 w-10 opacity-30 mb-2" />
+              <p className="text-sm">No mastery data yet. Start studying to see rankings!</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {(masteryQ.data as any[]).map((member: any) => (
+                <Card key={member.userId} className={`transition-colors ${
+                  member.isCurrentUser ? "border-primary/40 bg-primary/5" : "hover:border-muted-foreground/20"
+                }`}>
+                  <CardContent className="pt-3 pb-3">
+                    <div className="flex items-center gap-3">
+                      {/* Rank badge */}
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                        member.rank === 1 ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300" :
+                        member.rank === 2 ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300" :
+                        member.rank === 3 ? "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {member.rank <= 3 ? <Medal className="h-4 w-4" /> : member.rank}
+                      </div>
+
+                      {/* Avatar + Name */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm truncate">
+                            {member.name}
+                            {member.isCurrentUser && <Badge variant="outline" className="ml-1 text-[10px]">You</Badge>}
+                          </span>
+                          {member.role === "owner" && <Crown className="h-3 w-3 text-amber-500" />}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Brain className="h-3 w-3" /> {member.masteredItems}/{member.totalItems} mastered</span>
+                          <span className="flex items-center gap-1"><Flame className="h-3 w-3" /> {member.currentStreak}d streak</span>
+                          <span className="flex items-center gap-1"><Timer className="h-3 w-3" /> {member.totalMinutes}m studied</span>
+                        </div>
+                      </div>
+
+                      {/* Score */}
+                      <div className="text-right">
+                        <div className="text-lg font-bold">{member.compositeScore}</div>
+                        <div className="text-[10px] text-muted-foreground">score</div>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="mt-2">
+                      <Progress value={member.masteryRate} className="h-1.5" />
+                      <div className="flex justify-between mt-0.5 text-[10px] text-muted-foreground">
+                        <span>{member.masteryRate}% mastered</span>
+                        <span>Avg confidence: {member.avgConfidence}/5</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="discussion" className="mt-3">
           <DiscussionPanel groupId={group.id} />
         </TabsContent>

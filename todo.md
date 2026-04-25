@@ -9271,3 +9271,20 @@
 - [x] GAP-2: Pomodoro Session Logging — PomodoroTimer records completed work cycles via learningSocial.studySessions.record with duration tracking
 - [x] GAP-3: StudyAnalytics Export Button — Download button in header links to existing /learning/export page
 - [x] GAP-4: PWA Offline Study Enhancement — Separate LEARNING_CACHE with stale-while-revalidate for all learning tRPC procedures
+## Pass 154: Recursive Optimization — SRS Difficulty Tuning + Study Group Mastery
+- [x] GAP-1: SRS Difficulty Tuning — scheduleNextReview with again/hard/good/easy difficulty parameter + previewIntervals helper
+- [x] GAP-1: recordReview tRPC procedure updated with difficulty input field
+- [x] GAP-1: LearningDueReview 4-button difficulty layout (Again/Hard/Good/Easy) with interval previews
+- [x] GAP-1: LearningFlashcardStudy 4-button difficulty layout with interval previews
+- [x] GAP-2: groupMastery.compare tRPC procedure in learningSocial router
+- [x] GAP-2: StudyGroups Mastery tab with ranked member cards, progress bars, streaks
+- [x] Pass 154 unit tests (difficulty multipliers + mastery comparison ranking)
+- [x] Production build verification
+## Pass 154 Recursion — Optimize (Pass 2)
+- [x] FINDING-1: Extract DRY difficulty config to module scope in LearningFlashcardStudy.tsx
+- [x] FINDING-2: Fix previewIntervals to use single timestamp for determinism
+- [x] FINDING-3: Add missing SRS rating feedback event to LearningDueReview submitFlashcard
+- [x] FINDING-5: Add staleTime: 30s to mastery comparison query in StudyGroups.tsx
+- [x] FINDING-6: Add weight rationale comment to composite score formula
+- [x] All 31 unit tests pass after optimizations
+- [x] Production build succeeds after optimizations

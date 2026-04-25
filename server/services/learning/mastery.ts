@@ -34,30 +34,92 @@ const INTERVALS_DAYS: Record<number, number> = {
   5: 30,  // 1 month
 };
 
+export type Difficulty = "again" | "hard" | "good" | "easy";
+
 /**
- * Pure: given a current confidence level (0-5) and a review outcome
- * (correct/incorrect), return the new confidence and the next-due date.
+ * Difficulty multipliers for SRS interval scaling (Pass 154).
+ *   again → reset confidence to 0, use INTERVALS_DAYS[0]
+ *   hard  → half the normal interval
+ *   good  → normal interval (×1.0)
+ *   easy  → 1.5× the normal interval
+ */
+const DIFFICULTY_MULTIPLIERS: Record<Difficulty, number> = {
+  again: 0,
+  hard: 0.5,
+  good: 1.0,
+  easy: 1.5,
+};
+
+/**
+ * Pure: given a current confidence level (0-5), a review outcome
+ * (correct/incorrect), and an optional difficulty rating, return the
+ * new confidence and the next-due date.
  * This is the SRS heart — adapted from EMBA's MasteryContext logic.
+ *
+ * When `difficulty` is provided it overrides the boolean `correct`:
+ *   again → treated as incorrect (reset)
+ *   hard  → treated as correct but with shorter interval
+ *   good  → treated as correct with normal interval
+ *   easy  → treated as correct with extended interval
  */
 export function scheduleNextReview(
   currentConfidence: number,
   correct: boolean,
   now = new Date(),
+  difficulty?: Difficulty,
 ): { confidence: number; nextDue: Date; mastered: boolean } {
   let confidence = Math.max(0, Math.min(5, currentConfidence));
-  if (correct) {
+
+  // When difficulty is provided, derive correct from it
+  const effectiveCorrect = difficulty ? difficulty !== "again" : correct;
+
+  if (difficulty === "again") {
+    // Reset to 0 — classic lapse
+    confidence = 0;
+  } else if (effectiveCorrect) {
     confidence = Math.min(5, confidence + 1);
   } else {
     // Halve confidence, minimum 0, on incorrect — classic SM-style lapse.
     confidence = Math.max(0, Math.floor(confidence / 2));
   }
-  const days = INTERVALS_DAYS[confidence] ?? 1;
+
+  const baseDays = INTERVALS_DAYS[confidence] ?? 1;
+  const multiplier = difficulty ? DIFFICULTY_MULTIPLIERS[difficulty] : 1.0;
+  const days = Math.max(0, baseDays * multiplier);
   const nextDue = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
   return {
     confidence,
     nextDue,
     mastered: confidence >= 4,
   };
+}
+
+/**
+ * Pure: preview the interval (in days) for each difficulty level given
+ * the current confidence. Used by the UI to show labels like "12h",
+ * "3d", "7d", "21d" under the Again/Hard/Good/Easy buttons.
+ */
+export function previewIntervals(
+  currentConfidence: number,
+): Array<{ difficulty: Difficulty; days: number; label: string }> {
+  const difficulties: Difficulty[] = ["again", "hard", "good", "easy"];
+  const now = new Date(); // single timestamp for determinism
+  return difficulties.map((d) => {
+    const result = scheduleNextReview(currentConfidence, true, now, d);
+    const diffMs = result.nextDue.getTime() - now.getTime();
+    const days = Math.max(0, diffMs / (24 * 60 * 60 * 1000));
+    return { difficulty: d, days, label: formatIntervalLabel(days) };
+  });
+}
+
+/** Format days into a human-readable short label: "<1m", "12h", "3d", "2w", "1mo" */
+function formatIntervalLabel(days: number): string {
+  if (days < 1 / 1440) return "<1m";
+  if (days < 1 / 24) return `${Math.round(days * 24 * 60)}m`;
+  if (days < 1) return `${Math.round(days * 24)}h`;
+  if (days < 14) return `${Math.round(days)}d`;
+  if (days < 60) return `${Math.round(days / 7)}w`;
+  return `${Math.round(days / 30)}mo`;
 }
 
 // ─── DB operations ────────────────────────────────────────────────────────
@@ -78,6 +140,7 @@ export async function upsertMastery(data: {
   itemKey: string;
   itemType: string;
   correct: boolean;
+  difficulty?: Difficulty;
 }): Promise<LearningMastery | null> {
   const db = await getDb();
   if (!db) return null;
@@ -88,7 +151,7 @@ export async function upsertMastery(data: {
       .from(learningMasteryProgress)
       .where(and(eq(learningMasteryProgress.userId, data.userId), eq(learningMasteryProgress.itemKey, data.itemKey)));
 
-    const next = scheduleNextReview(existing?.confidence ?? 0, data.correct);
+    const next = scheduleNextReview(existing?.confidence ?? 0, data.correct, new Date(), data.difficulty);
 
     if (existing) {
       await db

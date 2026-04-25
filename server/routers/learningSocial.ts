@@ -12,7 +12,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import {
   learningStudySessions, learningAchievements, learningSettings,
   learningAiQuizQuestions, learningStudyGroups, learningGroupMembers,
@@ -20,6 +20,7 @@ import {
   learningBookmarks, learningPlaylists, learningPlaylistItems,
   learningPlaylistShares, learningPendingInvites, learningDiscoveryHistory,
   learningGroupGoals, learningGroupNotes, learningGroupActivity,
+  learningMasteryProgress, learningStreaks, users,
 } from "../../drizzle/schema";
 
 // ─── Study Sessions ─────────────────────────────────────────────────────────
@@ -562,6 +563,118 @@ const discoveryRouter = router({
     }),
 });
 
+// ─── Group Mastery Comparison (Pass 154) ──────────────────────────────────────
+const groupMasteryRouter = router({
+  /** Compare mastery progress across all members of a study group */
+  compare: protectedProcedure
+    .input(z.object({ groupId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      // 1. Get all members of this group
+      const members = await db.select().from(learningGroupMembers)
+        .where(eq(learningGroupMembers.groupId, input.groupId));
+      if (members.length === 0) return [];
+
+      // Verify caller is a member
+      const isMember = members.some(m => m.userId === ctx.user.id);
+      if (!isMember) throw new TRPCError({ code: "FORBIDDEN", message: "Not a member of this group" });
+
+      const memberIds = members.map(m => m.userId);
+
+      // 2. Get user info for all members
+      const memberUsers = await db.select({
+        id: users.id,
+        name: users.name,
+        avatarUrl: users.avatarUrl,
+      }).from(users).where(inArray(users.id, memberIds));
+
+      // 3. Get mastery data for all members (aggregated)
+      const masteryRows = await db.select({
+        userId: learningMasteryProgress.userId,
+        totalItems: sql<number>`COUNT(*)`,
+        masteredItems: sql<number>`SUM(CASE WHEN ${learningMasteryProgress.mastered} = 1 THEN 1 ELSE 0 END)`,
+        avgConfidence: sql<number>`AVG(${learningMasteryProgress.confidence})`,
+        totalReviews: sql<number>`SUM(${learningMasteryProgress.reviewCount})`,
+      }).from(learningMasteryProgress)
+        .where(inArray(learningMasteryProgress.userId, memberIds))
+        .groupBy(learningMasteryProgress.userId);
+
+      // 4. Get streak data for all members
+      const streakRows = await db.select().from(learningStreaks)
+        .where(inArray(learningStreaks.userId, memberIds));
+
+      // 5. Get study session totals for all members
+      const sessionRows = await db.select({
+        userId: learningStudySessions.userId,
+        totalMinutes: sql<number>`SUM(${learningStudySessions.durationMinutes})`,
+        totalSessions: sql<number>`COUNT(*)`,
+      }).from(learningStudySessions)
+        .where(inArray(learningStudySessions.userId, memberIds))
+        .groupBy(learningStudySessions.userId);
+
+      // 6. Compose ranked results
+      const userMap = new Map(memberUsers.map(u => [u.id, u]));
+      const masteryMap = new Map(masteryRows.map(m => [m.userId, m]));
+      const streakMap = new Map(streakRows.map(s => [s.userId, s]));
+      const sessionMap = new Map(sessionRows.map(s => [s.userId, s]));
+      const memberRoleMap = new Map(members.map(m => [m.userId, m.role]));
+
+      const results = memberIds.map(uid => {
+        const user = userMap.get(uid);
+        const mastery = masteryMap.get(uid);
+        const streak = streakMap.get(uid);
+        const session = sessionMap.get(uid);
+        const role = memberRoleMap.get(uid) ?? "member";
+
+        const totalItems = Number(mastery?.totalItems ?? 0);
+        const masteredItems = Number(mastery?.masteredItems ?? 0);
+        const avgConfidence = Number(mastery?.avgConfidence ?? 0);
+        const totalReviews = Number(mastery?.totalReviews ?? 0);
+        const currentStreak = streak?.currentStreak ?? 0;
+        const longestStreak = streak?.longestStreak ?? 0;
+        const totalMinutes = Number(session?.totalMinutes ?? 0);
+        const totalSessions = Number(session?.totalSessions ?? 0);
+
+        // Composite score: weighted blend prioritizing knowledge depth (mastery rate 40%),
+        // retention quality (avg confidence 30%), consistency (streak 20%), and effort (study time 10%).
+        // Weights chosen to reward actual learning outcomes over raw time investment.
+        const masteryRate = totalItems > 0 ? masteredItems / totalItems : 0;
+        const normalizedConfidence = avgConfidence / 5;
+        const normalizedStreak = Math.min(currentStreak / 30, 1); // cap at 30 days
+        const normalizedTime = Math.min(totalMinutes / 600, 1); // cap at 10 hours
+        const compositeScore = Math.round(
+          (masteryRate * 40 + normalizedConfidence * 30 + normalizedStreak * 20 + normalizedTime * 10) * 10
+        ) / 10;
+
+        return {
+          userId: uid,
+          name: user?.name ?? `User ${uid}`,
+          avatarUrl: user?.avatarUrl ?? null,
+          role,
+          isCurrentUser: uid === ctx.user.id,
+          totalItems,
+          masteredItems,
+          masteryRate: Math.round(masteryRate * 100),
+          avgConfidence: Math.round(avgConfidence * 10) / 10,
+          totalReviews,
+          currentStreak,
+          longestStreak,
+          totalMinutes,
+          totalSessions,
+          compositeScore,
+        };
+      });
+
+      // Sort by composite score descending
+      results.sort((a, b) => b.compositeScore - a.compositeScore);
+
+      // Add rank
+      return results.map((r, i) => ({ ...r, rank: i + 1 }));
+    }),
+});
+
 // ─── Combined Social Learning Router ────────────────────────────────────────
 export const learningSocialRouter = router({
   studySessions: studySessionsRouter,
@@ -574,4 +687,5 @@ export const learningSocialRouter = router({
   bookmarks: bookmarksRouter,
   playlists: playlistsRouter,
   discovery: discoveryRouter,
+  groupMastery: groupMasteryRouter,
 });
