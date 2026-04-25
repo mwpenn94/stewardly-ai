@@ -48,7 +48,7 @@ export default function StudySession() {
   const trackQ = trpc.learning.content.listTracks.useQuery(undefined, { enabled: !!isAuthenticated });
   const track = (trackQ.data ?? []).find((t: any) => t.slug === trackSlug);
 
-  const flashcardsQ = trpc.learning.content.listFlashcardsForTrack.useQuery(
+  const flashcardsQ = trpc.learning.content.listFlashcards.useQuery(
     { trackId: track?.id ?? 0 },
     { enabled: !!isAuthenticated && !!track?.id },
   );

@@ -117,12 +117,12 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
   const [desc, setDesc] = useState("");
   const utils = trpc.useUtils();
 
-  const goalsQ = trpc.learning.social.groups.listGoals.useQuery(
+  const goalsQ = trpc.learningSocial.groups.listGoals.useQuery(
     { groupId },
     { enabled: !!groupId },
   );
 
-  const addMut = trpc.learning.social.groups.addGoal.useMutation({
+  const addMut = trpc.learningSocial.groups.addGoal.useMutation({
     onSuccess: () => {
       utils.learning.social.groups.listGoals.invalidate({ groupId });
       utils.learning.social.groups.listActivity.invalidate({ groupId });
@@ -132,7 +132,7 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
     onError: (err) => toast.error(err.message),
   });
 
-  const toggleMut = trpc.learning.social.groups.toggleGoal.useMutation({
+  const toggleMut = trpc.learningSocial.groups.toggleGoal.useMutation({
     onSuccess: () => {
       utils.learning.social.groups.listGoals.invalidate({ groupId });
       toast.success("Goal updated");
@@ -241,7 +241,7 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
 
 /* ─── Activity Feed Panel (wired to groups.listActivity) ─── */
 export function ActivityFeedPanel({ groupId }: { groupId: number }) {
-  const activityQ = trpc.learning.social.groups.listActivity.useQuery(
+  const activityQ = trpc.learningSocial.groups.listActivity.useQuery(
     { groupId, limit: 50 },
     { enabled: !!groupId },
   );
@@ -322,12 +322,12 @@ export function CollaborativeNotesPanel({ groupId }: { groupId: number }) {
   const [editContent, setEditContent] = useState("");
   const utils = trpc.useUtils();
 
-  const notesQ = trpc.learning.social.groups.listNotes.useQuery(
+  const notesQ = trpc.learningSocial.groups.listNotes.useQuery(
     { groupId },
     { enabled: !!groupId },
   );
 
-  const addMut = trpc.learning.social.groups.addNote.useMutation({
+  const addMut = trpc.learningSocial.groups.addNote.useMutation({
     onSuccess: () => {
       utils.learning.social.groups.listNotes.invalidate({ groupId });
       utils.learning.social.groups.listActivity.invalidate({ groupId });
@@ -337,7 +337,7 @@ export function CollaborativeNotesPanel({ groupId }: { groupId: number }) {
     onError: (err) => toast.error(err.message),
   });
 
-  const updateMut = trpc.learning.social.groups.updateNote.useMutation({
+  const updateMut = trpc.learningSocial.groups.updateNote.useMutation({
     onSuccess: () => {
       utils.learning.social.groups.listNotes.invalidate({ groupId });
       setEditingId(null); setEditContent("");

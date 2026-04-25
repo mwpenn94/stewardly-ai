@@ -14,7 +14,7 @@ import { ShieldAlert } from "lucide-react";
  */
 export function useAssessmentGuard() {
   // @ts-expect-error — strict mode fix
-  const { data, isLoading } = trpc.learning.assessment.getActive.useQuery(undefined, {
+  const { data, isLoading } = trpc.learning.assessment.active.useQuery(undefined, {
     refetchInterval: 10_000, // poll every 10s during assessment
     retry: false,
   });
@@ -33,7 +33,7 @@ export function useAssessmentGuard() {
  */
 export function useFocusLossRecorder(sessionActive: boolean) {
   // @ts-expect-error — property access on loosely typed object
-  const recordFocusLoss = trpc.learning.assessment.recordFocusLoss.useMutation();
+  const recordFocusLoss = trpc.learning.assessment.focusLoss.useMutation();
 
   const handleVisibilityChange = useCallback(() => {
     if (document.hidden && sessionActive) {

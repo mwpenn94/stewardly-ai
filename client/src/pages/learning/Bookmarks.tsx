@@ -55,7 +55,7 @@ export default function Bookmarks() {
     onError: (...args: any[]) => { optimisticRemoveCallbacks.onError?.(...args); toast.error("Failed to remove bookmark"); },
   });
   // @ts-expect-error — property access on loosely typed object
-  const updateMut = trpc.learningSocial.bookmarks.update.useMutation({
+  const updateMut = trpc.learningSocial.bookmarks.updateNote.useMutation({
     onSuccess: () => { utils.learningSocial.bookmarks.list.invalidate(); setEditingNote(null); toast.success("Note updated"); },
     onError: () => toast.error("Failed to update note"),
   });

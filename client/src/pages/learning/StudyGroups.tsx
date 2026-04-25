@@ -78,7 +78,7 @@ function GroupDetail({ group, userId, onBack }: { group: any; userId: number; on
   });
 
   // @ts-expect-error — property access on loosely typed object
-  const submitScoreMut = trpc.learningSocial.challenges.submitScore.useMutation({
+  const submitScoreMut = trpc.learningSocial.challenges.submitResult.useMutation({
     onSuccess: () => { challengesQ.refetch(); toast.success("Score submitted!"); },
     onError: () => toast.error("Failed to submit score"),
   });
@@ -311,7 +311,7 @@ function GroupDetail({ group, userId, onBack }: { group: any; userId: number; on
 function ChallengeCard({ challenge, userId, onSubmitScore }: { challenge: any; userId: number; onSubmitScore: (score: number) => void }) {
   const [showResults, setShowResults] = useState(false);
   // @ts-expect-error — property access on loosely typed object
-  const resultsQ = trpc.learningSocial.challenges.results.useQuery(
+  const resultsQ = trpc.learningSocial.challenges.leaderboard.useQuery(
     { challengeId: challenge.id },
     { enabled: showResults },
   );

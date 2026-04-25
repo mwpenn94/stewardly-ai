@@ -114,12 +114,12 @@ export default function PortfolioRiskMetrics() {
   const [savedPortfolios, setSavedPortfolios] = useState<SavedPortfolio[]>(loadSavedLocal);
 
   // Sync saved portfolios from server on mount (if authenticated)
-  const savedQ = trpc.addendumFeatures.calculatorPersistence.list.useQuery(
+  const savedQ = trpc.addendum.calculatorPersistence.list.useQuery(
     { calculatorType: "portfolio-risk" },
     { enabled: !!isAuthenticated },
   );
-  const saveMut = trpc.addendumFeatures.calculatorPersistence.save.useMutation();
-  const deleteMut = trpc.addendumFeatures.calculatorPersistence.delete.useMutation();
+  const saveMut = trpc.addendum.calculatorPersistence.save.useMutation();
+  const deleteMut = trpc.addendum.calculatorPersistence.delete.useMutation();
   useEffect(() => {
     if (savedQ.data && savedQ.data.length > 0) {
       const serverPortfolios: SavedPortfolio[] = savedQ.data.map((s: any, i: number) => ({

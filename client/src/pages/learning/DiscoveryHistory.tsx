@@ -36,7 +36,7 @@ export default function DiscoveryHistory() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // @ts-expect-error — property access on loosely typed object
-  const historyQ = trpc.learningSocial.discoveryHistory.list.useQuery(
+  const historyQ = trpc.learningSocial.discovery.list.useQuery(
     { limit: 100 },
     { enabled: !!isAuthenticated }
   );

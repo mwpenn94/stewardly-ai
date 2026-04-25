@@ -9338,3 +9338,16 @@
 - [x] BUG: Audio Study track detail page — AudioStudyPage.tsx now fetches chapters/subsections/flashcards with actual KE content
 - [x] BUG: AudioStudyPage error "No procedure found on path learning.content.listFlashcardsForTrack" — fixed: procedure is listFlashcards
 - [x] BUG: AudioStudyPage chapters show "No content yet" — fixed: raw fetch needs {"json":{...}} superjson wrapper
+## Pass 157c — Exhaustive tRPC Procedure Reconciliation
+- [x] BUG: StudySession.tsx called listFlashcardsForTrack → fixed to listFlashcards
+- [x] BUG: DiscoveryHistory.tsx called discoveryHistory.list → fixed to discovery.list
+- [x] BUG: StudyGroupCollaboration.tsx called learning.social.groups.* → fixed to learningSocial.groups.*
+- [x] BUG: StudyGroups.tsx called challenges.submitScore → fixed to challenges.submitResult
+- [x] BUG: StudyGroups.tsx called challenges.results → fixed to challenges.leaderboard
+- [x] BUG: AssessmentGuard.tsx called assessment.getActive → fixed to assessment.active
+- [x] BUG: AssessmentGuard.tsx called assessment.recordFocusLoss → fixed to assessment.focusLoss
+- [x] BUG: Bookmarks.tsx called bookmarks.update → fixed to bookmarks.updateNote
+- [x] MISSING: Added playlists.update procedure to learningSocial router
+- [x] MISSING: Added playlists.remove procedure to learningSocial router
+- [x] MISSING: Added groups.leave procedure to learningSocial router
+- [x] VERIFIED: All 78 client tRPC procedure references match server-side procedures

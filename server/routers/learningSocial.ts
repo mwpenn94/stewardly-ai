@@ -288,6 +288,16 @@ const groupsRouter = router({
       return { ok: true };
     }),
 
+  // ─── Leave Group ───
+  leave: protectedProcedure
+    .input(z.object({ groupId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.delete(learningGroupMembers)
+        .where(and(eq(learningGroupMembers.groupId, input.groupId), eq(learningGroupMembers.userId, ctx.user.id)));
+      return { success: true };
+    }),
   // ─── Activity Feed ───
   listActivity: protectedProcedure
     .input(z.object({ groupId: z.number(), limit: z.number().min(1).max(100).default(50) }))
@@ -522,6 +532,29 @@ const playlistsRouter = router({
         permission: input.permission,
       });
       return { id: Number(r.insertId) };
+    }),
+  update: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isPublic: z.boolean().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const sets: Record<string, any> = { updatedAt: new Date() };
+      if (input.name !== undefined) sets.title = input.name;
+      if (input.description !== undefined) sets.description = input.description;
+      if (input.isPublic !== undefined) sets.isPublic = input.isPublic;
+      await db.update(learningPlaylists).set(sets)
+        .where(and(eq(learningPlaylists.id, input.id), eq(learningPlaylists.ownerUserId, ctx.user.id)));
+      return { success: true };
+    }),
+  remove: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.delete(learningPlaylistItems).where(eq(learningPlaylistItems.playlistId, input.id));
+      await db.delete(learningPlaylists)
+        .where(and(eq(learningPlaylists.id, input.id), eq(learningPlaylists.ownerUserId, ctx.user.id)));
+      return { success: true };
     }),
   getShared: publicProcedure
     .input(z.object({ shareToken: z.string().min(1).max(64) }))
