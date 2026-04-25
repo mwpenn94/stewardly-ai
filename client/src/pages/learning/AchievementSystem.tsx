@@ -16,6 +16,7 @@ import { SEOHead } from "@/components/SEOHead";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { sendFeedback } from "@/lib/feedbackSpecs";
+import { useAchievementToast } from "@/components/AchievementToast";
 /* ── types ─────────────────────────────────────────────────────── */
 
 interface Achievement {
@@ -210,7 +211,8 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
   const earned = d.achievements.filter(a => a.progress >= 100);
   const inProgress = d.achievements.filter(a => a.progress > 0 && a.progress < 100);
 
-  // G1: Fire feedback when new achievements are earned
+  // G1: Fire feedback + celebration toast when new achievements are earned
+  const { showAchievement } = useAchievementToast();
   const prevEarnedRef = useRef<number>(0);
   useEffect(() => {
     if (earned.length > prevEarnedRef.current && prevEarnedRef.current > 0) {
@@ -218,6 +220,10 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
       sendFeedback("learning.achievement_earned", { title: newest?.title });
       if (newest?.category === "mastery") sendFeedback("learning.mastered", { title: newest?.title });
       if (newest?.category === "streak") sendFeedback("learning.streak_milestone", { streak: d.streak.current });
+      // Fire KE-style celebration toast
+      if (newest) {
+        showAchievement(newest.title, newest.description);
+      }
     }
     prevEarnedRef.current = earned.length;
   }, [earned.length]);

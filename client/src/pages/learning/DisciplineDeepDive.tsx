@@ -31,6 +31,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { toast } from "sonner";
+import BookmarkButton from "@/components/BookmarkButton";
 
 /* ── types ── */
 interface DefinitionItem {
@@ -512,12 +513,22 @@ export default function DisciplineDeepDive() {
                               <Badge variant="outline" className="mt-1 text-[10px]">{currentDef.category}</Badge>
                             )}
                           </div>
-                          {(confidence[currentDef?.id ?? 0] ?? 0) >= 4 && (
-                            <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10">
-                              <GraduationCap className="w-3.5 h-3.5 text-primary" />
-                              <span className="text-[10px] text-primary font-medium">Mastered</span>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {(confidence[currentDef?.id ?? 0] ?? 0) >= 4 && (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10">
+                                <GraduationCap className="w-3.5 h-3.5 text-primary" />
+                                <span className="text-[10px] text-primary font-medium">Mastered</span>
+                              </div>
+                            )}
+                            {currentDef && (
+                              <BookmarkButton
+                                contentType="definition"
+                                contentId={String(currentDef.id)}
+                                contentTitle={currentDef.term}
+                                discipline={slug}
+                              />
+                            )}
+                          </div>
                         </div>
 
                         {/* Definition (reveal on click) */}

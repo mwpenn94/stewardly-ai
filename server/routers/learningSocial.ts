@@ -418,6 +418,30 @@ const bookmarksRouter = router({
         .where(and(eq(learningBookmarks.id, input.id), eq(learningBookmarks.userId, ctx.user.id)));
       return { success: true };
     }),
+  check: protectedProcedure
+    .input(z.object({ contentType: z.string(), contentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { bookmarked: false, bookmark: null };
+      const [row] = await db.select().from(learningBookmarks)
+        .where(and(
+          eq(learningBookmarks.userId, ctx.user.id),
+          eq(learningBookmarks.contentType, input.contentType),
+          eq(learningBookmarks.contentId, input.contentId),
+        ))
+        .limit(1);
+      return { bookmarked: !!row, bookmark: row ?? null };
+    }),
+  updateNote: protectedProcedure
+    .input(z.object({ id: z.number(), note: z.string().nullable() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.update(learningBookmarks)
+        .set({ note: input.note })
+        .where(and(eq(learningBookmarks.id, input.id), eq(learningBookmarks.userId, ctx.user.id)));
+      return { success: true };
+    }),
 });
 
 // ─── Playlists ──────────────────────────────────────────────────────────────

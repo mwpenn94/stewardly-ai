@@ -9,6 +9,7 @@
  * Mobile: collapsible drawer triggered by hamburger in the learning header
  */
 import { useState, useMemo, useEffect } from "react";
+import { AchievementToastProvider } from "@/components/AchievementToast";
 import { useLocation, Link } from "wouter";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -236,6 +237,7 @@ export default function LearningShell({ children, title }: LearningShellProps) {
   }, [location]);
 
   return (
+    <AchievementToastProvider>
     <AppShell title={title}>
       <div className="flex h-full">
         {/* Desktop sidebar */}
@@ -295,5 +297,6 @@ export default function LearningShell({ children, title }: LearningShellProps) {
         </div>
       </div>
     </AppShell>
+    </AchievementToastProvider>
   );
 }

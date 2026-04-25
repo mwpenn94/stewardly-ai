@@ -27,6 +27,7 @@ import {
   CheckCircle2, Trophy, BarChart3,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import BookmarkButton from "@/components/BookmarkButton";
 
 type Rating = "easy" | "medium" | "hard";
 type StudyMode = "all" | "due" | "unseen" | "weak";
@@ -368,6 +369,17 @@ export default function StudySession() {
                       {current?.discipline && (
                         <span className="absolute bottom-3 left-3 text-[9px] font-mono px-2 py-0.5 rounded bg-accent text-accent-foreground">
                           {current.discipline}
+                        </span>
+                      )}
+                      {current && (
+                        <span className="absolute bottom-3 right-3">
+                          <BookmarkButton
+                            contentType="flashcard"
+                            contentId={String(current.id)}
+                            contentTitle={current.front ?? current.question ?? ""}
+                            discipline={current.discipline ?? trackSlug}
+                            size="sm"
+                          />
                         </span>
                       )}
                     </div>
