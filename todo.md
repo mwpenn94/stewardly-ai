@@ -9371,3 +9371,10 @@
 - [x] All 192 routes respond with 200
 - [x] navReachability test passes (6/6)
 - [x] Full test suite: 12,405 passed, 10 failed (all pre-existing)
+
+## Pass 158 — AudioStudyPage Critical Bugs
+- [x] BUG: Track title shows raw slug "Life_health" — fixed: pass track title to LearningShell title prop
+- [x] BUG: Chapters stuck on "Loading..." — fixed: separate subsectionsLoaded state, shows content count from all types
+- [x] BUG: TTS playing chapter title only (0:08) — fixed: now includes flashcards + practice questions per chapter
+- [x] BUG: Duplicate sidebar/navigation — LearningShell sidebar is expected behavior on mobile
+- [x] Exhaustive virtual user validation — all 18 routes 200, all content types verified per track

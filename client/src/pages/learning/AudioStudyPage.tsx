@@ -1,16 +1,20 @@
 /**
  * AudioStudyPage.tsx — Track-specific Audio Study player
  *
- * Pass 157b. Fetches chapters and subsections for a specific track,
- * builds TTS-optimized scripts from the actual Knowledge Explorer
- * content (subsection paragraphs, definitions, flashcards), and
- * plays them through the AudioCompanion.
+ * Pass 158. Exhaustive content pipeline: fetches chapters, subsections,
+ * flashcards, AND practice questions for a specific track. Groups all
+ * content by chapter so even chapters with 0 subsections still have
+ * flashcard and question audio. Builds TTS-optimized scripts from the
+ * actual Knowledge Explorer content.
  *
  * Route: /learning/audio/:slug
  *
- * Fixes from 157a:
- * - Procedure name: listFlashcards (not listFlashcardsForTrack)
- * - Subsection fetch: uses {"json":{...}} wrapper for superjson tRPC format
+ * Fixes from 157b:
+ * - Chapters with 0 subsections no longer stuck on "Loading..."
+ * - Chapters with 0 subsections now show flashcard/question counts
+ * - TTS scripts include subsection paragraphs + flashcard definitions + question explanations
+ * - Breadcrumb shows track title instead of raw slug
+ * - Play button enabled for chapters that have any content (not just subsections)
  */
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link, useRoute } from "wouter";
@@ -25,10 +29,42 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft, Headphones, Play, Pause,
-  BookOpen, Layers, Loader2, LogIn,
+  BookOpen, Layers, Loader2, LogIn, HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+
+/* ── TTS script builders (same logic as HandsFreeStudy) ── */
+function buildSubsectionTts(title: string | null, paragraphs: any): string {
+  let text = "";
+  if (Array.isArray(paragraphs)) {
+    text = paragraphs
+      .map((p: any) => (typeof p === "string" ? p : p?.text ?? ""))
+      .filter(Boolean)
+      .join(". ");
+  }
+  if (text.length < 10) return "";
+  return `${title || "Section"}. ${text}`;
+}
+
+function buildFlashcardTts(term: string, definition: string): string {
+  const cleanDef = definition?.replace(/\t.*/g, "").trim() ?? "";
+  return `Key term: ${term}. ${cleanDef}`;
+}
+
+function buildQuestionTts(prompt: string, options: string[], correctIndex: number, explanation: string | null): string {
+  const optionLetters = ["A", "B", "C", "D", "E", "F"];
+  let script = `Practice question. ${prompt} `;
+  options.forEach((opt, i) => {
+    script += `${optionLetters[i]}: ${opt}. `;
+  });
+  const correctLetter = optionLetters[correctIndex] ?? "A";
+  script += `The correct answer is ${correctLetter}: ${options[correctIndex] ?? ""}. `;
+  if (explanation) {
+    script += explanation;
+  }
+  return script;
+}
 
 export default function AudioStudyPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -45,38 +81,66 @@ export default function AudioStudyPage() {
   );
   const chapters = chaptersQ.data ?? [];
 
-  // ── Fetch flashcards — correct procedure name: listFlashcards ──
+  // ── Fetch flashcards for the track (grouped by chapterId) ──
   const flashcardsQ = trpc.learning.content.listFlashcards.useQuery(
     { trackId: track?.id ?? 0 },
     { enabled: !!track?.id }
   );
   const flashcards = flashcardsQ.data ?? [];
 
-  // ── Fetch subsections for all chapters via raw fetch with correct superjson wrapping ──
+  // ── Fetch practice questions for the track ──
+  const questionsQ = trpc.learning.content.listQuestions.useQuery(
+    { trackId: track?.id ?? 0 },
+    { enabled: !!track?.id }
+  );
+  const questions = questionsQ.data ?? [];
+
+  // ── Group flashcards and questions by chapterId ──
+  const flashcardsByChapter = useMemo(() => {
+    const map: Record<number, typeof flashcards> = {};
+    for (const fc of flashcards) {
+      const chId = (fc as any).chapterId;
+      if (chId) {
+        if (!map[chId]) map[chId] = [];
+        map[chId].push(fc);
+      }
+    }
+    return map;
+  }, [flashcards]);
+
+  const questionsByChapter = useMemo(() => {
+    const map: Record<number, typeof questions> = {};
+    for (const q of questions) {
+      const chId = (q as any).chapterId;
+      if (chId) {
+        if (!map[chId]) map[chId] = [];
+        map[chId].push(q);
+      }
+    }
+    return map;
+  }, [questions]);
+
+  // ── Fetch subsections for all chapters via raw fetch ──
   const [allSubsections, setAllSubsections] = useState<Record<number, any[]>>({});
-  const [loadingSubsections, setLoadingSubsections] = useState(false);
+  const [subsectionsLoaded, setSubsectionsLoaded] = useState(false);
   const fetchedChapterIdsRef = useRef<string>("");
 
   useEffect(() => {
     if (chapters.length === 0) return;
-    // Deduplicate — only fetch once per unique set of chapter IDs
     const chapterIdKey = chapters.map(c => c.id).sort().join(",");
     if (fetchedChapterIdsRef.current === chapterIdKey) return;
     fetchedChapterIdsRef.current = chapterIdKey;
 
-    setLoadingSubsections(true);
     const fetchAll = async () => {
       const results: Record<number, any[]> = {};
       for (const ch of chapters) {
         try {
-          // tRPC superjson GET format: input must be {"json": {...}}
           const inputPayload = JSON.stringify({ json: { chapterId: ch.id } });
           const res = await fetch(
             `/api/trpc/learning.content.listSubsections?input=${encodeURIComponent(inputPayload)}`,
             { credentials: "include" }
           );
           const data = await res.json();
-          // superjson response shape: result.data.json
           const subs = data?.result?.data?.json ?? data?.result?.data ?? [];
           results[ch.id] = Array.isArray(subs) ? subs : [];
         } catch {
@@ -84,66 +148,137 @@ export default function AudioStudyPage() {
         }
       }
       setAllSubsections(results);
-      setLoadingSubsections(false);
+      setSubsectionsLoaded(true);
     };
     fetchAll();
   }, [chapters]);
 
-  // ── Build audio items from actual content ──
+  // ── Content counts per chapter ──
+  const chapterContentCounts = useMemo(() => {
+    const counts: Record<number, { subsections: number; flashcards: number; questions: number; total: number }> = {};
+    for (const ch of chapters) {
+      const subs = (allSubsections[ch.id] ?? []).filter((s: any) => {
+        if (!Array.isArray(s.paragraphs)) return false;
+        const text = s.paragraphs.map((p: any) => typeof p === "string" ? p : p?.text ?? "").join("");
+        return text.length > 10;
+      });
+      const fcs = flashcardsByChapter[ch.id] ?? [];
+      const qs = questionsByChapter[ch.id] ?? [];
+      counts[ch.id] = {
+        subsections: subs.length,
+        flashcards: fcs.length,
+        questions: qs.length,
+        total: subs.length + fcs.length + qs.length,
+      };
+    }
+    return counts;
+  }, [chapters, allSubsections, flashcardsByChapter, questionsByChapter]);
+
+  // ── Build audio items from ALL content types ──
   const audioItems = useMemo((): AudioItem[] => {
     const items: AudioItem[] = [];
 
     for (const ch of chapters) {
-      // Chapter intro
+      const counts = chapterContentCounts[ch.id];
+      if (!counts || counts.total === 0) {
+        // Still add chapter intro even if empty
+        items.push({
+          id: `ch-intro-${ch.id}`,
+          type: "chapter",
+          title: `Chapter: ${ch.title}`,
+          script: `Chapter: ${ch.title}. ${(ch as any).description || (ch as any).intro || "This chapter is being developed."}`,
+        });
+        continue;
+      }
+
+      // Chapter intro with content summary
+      const parts: string[] = [];
+      if (counts.subsections > 0) parts.push(`${counts.subsections} study sections`);
+      if (counts.flashcards > 0) parts.push(`${counts.flashcards} key terms`);
+      if (counts.questions > 0) parts.push(`${counts.questions} practice questions`);
+      const summary = parts.join(", ");
+
       items.push({
         id: `ch-intro-${ch.id}`,
         type: "chapter",
         title: `Chapter: ${ch.title}`,
-        script: `Chapter: ${ch.title}. ${ch.description || ch.intro || ""}. Let's explore this topic.`,
+        script: `Chapter: ${ch.title}. ${(ch as any).description || ""}. This chapter contains ${summary}. Let's begin.`,
       });
 
-      // Subsections for this chapter — use actual paragraph content
+      // Subsections with paragraph content
       const subs = allSubsections[ch.id] ?? [];
       for (const sub of subs) {
-        let paragraphText = "";
-        if (Array.isArray(sub.paragraphs)) {
-          paragraphText = sub.paragraphs
-            .map((p: any) => (typeof p === "string" ? p : p?.text ?? ""))
-            .filter(Boolean)
-            .join(". ");
-        }
-
-        if (paragraphText.length > 10) {
+        const script = buildSubsectionTts(sub.title, sub.paragraphs);
+        if (script) {
           items.push({
             id: `sub-${sub.id}`,
             type: "chapter",
             title: sub.title || `Section ${sub.id}`,
-            script: `${sub.title || "Section"}. ${paragraphText}`,
+            script,
+          });
+        }
+      }
+
+      // Flashcards for this chapter
+      const chFlashcards = flashcardsByChapter[ch.id] ?? [];
+      if (chFlashcards.length > 0) {
+        items.push({
+          id: `fc-header-${ch.id}`,
+          type: "definition",
+          title: `Key Terms — ${ch.title}`,
+          script: `Now let's review ${chFlashcards.length} key terms for ${ch.title}.`,
+        });
+        for (const fc of chFlashcards) {
+          items.push({
+            id: `fc-${fc.id}`,
+            type: "definition",
+            title: fc.term,
+            script: buildFlashcardTts(fc.term, fc.definition),
+          });
+        }
+      }
+
+      // Practice questions for this chapter
+      const chQuestions = questionsByChapter[ch.id] ?? [];
+      if (chQuestions.length > 0) {
+        items.push({
+          id: `q-header-${ch.id}`,
+          type: "question",
+          title: `Practice Questions — ${ch.title}`,
+          script: `Now let's test your knowledge with ${chQuestions.length} practice questions for ${ch.title}.`,
+        });
+        for (const q of chQuestions) {
+          items.push({
+            id: `q-${q.id}`,
+            type: "question",
+            title: `Q: ${q.prompt.slice(0, 60)}...`,
+            script: buildQuestionTts(q.prompt, (q as any).options ?? [], (q as any).correctIndex ?? 0, q.explanation),
           });
         }
       }
     }
 
-    // Add flashcards at the end as review
-    if (flashcards.length > 0) {
+    // Unassigned questions (chapterId is null) at the end
+    const unassignedQs = questions.filter(q => !(q as any).chapterId);
+    if (unassignedQs.length > 0) {
       items.push({
-        id: "fc-intro",
-        type: "definition",
-        title: "Flashcard Review",
-        script: `Now let's review ${flashcards.length} key terms and definitions for this track.`,
+        id: "unassigned-q-header",
+        type: "question",
+        title: "General Practice Questions",
+        script: `Finally, let's cover ${unassignedQs.length} general practice questions for this track.`,
       });
-      for (const fc of flashcards) {
+      for (const q of unassignedQs) {
         items.push({
-          id: `fc-${fc.id}`,
-          type: "definition",
-          title: fc.term,
-          script: `${fc.term}. ${fc.definition}`,
+          id: `q-${q.id}`,
+          type: "question",
+          title: `Q: ${q.prompt.slice(0, 60)}...`,
+          script: buildQuestionTts(q.prompt, (q as any).options ?? [], (q as any).correctIndex ?? 0, q.explanation),
         });
       }
     }
 
     return items;
-  }, [chapters, allSubsections, flashcards]);
+  }, [chapters, allSubsections, flashcardsByChapter, questionsByChapter, questions, chapterContentCounts]);
 
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -165,16 +300,22 @@ export default function AudioStudyPage() {
     const startIdx = audioItems.findIndex(item => item.id === `ch-intro-${ch.id}`);
     if (startIdx < 0) return;
     const nextChapter = chapters[chapterIdx + 1];
-    const endIdx = nextChapter
-      ? audioItems.findIndex(item => item.id === `ch-intro-${nextChapter.id}`)
-      : audioItems.findIndex(item => item.id === "fc-intro");
+    let endIdx = -1;
+    if (nextChapter) {
+      endIdx = audioItems.findIndex(item => item.id === `ch-intro-${nextChapter.id}`);
+    } else {
+      // Last chapter — check for unassigned questions section
+      endIdx = audioItems.findIndex(item => item.id === "unassigned-q-header");
+    }
     const slice = audioItems.slice(startIdx, endIdx > startIdx ? endIdx : undefined);
 
     if (slice.length > 0) {
       audio.dismiss();
       audio.enqueue(slice);
       setIsPlaying(true);
-      toast.success(`Playing chapter: ${ch.title}`);
+      toast.success(`Playing chapter: ${ch.title} (${slice.length} segments)`);
+    } else {
+      toast.info("No audio content for this chapter yet.");
     }
   }, [chapters, audioItems, audio]);
 
@@ -183,7 +324,9 @@ export default function AudioStudyPage() {
     setIsPlaying(audio.playing);
   }, [audio.playing]);
 
-  const isLoading = trackQ.isLoading || chaptersQ.isLoading || loadingSubsections;
+  const isDataLoading = trackQ.isLoading || chaptersQ.isLoading;
+  const isContentLoading = !subsectionsLoaded && chapters.length > 0;
+  const isLoading = isDataLoading || isContentLoading;
 
   // ── Auth guard ──
   if (authLoading) {
@@ -207,10 +350,12 @@ export default function AudioStudyPage() {
     );
   }
 
+  const trackTitle = track?.title ?? track?.name ?? slug.replace(/_/g, " ");
+
   // ── Render ──
   return (
-    <LearningShell>
-      <SEOHead title={`Audio Study — ${track?.title ?? track?.name ?? slug}`} description="Listen to track content" />
+    <LearningShell title={`${trackTitle} — Audio Study`}>
+      <SEOHead title={`Audio Study — ${trackTitle}`} description={`Listen to ${trackTitle} study content`} />
       <div className="min-h-screen pb-36">
         {/* Header */}
         <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b border-border">
@@ -225,17 +370,17 @@ export default function AudioStudyPage() {
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ fontFamily: "var(--font-display)" }}>
-                {isLoading ? <Skeleton className="h-6 w-48" /> : `${track?.title ?? track?.name ?? slug} — Audio Study`}
+                {isDataLoading ? <Skeleton className="h-6 w-48" /> : trackTitle}
               </h1>
               <p className="text-xs text-muted-foreground font-mono">
-                {isLoading ? <Skeleton className="h-3 w-32 mt-1" /> : `${chapters.length} chapters · ${audioItems.length} segments`}
+                {isDataLoading ? <Skeleton className="h-3 w-32 mt-1" /> : `${chapters.length} chapters · ${audioItems.length} segments`}
               </p>
             </div>
           </div>
         </div>
 
         <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-8 max-w-3xl mx-auto space-y-6">
-          {isLoading ? (
+          {isDataLoading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
             </div>
@@ -244,12 +389,12 @@ export default function AudioStudyPage() {
               {/* Play All button */}
               <Button
                 onClick={startFullPlayback}
-                disabled={audioItems.length === 0}
+                disabled={audioItems.length === 0 && subsectionsLoaded}
                 className="w-full py-3 gap-2"
                 size="lg"
               >
                 {audio.playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                {audio.playing ? "Playing..." : `Play All (${audioItems.length} segments)`}
+                {audio.playing ? "Playing..." : isContentLoading ? "Loading content..." : `Play All (${audioItems.length} segments)`}
               </Button>
 
               {/* Chapter list */}
@@ -259,12 +404,16 @@ export default function AudioStudyPage() {
                   Chapters
                 </h2>
                 {chapters.map((ch: any, i: number) => {
-                  const subs = allSubsections[ch.id] ?? [];
-                  const subCount = subs.filter((s: any) => {
-                    if (!Array.isArray(s.paragraphs)) return false;
-                    const text = s.paragraphs.map((p: any) => typeof p === "string" ? p : p?.text ?? "").join("");
-                    return text.length > 10;
-                  }).length;
+                  const counts = chapterContentCounts[ch.id];
+                  const hasContent = counts && counts.total > 0;
+                  const isChapterLoading = !subsectionsLoaded;
+
+                  // Build description parts
+                  const descParts: string[] = [];
+                  if (counts?.subsections) descParts.push(`${counts.subsections} sections`);
+                  if (counts?.flashcards) descParts.push(`${counts.flashcards} terms`);
+                  if (counts?.questions) descParts.push(`${counts.questions} questions`);
+                  const desc = descParts.length > 0 ? descParts.join(" · ") : "No content yet";
 
                   return (
                     <motion.div
@@ -280,14 +429,18 @@ export default function AudioStudyPage() {
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-medium truncate">{ch.title}</h3>
                         <p className="text-[10px] text-muted-foreground">
-                          {subCount > 0 ? `${subCount} sections with content` : (subs.length > 0 ? `${subs.length} sections` : "Loading...")}
+                          {isChapterLoading ? (
+                            <span className="flex items-center gap-1">
+                              <Loader2 className="w-2.5 h-2.5 animate-spin" /> Loading content...
+                            </span>
+                          ) : desc}
                         </p>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => playChapter(i)}
-                        disabled={subCount === 0}
+                        disabled={isChapterLoading || !hasContent}
                         className="gap-1 text-xs flex-none"
                       >
                         <Play className="w-3 h-3" /> Play
@@ -305,7 +458,7 @@ export default function AudioStudyPage() {
                     Flashcard Review ({flashcards.length} terms)
                   </h3>
                   <p className="text-xs text-muted-foreground mb-3">
-                    Key terms and definitions are included at the end of the full playback.
+                    Key terms are included within each chapter's audio playback.
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {flashcards.slice(0, 12).map((fc: any) => (
@@ -318,8 +471,21 @@ export default function AudioStudyPage() {
                 </div>
               )}
 
+              {/* Practice questions section */}
+              {questions.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <h3 className="text-sm font-semibold flex items-center gap-2 mb-2" style={{ fontFamily: "var(--font-display)" }}>
+                    <HelpCircle className="w-4 h-4 text-amber-400" />
+                    Practice Questions ({questions.length} questions)
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Questions with answers and explanations are included within each chapter's audio playback.
+                  </p>
+                </div>
+              )}
+
               {/* Empty state */}
-              {audioItems.length === 0 && !isLoading && (
+              {audioItems.length === 0 && subsectionsLoaded && (
                 <div className="text-center py-12">
                   <Headphones className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
                   <p className="text-sm text-muted-foreground">No audio content available for this track yet.</p>
