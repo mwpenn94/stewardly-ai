@@ -9300,3 +9300,8 @@
 - [x] Recursion Pass 1: Expert Assessment (2 actionable: FINDING-1 non-MC correctness, FINDING-3 stale closure)
 - [x] Recursion Pass 2: Optimize findings (FINDING-1 non-MC correctness fixed, FINDING-3 stale closure fixed, FINDING-5 state reset fixed)
 - [x] Recursion Pass 3: Validate convergence (all fixes verified, declaration order fixed, 207/207 tests pass, no runtime errors)
+## Bug Fix: What's New Modal Mobile Layout
+- [x] Fix What's New modal mobile responsiveness — content overflow, footer overlap, scrollability
+- [x] Fix Learning Engine page mobile tabs overlapping and spacing issues
+- [x] Fix Hands-Free Study mobile layout — reduced padding, responsive buttons, bottom safe area for audio player
+- [x] Fix critical crash: undefined is not an object (evaluating 'a.getUTCFullYear') — LearningShell.tsx summarizeStreak(entries) missing 2nd Date arg

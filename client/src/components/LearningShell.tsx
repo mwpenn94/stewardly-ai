@@ -277,7 +277,7 @@ export default function LearningShell({ children, title }: LearningShellProps) {
   // Load streak from localStorage
   const streak = useMemo(() => {
     const entries = loadStreakFromStorage();
-    return summarizeStreak(entries);
+    return summarizeStreak(entries, new Date());
   }, []);
 
   // Mastery summary from server (if authenticated)

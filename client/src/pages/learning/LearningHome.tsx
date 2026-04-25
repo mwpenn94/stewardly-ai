@@ -226,7 +226,7 @@ export default function LearningHome() {
 
         {/* ─── TAB BAR ─── */}
         <div className="px-4 sm:px-6 lg:px-8 pt-4">
-          <div className="flex gap-1 p-1 bg-card rounded-xl border border-border overflow-x-auto" role="tablist">
+          <div className="flex gap-1 p-1 bg-card rounded-xl border border-border overflow-x-auto scrollbar-none" role="tablist">
             {TABS.filter(tab => !isGuest || tab.id === "overview" || tab.id === "study" || tab.id === "reference").map(tab => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -236,21 +236,21 @@ export default function LearningHome() {
                   role="tab"
                   aria-selected={isActive}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${
                     isActive
                       ? "bg-primary/10 text-primary border border-primary/30"
                       : "text-muted-foreground hover:bg-background hover:text-foreground border border-transparent"
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>{tab.label}</span>
-                  <span className="hidden sm:inline text-[10px] text-muted-foreground/60">{tab.description}</span>
+                  <span className="hidden lg:inline text-[10px] text-muted-foreground/60">{tab.description}</span>
                 </button>
               );
             })}
 
-            {/* Quick actions in tab bar */}
-            <div className="ml-auto flex items-center gap-1.5 shrink-0">
+            {/* Quick actions in tab bar — hidden on small screens to save space */}
+            <div className="ml-auto hidden sm:flex items-center gap-1.5 shrink-0">
               <Link href="/learning/search">
                 <Button variant="ghost" size="sm" className="h-7 text-xs gap-1"><Search className="h-3.5 w-3.5" />Search</Button>
               </Link>

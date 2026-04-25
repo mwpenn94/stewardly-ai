@@ -364,20 +364,20 @@ export default function HandsFreeStudy() {
   return (
     <LearningShell>
       <SEOHead title="Hands-Free Study" description="Audio-based learning sessions" />
-      <div className="min-h-screen">
+      <div className="min-h-screen pb-36">
         {/* ── Header ── */}
-        <div className="px-6 lg:px-10 py-6 border-b border-border">
+        <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-6 border-b border-border">
           <div className="flex items-center gap-3">
             <Link href="/learning">
               <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
               </motion.div>
             </Link>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
-              <Headphones className="w-5 h-5 text-primary" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center bg-primary/10">
+              <Headphones className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+              <h1 className="text-lg sm:text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
                 Hands-Free Study
               </h1>
               <p className="text-xs text-muted-foreground font-mono">Listen and learn — no screen required</p>
@@ -385,7 +385,7 @@ export default function HandsFreeStudy() {
           </div>
         </div>
 
-        <div className="px-6 lg:px-10 py-8">
+        <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-8">
           <AnimatePresence mode="wait">
             {/* ═══════════ SETUP PHASE ═══════════ */}
             {phase === "setup" && (
@@ -522,7 +522,7 @@ export default function HandsFreeStudy() {
                 className="max-w-2xl mx-auto"
               >
                 {/* Now Playing Card */}
-                <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+                <div className="bg-card border border-border rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6">
                   {/* Progress */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
                     <span>{currentItemIndex + 1} / {contentQueue.length}</span>
@@ -573,14 +573,14 @@ export default function HandsFreeStudy() {
                     <button
                       onClick={skipBackward}
                       disabled={currentItemIndex === 0}
-                      className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
                       title="Previous (Left Arrow)"
                     >
                       <SkipBack className="w-4 h-4" />
                     </button>
                     <button
                       onClick={togglePause}
-                      className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
                       title="Play/Pause (Space)"
                     >
                       {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
@@ -588,14 +588,14 @@ export default function HandsFreeStudy() {
                     <button
                       onClick={skipForward}
                       disabled={currentItemIndex >= contentQueue.length - 1 && !repeatMode}
-                      className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
                       title="Next (Right Arrow)"
                     >
                       <SkipForward className="w-4 h-4" />
                     </button>
                     <button
                       onClick={stopPlayback}
-                      className="w-10 h-10 rounded-full border border-destructive/30 text-destructive flex items-center justify-center hover:bg-destructive/10 transition-colors"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-destructive/30 text-destructive flex items-center justify-center hover:bg-destructive/10 transition-colors"
                       title="Stop (Escape)"
                     >
                       <Square className="w-4 h-4" />

@@ -461,6 +461,15 @@ body.color-blind-mode [role="button"][aria-disabled="true"] {
   }
 }
 
+/* Utility: hide scrollbar for horizontal-scroll tab bars on mobile */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Scrollbar styling — slightly warmer to match the gold palette */
 ::-webkit-scrollbar {
   width: 6px;

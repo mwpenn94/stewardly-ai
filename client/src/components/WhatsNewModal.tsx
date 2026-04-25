@@ -463,11 +463,11 @@ export default function WhatsNewModal({ forceOpen }: WhatsNewModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleDismiss(); }}>
       <DialogContent
-        className="sm:max-w-lg max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden"
+        className="sm:max-w-lg max-h-[80vh] max-sm:max-h-[75vh] flex flex-col gap-0 p-0 overflow-hidden"
         aria-describedby="whats-new-description"
       >
         {/* Gradient header */}
-        <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent">
+        <div className="relative px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent shrink-0">
           <DialogHeader className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
@@ -489,8 +489,8 @@ export default function WhatsNewModal({ forceOpen }: WhatsNewModalProps) {
         <Separator />
 
         {/* Entries list */}
-        <ScrollArea className="flex-1 min-h-0 max-h-[50vh]">
-          <div className="px-6 py-4 space-y-3">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-2.5 sm:space-y-3">
             {latestRelease.entries.map((entry, i) => {
               const style = CATEGORY_STYLES[entry.category];
               return (
@@ -522,7 +522,7 @@ export default function WhatsNewModal({ forceOpen }: WhatsNewModalProps) {
         <Separator />
 
         {/* Footer */}
-        <DialogFooter className="px-6 py-4 flex-row justify-between sm:justify-between gap-2">
+        <DialogFooter className="px-4 sm:px-6 py-3 sm:py-4 flex-row justify-between sm:justify-between gap-2 shrink-0">
           <Button
             variant="ghost"
             size="sm"
