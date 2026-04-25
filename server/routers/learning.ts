@@ -1177,4 +1177,118 @@ export const learningRouter = router({
       summary: summarizeHistory(history),
     };
   }),
+
+  /**
+   * AI Content Generation — bulk-generate practice questions and flashcards
+   * for tracks with thin coverage. Admin-only, idempotent.
+   */
+  generateContent: adminProcedure
+    .input(z.object({
+      trackId: z.number().optional(),
+      questionTarget: z.number().default(50),
+      flashcardTarget: z.number().default(30),
+    }).optional())
+    .mutation(async ({ ctx }) => {
+      const { generateQuestionsForTrack, generateFlashcardsForTrack } = await import("../services/learningContentGenerator");
+      const { getDb: getDbFn } = await import("../db");
+      const { learningTracks, learningChapters, learningPracticeQuestions, learningFlashcards } = await import("../../drizzle/schema");
+      const { sql } = await import("drizzle-orm");
+      const db = await getDbFn();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+
+      // Get all tracks with their chapters and current counts
+      const tracks = await db.select().from(learningTracks);
+      const chapters = await db.select().from(learningChapters);
+      const questions = await db.select({
+        trackId: learningPracticeQuestions.trackId,
+        count: sql<number>`COUNT(*)`,
+      }).from(learningPracticeQuestions).groupBy(learningPracticeQuestions.trackId);
+      const flashcards = await db.select({
+        trackId: learningFlashcards.trackId,
+        count: sql<number>`COUNT(*)`,
+      }).from(learningFlashcards).groupBy(learningFlashcards.trackId);
+
+      const qCountMap = Object.fromEntries(questions.map(q => [q.trackId, q.count]));
+      const fcCountMap = Object.fromEntries(flashcards.map(f => [f.trackId, f.count]));
+      const chaptersByTrack = chapters.reduce((acc, ch) => {
+        const tid = ch.trackId;
+        if (tid) { acc[tid] = acc[tid] || []; acc[tid].push(ch); }
+        return acc;
+      }, {} as Record<number, typeof chapters>);
+
+      const results: { trackSlug: string; questionsAdded: number; flashcardsAdded: number }[] = [];
+
+      for (const track of tracks) {
+        const existingQ = qCountMap[track.id] || 0;
+        const existingFC = fcCountMap[track.id] || 0;
+        const trackChapters = chaptersByTrack[track.id] || [];
+        const chapterNames = trackChapters.map(c => c.title || c.slug || `Chapter ${c.sortOrder}`);
+
+        if (existingQ >= 50 && existingFC >= 30) {
+          results.push({ trackSlug: track.slug, questionsAdded: 0, flashcardsAdded: 0 });
+          continue;
+        }
+
+        let questionsAdded = 0;
+        let flashcardsAdded = 0;
+
+        // Generate questions if needed
+        if (existingQ < 50) {
+          const generated = await generateQuestionsForTrack(
+            track.name || track.slug, track.slug, chapterNames, existingQ, 50,
+          );
+          if (generated.length > 0) {
+            const chapterIds = trackChapters.map(c => c.id);
+            for (const q of generated) {
+              const chId = chapterIds.length > 0 ? chapterIds[Math.floor(Math.random() * chapterIds.length)] : null;
+              await db.insert(learningPracticeQuestions).values({
+                trackId: track.id,
+                chapterId: chId,
+                prompt: q.prompt,
+                options: q.options,
+                correctIndex: q.correctIndex,
+                explanation: q.explanation,
+                difficulty: q.difficulty,
+                tags: q.tags,
+                source: "ai_generated",
+                status: "published",
+              });
+            }
+            questionsAdded = generated.length;
+          }
+        }
+
+        // Generate flashcards if needed
+        if (existingFC < 30) {
+          const generated = await generateFlashcardsForTrack(
+            track.name || track.slug, track.slug, chapterNames, existingFC, 30,
+          );
+          if (generated.length > 0) {
+            const chapterIds = trackChapters.map(c => c.id);
+            for (const fc of generated) {
+              const chId = chapterIds.length > 0 ? chapterIds[Math.floor(Math.random() * chapterIds.length)] : null;
+              await db.insert(learningFlashcards).values({
+                trackId: track.id,
+                chapterId: chId,
+                term: fc.term,
+                definition: fc.definition,
+                sourceLabel: `AI-generated for ${track.slug}`,
+                source: "ai_generated",
+                status: "published",
+                tags: fc.tags,
+              });
+            }
+            flashcardsAdded = generated.length;
+          }
+        }
+
+        results.push({ trackSlug: track.slug, questionsAdded, flashcardsAdded });
+      }
+
+      return {
+        totalQuestionsAdded: results.reduce((s, r) => s + r.questionsAdded, 0),
+        totalFlashcardsAdded: results.reduce((s, r) => s + r.flashcardsAdded, 0),
+        perTrack: results,
+      };
+    }),
 });

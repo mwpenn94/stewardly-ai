@@ -26,6 +26,7 @@ import { useLocation } from "wouter";
 
 /* ─── Pipeline registry: known integrations that appear even if not connected ─── */
 const PIPELINE_REGISTRY: {
+  id: string;
   providerSlug: string;
   name: string;
   source: string;
@@ -35,24 +36,24 @@ const PIPELINE_REGISTRY: {
   webhookUrl?: string;
   setupNote?: string;
 }[] = [
-  { providerSlug: "redtail", name: "CRM Contact Sync", source: "Redtail CRM", destination: "WealthBridge DB", schedule: "Every 15 min", description: "Bidirectional sync of contacts, activities, and opportunities between Redtail CRM and WealthBridge." },
-  { providerSlug: "fred", name: "Market Data Feed", source: "FRED API", destination: "Analytics Engine", schedule: "Daily at 6:00 AM", description: "Federal Reserve economic data including interest rates, GDP, CPI, and employment figures." },
-  { providerSlug: "plaid", name: "Plaid Account Sync", source: "Plaid API", destination: "Client Accounts", schedule: "Every 4 hours", description: "Syncs linked bank accounts, balances, and transaction history via Plaid." },
-  { providerSlug: "snaptrade", name: "SnapTrade Portfolio Sync", source: "SnapTrade API", destination: "Investment Portfolios", schedule: "Every 30 min", description: "Syncs brokerage account positions, trades, and performance data via SnapTrade." },
-  { providerSlug: "email-service", name: "Email Campaign Analytics", source: "Email Service", destination: "Campaign Dashboard", schedule: "Hourly", description: "Aggregates open rates, click rates, bounces, and unsubscribes from email campaigns." },
-  { providerSlug: "sec-edgar", name: "SEC EDGAR Filings", source: "EDGAR API", destination: "Compliance DB", schedule: "Daily at 8:00 PM", description: "Pulls SEC filings, 13F reports, and regulatory disclosures for compliance monitoring." },
-  { providerSlug: "ghl", name: "GHL Webhook Receiver", source: "GoHighLevel", destination: "Lead Pipeline", schedule: "Real-time (webhook)", description: "Receives webhook events from GoHighLevel for new leads, form submissions, and appointment bookings.", webhookUrl: "/api/trpc/ghlWebhook.ingest", setupNote: "In GHL Settings > Webhooks, add this URL as the endpoint." },
-  { providerSlug: "census", name: "Census Bureau Data", source: "Census API", destination: "Market Analysis", schedule: "Weekly (Monday)", description: "Demographic and economic data from the US Census Bureau for market analysis and segmentation." },
-  { providerSlug: "gleif", name: "GLEIF LEI Lookup", source: "GLEIF API", destination: "Entity Registry", schedule: "Daily at 7:00 AM", description: "Global Legal Entity Identifier Foundation — LEI lookups for entity verification, counterparty risk, and KYC compliance." },
-  { providerSlug: "openfigi", name: "OpenFIGI Instrument Mapping", source: "OpenFIGI API", destination: "Securities DB", schedule: "Daily at 6:30 AM", description: "Maps tickers, CUSIPs, and ISINs to Financial Instrument Global Identifiers." },
-  { providerSlug: "naic", name: "NAIC Insurance Data", source: "NAIC CIS", destination: "Carrier Intelligence", schedule: "Weekly (Wednesday)", description: "NAIC — complaint ratios, financial strength data, and carrier comparisons." },
-  { providerSlug: "ffiec", name: "FFIEC Banking Data", source: "FFIEC API", destination: "Banking Analytics", schedule: "Monthly (1st)", description: "HMDA data, CRA ratings, and banking institution demographics." },
-  { providerSlug: "bls", name: "BLS Employment Data", source: "BLS API", destination: "Economic Indicators", schedule: "Monthly (first Friday)", description: "Bureau of Labor Statistics — employment, unemployment, CPI, PPI, and wage data." },
-  { providerSlug: "bea", name: "BEA GDP & Income", source: "BEA API", destination: "Economic Indicators", schedule: "Quarterly", description: "Bureau of Economic Analysis — GDP, personal income, consumer spending." },
-  { providerSlug: "dripify", name: "Dripify CSV Import", source: "Dripify", destination: "Lead Pipeline", schedule: "On upload", description: "Imports LinkedIn outreach results from Dripify CSV exports." },
-  { providerSlug: "linkedin-sales-nav", name: "LinkedIn Sales Navigator", source: "LinkedIn Sales Nav", destination: "Lead Pipeline", schedule: "On upload", description: "Parses Sales Navigator CSV exports for prospecting pipeline." },
-  { providerSlug: "workable", name: "Workable ATS Sync", source: "Workable", destination: "Recruiting Pipeline", schedule: "Every 2 hours", description: "Syncs candidate applications, interview stages, and hiring pipeline data from Workable ATS." },
-  { providerSlug: "ghl-crm", name: "GoHighLevel Contact Sync", source: "GoHighLevel CRM", destination: "CRM Contacts", schedule: "Every 15 min", description: "Bidirectional sync of contacts, tags, opportunities, and custom fields." },
+  { id: "pl-01", providerSlug: "redtail", name: "CRM Contact Sync", source: "Redtail CRM", destination: "WealthBridge DB", schedule: "Every 15 min", description: "Bidirectional sync of contacts, activities, and opportunities between Redtail CRM and WealthBridge." },
+  { id: "pl-02", providerSlug: "fred", name: "Market Data Feed", source: "FRED API", destination: "Analytics Engine", schedule: "Daily at 6:00 AM", description: "Federal Reserve economic data including interest rates, GDP, CPI, and employment figures." },
+  { id: "pl-03", providerSlug: "plaid", name: "Plaid Account Sync", source: "Plaid API", destination: "Client Accounts", schedule: "Every 4 hours", description: "Syncs linked bank accounts, balances, and transaction history via Plaid." },
+  { id: "pl-04", providerSlug: "snaptrade", name: "SnapTrade Portfolio Sync", source: "SnapTrade API", destination: "Investment Portfolios", schedule: "Every 30 min", description: "Syncs brokerage account positions, trades, and performance data via SnapTrade." },
+  { id: "pl-05", providerSlug: "email-service", name: "Email Campaign Analytics", source: "Email Service", destination: "Campaign Dashboard", schedule: "Hourly", description: "Aggregates open rates, click rates, bounces, and unsubscribes from email campaigns." },
+  { id: "pl-06", providerSlug: "sec-edgar", name: "SEC EDGAR Filings", source: "EDGAR API", destination: "Compliance DB", schedule: "Daily at 8:00 PM", description: "Pulls SEC filings, 13F reports, and regulatory disclosures for compliance monitoring." },
+  { id: "pl-07", providerSlug: "ghl", name: "GHL Webhook Receiver", source: "GoHighLevel", destination: "Lead Pipeline", schedule: "Real-time (webhook)", description: "Receives webhook events from GoHighLevel for new leads, form submissions, and appointment bookings.", webhookUrl: "/api/trpc/ghlWebhook.ingest", setupNote: "In GHL Settings > Webhooks, add this URL as the endpoint." },
+  { id: "pl-08", providerSlug: "census", name: "Census Bureau Data", source: "Census API", destination: "Market Analysis", schedule: "Weekly (Monday)", description: "Demographic and economic data from the US Census Bureau for market analysis and segmentation." },
+  { id: "pl-09", providerSlug: "gleif", name: "GLEIF LEI Lookup", source: "GLEIF API", destination: "Entity Registry", schedule: "Daily at 7:00 AM", description: "Global Legal Entity Identifier Foundation — LEI lookups for entity verification, counterparty risk, and KYC compliance." },
+  { id: "pl-10", providerSlug: "openfigi", name: "OpenFIGI Instrument Mapping", source: "OpenFIGI API", destination: "Securities DB", schedule: "Daily at 6:30 AM", description: "Maps tickers, CUSIPs, and ISINs to Financial Instrument Global Identifiers." },
+  { id: "pl-11", providerSlug: "naic", name: "NAIC Insurance Data", source: "NAIC CIS", destination: "Carrier Intelligence", schedule: "Weekly (Wednesday)", description: "NAIC — complaint ratios, financial strength data, and carrier comparisons." },
+  { id: "pl-12", providerSlug: "ffiec", name: "FFIEC Banking Data", source: "FFIEC API", destination: "Banking Analytics", schedule: "Monthly (1st)", description: "HMDA data, CRA ratings, and banking institution demographics." },
+  { id: "pl-13", providerSlug: "bls", name: "BLS Employment Data", source: "BLS API", destination: "Economic Indicators", schedule: "Monthly (first Friday)", description: "Bureau of Labor Statistics — employment, unemployment, CPI, PPI, and wage data." },
+  { id: "pl-14", providerSlug: "bea", name: "BEA GDP & Income", source: "BEA API", destination: "Economic Indicators", schedule: "Quarterly", description: "Bureau of Economic Analysis — GDP, personal income, consumer spending." },
+  { id: "pl-15", providerSlug: "dripify", name: "Dripify CSV Import", source: "Dripify", destination: "Lead Pipeline", schedule: "On upload", description: "Imports LinkedIn outreach results from Dripify CSV exports." },
+  { id: "pl-16", providerSlug: "linkedin-sales-nav", name: "LinkedIn Sales Navigator", source: "LinkedIn Sales Nav", destination: "Lead Pipeline", schedule: "On upload", description: "Parses Sales Navigator CSV exports for prospecting pipeline." },
+  { id: "pl-17", providerSlug: "workable", name: "Workable ATS Sync", source: "Workable", destination: "Recruiting Pipeline", schedule: "Every 2 hours", description: "Syncs candidate applications, interview stages, and hiring pipeline data from Workable ATS." },
+  { id: "pl-18", providerSlug: "ghl-crm", name: "GoHighLevel Contact Sync", source: "GoHighLevel CRM", destination: "CRM Contacts", schedule: "Every 15 min", description: "Bidirectional sync of contacts, tags, opportunities, and custom fields." },
 ];
 
 type PipelineStatus = "connected" | "disconnected" | "error" | "pending" | "expired" | "available" | "paused" | "syncing";

@@ -19,11 +19,11 @@
  */
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, gte, inArray } from "drizzle-orm";
 import {
   cadenceEnrollments, cadenceTouchLog, cadenceComplianceAudit,
   cadenceOptOutRegistry, meddpiccScores, recruitDimensionScores,
-  hnwNarrativeScores, patternTransitionAssessments,
+  hnwNarrativeScores, patternTransitionAssessments, leadPipeline,
 } from "../../drizzle/schema";
 import { CADENCE_LIBRARY, getCadence, GLOBAL_RULES } from "../services/cadenceEngine";
 import { scoreRecruitCandidate } from "../services/recruitScoring";
@@ -873,4 +873,59 @@ export const cadenceEngineRouter = router({
         stageRecommendation: determineStageRecommendation(fields, complete),
       };
     }),
+
+  /* ─── Cascade Tracking: Tier 1 colleague auto-queue ───────────────── */
+  getCascadeCandidates: protectedProcedure.query(async ({ ctx }) => {
+    const db = await requireDb();
+    const rows = await db.select()
+      .from(recruitDimensionScores)
+      .where(and(
+        eq(recruitDimensionScores.userId, ctx.user.id),
+        eq(recruitDimensionScores.tier, "Tier 1"),
+        gte(recruitDimensionScores.cascadePotentialCount, 5),
+      ))
+      .orderBy(desc(recruitDimensionScores.cascadePotentialCount));
+
+    const leadIds = rows.map(r => r.leadId);
+    let leadMap: Record<number, { name: string; company: string }> = {};
+    if (leadIds.length > 0) {
+      const leads = await db.select({
+        id: leadPipeline.id,
+        firstName: leadPipeline.firstName,
+        lastName: leadPipeline.lastName,
+        company: leadPipeline.source,
+      }).from(leadPipeline).where(inArray(leadPipeline.id, leadIds));
+      leadMap = Object.fromEntries(leads.map(l => [
+        l.id,
+        { name: [l.firstName, l.lastName].filter(Boolean).join(" ") || `Lead #${l.id}`, company: l.company || "" },
+      ]));
+    }
+
+    // Also check which leads have completed cadences (for auto-queue status)
+    const completedEnrollments = leadIds.length > 0
+      ? await db.select()
+          .from(cadenceEnrollments)
+          .where(and(
+            eq(cadenceEnrollments.userId, ctx.user.id),
+            eq(cadenceEnrollments.status, "completed"),
+            inArray(cadenceEnrollments.leadId, leadIds),
+          ))
+      : [];
+    const completedLeadIds = new Set(completedEnrollments.map(e => e.leadId));
+
+    return rows.map(r => ({
+      id: r.id,
+      leadId: r.leadId,
+      leadName: leadMap[r.leadId]?.name ?? `Lead #${r.leadId}`,
+      leadCompany: leadMap[r.leadId]?.company ?? "",
+      compositeScore: r.compositeScore ?? 0,
+      tier: r.tier ?? "Tier 1",
+      cascadePotentialCount: r.cascadePotentialCount ?? 0,
+      cascadeRationale: r.cascadeRationale ?? "",
+      priorityActions: (r.priorityActionsJson as string[]) ?? [],
+      scoredAt: r.scoredAt,
+      cadenceCompleted: completedLeadIds.has(r.leadId),
+      status: completedLeadIds.has(r.leadId) ? "ready_for_cascade" as const : "in_cadence" as const,
+    }));
+  }),
 });

@@ -22,7 +22,7 @@ import {
   BookOpen, GraduationCap, Shield, Sparkles, TrendingUp, Brain, Award,
   ClipboardCheck, Scale, Flame, Search, ChevronDown, AlertTriangle, Layers,
   HelpCircle, Users, RotateCcw, Settings, FolderOpen, Home, ChevronRight,
-  Calculator, FileText,
+  Calculator, FileText, BarChart3, Bookmark, ListMusic, FileDown, History,
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import {
@@ -968,6 +968,96 @@ function ManageTab({ activeLicenses, expiringSoon, isAdvisorPlus, isAdmin }: {
           </CardContent>
         </Card>
 
+        {/* Study Analytics */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="h-5 w-5" />
+              Study Analytics
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Track study time, mastery trends, and performance over time.</p>
+            <Link href="/learning/analytics">
+              <Button variant="outline" size="sm">View Analytics →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+        {/* Progress Export */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileDown className="h-5 w-5" />
+              Progress Report
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Export your study progress and CE credits as PDF or CSV.</p>
+            <Link href="/learning/export">
+              <Button variant="outline" size="sm">Export Progress →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+        {/* Bookmarks */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bookmark className="h-5 w-5" />
+              Bookmarks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Saved flashcards, definitions, and study items for quick review.</p>
+            <Link href="/learning/bookmarks">
+              <Button variant="outline" size="sm">View Bookmarks →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+        {/* Study Playlists */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ListMusic className="h-5 w-5" />
+              Study Playlists
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Curated study playlists you’ve created or saved from peers.</p>
+            <Link href="/learning/playlists">
+              <Button variant="outline" size="sm">View Playlists →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+        {/* Study Groups */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-5 w-5" />
+              Study Groups
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Join or create study groups for collaborative exam prep.</p>
+            <Link href="/learning/groups">
+              <Button variant="outline" size="sm">Browse Groups →</Button>
+            </Link>
+          </CardContent>
+        </Card>
+        {/* Discovery Log */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="h-5 w-5" />
+              Discovery Log
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">Your learning journey — recently viewed concepts and topics.</p>
+            <Link href="/learning/discovery">
+              <Button variant="outline" size="sm">View History →</Button>
+            </Link>
+          </CardContent>
+        </Card>
         {/* Content Studio (advisor+) */}
         {isAdvisorPlus && (
           <Card>

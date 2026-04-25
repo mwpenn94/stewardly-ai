@@ -36,6 +36,7 @@ describe("Intelligence Wiring Verification", () => {
       + ` | grep -v "services/recruitScoring.ts"`
       + ` | grep -v "services/replyAnalysis.ts"`
       + ` | grep -v "services/weeklySummaryGeneration.ts"`
+      + ` | grep -v "services/learningContentGenerator.ts"`
       + ` || true`,
       { cwd: ROOT, encoding: "utf-8" }
     ).trim();

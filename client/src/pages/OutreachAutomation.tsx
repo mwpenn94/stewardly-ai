@@ -10,7 +10,7 @@ import { useState, useMemo } from "react";
 import {
   Plus, Play, Pause, Square, Search, Zap, Clock, Users, CheckCircle2,
   AlertTriangle, Mail, Phone, MessageSquare, Linkedin, Send, Shield,
-  Loader2, RefreshCw, BarChart3, Target, ArrowRight, Eye,
+  Loader2, RefreshCw, BarChart3, Target, ArrowRight, Eye, GitBranch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ import { TouchDraftReview } from "@/components/TouchDraftReview";
 import { ReplyInbox } from "@/components/ReplyInbox";
 import { CadenceComplianceDashboard } from "@/components/CadenceComplianceDashboard";
 import { FunnelMetricsPanel } from "@/components/FunnelMetricsPanel";
+import { CascadeTrackingPanel } from "@/components/CascadeTrackingPanel";
 
 // ─── Workflow Builder & Trigger Configuration ───────────────────────
 // OutreachWorkflowBuilder is embedded within the cadence tab for visual workflow editing
@@ -207,6 +208,7 @@ export default function OutreachAutomation({ embedded = false }: { embedded?: bo
             <TabsTrigger value="replies">Reply Inbox</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
             <TabsTrigger value="metrics">Metrics</TabsTrigger>
+            <TabsTrigger value="cascade"><GitBranch className="w-3.5 h-3.5 mr-1 inline" />Cascade</TabsTrigger>
           </TabsList>
 
           {/* ─── CADENCES TAB ─── */}
@@ -471,6 +473,11 @@ export default function OutreachAutomation({ embedded = false }: { embedded?: bo
           {/* ─── METRICS TAB ─── */}
           <TabsContent value="metrics" className="mt-4">
             <FunnelMetricsPanel embedded />
+          </TabsContent>
+
+          {/* ─── CASCADE TRACKING TAB ─── */}
+          <TabsContent value="cascade" className="space-y-3 mt-4">
+            <CascadeTrackingPanel />
           </TabsContent>
         </Tabs>
       </div>

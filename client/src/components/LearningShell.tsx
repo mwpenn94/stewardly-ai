@@ -21,7 +21,8 @@ import {
   Home, Search, ClipboardCheck, Calculator, Scale, Brain,
   BookOpen, Layers, Headphones, HelpCircle, Link2,
   Flame, ChevronLeft, ChevronRight, Menu, Settings,
-  GraduationCap, Beaker,
+  GraduationCap, Beaker, Trophy, BarChart3, Users,
+  Bookmark, ListMusic, FileDown, History,
 } from "lucide-react";
 import {
   loadStreakFromStorage,
@@ -74,6 +75,18 @@ const NAV_SECTIONS: NavSection[] = [
       { label: "Formula Ref", icon: Calculator, path: "/learning/formulas", match: ["/learning/formulas"] },
       { label: "Quick Quiz", icon: HelpCircle, path: "/learning/ai-quiz", match: ["/learning/ai-quiz"] },
       { label: "Concept Links", icon: Link2, path: "/learning/connections-browse", match: ["/learning/connections-browse"] },
+    ],
+  },
+  {
+    label: "MY LEARNING",
+    items: [
+      { label: "Achievements", icon: Trophy, path: "/learning/achievements", match: ["/learning/achievements"] },
+      { label: "Analytics", icon: BarChart3, path: "/learning/analytics", match: ["/learning/analytics"] },
+      { label: "Progress Report", icon: FileDown, path: "/learning/export", match: ["/learning/export"] },
+      { label: "Bookmarks", icon: Bookmark, path: "/learning/bookmarks", match: ["/learning/bookmarks"] },
+      { label: "Playlists", icon: ListMusic, path: "/learning/playlists", match: ["/learning/playlists"] },
+      { label: "Study Groups", icon: Users, path: "/learning/groups", match: ["/learning/groups", "/learning/peer"] },
+      { label: "Discovery Log", icon: History, path: "/learning/discovery", match: ["/learning/discovery"] },
     ],
   },
 ];
