@@ -9419,3 +9419,33 @@
 - [x] DOM nesting fix (Skeleton div-in-h1/span hydration error)
 - [x] Removed unused imports and dead code (SECTION_ICONS, SECTION_COLORS, isPlaying state, user destructuring, FileText, useEffect)
 - [x] Convergence verification passes (2 consecutive clean passes)
+
+## Pass 161 — Discipline Picker + Audio Progress Tracking (Recursive Convergence)
+
+### Feature 2: Discipline-Filtered Content Picker
+- [x] Add discipline picker dropdown to AudioStudyPage header
+- [x] Fetch available disciplines for the track's exam/certification
+- [x] Pass disciplineId filter to getHandsFreeContent query
+- [x] Update content counts and audio items when discipline changes
+- [x] Cross-track content exploration via discipline filter
+- [x] "All Disciplines" default option showing full track content
+
+### Feature 3: Audio Study Progress Tracking
+- [x] Database schema: audio_study_progress table (userId, trackSlug, segmentId, completedAt, durationMs)
+- [x] tRPC procedure: audioProgress.recordSegment (mark segment as listened)
+- [x] tRPC procedure: audioProgress.recordBatch (batch record multiple segments)
+- [x] tRPC procedure: audioProgress.getTrackProgress (get progress for a track)
+- [x] tRPC procedure: audioProgress.getStats (aggregate stats with streak calculation)
+- [x] Wire AudioCompanion onSegmentComplete callback to record progress
+- [x] Progress badges on content sections showing completed/total segment counts
+- [x] Study stats summary card (total time, segments completed, tracks studied, streak)
+- [x] Integrate with existing studySessions.record for activity heatmap (session flush on unmount)
+
+### Recursive Convergence Passes
+- [x] Expert Assessment pass (audit codebase for both features)
+- [x] Optimization Pass 1 (code quality, type safety, performance)
+- [x] Validation Pass 1 (tests: 12400 passed, 16 pre-existing failures, 0 regressions)
+- [x] Optimization Pass 2 (accessibility, mobile, UX polish)
+- [x] Validation Pass 2 (fix: removed sql import shadow in getStats)
+- [x] Convergence Pass 3 (clean pass 1 of 2)
+- [x] Convergence Pass 4 (clean pass 2 of 2) — CONVERGENCE CONFIRMED

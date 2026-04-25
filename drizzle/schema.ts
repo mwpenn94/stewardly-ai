@@ -7988,3 +7988,23 @@ export const patternTransitionAssessments = mysqlTable("pattern_transition_asses
 }));
 export type PatternTransitionAssessment = typeof patternTransitionAssessments.$inferSelect;
 export type InsertPatternTransitionAssessment = typeof patternTransitionAssessments.$inferInsert;
+
+// ─── Audio Study Progress ───────────────────────────────────────────────────
+// Granular segment-level tracking for audio study sessions.
+// Records each completed audio segment so progress can be resumed and
+// aggregated into the activity heatmap / study analytics.
+export const audioStudyProgress = mysqlTable("audio_study_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  trackSlug: varchar("track_slug", { length: 128 }).notNull(),
+  segmentId: varchar("segment_id", { length: 255 }).notNull(),
+  segmentType: varchar("segment_type", { length: 64 }).notNull(),
+  segmentTitle: varchar("segment_title", { length: 512 }).notNull(),
+  durationMs: int("duration_ms").default(0).notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+}, (t) => ({
+  userTrackIdx: index("idx_asp_user_track").on(t.userId, t.trackSlug),
+  completedIdx: index("idx_asp_completed").on(t.completedAt),
+}));
+export type AudioStudyProgressRecord = typeof audioStudyProgress.$inferSelect;
+export type InsertAudioStudyProgress = typeof audioStudyProgress.$inferInsert;

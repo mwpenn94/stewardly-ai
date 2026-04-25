@@ -21,7 +21,127 @@ import {
   learningPlaylistShares, learningPendingInvites, learningDiscoveryHistory,
   learningGroupGoals, learningGroupNotes, learningGroupActivity,
   learningMasteryProgress, learningStreaks, users,
+  audioStudyProgress,
 } from "../../drizzle/schema";
+
+// ─── Audio Study Progress ────────────────────────────────────────────────────
+// Granular segment-level tracking for audio study playback.
+const audioProgressRouter = router({
+  /** Record a completed audio segment */
+  recordSegment: protectedProcedure
+    .input(z.object({
+      trackSlug: z.string().min(1),
+      segmentId: z.string().min(1),
+      segmentType: z.string().min(1),
+      segmentTitle: z.string().min(1).max(512),
+      durationMs: z.number().int().min(0).default(0),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [r] = await db.insert(audioStudyProgress).values({
+        userId: ctx.user.id,
+        trackSlug: input.trackSlug,
+        segmentId: input.segmentId,
+        segmentType: input.segmentType,
+        segmentTitle: input.segmentTitle,
+        durationMs: input.durationMs,
+      });
+      return { id: Number(r.insertId) };
+    }),
+
+  /** Record a batch of completed segments (end-of-session flush) */
+  recordBatch: protectedProcedure
+    .input(z.object({
+      segments: z.array(z.object({
+        trackSlug: z.string().min(1),
+        segmentId: z.string().min(1),
+        segmentType: z.string().min(1),
+        segmentTitle: z.string().min(1).max(512),
+        durationMs: z.number().int().min(0).default(0),
+      })).min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const values = input.segments.map(s => ({
+        userId: ctx.user.id,
+        trackSlug: s.trackSlug,
+        segmentId: s.segmentId,
+        segmentType: s.segmentType,
+        segmentTitle: s.segmentTitle,
+        durationMs: s.durationMs,
+      }));
+      await db.insert(audioStudyProgress).values(values);
+      return { recorded: values.length };
+    }),
+
+  /** Get progress for a specific track */
+  getTrackProgress: protectedProcedure
+    .input(z.object({ trackSlug: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { completedSegments: [], totalDurationMs: 0, uniqueSegments: 0, recentSegments: [] };
+      const rows = await db.select().from(audioStudyProgress)
+        .where(and(
+          eq(audioStudyProgress.userId, ctx.user.id),
+          eq(audioStudyProgress.trackSlug, input.trackSlug),
+        ))
+        .orderBy(desc(audioStudyProgress.completedAt));
+      const uniqueIds = new Set(rows.map(r => r.segmentId));
+      const totalMs = rows.reduce((sum, r) => sum + r.durationMs, 0);
+      return {
+        completedSegments: [...uniqueIds],
+        totalDurationMs: totalMs,
+        uniqueSegments: uniqueIds.size,
+        recentSegments: rows.slice(0, 20).map(r => ({
+          segmentId: r.segmentId,
+          segmentTitle: r.segmentTitle,
+          segmentType: r.segmentType,
+          durationMs: r.durationMs,
+          completedAt: r.completedAt,
+        })),
+      };
+    }),
+
+  /** Get aggregate audio study stats across all tracks */
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { totalSegments: 0, totalDurationMs: 0, tracksStudied: 0, streakDays: 0 };
+    // Use SQL aggregation for counts/sums (avoids fetching all rows)
+    const [agg] = await db.select({
+      totalSegments: sql<number>`COUNT(*)`.as("totalSegments"),
+      totalDurationMs: sql<number>`COALESCE(SUM(${audioStudyProgress.durationMs}), 0)`.as("totalDurationMs"),
+      tracksStudied: sql<number>`COUNT(DISTINCT ${audioStudyProgress.trackSlug})`.as("tracksStudied"),
+    }).from(audioStudyProgress)
+      .where(eq(audioStudyProgress.userId, ctx.user.id));
+    // Fetch only completedAt dates for streak calculation (lightweight)
+    const dateRows = await db.select({ completedAt: audioStudyProgress.completedAt })
+      .from(audioStudyProgress)
+      .where(eq(audioStudyProgress.userId, ctx.user.id))
+      .orderBy(desc(audioStudyProgress.completedAt))
+      .limit(5000);
+    const daySet = new Set(dateRows.map(r => {
+      const d = new Date(r.completedAt);
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    }));
+    let streak = 0;
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      if (daySet.has(key)) streak++;
+      else if (i > 0) break; // allow today to be missing
+    }
+    return {
+      totalSegments: Number(agg.totalSegments),
+      totalDurationMs: Number(agg.totalDurationMs),
+      tracksStudied: Number(agg.tracksStudied),
+      streakDays: streak,
+    };
+  }),
+});
 
 // ─── Study Sessions ─────────────────────────────────────────────────────────
 // Schema: id, userId, discipline, trackKey, durationMinutes, itemsStudied, itemsMastered, quizScore, createdAt
@@ -721,4 +841,5 @@ export const learningSocialRouter = router({
   playlists: playlistsRouter,
   discovery: discoveryRouter,
   groupMastery: groupMasteryRouter,
+  audioProgress: audioProgressRouter,
 });

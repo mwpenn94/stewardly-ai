@@ -1,26 +1,15 @@
 /**
  * AudioStudyPage.tsx — Track-specific Audio Study player
  *
- * Pass 160. Full Knowledge Explorer parity: fetches ALL 7 content types
- * (definitions, formulas, cases, applications, subsections, flashcards,
- * questions) via getHandsFreeContent(trackId), plus diagrams from
- * track.examOverview. Builds comprehensive TTS scripts covering every
- * content dimension the Knowledge Explorer offers.
+ * Pass 161. Adds:
+ * - Discipline picker for cross-track content exploration
+ * - Audio study progress tracking (segment-level, synced to study analytics)
+ * - Progress badges on content sections showing completed segment counts
+ * - Study stats summary (total time, segments completed, streak)
  *
  * Route: /learning/audio/:slug
- *
- * Content sections displayed:
- * - Chapters with subsection content
- * - Definitions / Key Terms
- * - Formulas with variable explanations
- * - Case Studies
- * - FS Applications
- * - Diagrams / Graphical Aids (from examOverview)
- * - Flashcards
- * - Practice Questions
- * - Concept Connections (from listConnections)
  */
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link, useRoute } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -33,10 +22,18 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowLeft, Headphones, Play, Pause,
   BookOpen, Layers, Loader2, LogIn, HelpCircle,
   Calculator, Briefcase, Lightbulb, Image as ImageIcon,
-  GitBranch, ChevronDown, ChevronUp,
+  GitBranch, ChevronDown, ChevronUp, CheckCircle2,
+  Timer, Flame, Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -47,6 +44,16 @@ export default function AudioStudyPage() {
   const [, params] = useRoute("/learning/audio/:slug");
   const slug = params?.slug ?? "";
   const audio = useAudioCompanion();
+
+  // ── Discipline picker state ──
+  const [selectedDisciplineId, setSelectedDisciplineId] = useState<number | undefined>(undefined);
+
+  // ── Fetch disciplines for the picker ──
+  const disciplinesQ = trpc.learning.content.listDisciplines.useQuery(
+    undefined,
+    { enabled: !!isAuthenticated }
+  );
+  const disciplines = disciplinesQ.data ?? [];
 
   // ── Fetch track ──
   const trackQ = trpc.learning.content.getTrackBySlug.useQuery({ slug }, { enabled: !!slug });
@@ -59,10 +66,11 @@ export default function AudioStudyPage() {
   );
   const chapters = chaptersQ.data ?? [];
 
-  // ── Fetch ALL content via getHandsFreeContent (single query, all 7 types) ──
+  // ── Fetch ALL content via getHandsFreeContent (with optional discipline filter) ──
   const contentQ = trpc.learning.content.getHandsFreeContent.useQuery(
     {
       trackId: track?.id ?? 0,
+      disciplineId: selectedDisciplineId,
       sections: ["definitions", "formulas", "cases", "applications", "subsections", "flashcards", "questions"],
       limit: 200,
     },
@@ -75,6 +83,76 @@ export default function AudioStudyPage() {
     undefined,
     { enabled: !!isAuthenticated }
   );
+
+  // ── Fetch audio study progress for this track ──
+  const progressQ = trpc.learningSocial.audioProgress.getTrackProgress.useQuery(
+    { trackSlug: slug },
+    { enabled: !!isAuthenticated && !!slug }
+  );
+  const completedSegmentIds = useMemo(
+    () => new Set(progressQ.data?.completedSegments ?? []),
+    [progressQ.data?.completedSegments]
+  );
+
+  // ── Fetch aggregate audio study stats ──
+  const statsQ = trpc.learningSocial.audioProgress.getStats.useQuery(
+    undefined,
+    { enabled: !!isAuthenticated }
+  );
+
+  // ── Progress recording mutations ──
+  const recordSegment = trpc.learningSocial.audioProgress.recordSegment.useMutation();
+  const recordStudySession = trpc.learningSocial.studySessions.record.useMutation();
+  const utils = trpc.useUtils();
+
+  // ── Track session start time for duration calculation ──
+  const sessionStartRef = useRef<number | null>(null);
+  const segmentsPlayedRef = useRef(0);
+
+  // ── Wire up segment completion callback ──
+  useEffect(() => {
+    if (!isAuthenticated || !slug) return;
+
+    audio.onSegmentComplete((item: AudioItem, durationMs: number) => {
+      // Record segment progress
+      recordSegment.mutate({
+        trackSlug: slug,
+        segmentId: item.id,
+        segmentType: item.type,
+        segmentTitle: item.title.slice(0, 512),
+        durationMs,
+      }, {
+        onSuccess: () => {
+          // Invalidate progress queries to update UI
+          utils.learningSocial.audioProgress.getTrackProgress.invalidate({ trackSlug: slug });
+          utils.learningSocial.audioProgress.getStats.invalidate();
+        },
+      });
+
+      segmentsPlayedRef.current += 1;
+
+      // Start session timer on first segment
+      if (!sessionStartRef.current) {
+        sessionStartRef.current = Date.now();
+      }
+    });
+
+    return () => {
+      audio.onSegmentComplete(null);
+      // Flush session on unmount
+      if (sessionStartRef.current && segmentsPlayedRef.current > 0) {
+        const durationMin = Math.round((Date.now() - sessionStartRef.current) / 60000);
+        recordStudySession.mutate({
+          discipline: track?.name ?? undefined,
+          trackKey: slug,
+          durationMinutes: Math.max(durationMin, 1),
+          itemsStudied: segmentsPlayedRef.current,
+          itemsMastered: 0,
+        });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, slug]);
 
   // ── Extract diagrams from examOverview ──
   const diagrams = useMemo(() => {
@@ -272,6 +350,42 @@ export default function AudioStudyPage() {
     return items;
   }, [chapters, content, diagrams, subsectionsByChapter]);
 
+  // ── Compute per-section completed counts ──
+  const sectionProgress = useMemo(() => {
+    const progress: Record<string, { completed: number; total: number }> = {};
+    const sectionRanges: { key: string; startIdx: number; endIdx: number }[] = [];
+
+    // Build section ranges from audioItems
+    let currentKey = "chapters";
+    let currentStart = 0;
+    for (let i = 0; i < audioItems.length; i++) {
+      const item = audioItems[i];
+      if (item.id === "def-header") { sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: i }); currentKey = "definitions"; currentStart = i; }
+      else if (item.id === "formula-header") { sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: i }); currentKey = "formulas"; currentStart = i; }
+      else if (item.id === "case-header") { sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: i }); currentKey = "cases"; currentStart = i; }
+      else if (item.id === "app-header") { sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: i }); currentKey = "applications"; currentStart = i; }
+      else if (item.id === "diagram-header") { sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: i }); currentKey = "diagrams"; currentStart = i; }
+      else if (item.id === "fc-header") { sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: i }); currentKey = "flashcards"; currentStart = i; }
+      else if (item.id === "q-header") { sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: i }); currentKey = "questions"; currentStart = i; }
+    }
+    if (audioItems.length > 0) {
+      sectionRanges.push({ key: currentKey, startIdx: currentStart, endIdx: audioItems.length });
+    }
+
+    for (const range of sectionRanges) {
+      const sectionItems = audioItems.slice(range.startIdx, range.endIdx);
+      const completed = sectionItems.filter(item => completedSegmentIds.has(item.id)).length;
+      progress[range.key] = { completed, total: sectionItems.length };
+    }
+
+    return progress;
+  }, [audioItems, completedSegmentIds]);
+
+  const totalCompleted = useMemo(
+    () => audioItems.filter(item => completedSegmentIds.has(item.id)).length,
+    [audioItems, completedSegmentIds]
+  );
+
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const toggleSection = useCallback((key: string) => {
@@ -285,6 +399,8 @@ export default function AudioStudyPage() {
       return;
     }
     audio.enqueue(audioItems);
+    sessionStartRef.current = Date.now();
+    segmentsPlayedRef.current = 0;
     toast.success(`Started audio study: ${audioItems.length} segments`);
   }, [audioItems, audio]);
 
@@ -300,7 +416,6 @@ export default function AudioStudyPage() {
       const nextStart = audioItems.findIndex(item => item.id === `ch-intro-${nextChapter.id}`);
       if (nextStart > startIdx) endIdx = nextStart;
     } else {
-      // After last chapter, find the first non-chapter section header
       for (let i = startIdx + 1; i < audioItems.length; i++) {
         if (audioItems[i].id.endsWith("-header") && !audioItems[i].id.startsWith("ch-")) {
           endIdx = i;
@@ -312,6 +427,7 @@ export default function AudioStudyPage() {
     if (slice.length > 0) {
       audio.dismiss();
       audio.enqueue(slice);
+      if (!sessionStartRef.current) sessionStartRef.current = Date.now();
       toast.success(`Playing chapter: ${ch.title} (${slice.length} segments)`);
     } else {
       toast.info("No audio content for this chapter yet.");
@@ -322,7 +438,6 @@ export default function AudioStudyPage() {
   const playSection = useCallback((headerId: string) => {
     const startIdx = audioItems.findIndex(item => item.id === headerId);
     if (startIdx < 0) return;
-    // Find next header
     let endIdx = audioItems.length;
     for (let i = startIdx + 1; i < audioItems.length; i++) {
       if (audioItems[i].id.endsWith("-header")) {
@@ -334,6 +449,7 @@ export default function AudioStudyPage() {
     if (slice.length > 0) {
       audio.dismiss();
       audio.enqueue(slice);
+      if (!sessionStartRef.current) sessionStartRef.current = Date.now();
     }
   }, [audioItems, audio]);
 
@@ -364,6 +480,15 @@ export default function AudioStudyPage() {
   }
 
   const trackTitle = track?.title ?? track?.name ?? slug.replace(/_/g, " ");
+
+  // Format duration
+  const formatDuration = (ms: number) => {
+    const totalMin = Math.floor(ms / 60000);
+    if (totalMin < 60) return `${totalMin}m`;
+    const hrs = Math.floor(totalMin / 60);
+    const mins = totalMin % 60;
+    return `${hrs}h ${mins}m`;
+  };
 
   // ── Render ──
   return (
@@ -399,19 +524,58 @@ export default function AudioStudyPage() {
             </div>
           </div>
 
-          {/* Content overview bar */}
-          {!isLoading && totalItems > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {counts.chapters > 0 && <Badge variant="outline" className="text-[10px] gap-1"><BookOpen className="w-2.5 h-2.5" />{counts.chapters} Chapters</Badge>}
-              {counts.definitions > 0 && <Badge variant="outline" className="text-[10px] gap-1"><BookOpen className="w-2.5 h-2.5" />{counts.definitions} Definitions</Badge>}
-              {counts.formulas > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Calculator className="w-2.5 h-2.5" />{counts.formulas} Formulas</Badge>}
-              {counts.cases > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Briefcase className="w-2.5 h-2.5" />{counts.cases} Cases</Badge>}
-              {counts.applications > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Lightbulb className="w-2.5 h-2.5" />{counts.applications} FS Apps</Badge>}
-              {counts.diagrams > 0 && <Badge variant="outline" className="text-[10px] gap-1"><ImageIcon className="w-2.5 h-2.5" />{counts.diagrams} Diagrams</Badge>}
-              {counts.flashcards > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Layers className="w-2.5 h-2.5" />{counts.flashcards} Flashcards</Badge>}
-              {counts.questions > 0 && <Badge variant="outline" className="text-[10px] gap-1"><HelpCircle className="w-2.5 h-2.5" />{counts.questions} Questions</Badge>}
-            </div>
-          )}
+          {/* Discipline filter + Content overview bar */}
+          <div className="mt-3 flex flex-col gap-2">
+            {/* Discipline picker */}
+            {disciplines.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground flex-none" />
+                <Select
+                  value={selectedDisciplineId !== undefined ? String(selectedDisciplineId) : "all"}
+                  onValueChange={(val) => {
+                    setSelectedDisciplineId(val === "all" ? undefined : Number(val));
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs w-auto min-w-[140px] max-w-[220px]" aria-label="Filter by discipline">
+                    <SelectValue placeholder="All Disciplines" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Disciplines</SelectItem>
+                    {disciplines.map((d: any) => (
+                      <SelectItem key={d.id} value={String(d.id)}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedDisciplineId !== undefined && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={() => setSelectedDisciplineId(undefined)}
+                  >
+                    Clear
+                  </Button>
+                )}
+                {contentQ.isFetching && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+              </div>
+            )}
+
+            {/* Content badges */}
+            {!isLoading && totalItems > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {counts.chapters > 0 && <Badge variant="outline" className="text-[10px] gap-1"><BookOpen className="w-2.5 h-2.5" />{counts.chapters} Chapters</Badge>}
+                {counts.definitions > 0 && <Badge variant="outline" className="text-[10px] gap-1"><BookOpen className="w-2.5 h-2.5" />{counts.definitions} Definitions</Badge>}
+                {counts.formulas > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Calculator className="w-2.5 h-2.5" />{counts.formulas} Formulas</Badge>}
+                {counts.cases > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Briefcase className="w-2.5 h-2.5" />{counts.cases} Cases</Badge>}
+                {counts.applications > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Lightbulb className="w-2.5 h-2.5" />{counts.applications} FS Apps</Badge>}
+                {counts.diagrams > 0 && <Badge variant="outline" className="text-[10px] gap-1"><ImageIcon className="w-2.5 h-2.5" />{counts.diagrams} Diagrams</Badge>}
+                {counts.flashcards > 0 && <Badge variant="outline" className="text-[10px] gap-1"><Layers className="w-2.5 h-2.5" />{counts.flashcards} Flashcards</Badge>}
+                {counts.questions > 0 && <Badge variant="outline" className="text-[10px] gap-1"><HelpCircle className="w-2.5 h-2.5" />{counts.questions} Questions</Badge>}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="px-4 sm:px-6 lg:px-10 py-4 sm:py-8 max-w-3xl mx-auto space-y-4">
@@ -421,11 +585,66 @@ export default function AudioStudyPage() {
             </div>
           ) : (
             <>
+              {/* Study Stats Summary */}
+              {(statsQ.data && (statsQ.data.totalSegments > 0 || totalCompleted > 0)) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-blue-500/5 via-violet-500/5 to-emerald-500/5 border border-border rounded-xl p-3 sm:p-4"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <h3 className="text-xs font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+                      Audio Study Progress
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-foreground">
+                        {totalCompleted}<span className="text-xs text-muted-foreground font-normal">/{audioItems.length}</span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">This Track</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
+                        <Timer className="w-3.5 h-3.5 text-blue-400" />
+                        {formatDuration(statsQ.data.totalDurationMs)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Total Listen Time</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-foreground">
+                        {statsQ.data.tracksStudied}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Tracks Studied</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
+                        <Flame className="w-3.5 h-3.5 text-orange-400" />
+                        {statsQ.data.streakDays}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">Day Streak</div>
+                    </div>
+                  </div>
+                  {/* Track progress bar */}
+                  {audioItems.length > 0 && (
+                    <div className="mt-3 space-y-1">
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>Track Completion</span>
+                        <span>{Math.round((totalCompleted / audioItems.length) * 100)}%</span>
+                      </div>
+                      <Progress value={(totalCompleted / audioItems.length) * 100} className="h-1.5" />
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
               {/* Play All button */}
               <Button
                 onClick={startFullPlayback}
                 disabled={audioItems.length === 0}
                 className="w-full py-3 gap-2"
+                aria-label={audio.playing ? "Pause audio playback" : `Play all ${audioItems.length} audio segments`}
                 size="lg"
               >
                 {audio.playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -436,7 +655,7 @@ export default function AudioStudyPage() {
               {audioItems.length > 0 && audio.queueIndex > 0 && (
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>Progress</span>
+                    <span>Current Session</span>
                     <span>{audio.queueIndex} / {audioItems.length}</span>
                   </div>
                   <Progress value={(audio.queueIndex / audioItems.length) * 100} className="h-1.5" />
@@ -452,10 +671,12 @@ export default function AudioStudyPage() {
                   count={chapters.length}
                   expanded={expandedSections["chapters"] !== false}
                   onToggle={() => toggleSection("chapters")}
+                  progress={sectionProgress["chapters"]}
                 >
                   <div className="space-y-1.5">
                     {chapters.map((ch: any, i: number) => {
                       const subs = subsectionsByChapter[ch.id] ?? [];
+                      const chCompleted = completedSegmentIds.has(`ch-intro-${ch.id}`);
                       return (
                         <motion.div
                           key={ch.id}
@@ -464,8 +685,12 @@ export default function AudioStudyPage() {
                           transition={{ delay: i * 0.03 }}
                           className="bg-background/50 border border-border/50 rounded-lg p-3 flex items-center gap-3"
                         >
-                          <div className="w-7 h-7 rounded-md bg-blue-500/10 flex items-center justify-center flex-none">
-                            <span className="text-[10px] font-bold text-blue-400">{i + 1}</span>
+                          <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-none ${chCompleted ? "bg-emerald-500/10" : "bg-blue-500/10"}`}>
+                            {chCompleted ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <span className="text-[10px] font-bold text-blue-400">{i + 1}</span>
+                            )}
                           </div>
                           <div className="min-w-0 flex-1">
                             <h4 className="text-xs font-medium truncate">{ch.title}</h4>
@@ -498,10 +723,18 @@ export default function AudioStudyPage() {
                   expanded={expandedSections["definitions"] ?? false}
                   onToggle={() => toggleSection("definitions")}
                   onPlay={() => playSection("def-header")}
+                  progress={sectionProgress["definitions"]}
                 >
                   <div className="flex flex-wrap gap-1.5">
                     {content!.definitions.slice(0, 15).map((d) => (
-                      <Badge key={d.id} variant="outline" className="text-[10px]">{d.term}</Badge>
+                      <Badge
+                        key={d.id}
+                        variant="outline"
+                        className={`text-[10px] ${completedSegmentIds.has(`def-${d.id}`) ? "border-emerald-500/30 bg-emerald-500/5" : ""}`}
+                      >
+                        {completedSegmentIds.has(`def-${d.id}`) && <CheckCircle2 className="w-2 h-2 text-emerald-400 mr-0.5" />}
+                        {d.term}
+                      </Badge>
                     ))}
                     {counts.definitions > 15 && (
                       <Badge variant="outline" className="text-[10px] text-muted-foreground">+{counts.definitions - 15} more</Badge>
@@ -523,11 +756,16 @@ export default function AudioStudyPage() {
                   expanded={expandedSections["formulas"] ?? false}
                   onToggle={() => toggleSection("formulas")}
                   onPlay={() => playSection("formula-header")}
+                  progress={sectionProgress["formulas"]}
                 >
                   <div className="space-y-1.5">
                     {content!.formulas.slice(0, 6).map((f) => (
                       <div key={f.id} className="flex items-center gap-2 text-xs">
-                        <Calculator className="w-3 h-3 text-emerald-400 flex-none" />
+                        {completedSegmentIds.has(`formula-${f.id}`) ? (
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-none" />
+                        ) : (
+                          <Calculator className="w-3 h-3 text-emerald-400 flex-none" />
+                        )}
                         <span className="font-medium">{f.name}</span>
                         <span className="text-muted-foreground font-mono text-[10px] truncate">{f.formula}</span>
                       </div>
@@ -549,11 +787,16 @@ export default function AudioStudyPage() {
                   expanded={expandedSections["cases"] ?? false}
                   onToggle={() => toggleSection("cases")}
                   onPlay={() => playSection("case-header")}
+                  progress={sectionProgress["cases"]}
                 >
                   <div className="space-y-1.5">
                     {content!.cases.slice(0, 5).map((c) => (
                       <div key={c.id} className="flex items-start gap-2 text-xs">
-                        <Briefcase className="w-3 h-3 text-amber-400 flex-none mt-0.5" />
+                        {completedSegmentIds.has(`case-${c.id}`) ? (
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-none mt-0.5" />
+                        ) : (
+                          <Briefcase className="w-3 h-3 text-amber-400 flex-none mt-0.5" />
+                        )}
                         <div className="min-w-0">
                           <span className="font-medium">{c.title}</span>
                           <p className="text-[10px] text-muted-foreground truncate">{c.content.slice(0, 100)}...</p>
@@ -577,11 +820,16 @@ export default function AudioStudyPage() {
                   expanded={expandedSections["applications"] ?? false}
                   onToggle={() => toggleSection("applications")}
                   onPlay={() => playSection("app-header")}
+                  progress={sectionProgress["applications"]}
                 >
                   <div className="space-y-1.5">
                     {content!.applications.slice(0, 5).map((a) => (
                       <div key={a.id} className="flex items-start gap-2 text-xs">
-                        <Lightbulb className="w-3 h-3 text-violet-400 flex-none mt-0.5" />
+                        {completedSegmentIds.has(`app-${a.id}`) ? (
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-none mt-0.5" />
+                        ) : (
+                          <Lightbulb className="w-3 h-3 text-violet-400 flex-none mt-0.5" />
+                        )}
                         <div className="min-w-0">
                           <span className="font-medium">{a.title}</span>
                           <p className="text-[10px] text-muted-foreground truncate">{a.content.slice(0, 100)}...</p>
@@ -605,6 +853,7 @@ export default function AudioStudyPage() {
                   expanded={expandedSections["diagrams"] ?? false}
                   onToggle={() => toggleSection("diagrams")}
                   onPlay={() => playSection("diagram-header")}
+                  progress={sectionProgress["diagrams"]}
                 >
                   <div className="grid grid-cols-2 gap-2">
                     {diagrams.slice(0, 4).map((d, i) => (
@@ -643,10 +892,18 @@ export default function AudioStudyPage() {
                   expanded={expandedSections["flashcards"] ?? false}
                   onToggle={() => toggleSection("flashcards")}
                   onPlay={() => playSection("fc-header")}
+                  progress={sectionProgress["flashcards"]}
                 >
                   <div className="flex flex-wrap gap-1.5">
                     {content!.flashcards.slice(0, 12).map((fc) => (
-                      <Badge key={fc.id} variant="outline" className="text-[10px]">{fc.term}</Badge>
+                      <Badge
+                        key={fc.id}
+                        variant="outline"
+                        className={`text-[10px] ${completedSegmentIds.has(`fc-${fc.id}`) ? "border-emerald-500/30 bg-emerald-500/5" : ""}`}
+                      >
+                        {completedSegmentIds.has(`fc-${fc.id}`) && <CheckCircle2 className="w-2 h-2 text-emerald-400 mr-0.5" />}
+                        {fc.term}
+                      </Badge>
                     ))}
                     {counts.flashcards > 12 && (
                       <Badge variant="outline" className="text-[10px] text-muted-foreground">+{counts.flashcards - 12} more</Badge>
@@ -665,6 +922,7 @@ export default function AudioStudyPage() {
                   expanded={expandedSections["questions"] ?? false}
                   onToggle={() => toggleSection("questions")}
                   onPlay={() => playSection("q-header")}
+                  progress={sectionProgress["questions"]}
                 >
                   <p className="text-[10px] text-muted-foreground">
                     {counts.questions} questions with answers and detailed explanations are included in the audio playback.
@@ -708,7 +966,7 @@ export default function AudioStudyPage() {
   );
 }
 
-/* ── ContentSection — collapsible card with play button ── */
+/* ── ContentSection — collapsible card with play button + progress ── */
 function ContentSection({
   title,
   icon: Icon,
@@ -717,6 +975,8 @@ function ContentSection({
   expanded,
   onToggle,
   onPlay,
+  progress,
+
   children,
 }: {
   title: string;
@@ -726,29 +986,60 @@ function ContentSection({
   expanded: boolean;
   onToggle: () => void;
   onPlay?: () => void;
+  progress?: { completed: number; total: number };
+
   children: React.ReactNode;
 }) {
+  const pct = progress && progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
+  const isComplete = pct === 100 && progress && progress.total > 0;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl overflow-hidden"
+      className={`bg-card border rounded-xl overflow-hidden ${isComplete ? "border-emerald-500/30" : "border-border"}`}
     >
       <button
         onClick={onToggle}
         className="w-full flex items-center gap-3 p-3 sm:p-4 text-left hover:bg-accent/30 transition-colors"
+        aria-expanded={expanded}
+        aria-label={`${title} section, ${count} items${progress && progress.completed > 0 ? `, ${progress.completed} completed` : ""}`}
       >
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-none"
-          style={{ backgroundColor: `${color}15` }}
+          style={{ backgroundColor: isComplete ? "rgba(16,185,129,0.1)" : `${color}15` }}
         >
-          <Icon className="w-4 h-4" style={{ color }} />
+          {isComplete ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          ) : (
+            <Icon className="w-4 h-4" style={{ color }} />
+          )}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>
-            {title}
-          </h3>
-          <p className="text-[10px] text-muted-foreground">{count} items</p>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+              {title}
+            </h3>
+            {progress && progress.completed > 0 && (
+              <Badge
+                variant="outline"
+                className={`text-[9px] h-4 px-1.5 ${isComplete ? "border-emerald-500/30 text-emerald-400" : "text-muted-foreground"}`}
+              >
+                {progress.completed}/{progress.total}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <p className="text-[10px] text-muted-foreground">{count} items</p>
+            {progress && progress.total > 0 && pct > 0 && pct < 100 && (
+              <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-400 rounded-full transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            )}
+          </div>
         </div>
         {onPlay && (
           <Button

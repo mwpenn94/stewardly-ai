@@ -82,6 +82,8 @@ interface AudioActions {
   /** Change the TTS voice */
   setVoice: (voiceId: string) => void;
   speak: (text: string) => void;
+  /** Register a callback for segment completion events */
+  onSegmentComplete: (cb: ((item: AudioItem, durationMs: number) => void) | null) => void;
 }
 
 type AudioContextType = AudioState & AudioActions;
@@ -323,15 +325,28 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
     }
   }, []);
 
+  // Segment-complete callback ref
+  const segmentCompleteRef = useRef<((item: AudioItem, durationMs: number) => void) | null>(null);
+
   /** Auto-advance to next item in queue */
   const doAutoAdvance = useCallback((reason: string) => {
     console.log(`[AudioCompanion] Auto-advancing: ${reason}`);
     clearPlaybackTimeout();
     setState(prev => {
+      // Fire segment-complete callback for the item that just finished
+      if (prev.currentItem && segmentCompleteRef.current) {
+        try {
+          const durMs = prev.duration > 0 ? Math.round(prev.duration * 1000) : 0;
+          segmentCompleteRef.current(prev.currentItem, durMs);
+        } catch (e) {
+          console.warn("[AudioCompanion] segmentComplete callback error:", e);
+        }
+      }
+      // Advance to next item or stop
       if (prev.queue.length > 0) {
         const [next, ...rest] = prev.queue;
         const newIndex = prev.queueIndex + 1;
-        console.log(`[AudioCompanion] → next: "${next.title}" (${rest.length} remaining, idx=${newIndex})`);
+        console.log(`[AudioCompanion] \u2192 next: "${next.title}" (${rest.length} remaining, idx=${newIndex})`);
         setTimeout(() => speakItemRef.current?.(next, speedRef.current), 50);
         return { ...prev, currentItem: next, queue: rest, position: 0, queueIndex: newIndex };
       }
@@ -643,6 +658,9 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
     },
 
     speak: speakShort,
+    onSegmentComplete: (cb: ((item: AudioItem, durationMs: number) => void) | null) => {
+      segmentCompleteRef.current = cb;
+    },
   };
 
   return (
