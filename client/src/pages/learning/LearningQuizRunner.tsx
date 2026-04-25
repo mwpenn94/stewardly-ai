@@ -46,6 +46,7 @@ import { recordStudyNow } from "./lib/studyStreak";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { DifficultyRating, type Difficulty } from "@/components/learning/DifficultyRating";
 
 
 export default function LearningQuizRunner() {
@@ -120,6 +121,7 @@ export default function LearningQuizRunner() {
   const total = questions.length;
   const progress = total > 0 ? ((index + (complete ? 1 : 0)) / total) * 100 : 0;
 
+  // Phase 1: Reveal answer (no SRS write yet)
   const submit = async () => {
     if (selected == null || !current) return;
     setRevealed(true);
@@ -133,26 +135,28 @@ export default function LearningQuizRunner() {
       setIncorrectCount((c) => c + 1);
       pil.giveFeedback("learning.answer_incorrect");
     }
+    recordStudyNow();
+    sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
+  };
 
-    // Only save review progress for authenticated users.
+  // Phase 2: Rate difficulty AFTER seeing answer — writes SRS
+  const rateDifficulty = (difficulty: Difficulty) => {
+    if (selected == null || !current) return;
+    const correct = selected === current.correctIndex;
     if (isAuthenticated) {
       recordReview
         .mutateAsync({
           itemKey: `question:${current.id}`,
           itemType: "question",
           correct,
+          difficulty,
         })
         .catch((err) => {
           toast.error(`Review not saved: ${err.message ?? "network error"}`);
         });
     }
-
-    // Pass 7 — streak day marker (idempotent per-day).
-    recordStudyNow();
-
-    // Pass 16 — PIL feedback dispatch (G1/G8).
-    sendFeedback(correct ? "learning.answer_correct" : "learning.answer_incorrect");
-
+    sendFeedback("learning.srs_rating", { rating: difficulty });
+    next();
   };
 
   const next = () => {
@@ -200,7 +204,7 @@ export default function LearningQuizRunner() {
       if (e.key === "Enter") {
         e.preventDefault();
         if (!revealed && selected != null && !recordReview.isPending) submit();
-        else if (revealed) next();
+        else if (revealed) rateDifficulty("good");
       }
     }
     window.addEventListener("keydown", handle);
@@ -495,20 +499,24 @@ export default function LearningQuizRunner() {
                   </div>
                 )}
 
-                <div className="flex justify-end gap-2">
-                  {!revealed ? (
+                {!revealed ? (
+                  <div className="flex justify-end">
                     <Button
                       onClick={submit}
                       disabled={selected == null || recordReview.isPending}
                     >
                       Submit answer
                     </Button>
-                  ) : (
-                    <Button onClick={next}>
-                      {index + 1 >= total ? "Finish" : "Next question"}
-                    </Button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <DifficultyRating
+                    confidence={0}
+                    onRate={rateDifficulty}
+                    disabled={recordReview.isPending}
+                    enableKeyboard={true}
+                    label="How difficult was this question?"
+                  />
+                )}
               </CardContent>
             </Card>
           )

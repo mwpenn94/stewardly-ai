@@ -52,6 +52,7 @@ import { useAchievementToast } from "@/components/AchievementToast";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { recordStudyEvent } from "@/lib/dailyStreak";
 import { KeyboardHelpOverlay } from "@/components/learning/KeyboardHelpOverlay";
+import { DifficultyRating, type Difficulty } from "@/components/learning/DifficultyRating";
 
 const REVIEW_SHORTCUTS = [
   { keys: "Space", label: "Flip a flashcard", group: "Flashcard" },
@@ -143,21 +144,11 @@ export default function LearningReview() {
     setComplete(false);
   }, [dueQ.data]);
 
+  // Phase 1: Record outcome locally (no SRS write yet)
   const applyOutcome = useCallback(
     (correct: boolean) => {
       if (!current) return;
-      // Persistent per-device streak — idempotent same-day.
       recordStudyEvent();
-      recordReview
-        .mutateAsync({
-          itemKey: current.itemKey,
-          itemType: current.kind,
-          correct,
-        })
-        .catch((err) => {
-          toast.error(`Review not saved: ${err.message ?? "network error"}`);
-        });
-
       if (correct) {
         setCorrectCount((c) => c + 1);
         setStreak((s) => {
@@ -170,7 +161,29 @@ export default function LearningReview() {
         setStreak(0);
       }
     },
-    [current, recordReview],
+    [current],
+  );
+
+  // Phase 2: Rate difficulty for questions — writes SRS with difficulty
+  const rateQuestionDifficulty = useCallback(
+    (difficulty: Difficulty) => {
+      if (!current) return;
+      const correct = current.kind === "question"
+        ? selected === current.question.correctIndex
+        : true;
+      recordReview
+        .mutateAsync({
+          itemKey: current.itemKey,
+          itemType: current.kind,
+          correct,
+          difficulty,
+        })
+        .catch((err) => {
+          toast.error(`Review not saved: ${err.message ?? "network error"}`);
+        });
+      advance();
+    },
+    [current, selected, recordReview, advance],
   );
 
   const advance = useCallback(() => {
@@ -188,9 +201,19 @@ export default function LearningReview() {
     (correct: boolean) => {
       if (!current || current.kind !== "flashcard") return;
       applyOutcome(correct);
+      // For flashcards, write SRS immediately (binary correct/incorrect)
+      recordReview
+        .mutateAsync({
+          itemKey: current.itemKey,
+          itemType: current.kind,
+          correct,
+        })
+        .catch((err) => {
+          toast.error(`Review not saved: ${err.message ?? "network error"}`);
+        });
       advance();
     },
-    [current, applyOutcome, advance],
+    [current, applyOutcome, advance, recordReview],
   );
 
   const submitQuiz = useCallback(() => {
@@ -269,13 +292,13 @@ export default function LearningReview() {
         }
         if (e.key === "Enter" || e.key === "ArrowRight") {
           e.preventDefault();
-          advance();
+          rateQuestionDifficulty("good");
         }
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [current, flipped, revealed, selected, complete, markFlashcard, submitQuiz, advance, navigate]);
+  }, [current, flipped, revealed, selected, complete, markFlashcard, submitQuiz, advance, rateQuestionDifficulty, navigate]);
 
   // Celebrate on a strong finish.
   const finalPct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
@@ -466,8 +489,8 @@ export default function LearningReview() {
             revealed={revealed}
             onSelect={setSelected}
             onSubmit={submitQuiz}
-            onAdvance={advance}
-            isLast={index + 1 >= total}
+            onDifficulty={rateQuestionDifficulty}
+            confidence={(current as any).confidence ?? 0}
             disabled={recordReview.isPending}
           />
         ) : null}
@@ -576,8 +599,8 @@ function QuestionView({
   revealed,
   onSelect,
   onSubmit,
-  onAdvance,
-  isLast,
+  onDifficulty,
+  confidence,
   disabled,
 }: {
   q: {
@@ -592,8 +615,8 @@ function QuestionView({
   revealed: boolean;
   onSelect: (i: number) => void;
   onSubmit: () => void;
-  onAdvance: () => void;
-  isLast: boolean;
+  onDifficulty: (d: Difficulty) => void;
+  confidence: number;
   disabled: boolean;
 }) {
   const options: string[] = Array.isArray(q.options) ? q.options : [];
@@ -662,17 +685,21 @@ function QuestionView({
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
-          {!revealed ? (
+        {!revealed ? (
+          <div className="flex justify-end">
             <Button onClick={onSubmit} disabled={selected == null || disabled}>
               Submit <span className="ml-1 text-[10px] opacity-70">(⏎)</span>
             </Button>
-          ) : (
-            <Button onClick={onAdvance}>
-              {isLast ? "Finish" : "Next"} <span className="ml-1 text-[10px] opacity-70">(⏎)</span>
-            </Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <DifficultyRating
+            confidence={confidence}
+            onRate={onDifficulty}
+            disabled={disabled}
+            enableKeyboard={true}
+            label="How difficult was this question?"
+          />
+        )}
       </CardContent>
     </Card>
   );

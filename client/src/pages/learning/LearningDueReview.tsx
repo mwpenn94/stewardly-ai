@@ -61,6 +61,7 @@ import { sendFeedback } from "@/lib/feedbackSpecs";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useStudySession } from "@/hooks/useStudySession";
+import { DifficultyRating, type Difficulty } from "@/components/learning/DifficultyRating";
 type KindFilter = "all" | "flashcard" | "question";
 
 export default function LearningDueReview() {
@@ -156,27 +157,35 @@ export default function LearningDueReview() {
     advance();
   };
 
+  // Phase 1: Submit answer (reveal correct/incorrect) — no SRS write yet
   const submitQuestion = async () => {
     if (!current || current.kind !== "question" || selected == null) return;
     setRevealed(true);
     const ok = selected === current.question.correctIndex;
     studySession.recordItem();
     if (ok) studySession.recordMastery();
+    recordStudyNow();
+    sendFeedback(ok ? "learning.answer_correct" : "learning.answer_incorrect");
+    if (ok) setCorrect((c) => c + 1);
+    else setIncorrect((c) => c + 1);
+  };
+
+  // Phase 2: Rate difficulty AFTER seeing the answer — writes SRS
+  const rateQuestionDifficulty = (difficulty: Difficulty) => {
+    if (!current || current.kind !== "question" || selected == null) return;
+    const ok = selected === current.question.correctIndex;
     recordReview
       .mutateAsync({
         itemKey: current.itemKey,
         itemType: "question",
         correct: ok,
+        difficulty,
       })
       .catch((err) => {
         toast.error(`Review not saved: ${err.message ?? "network error"}`);
       });
-    recordStudyNow();
-    // Pass 16 — PIL feedback dispatch (G1/G8).
-    sendFeedback(ok ? "learning.answer_correct" : "learning.answer_incorrect");
-
-    if (ok) setCorrect((c) => c + 1);
-    else setIncorrect((c) => c + 1);
+    sendFeedback("learning.srs_rating", { rating: difficulty });
+    advance();
   };
 
   const restart = () => {
@@ -380,8 +389,8 @@ export default function LearningDueReview() {
                   revealed={revealed}
                   onSelect={setSelected}
                   onSubmit={submitQuestion}
-                  onNext={advance}
-                  isLast={index + 1 >= total}
+                  onDifficulty={rateQuestionDifficulty}
+                  confidence={(current as any).confidence ?? 0}
                   disabled={recordReview.isPending}
                 />
               )}
@@ -575,8 +584,8 @@ function QuestionCard({
   revealed,
   onSelect,
   onSubmit,
-  onNext,
-  isLast,
+  onDifficulty,
+  confidence,
   disabled,
 }: {
   prompt: string;
@@ -588,49 +597,46 @@ function QuestionCard({
   revealed: boolean;
   onSelect: (i: number) => void;
   onSubmit: () => void;
-  onNext: () => void;
-  isLast: boolean;
+  onDifficulty: (d: Difficulty) => void;
+  confidence: number;
   disabled?: boolean;
 }) {
-  // Pass 6 — keyboard shortcuts for the quiz: digits 1..6 select an
-  // option, Enter submits or advances. Skips when focus is in a
-  // text input so we don't hijack typing elsewhere on the page.
+  // Keyboard shortcuts: digits 1..N select option, Enter submits.
+  // When revealed, DifficultyRating handles 1-4 keys internally.
   useEffect(() => {
     function handle(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
-        return;
-      }
-      // Digit 1..options.length picks the option.
-      if (/^[1-9]$/.test(e.key)) {
-        const idx = Number(e.key) - 1;
-        if (idx < options.length && !revealed) {
-          e.preventDefault();
-          onSelect(idx);
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (!revealed) {
+        if (/^[1-9]$/.test(e.key)) {
+          const idx = Number(e.key) - 1;
+          if (idx < options.length) {
+            e.preventDefault();
+            onSelect(idx);
+          }
+          return;
         }
-        return;
+        if (e.key === "Enter" && selected != null && !disabled) {
+          e.preventDefault();
+          onSubmit();
+        }
       }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        if (!revealed && selected != null && !disabled) onSubmit();
-        else if (revealed) onNext();
-      }
+      // When revealed, DifficultyRating's own keyboard handler takes over
     }
     window.addEventListener("keydown", handle);
     return () => window.removeEventListener("keydown", handle);
-  }, [options.length, revealed, selected, disabled, onSelect, onSubmit, onNext]);
+  }, [options.length, revealed, selected, disabled, onSelect, onSubmit]);
 
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
         <div className="flex items-center gap-2 justify-between">
           <Badge variant="outline">{difficulty}</Badge>
-          <span
-            className="text-[10px] text-muted-foreground hidden md:inline"
-            aria-hidden
-          >
-            Press 1–{options.length} to choose · Enter to submit
+          <span className="text-[10px] text-muted-foreground hidden md:inline" aria-hidden>
+            {!revealed
+              ? `Press 1–${options.length} to choose · Enter to submit`
+              : "Rate difficulty: 1–4"}
           </span>
         </div>
         <p className="text-base font-medium leading-relaxed">{prompt}</p>
@@ -643,8 +649,8 @@ function QuestionCard({
             const showWrong = revealed && isSelected && !isCorrect;
             return (
               <li key={i}>
-                <button type="button"
-                  
+                <button
+                  type="button"
                   disabled={revealed}
                   onClick={() => onSelect(i)}
                   aria-label={`Option ${String.fromCharCode(65 + i)}`}
@@ -683,17 +689,21 @@ function QuestionCard({
           </div>
         )}
 
-        <div className="flex justify-end gap-2">
-          {!revealed ? (
+        {!revealed ? (
+          <div className="flex justify-end">
             <Button onClick={onSubmit} disabled={selected == null || disabled}>
               Submit answer
             </Button>
-          ) : (
-            <Button onClick={onNext}>
-              {isLast ? "Finish" : "Next question"}
-            </Button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <DifficultyRating
+            confidence={confidence}
+            onRate={onDifficulty}
+            disabled={disabled}
+            enableKeyboard={revealed}
+            label="How difficult was this question?"
+          />
+        )}
       </CardContent>
     </Card>
   );

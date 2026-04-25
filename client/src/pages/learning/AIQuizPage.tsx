@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { useAchievementToast } from "@/components/AchievementToast";
 import { motion, AnimatePresence } from "framer-motion";
+import { DifficultyRating, type Difficulty as SrsDifficulty } from "@/components/learning/DifficultyRating";
 
 type Difficulty = "easy" | "medium" | "hard";
 type QuestionType = "multiple_choice" | "fill_blank" | "scenario" | "explain";
@@ -167,13 +168,19 @@ export default function AIQuizPage() {
     }
   }, [topic, difficulty, questionType, selectedDiscipline, count, existingQ.data, createMut]);
 
-  /* ── MC answer ── */
+  // Track whether difficulty has been rated for the current question
+  const [difficultyRated, setDifficultyRated] = useState(false);
+  // Track self-assessment result for non-MC questions
+  const [selfAssessedCorrect, setSelfAssessedCorrect] = useState<boolean | null>(null);
+
+  /* ── MC answer (Phase 1: reveal, no SRS write yet) ── */
   const handleMCAnswer = useCallback((optionIndex: number) => {
     if (showExplanation) return;
     const q = questions[currentIdx];
     if (!q) return;
     setSelectedAnswer(optionIndex);
     setShowExplanation(true);
+    setDifficultyRated(false);
     const isCorrect = q.options[optionIndex]?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim();
     studySession.recordItem();
     if (isCorrect) {
@@ -181,26 +188,42 @@ export default function AIQuizPage() {
       setScore(s => s + 1);
     }
     setAnswered(a => a + 1);
-    recordReview.mutate({ itemKey: `ai-quiz:${q.id}`, itemType: "question", correct: isCorrect });
-  }, [currentIdx, questions, showExplanation, recordReview, studySession]);
+    // SRS write deferred to rateDifficulty
+  }, [currentIdx, questions, showExplanation, studySession]);
 
   /* ── Text answer submit ── */
   const handleTextAnswer = useCallback(() => {
     if (!userAnswer.trim()) return;
     setShowExplanation(true);
+    setDifficultyRated(false);
+    setSelfAssessedCorrect(null);
     setAnswered(a => a + 1);
     studySession.recordItem();
   }, [userAnswer, studySession]);
 
-  /* ── Self-assessment for non-MC ── */
+  /* ── Self-assessment for non-MC (Phase 1: reveal, no SRS write yet) ── */
   const handleSelfAssess = useCallback((correct: boolean) => {
     const q = questions[currentIdx];
+    setSelfAssessedCorrect(correct);
     if (correct) {
       setScore(s => s + 1);
       studySession.recordMastery();
     }
-    if (q) recordReview.mutate({ itemKey: `ai-quiz:${q.id}`, itemType: "question", correct });
-  }, [currentIdx, questions, recordReview, studySession]);
+    // SRS write deferred to rateDifficulty
+  }, [currentIdx, questions, studySession]);
+
+  /* ── Rate difficulty (Phase 2: writes SRS with difficulty) ── */
+  const rateDifficulty = useCallback((d: SrsDifficulty) => {
+    const q = questions[currentIdx];
+    if (!q) return;
+    const isCorrect = q.questionType === "multiple_choice"
+      ? (selectedAnswer != null && q.options[selectedAnswer]?.toLowerCase().trim() === q.correctAnswer.toLowerCase().trim())
+      : (selfAssessedCorrect ?? false);
+    recordReview.mutate({ itemKey: `ai-quiz:${q.id}`, itemType: "question", correct: isCorrect, difficulty: d });
+    setDifficultyRated(true);
+    setSelfAssessedCorrect(null);
+    nextQuestion();
+  }, [currentIdx, questions, selectedAnswer, selfAssessedCorrect, recordReview, nextQuestion]);
 
   /* ── Next question ── */
   const nextQuestion = useCallback(() => {
@@ -224,6 +247,8 @@ export default function AIQuizPage() {
     setSelectedAnswer(null);
     setUserAnswer("");
     setShowExplanation(false);
+    setDifficultyRated(false);
+    setSelfAssessedCorrect(null);
   }, []);
 
   /* ── Retry same quiz ── */
@@ -235,6 +260,8 @@ export default function AIQuizPage() {
     setSelectedAnswer(null);
     setUserAnswer("");
     setShowExplanation(false);
+    setDifficultyRated(false);
+    setSelfAssessedCorrect(null);
   }, []);
 
   /* ── Keyboard navigation ── */
@@ -250,13 +277,15 @@ export default function AIQuizPage() {
         if (e.key === "c" || e.key === "C") handleMCAnswer(2);
         if (e.key === "d" || e.key === "D") handleMCAnswer(3);
       }
+      // When explanation is shown, DifficultyRating handles 1-4 keys.
+      // Enter/N still works as fallback to advance with 'good' default.
       if (showExplanation && (e.key === "Enter" || e.key === "n" || e.key === "N")) {
-        nextQuestion();
+        rateDifficulty("good");
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [phase, currentIdx, showExplanation, questions, handleMCAnswer, nextQuestion]);
+  }, [phase, currentIdx, showExplanation, questions, handleMCAnswer, rateDifficulty]);
 
   /* ── Auth guard ── */
   if (authLoading) {
@@ -599,17 +628,16 @@ export default function AIQuizPage() {
                           )}
                         </div>
 
-                        {/* Next button */}
-                        <button
-                          onClick={nextQuestion}
-                          className="mt-4 w-full py-3 rounded-xl bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
-                        >
-                          {currentIdx + 1 >= questions.length ? "View Results" : "Next Question"}
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                        <p className="text-center text-[10px] text-muted-foreground mt-2 font-mono">
-                          Press Enter or N for next
-                        </p>
+                        {/* Difficulty rating replaces simple Next button */}
+                        <div className="mt-4">
+                          <DifficultyRating
+                            confidence={0}
+                            onRate={rateDifficulty}
+                            disabled={recordReview.isPending}
+                            enableKeyboard={true}
+                            label="How difficult was this question?"
+                          />
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>

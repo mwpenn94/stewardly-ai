@@ -9288,3 +9288,15 @@
 - [x] FINDING-6: Add weight rationale comment to composite score formula
 - [x] All 31 unit tests pass after optimizations
 - [x] Production build succeeds after optimizations
+## Pass 155: Quiz Difficulty Tuning — Add 4-button difficulty to quiz questions
+- [x] Audit all quiz surfaces: DueReview QuestionCard, AIQuizPage, LearningQuizRunner, LearningReview, ExamSimulator
+- [x] DueReview QuestionCard: Add post-answer difficulty rating (Again/Hard/Good/Easy) after revealing answer
+- [x] DueReview submitQuestion: Send difficulty parameter to recordReview
+- [x] AIQuizPage: Add difficulty rating after each question answer
+- [x] LearningQuizRunner: Add difficulty rating after each question answer
+- [x] LearningReview: Add difficulty rating after each question answer
+- [x] ExamSimulator: Add difficulty rating in practice mode after each question answer
+- [x] Unit tests for quiz difficulty flow (15 tests pass, 207 total learning tests pass)
+- [x] Recursion Pass 1: Expert Assessment (2 actionable: FINDING-1 non-MC correctness, FINDING-3 stale closure)
+- [x] Recursion Pass 2: Optimize findings (FINDING-1 non-MC correctness fixed, FINDING-3 stale closure fixed, FINDING-5 state reset fixed)
+- [x] Recursion Pass 3: Validate convergence (all fixes verified, declaration order fixed, 207/207 tests pass, no runtime errors)

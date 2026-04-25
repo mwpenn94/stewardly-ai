@@ -40,6 +40,7 @@ import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
 import LearningShell from "@/components/LearningShell";
+import { DifficultyRating, type Difficulty } from "@/components/learning/DifficultyRating";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -416,7 +417,11 @@ const params = useParams<{ moduleSlug?: string }>();
       }
       if (e.key === "Enter" || e.key === "ArrowRight") {
         e.preventDefault();
-        advanceQuestion();
+        if (config.mode === "practice") {
+          ratePracticeDifficulty("good");
+        } else {
+          advanceQuestion();
+        }
       }
     };
     window.addEventListener("keydown", handler);
@@ -494,6 +499,15 @@ const params = useParams<{ moduleSlug?: string }>();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentIndex, isAdaptive, totalTarget, adaptiveCorrectHistory, adaptiveAnswered, questionPool, activeQuestions.length],
+  );
+
+  // Practice mode: rate difficulty after seeing explanation, then advance
+  const ratePracticeDifficulty = useCallback(
+    (difficulty: Difficulty) => {
+      sendFeedback("learning.srs_rating", { rating: difficulty });
+      advanceQuestion();
+    },
+    [advanceQuestion],
   );
 
   const finishExam = useCallback(() => {
@@ -865,6 +879,15 @@ const params = useParams<{ moduleSlug?: string }>();
                     <Button onClick={submitAnswer} disabled={selectedKey === null}>
                       Submit
                     </Button>
+                  ) : config.mode === "practice" ? (
+                    <div className="flex-1">
+                      <DifficultyRating
+                        confidence={0}
+                        onRate={ratePracticeDifficulty}
+                        enableKeyboard={true}
+                        label="How difficult was this?"
+                      />
+                    </div>
                   ) : (
                     <Button onClick={() => advanceQuestion()}>
                       {currentIndex + 1 >= totalTarget ? (
