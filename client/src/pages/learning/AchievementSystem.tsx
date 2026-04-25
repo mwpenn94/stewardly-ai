@@ -225,19 +225,21 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
   const filtered = filter === "all" ? d.achievements : d.achievements.filter(a => a.category === filter);
 
   if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
-      </div>
-    );
+    return <LearningShell><div className="min-h-screen flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div></LearningShell>;
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Please sign in to access this page.</p>
-        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
-      </div>
+      <LearningShell>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <Award className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Achievements</h1>
+            <p className="text-sm text-muted-foreground mb-6">Sign in to track your milestones and streaks.</p>
+            <a href={getLoginUrl("/learning/achievements")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"><Award className="w-4 h-4" /> Sign In</a>
+          </div>
+        </div>
+      </LearningShell>
     );
   }
 
@@ -245,11 +247,16 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
   return (
     <LearningShell title="Achievements">
       <SEOHead title="Achievements" description="Track learning milestones, streaks, and mastery" />
-    <div className="max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-6">
-      <h1 className="font-heading text-2xl font-bold mb-1">Achievements</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        {earned.length} earned · {inProgress.length} in progress
-      </p>
+    <div className="min-h-screen px-6 lg:px-10 py-8 max-w-3xl mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
+          <Award className="w-5 h-5" style={{ color: "var(--primary-foreground)" }} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Achievements</h1>
+          <p className="text-xs text-muted-foreground font-mono">{earned.length} earned · {inProgress.length} in progress</p>
+        </div>
+      </div>
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">

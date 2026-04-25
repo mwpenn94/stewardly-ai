@@ -235,25 +235,26 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
     setComplianceFlags([]);
   };
 
-  if (phase === "intro") {
-
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
       </div>
     );
   }
-
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Please sign in to access this page.</p>
-        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center max-w-md">
+          <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Case Study Simulator</h1>
+          <p className="text-sm text-muted-foreground mb-6">Sign in to access case studies.</p>
+          <a href={getLoginUrl("/learning/case-study")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground">Sign In</a>
+        </div>
       </div>
     );
   }
-
+  if (phase === "intro") {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6">
         <button type="button" onClick={handleBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer mb-6">

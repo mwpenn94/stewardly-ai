@@ -187,17 +187,19 @@ export default function AIQuizPage() {
 
   // Auth guard
   if (authLoading) {
-    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
+    return <LearningShell><div className="min-h-screen flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div></LearningShell>;
   }
   if (!isAuthenticated) {
     return (
       <LearningShell>
         <SEOHead title="AI Quiz" description="AI-generated practice questions" />
-        <div className="container py-16 text-center space-y-4">
-          <Sparkles className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h1 className="text-2xl font-bold">AI Quiz Generator</h1>
-          <p className="text-muted-foreground">Sign in to generate practice questions.</p>
-          <Button onClick={() => window.location.href = getLoginUrl("/learning/ai-quiz")}>Sign In</Button>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <Sparkles className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>AI Quiz Generator</h1>
+            <p className="text-sm text-muted-foreground mb-6">Sign in to generate practice questions.</p>
+            <a href={getLoginUrl("/learning/ai-quiz")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"><Zap className="w-4 h-4" /> Sign In</a>
+          </div>
         </div>
       </LearningShell>
     );
@@ -209,20 +211,24 @@ export default function AIQuizPage() {
   return (
     <LearningShell>
       <SEOHead title="AI Quiz" description="AI-generated practice questions" />
-      <div className="container max-w-3xl py-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/learning"><ArrowLeft className="h-4 w-4" /></Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-primary" />
-              AI Quiz Generator
-            </h1>
-            <p className="text-sm text-muted-foreground">Practice with AI-generated questions</p>
+      <div className="min-h-screen px-6 lg:px-10 py-8 max-w-3xl mx-auto space-y-6">
+        {/* Header — KE pattern */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="flex items-center gap-3">
+            <Link href="/learning">
+              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
+                <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              </motion.div>
+            </Link>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
+              <Sparkles className="w-5 h-5" style={{ color: "var(--primary-foreground)" }} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>AI Quiz Generator</h1>
+              <p className="text-xs text-muted-foreground font-mono">Practice with AI-generated questions</p>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {!quizStarted ? (
           /* ── Setup ── */

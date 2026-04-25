@@ -109,7 +109,7 @@ export function DiscussionPanel({ groupId }: { groupId: number }) {
   );
 }
 
-/* ─── Shared Goals Panel (wired to groups.listGoals / addGoal / toggleGoal) ─── */
+/* ─── Shared learning goals Panel (wired to groups.listGoals / addGoal / toggleGoal) ─── */
 export function SharedGoalsPanel({ groupId }: { groupId: number }) {
   const { user } = useAuth();
   const [showAdd, setShowAdd] = useState(false);

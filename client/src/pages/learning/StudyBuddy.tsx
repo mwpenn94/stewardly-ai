@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   BookOpen, Brain, GraduationCap, Sparkles, Target, Clock,
-  Flame, Trophy, ArrowRight, Search, FileText, Upload,
+  Flame, Trophy, ArrowRight, ArrowLeft, Search, FileText, Upload,
   Zap, BarChart3, Shield, Award, ChevronRight, Play,
   RefreshCw, Lightbulb, CheckCircle2, AlertTriangle, Loader2,
 } from "lucide-react";
@@ -81,11 +81,13 @@ export default function StudyBuddy() {
     return (
       <LearningShell>
         <SEOHead title="Study Buddy" />
-        <div className="container py-12 text-center">
-          <Brain className="h-16 w-16 mx-auto text-primary/60 mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Study Buddy</h1>
-          <p className="text-muted-foreground mb-6">Sign in to access your AI-powered study companion.</p>
-          <Button asChild><a href={getLoginUrl("/learning/study-buddy")}>Sign In</a></Button>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <Brain className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Study Buddy</h1>
+            <p className="text-sm text-muted-foreground mb-6">Sign in to access your AI-powered study companion.</p>
+            <a href={getLoginUrl("/learning/study-buddy")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"><Brain className="w-4 h-4" /> Sign In</a>
+          </div>
         </div>
       </LearningShell>
     );
@@ -96,9 +98,8 @@ export default function StudyBuddy() {
     return (
       <LearningShell>
         <SEOHead title="Study Buddy" />
-        <div className="container py-12 text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground mt-3">Loading study data...</p>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading study data...</div>
         </div>
       </LearningShell>
     );
@@ -116,17 +117,22 @@ export default function StudyBuddy() {
   return (
     <LearningShell>
       <SEOHead title="Study Buddy — AI Study Companion" />
-      <div className="container py-6 space-y-6 max-w-6xl">
-        {/* Header */}
+      <div className="min-h-screen px-6 lg:px-10 py-8 max-w-6xl mx-auto space-y-6">
+        {/* Header — KE pattern */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Brain className="h-6 w-6 text-primary" />
-              Study Buddy
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Your AI-powered study companion for financial licensing and professional development.
-            </p>
+          <div className="flex items-center gap-3">
+            <Link href="/learning">
+              <div className="p-1.5 rounded-lg hover:bg-accent transition-colors">
+                <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Link>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
+              <Brain className="w-5 h-5" style={{ color: "var(--primary-foreground)" }} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Study Buddy</h1>
+              <p className="text-xs text-muted-foreground font-mono">AI-powered study companion</p>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>

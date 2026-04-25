@@ -275,18 +275,15 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
 
   if (defsQ.isLoading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-sm text-muted-foreground mt-3">Loading concept map…</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading concept map…</div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]" ref={containerRef}>
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border flex-none">
+      <div className="flex items-center gap-2 px-4 lg:px-6 py-2.5 border-b border-border flex-none backdrop-blur-md bg-background/80">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}

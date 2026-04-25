@@ -26,8 +26,9 @@ import {
   BarChart3, ArrowLeft, Brain, Trophy, Clock,
   TrendingUp, Target, Flame, BookOpen, Zap,
   Calendar, CheckCircle2, Lightbulb, Gauge,
-  Award, Activity, PieChart,
+  Award, Activity, PieChart, LogIn,
 } from "lucide-react";
+import { motion } from "framer-motion";
 
 // ─── Chart.js lazy loader ──────────────────────────────────────────────────
 const CHART_COLORS = [
@@ -211,16 +212,18 @@ export default function StudyAnalytics() {
     };
   }, [deepAnalyticsQ.data?.topicMastery]);
 
-  if (authLoading) return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
+  if (authLoading) return <LearningShell><div className="min-h-screen flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div></LearningShell>;
   if (!isAuthenticated) {
     return (
       <LearningShell>
         <SEOHead title="Study Analytics" description="Track your learning progress" />
-        <div className="container py-16 text-center space-y-4">
-          <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h1 className="text-2xl font-bold">Study Analytics</h1>
-          <p className="text-muted-foreground">Sign in to view your learning analytics.</p>
-          <Button onClick={() => window.location.href = getLoginUrl("/learning/analytics")}>Sign In</Button>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <BarChart3 className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Study Analytics</h1>
+            <p className="text-sm text-muted-foreground mb-6">Sign in to view your learning analytics.</p>
+            <a href={getLoginUrl("/learning/analytics")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"><LogIn className="w-4 h-4" /> Sign In</a>
+          </div>
         </div>
       </LearningShell>
     );
@@ -234,21 +237,26 @@ export default function StudyAnalytics() {
   return (
     <LearningShell>
       <SEOHead title="Study Analytics" description="Track your learning progress and performance" />
-      <div className="container max-w-6xl py-8 space-y-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/learning"><ArrowLeft className="h-4 w-4" /></Link>
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <BarChart3 className="h-6 w-6 text-primary" /> Study Analytics
-            </h1>
-            <p className="text-sm text-muted-foreground">Your learning performance at a glance</p>
+      <div className="min-h-screen px-6 lg:px-10 py-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <div className="flex items-center gap-3">
+            <Link href="/learning">
+              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
+                <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              </motion.div>
+            </Link>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
+              <BarChart3 className="w-5 h-5" style={{ color: "var(--primary-foreground)" }} />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Study Analytics</h1>
+              <p className="text-xs text-muted-foreground font-mono">Your learning performance at a glance</p>
+            </div>
+            {deepAnalyticsQ.data && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent text-accent-foreground">{deepAnalyticsQ.data.sessionCount} sessions</span>
+            )}
           </div>
-          {deepAnalyticsQ.data && (
-            <Badge variant="outline" className="text-xs">{deepAnalyticsQ.data.sessionCount} sessions analyzed</Badge>
-          )}
-        </div>
+        </motion.div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">

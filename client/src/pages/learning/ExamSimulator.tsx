@@ -250,9 +250,8 @@ const params = useParams<{ moduleSlug?: string }>();
   if (isLoadingData) {
     return (
       <LearningShell title="Exam Simulator">
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-accent" />
-          <p className="text-sm text-muted-foreground">Loading exam questions...</p>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading exam questions...</div>
         </div>
       </LearningShell>
     );
@@ -261,10 +260,13 @@ const params = useParams<{ moduleSlug?: string }>();
   if (loadError) {
     return (
       <LearningShell title="Exam Simulator">
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-          <AlertTriangle className="h-8 w-8 text-amber-400" />
-          <p className="text-sm text-muted-foreground">Could not load questions: {loadError}</p>
-          <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <AlertTriangle className="w-12 h-12 text-amber-400/50 mx-auto mb-4" />
+            <h2 className="text-lg font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Load Error</h2>
+            <p className="text-sm text-muted-foreground mb-4">{loadError}</p>
+            <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
+          </div>
         </div>
       </LearningShell>
     );
@@ -273,14 +275,17 @@ const params = useParams<{ moduleSlug?: string }>();
   if (questionPool.length === 0 && !poolProp) {
     return (
       <LearningShell title="Exam Simulator">
-        <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
-          <BookOpen className="h-8 w-8 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">
-            {moduleSlug
-              ? `No practice questions available for "${trackQuery.data?.title ?? moduleSlug}". Import content first.`
-              : "Select an exam track to begin."}
-          </p>
-          <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h2 className="text-lg font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>No Questions Available</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {moduleSlug
+                ? `No practice questions available for "${trackQuery.data?.title ?? moduleSlug}". Import content first.`
+                : "Select an exam track to begin."}
+            </p>
+            <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
+          </div>
         </div>
       </LearningShell>
     );

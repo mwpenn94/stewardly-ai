@@ -1,8 +1,9 @@
 /**
  * FormulaLab.tsx — Interactive formula playground
  *
- * Pass 36. Lets users explore financial formulas with live computation,
- * variable sliders, step-by-step breakdowns, and discipline filtering.
+ * KE-inherited design: formula cards with 2px accent bars, category grouping
+ * with colored headers, interactive calculator with sliders, step-by-step
+ * breakdowns, font-display headings, font-mono metadata, motion animations.
  */
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "wouter";
@@ -13,20 +14,23 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useStudySession } from "@/hooks/useStudySession";
 import { FORMULA_REGISTRY } from "@/lib/formulaRegistry";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Calculator, ArrowLeft, Sparkles, BookOpen, ChevronRight,
-  DollarSign, TrendingUp, RotateCcw, Search,
+  Calculator, ArrowLeft, Sparkles, BookOpen, ChevronDown, ChevronUp,
+  DollarSign, TrendingUp, RotateCcw, Search, LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+
+/* ── Category colors (KE pattern) ── */
+const CATEGORY_COLORS: Record<string, string> = {
+  "Time Value of Money": "#8B5CF6",
+  "Quick Estimates": "#F59E0B",
+  "Personal Finance": "#10B981",
+  "Lending": "#EF4444",
+  "Planning": "#6366F1",
+};
 
 // Built-in formula definitions with variable metadata
 const FORMULA_CATALOG = [
@@ -112,7 +116,7 @@ const FORMULA_CATALOG = [
       `Monthly debt = $${v.monthlyDebt.toLocaleString()}`,
       `Monthly income = $${v.monthlyIncome.toLocaleString()}`,
       `DTI = ${((v.monthlyDebt / v.monthlyIncome) * 100).toFixed(1)}%`,
-      (v.monthlyDebt / v.monthlyIncome) * 100 <= 36 ? "✅ Below 36% — generally qualifies for most loans" : "⚠️ Above 36% — may face lending restrictions",
+      (v.monthlyDebt / v.monthlyIncome) * 100 <= 36 ? "Below 36% — generally qualifies for most loans" : "Above 36% — may face lending restrictions",
     ],
   },
   {
@@ -191,7 +195,7 @@ export default function FormulaLab() {
 
   const categories = useMemo(() => {
     const cats = new Set(FORMULA_CATALOG.map((f) => f.category));
-    return ["all", ...Array.from(cats)];
+    return Array.from(cats);
   }, []);
 
   const filteredFormulas = useMemo(() => {
@@ -201,6 +205,16 @@ export default function FormulaLab() {
       return true;
     });
   }, [categoryFilter, searchTerm]);
+
+  // Group by category
+  const grouped = useMemo(() => {
+    const groups: Record<string, typeof FORMULA_CATALOG> = {};
+    filteredFormulas.forEach(f => {
+      if (!groups[f.category]) groups[f.category] = [];
+      groups[f.category].push(f);
+    });
+    return groups;
+  }, [filteredFormulas]);
 
   const selectedFormula = useMemo(() => FORMULA_CATALOG.find((f) => f.id === selectedId), [selectedId]);
 
@@ -237,17 +251,36 @@ export default function FormulaLab() {
 
   // Auth guard
   if (authLoading) {
-    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
+    return (
+      <LearningShell>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      </LearningShell>
+    );
   }
+
   if (!isAuthenticated) {
     return (
       <LearningShell>
         <SEOHead title="Formula Lab" description="Interactive financial formula playground" />
-        <div className="container py-16 text-center space-y-4">
-          <Calculator className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h1 className="text-2xl font-bold">Formula Lab</h1>
-          <p className="text-muted-foreground">Sign in to explore financial formulas.</p>
-          <Button onClick={() => window.location.href = getLoginUrl("/learning/formula-lab")}>Sign In</Button>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <Calculator className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>
+              Formula Lab
+            </h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Sign in to explore interactive financial formulas.
+            </p>
+            <a
+              href={getLoginUrl("/learning/formula-lab")}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </a>
+          </div>
         </div>
       </LearningShell>
     );
@@ -256,132 +289,234 @@ export default function FormulaLab() {
   return (
     <LearningShell>
       <SEOHead title="Formula Lab" description="Interactive financial formula playground" />
-      <div className="container max-w-5xl py-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/learning"><ArrowLeft className="h-4 w-4" /></Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Calculator className="h-6 w-6 text-primary" />
-              Formula Lab
-            </h1>
-            <p className="text-sm text-muted-foreground">Interactive financial formula playground</p>
+      <div className="min-h-screen px-6 lg:px-10 py-8">
+        {/* Header — KE pattern */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <div className="flex items-center gap-3">
+            <Link href="/learning">
+              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
+                <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              </motion.div>
+            </Link>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
+              <Calculator className="w-5 h-5" style={{ color: "var(--primary-foreground)" }} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+                Formula Lab
+              </h1>
+              <p className="text-xs text-muted-foreground font-mono">
+                {FORMULA_CATALOG.length} formulas across {categories.length} categories
+              </p>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Formula List */}
-          <div className="space-y-3">
+          {/* Formula List — KE pattern */}
+          <div className="space-y-4">
+            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search formulas..." className="pl-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search formulas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {categories.map((c) => (
-                  <SelectItem key={c} value={c}>{c === "all" ? "All Categories" : c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {filteredFormulas.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => selectFormula(f.id)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                    selectedId === f.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
-                  }`}
-                >
-                  <div className="font-medium text-sm">{f.name}</div>
-                  <div className="text-xs text-muted-foreground">{f.category}</div>
-                </button>
-              ))}
+
+            {/* Category filter pills */}
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setCategoryFilter("all")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  categoryFilter === "all" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All
+              </button>
+              {categories.map(cat => {
+                const color = CATEGORY_COLORS[cat] || "#6366F1";
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(categoryFilter === cat ? "all" : cat)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      categoryFilter === cat ? "text-white" : "bg-card border border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                    style={categoryFilter === cat ? { background: color } : undefined}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Formula cards grouped by category */}
+            <div className="space-y-5 max-h-[65vh] overflow-y-auto pr-1">
+              {Object.entries(grouped).map(([cat, formulas]) => {
+                const color = CATEGORY_COLORS[cat] || "#6366F1";
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{cat}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {formulas.map(f => (
+                        <motion.button
+                          key={f.id}
+                          whileHover={{ x: 2 }}
+                          onClick={() => selectFormula(f.id)}
+                          className={`w-full text-left p-3 rounded-xl border transition-all relative overflow-hidden ${
+                            selectedId === f.id
+                              ? "border-primary/50 bg-primary/5"
+                              : "border-border bg-card hover:border-primary/30"
+                          }`}
+                        >
+                          {/* Accent bar */}
+                          <div className="absolute top-0 left-0 bottom-0 w-[2px]" style={{ background: color }} />
+                          <div className="pl-2">
+                            <div className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>{f.name}</div>
+                            <div className="text-[11px] text-muted-foreground line-clamp-1">{f.description}</div>
+                            <code className="text-[10px] font-mono text-muted-foreground/70 mt-1 block">{f.formula}</code>
+                          </div>
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Calculator */}
+          {/* Calculator — KE pattern */}
           <div className="lg:col-span-2 space-y-4">
             {selectedFormula ? (
               <>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{selectedFormula.name}</CardTitle>
-                      <Badge variant="outline">{selectedFormula.category}</Badge>
+                {/* Formula header card */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card border border-border rounded-xl p-5 relative overflow-hidden"
+                >
+                  <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: CATEGORY_COLORS[selectedFormula.category] || "#6366F1" }} />
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h2 className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>{selectedFormula.name}</h2>
+                      <p className="text-xs text-muted-foreground">{selectedFormula.description}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{selectedFormula.description}</p>
-                    <code className="block mt-2 p-2 bg-muted rounded text-sm font-mono">{selectedFormula.formula}</code>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {selectedFormula.variables.map((v) => (
-                      <div key={v.key} className="space-y-2">
-                        <div className="flex justify-between">
-                          <Label className="text-sm">{v.label}</Label>
-                          <span className="text-sm font-mono font-medium">
-                            {v.isRate ? `${((vars[v.key] ?? v.default) * 100).toFixed(1)}%` : `$${(vars[v.key] ?? v.default).toLocaleString()}`}
-                          </span>
-                        </div>
-                        <Slider
-                          value={[vars[v.key] ?? v.default]}
-                          min={v.min}
-                          max={v.max}
-                          step={v.step}
-                          onValueChange={([val]) => setVars((prev) => ({ ...prev, [v.key]: val }))}
-                        />
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent text-accent-foreground">
+                      {selectedFormula.category}
+                    </span>
+                  </div>
+                  <code className="block p-3 rounded-lg bg-accent/30 border border-border/50 text-sm font-mono text-foreground">
+                    {selectedFormula.formula}
+                  </code>
+                </motion.div>
 
-                {/* Result */}
-                {result !== null && (
-                  <Card className="border-2 border-primary/30">
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <div className="text-sm text-muted-foreground mb-1">Result</div>
-                        <div className="text-3xl font-bold text-primary">
-                          {selectedId === "rule-of-72"
-                            ? `${result.toFixed(1)} years`
-                            : selectedId === "debt-to-income"
-                            ? `${result.toFixed(1)}%`
-                            : `$${result.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-                        </div>
+                {/* Variable sliders */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  className="bg-card border border-border rounded-xl p-5 space-y-5"
+                >
+                  <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Variables</h3>
+                  {selectedFormula.variables.map((v) => (
+                    <div key={v.key} className="space-y-2">
+                      <div className="flex justify-between items-baseline">
+                        <label className="text-xs text-muted-foreground">{v.label}</label>
+                        <span className="text-sm font-mono font-semibold text-foreground">
+                          {v.isRate ? `${((vars[v.key] ?? v.default) * 100).toFixed(1)}%` : (v.key === "n" || v.key === "t" || v.key === "years" || v.key === "months") ? `${vars[v.key] ?? v.default}` : `$${(vars[v.key] ?? v.default).toLocaleString()}`}
+                        </span>
                       </div>
-                    </CardContent>
-                  </Card>
+                      <Slider
+                        value={[vars[v.key] ?? v.default]}
+                        min={v.min}
+                        max={v.max}
+                        step={v.step}
+                        onValueChange={([val]) => setVars((prev) => ({ ...prev, [v.key]: val }))}
+                      />
+                    </div>
+                  ))}
+                </motion.div>
+
+                {/* Result — KE accent card */}
+                {result !== null && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-card border-2 border-primary/30 rounded-xl p-6 text-center"
+                  >
+                    <div className="text-xs text-muted-foreground font-mono mb-1">Result</div>
+                    <div className="text-3xl font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--primary)" }}>
+                      {selectedId === "rule-of-72"
+                        ? `${result.toFixed(1)} years`
+                        : selectedId === "debt-to-income"
+                        ? `${result.toFixed(1)}%`
+                        : `$${result.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+                    </div>
+                  </motion.div>
                 )}
 
-                {/* Step-by-step */}
-                <Button variant="outline" className="w-full" onClick={() => setShowSteps(!showSteps)}>
+                {/* Step-by-step toggle */}
+                <motion.button
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setShowSteps(!showSteps)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-border bg-card text-sm font-medium hover:border-primary/30 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-primary" />
                   {showSteps ? "Hide" : "Show"} Step-by-Step Breakdown
-                </Button>
+                  {showSteps ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </motion.button>
+
                 <AnimatePresence>
                   {showSteps && steps.length > 0 && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
-                      <Card>
-                        <CardContent className="pt-4 space-y-2">
-                          {steps.map((step, i) => (
-                            <div key={i} className="flex gap-3 items-start">
-                              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">{i + 1}</span>
-                              <span className="text-sm">{step}</span>
-                            </div>
-                          ))}
-                        </CardContent>
-                      </Card>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+                        {steps.map((step, i) => (
+                          <div key={i} className="flex gap-3 items-start">
+                            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-mono font-medium">
+                              {i + 1}
+                            </span>
+                            <span className="text-sm text-foreground leading-relaxed">{step}</span>
+                          </div>
+                        ))}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </>
             ) : (
-              <div className="flex items-center justify-center h-64 text-muted-foreground">
-                <div className="text-center space-y-2">
-                  <Calculator className="mx-auto h-12 w-12 opacity-30" />
-                  <p>Select a formula to get started</p>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex items-center justify-center h-64"
+              >
+                <div className="text-center">
+                  <Calculator className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground" style={{ fontFamily: "var(--font-display)" }}>
+                    Select a formula to get started
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">
+                    Choose from {FORMULA_CATALOG.length} financial formulas
+                  </p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

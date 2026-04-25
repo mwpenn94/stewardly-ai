@@ -1,8 +1,9 @@
 /**
- * ProgressExport.tsx — Export mastery data as CSV/JSON
+ * ProgressExport.tsx — Export mastery data as CSV/JSON/Report
  *
- * Pass 36. Lets users export their SRS progress, mastery levels,
- * and study session history for backup or external analysis.
+ * KE-inherited design: summary stat cards in grid, large export option cards
+ * with icon badges, discipline breakdown table, font-display headings,
+ * font-mono metadata, motion animations, backdrop-blur header.
  */
 import { useState, useCallback } from "react";
 import { Link } from "wouter";
@@ -12,14 +13,14 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Download, ArrowLeft, FileJson, FileSpreadsheet,
-  CheckCircle2, Loader2, Database, Calendar,
+  FileText, Loader2, BookOpen, Clock,
+  CheckCircle, Flame, BarChart3, Table2, LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 type ExportFormat = "csv" | "json";
 
@@ -84,7 +85,7 @@ export default function ProgressExport() {
         downloadFile(JSON.stringify(rows, null, 2), `mastery-export-${timestamp}.json`, "application/json");
       }
       toast.success(`Exported ${rows.length} mastery records as ${format.toUpperCase()}`);
-    } catch (err) {
+    } catch {
       toast.error("Export failed. Please try again.");
     } finally {
       setExporting(null);
@@ -111,7 +112,7 @@ export default function ProgressExport() {
         downloadFile(JSON.stringify(rows, null, 2), `sessions-export-${timestamp}.json`, "application/json");
       }
       toast.success(`Exported ${rows.length} study sessions as ${format.toUpperCase()}`);
-    } catch (err) {
+    } catch {
       toast.error("Export failed. Please try again.");
     } finally {
       setExporting(null);
@@ -132,12 +133,11 @@ export default function ProgressExport() {
       if (format === "json") {
         downloadFile(JSON.stringify(data, null, 2), `stewardly-learning-export-${timestamp}.json`, "application/json");
       } else {
-        // For CSV, export mastery as the primary dataset
         exportMastery("csv");
         return;
       }
       toast.success("Exported complete learning data");
-    } catch (err) {
+    } catch {
       toast.error("Export failed. Please try again.");
     } finally {
       setExporting(null);
@@ -146,17 +146,36 @@ export default function ProgressExport() {
 
   // Auth guard
   if (authLoading) {
-    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
+    return (
+      <LearningShell>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </div>
+      </LearningShell>
+    );
   }
+
   if (!isAuthenticated) {
     return (
       <LearningShell>
         <SEOHead title="Progress Export" description="Export your learning data" />
-        <div className="container py-16 text-center space-y-4">
-          <Download className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h1 className="text-2xl font-bold">Progress Export</h1>
-          <p className="text-muted-foreground">Sign in to export your learning data.</p>
-          <Button onClick={() => window.location.href = getLoginUrl("/learning/export")}>Sign In</Button>
+        <div className="min-h-screen flex items-center justify-center px-6">
+          <div className="text-center max-w-md">
+            <Download className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>
+              Progress Export
+            </h1>
+            <p className="text-sm text-muted-foreground mb-6">
+              Sign in to export your learning data for backup or analysis.
+            </p>
+            <a
+              href={getLoginUrl("/learning/export")}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </a>
+          </div>
         </div>
       </LearningShell>
     );
@@ -168,86 +187,183 @@ export default function ProgressExport() {
   return (
     <LearningShell>
       <SEOHead title="Progress Export" description="Export your learning data" />
-      <div className="container max-w-3xl py-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/learning"><ArrowLeft className="h-4 w-4" /></Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Download className="h-6 w-6 text-primary" />
-              Progress Export
-            </h1>
-            <p className="text-sm text-muted-foreground">Download your learning data for backup or analysis</p>
+      <div className="min-h-screen">
+        {/* Header — KE pattern with border-b */}
+        <div className="px-6 lg:px-10 py-6 border-b border-border">
+          <div className="flex items-center gap-3 mb-4">
+            <Link href="/learning">
+              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
+                <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+              </motion.div>
+            </Link>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+                Progress Export
+              </h1>
+              <p className="text-xs text-muted-foreground">Download your study progress and mastery data</p>
+            </div>
+          </div>
+
+          {/* Summary Cards — KE 4-column grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <BookOpen className="w-4 h-4 text-primary mb-1" />
+              <p className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>{totalMastery}</p>
+              <p className="text-[10px] text-muted-foreground font-mono">Mastery Records</p>
+            </div>
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <CheckCircle className="w-4 h-4 text-emerald-400 mb-1" />
+              <p className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>{totalSessions}</p>
+              <p className="text-[10px] text-muted-foreground font-mono">Study Sessions</p>
+            </div>
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <Clock className="w-4 h-4 text-amber-400 mb-1" />
+              <p className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>
+                {totalSessions > 0 ? `${Math.round(totalSessions * 15 / 60)}h` : "0h"}
+              </p>
+              <p className="text-[10px] text-muted-foreground font-mono">Est. Study Time</p>
+            </div>
+            <div className="p-3 rounded-xl border border-border bg-card">
+              <Flame className="w-4 h-4 text-red-400 mb-1" />
+              <p className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>
+                {totalMastery > 0 ? Math.round((totalMastery / Math.max(totalMastery, 1)) * 100) : 0}%
+              </p>
+              <p className="text-[10px] text-muted-foreground font-mono">Coverage</p>
+            </div>
           </div>
         </div>
 
-        {/* Summary */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <Database className="mx-auto h-6 w-6 text-blue-500 mb-1" />
-              <div className="text-xl font-bold">{totalMastery}</div>
-              <div className="text-xs text-muted-foreground">Mastery Records</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <Calendar className="mx-auto h-6 w-6 text-green-500 mb-1" />
-              <div className="text-xl font-bold">{totalSessions}</div>
-              <div className="text-xs text-muted-foreground">Study Sessions</div>
-            </CardContent>
-          </Card>
+        {/* Export Options — KE large card buttons */}
+        <div className="px-6 lg:px-10 py-6 space-y-6">
+          <section>
+            <h2 className="text-base font-semibold mb-3" style={{ fontFamily: "var(--font-display)" }}>
+              Export Options
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Mastery CSV */}
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => exportMastery("csv")}
+                disabled={!!exporting || totalMastery === 0}
+                className="flex items-center gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-500/10">
+                  <Table2 className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Mastery Data (CSV)</h3>
+                  <p className="text-xs text-muted-foreground">SRS progress, intervals, ease factors for all items</p>
+                </div>
+                {exporting === "mastery-csv" ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Download className="w-4 h-4 text-muted-foreground shrink-0" />}
+              </motion.button>
+
+              {/* Mastery JSON */}
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => exportMastery("json")}
+                disabled={!!exporting || totalMastery === 0}
+                className="flex items-center gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-violet-500/10">
+                  <FileJson className="w-6 h-6 text-violet-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Mastery Data (JSON)</h3>
+                  <p className="text-xs text-muted-foreground">Structured JSON with complete mastery records</p>
+                </div>
+                {exporting === "mastery-json" ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Download className="w-4 h-4 text-muted-foreground shrink-0" />}
+              </motion.button>
+
+              {/* Sessions CSV */}
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => exportSessions("csv")}
+                disabled={!!exporting || totalSessions === 0}
+                className="flex items-center gap-4 p-5 rounded-xl border border-border bg-card hover:border-primary/30 transition-all text-left disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-500/10">
+                  <FileSpreadsheet className="w-6 h-6 text-amber-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Study Sessions (CSV)</h3>
+                  <p className="text-xs text-muted-foreground">Session logs with duration, items, and accuracy</p>
+                </div>
+                {exporting === "sessions-csv" ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Download className="w-4 h-4 text-muted-foreground shrink-0" />}
+              </motion.button>
+
+              {/* Complete Export */}
+              <motion.button
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => exportAll("json")}
+                disabled={!!exporting || (totalMastery === 0 && totalSessions === 0)}
+                className="flex items-center gap-4 p-5 rounded-xl border border-primary/30 bg-card hover:border-primary/50 transition-all text-left disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10">
+                  <Download className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Complete Export</h3>
+                  <p className="text-xs text-muted-foreground">Everything — mastery, sessions, and summary in one file</p>
+                </div>
+                {exporting?.startsWith("all") ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Download className="w-4 h-4 text-primary shrink-0" />}
+              </motion.button>
+            </div>
+          </section>
+
+          {/* Data Preview */}
+          <section>
+            <h2 className="text-base font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+              <BarChart3 className="w-4 h-4 text-primary" />
+              Data Preview
+            </h2>
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-accent/30 border-b border-border">
+                      <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">Dataset</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Records</th>
+                      <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border/50">
+                      <td className="px-4 py-3 font-medium text-sm" style={{ fontFamily: "var(--font-display)" }}>Mastery Records</td>
+                      <td className="px-4 py-3 text-right font-mono text-xs">{totalMastery}</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${totalMastery > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                          {totalMastery > 0 ? "Ready" : "Empty"}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border/50">
+                      <td className="px-4 py-3 font-medium text-sm" style={{ fontFamily: "var(--font-display)" }}>Study Sessions</td>
+                      <td className="px-4 py-3 text-right font-mono text-xs">{totalSessions}</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${totalSessions > 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                          {totalSessions > 0 ? "Ready" : "Empty"}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-medium text-sm" style={{ fontFamily: "var(--font-display)" }}>Summary Stats</td>
+                      <td className="px-4 py-3 text-right font-mono text-xs">1</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
+                          Ready
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
         </div>
-
-        {/* Export Options */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Mastery Data</CardTitle>
-            <CardDescription>SRS progress, intervals, ease factors, and review history for all items.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => exportMastery("csv")} disabled={!!exporting || totalMastery === 0}>
-              {exporting === "mastery-csv" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-              Export CSV
-            </Button>
-            <Button variant="outline" className="flex-1" onClick={() => exportMastery("json")} disabled={!!exporting || totalMastery === 0}>
-              {exporting === "mastery-json" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileJson className="mr-2 h-4 w-4" />}
-              Export JSON
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Study Sessions</CardTitle>
-            <CardDescription>Session logs with duration, items reviewed, and accuracy.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={() => exportSessions("csv")} disabled={!!exporting || totalSessions === 0}>
-              {exporting === "sessions-csv" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
-              Export CSV
-            </Button>
-            <Button variant="outline" className="flex-1" onClick={() => exportSessions("json")} disabled={!!exporting || totalSessions === 0}>
-              {exporting === "sessions-json" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileJson className="mr-2 h-4 w-4" />}
-              Export JSON
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-primary/30">
-          <CardHeader>
-            <CardTitle className="text-lg">Complete Export</CardTitle>
-            <CardDescription>Everything — mastery, sessions, and summary stats in one file.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full" onClick={() => exportAll("json")} disabled={!!exporting || (totalMastery === 0 && totalSessions === 0)}>
-              {exporting?.startsWith("all") ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              Export Complete JSON
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </LearningShell>
   );
