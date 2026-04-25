@@ -583,7 +583,7 @@ const params = useParams<{ moduleSlug?: string }>();
               )}
             </div>
             <div className="space-y-2">
-              <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}">
+              <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>
                 {passed ? "Exam Passed" : "Keep Studying"}
               </p>
               <p className="text-sm text-muted-foreground">

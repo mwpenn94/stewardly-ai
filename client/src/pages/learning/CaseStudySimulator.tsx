@@ -323,8 +323,8 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
         <div className={`w-16 h-16 rounded-2xl ${passed ? "bg-emerald-500/10" : "bg-amber-500/10"} flex items-center justify-center mx-auto mb-4`}>
           {passed ? <Award className="w-8 h-8 text-emerald-400" /> : <RotateCcw className="w-8 h-8 text-amber-400" />}
         </div>
-        <h2 className="font-bold text-2xl font-bold mb-2">{passed ? "Case Complete!" : "Review Needed"}</h2>
-        <p className="text-3xl font-bold" style={{ fontFamily: "var(--font-display)" }} text-primary mb-1">{pct}%</p>
+        <h2 className="text-2xl font-bold mb-2">{passed ? "Case Complete!" : "Review Needed"}</h2>
+        <p className="text-3xl font-bold text-primary mb-1" style={{ fontFamily: "var(--font-display)" }}>{pct}%</p>
         <p className="text-sm text-muted-foreground mb-6">{totalScore}/{maxPossibleScore} points · {history.length} decisions</p>
         {complianceFlags.length > 0 && (
           <div className="text-left mb-6 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5">

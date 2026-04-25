@@ -53,7 +53,7 @@ export function DiscussionPanel({ groupId }: { groupId: number }) {
           <MessageSquare className="h-5 w-5 text-blue-400" />
           Discussion
         </h3>
-        <p className="text-xs text-muted-foreground mt-0.5">Share insights and ask questions</CardDescription>
+        <p className="text-xs text-muted-foreground mt-0.5">Share insights and ask questions</p>
       </div>
       <div className="p-5">
         {user && (
@@ -155,7 +155,7 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
                 <Badge variant="secondary" className="text-xs">{activeGoals.length} active</Badge>
               )}
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Track group learning objectives together</CardDescription>
+            <p className="text-xs text-muted-foreground mt-0.5">Track group learning objectives together</p>
           </div>
           {user && (
             <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
@@ -274,7 +274,7 @@ export function ActivityFeedPanel({ groupId }: { groupId: number }) {
           <Activity className="h-5 w-5 text-green-400" />
           Group Activity
         </h3>
-        <p className="text-xs text-muted-foreground mt-0.5">Recent activity from group members</CardDescription>
+        <p className="text-xs text-muted-foreground mt-0.5">Recent activity from group members</p>
       </div>
       <div className="p-5">
         {activityQ.isLoading ? (
@@ -359,7 +359,7 @@ export function CollaborativeNotesPanel({ groupId }: { groupId: number }) {
                 <Badge variant="secondary" className="text-xs">{notes.length}</Badge>
               )}
             </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">Collaborative study notes for the group</CardDescription>
+            <p className="text-xs text-muted-foreground mt-0.5">Collaborative study notes for the group</p>
           </div>
           {user && (
             <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
