@@ -3,7 +3,7 @@
  * Maps to actual service function signatures
  */
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import * as promptAB from "../services/promptABTesting";
 import * as prescreen from "../services/compliancePrescreening";
 import * as canary from "../services/canaryDeployment";
@@ -84,7 +84,7 @@ export const addendumFeaturesRouter = router({
     preDeployChecklist: protectedProcedure
       .mutation(async () => canary.runPreDeployChecklist()),
 
-    create: protectedProcedure
+    create: adminProcedure
       .input(z.object({
         version: z.string(),
         description: z.string().optional(),
@@ -93,7 +93,7 @@ export const addendumFeaturesRouter = router({
       }))
       .mutation(async ({ input }) => canary.createDeployment(input)),
 
-    updateRollout: protectedProcedure
+    updateRollout: adminProcedure
       .input(z.object({ deploymentId: z.number(), percentage: z.number(), errorRate: z.number().optional() }))
       .mutation(async ({ input }) => canary.updateRollout(input.deploymentId, input.percentage, input.errorRate)),
 

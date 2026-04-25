@@ -3,7 +3,7 @@
  * Full CRUD, search, freshness, feedback, gap detection, ingestion pipeline
  */
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import * as kb from "../services/knowledgeBase";
 import * as ingestion from "../services/knowledgeIngestion";
 
@@ -65,7 +65,7 @@ export const knowledgeBaseRouter = router({
       return kb.updateArticle(id, data, ctx.user.id, changeReason);
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => kb.deleteArticle(input.id)),
 

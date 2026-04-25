@@ -5,7 +5,7 @@
  * CRM sync, market streaming, regulatory impact, load testing
  */
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import * as perms from "../services/dynamicPermissions";
 import * as keys from "../services/keyRotation";
 import * as retention from "../services/retentionEnforcement";
@@ -56,14 +56,14 @@ export const operationsRouter = router({
     health: protectedProcedure
       .query(async () => keys.getKeyHealth()),
 
-    rotate: protectedProcedure
+    rotate: adminProcedure
       .input(z.object({ service: z.string(), gracePeriodHours: z.number().optional() }))
       .mutation(async ({ input }) => {
         const result = keys.rotateKey(input.service, input.gracePeriodHours);
         return { keyId: result.record.id, service: result.record.service };
       }),
 
-    revokeExpired: protectedProcedure
+    revokeExpired: adminProcedure
       .mutation(async () => ({ revoked: keys.revokeExpiredKeys() })),
 
     log: protectedProcedure
@@ -76,7 +76,7 @@ export const operationsRouter = router({
     policies: protectedProcedure
       .query(async () => retention.getPolicies()),
 
-    updatePolicy: protectedProcedure
+    updatePolicy: adminProcedure
       .input(z.object({
         resource: z.string(),
         retentionDays: z.number().optional(),
@@ -88,7 +88,7 @@ export const operationsRouter = router({
         return retention.updatePolicy(resource, updates);
       }),
 
-    enforce: protectedProcedure
+    enforce: adminProcedure
       .mutation(async () => retention.enforceRetention()),
 
     report: protectedProcedure
@@ -252,7 +252,7 @@ export const operationsRouter = router({
     connections: protectedProcedure
       .query(async () => crm.listConnections()),
 
-    createConnection: protectedProcedure
+    createConnection: adminProcedure
       .input(z.object({
         provider: z.enum(["salesforce", "hubspot", "dynamics", "zoho", "custom"]),
         syncDirection: z.enum(["inbound", "outbound", "bidirectional"]),
@@ -260,7 +260,7 @@ export const operationsRouter = router({
       }))
       .mutation(async ({ input }) => crm.createConnection(input)),
 
-    deleteConnection: protectedProcedure
+    deleteConnection: adminProcedure
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input }) => ({ deleted: crm.deleteConnection(input.id) })),
 
@@ -294,7 +294,13 @@ export const operationsRouter = router({
 
     deleteAlert: protectedProcedure
       .input(z.object({ alertId: z.string() }))
-      .mutation(async ({ input }) => ({ deleted: market.deleteAlert(input.alertId) })),
+      .mutation(async ({ input, ctx }) => {
+        // G13 IDOR: verify ownership before deleting
+        const userAlerts = market.getUserAlerts(ctx.user.id);
+        const owns = userAlerts.some(a => a.id === input.alertId);
+        if (!owns) throw new Error("Alert not found or not owned by user");
+        return { deleted: market.deleteAlert(input.alertId) };
+      }),
 
     checkAlerts: protectedProcedure
       .mutation(async () => market.checkAlerts()),

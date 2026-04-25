@@ -4,7 +4,7 @@
  * agent templates, graduated autonomy, agent replay
  */
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import * as tools from "../services/aiToolsRegistry";
 import * as modes from "../services/capabilityModes";
 import * as badge from "../services/aiBadge";
@@ -131,7 +131,7 @@ export const aiPlatformRouter = router({
         return modes.updateMode(id, data);
       }),
 
-    delete: protectedProcedure
+    delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => modes.deleteMode(input.id)),
 

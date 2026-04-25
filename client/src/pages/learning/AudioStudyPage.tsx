@@ -372,9 +372,9 @@ export default function AudioStudyPage() {
               <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate" style={{ fontFamily: "var(--font-display)" }}>
                 {isDataLoading ? <Skeleton className="h-6 w-48" /> : trackTitle}
               </h1>
-              <p className="text-xs text-muted-foreground font-mono">
+              <span className="text-xs text-muted-foreground font-mono block">
                 {isDataLoading ? <Skeleton className="h-3 w-32 mt-1" /> : `${chapters.length} chapters · ${audioItems.length} segments`}
-              </p>
+              </span>
             </div>
           </div>
         </div>

@@ -149,7 +149,13 @@ export const maxScoresRouter = router({
   updateRecommendationStatus: protectedProcedure.input(z.object({
     id: z.number(),
     status: z.enum(["accepted", "rejected", "implemented", "expired"]),
-  })).mutation(({ input }) => regBI.updateRecommendationStatus(input.id, input.status)),
+  })).mutation(async ({ input, ctx }) => {
+    // G13 IDOR: verify the recommendation belongs to this user
+    const userRecs = await regBI.listRecommendations(ctx.user.id);
+    const owns = userRecs.some((r: any) => r.id === input.id);
+    if (!owns) throw new Error("Recommendation not found or not owned by user");
+    return regBI.updateRecommendationStatus(input.id, input.status);
+  }),
 
   // ─── 3A: MFA ──────────────────────────────────────────────────────────
   enrollMFA: protectedProcedure.mutation(({ ctx }) => mfa.enrollMFA(ctx.user.id)),
