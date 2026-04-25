@@ -145,9 +145,13 @@ const MyWork = lazy(() => import("./pages/MyWork"));
 const MyFinancialTwin = lazy(() => import("./pages/MyFinancialTwin"));
 const ExamSimulatorPage = lazy(() => import("./pages/learning/ExamSimulatorPage"));
 const DisciplineDeepDive = lazy(() => import("./pages/learning/DisciplineDeepDive"));
-const CaseStudySimulator = lazy(() => import("./pages/learning/CaseStudySimulator"));
+const CaseStudySimulatorRoute = lazy(() => import("./pages/learning/CaseStudySimulatorRoute"));
 const AchievementSystem = lazy(() => import("./pages/learning/AchievementSystem"));
-const ConnectionMap = lazy(() => import("./pages/learning/ConnectionMap"));
+const ConnectionMapPage = lazy(() => import("./pages/learning/ConnectionMap").then(m => {
+  // ConnectionMap is a raw component — wrap it in LearningShell at the route level
+  const LearningShell = lazy(() => import("./components/LearningShell"));
+  return { default: () => <Suspense fallback={<PageSuspenseFallback />}><LearningShell title="Connection Map"><m.default /></LearningShell></Suspense> };
+}));
 const StudyBuddy = lazy(() => import("./pages/learning/StudyBuddy"));
 // Pass 36 — EMBA parity pages
 const HandsFreeStudy = lazy(() => import("./pages/learning/HandsFreeStudy"));
@@ -329,8 +333,9 @@ function Router() {
         {/* Pass 120+ learning extensions */}
         <Route path="/learning/exam/:moduleSlug">{() => <ExamSimulatorPage />}</Route>
         <Route path="/learning/discipline/:slug">{() => <DisciplineDeepDive />}</Route>
-        <Route path="/learning/case/:caseId">{() => <CaseStudySimulator />}</Route>
-        <Route path="/learning/connections">{() => <ConnectionMap />}</Route>
+        <Route path="/learning/case/:caseId">{() => <CaseStudySimulatorRoute />}</Route>
+        <Route path="/learning/case">{() => <CaseStudySimulatorRoute />}</Route>
+        <Route path="/learning/connections" component={ConnectionMapPage} />
         <Route path="/learning/achievements">{() => <AchievementSystem />}</Route>
         <Route path="/learning/study-buddy" component={StudyBuddy} />
         {/* Pass 36 — EMBA parity routes */}

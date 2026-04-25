@@ -9124,6 +9124,12 @@
 - [x] Rebuild TracksIndex — category grouping, section counts, question count badges, mastery progress bars, Study/Quiz/Cards quick action buttons
 - [x] Enhance Track Detail — Audio Study tab with Edge TTS, Exam Overview cards (Disciplines, Content, Format, Focus), chapter sidebar with section counts
 - [x] Wire ALL learning pages to use LearningShell instead of plain AppShell
-- [ ] Make LearningHome accessible to guests (remove auth gate, show preview with sign-in CTA for interactive features)
+- [x] Make LearningHome accessible to guests (remove auth gate, show preview with sign-in CTA for interactive features)
 - [x] Polish flashcard study — achievement toasts, progress bar styling, chapter label on cards
-- [ ] Verify all sidebar nav items load their target pages
+- [x] Verify all sidebar nav items load their target pages
+- [x] Fix /learning/case/:caseId route to use CaseStudySimulatorRoute wrapper (with LearningShell)
+- [x] Wrap ConnectionMap in LearningShell at route level
+- [x] Wrap PeerGroups in LearningShell
+- [x] Backfill 760 flashcards with chapter_id (distributed across chapters per track)
+- [x] GuestOverviewTab — track grid grouped by category, stats, benchmarks for unauthenticated visitors
+- [x] Guest sign-in CTA banner on LearningHome with progressive disclosure

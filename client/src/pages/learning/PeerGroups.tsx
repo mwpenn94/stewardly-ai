@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Users, Shield, Search, MessageSquare, Lock, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-
+import LearningShell from "@/components/LearningShell";
 export default function PeerGroups() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,9 +39,9 @@ export default function PeerGroups() {
   }, [groupsQ.data, searchQuery]);
 
   return (
-    <>
+    <LearningShell title="Peer Groups">
       <SEOHead title="Peer Groups" description="Join compliant professional peer groups for collaborative learning" />
-      <div className="space-y-6">
+      <div className="mx-auto max-w-4xl p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -163,6 +163,6 @@ export default function PeerGroups() {
           </div>
         )}
       </div>
-    </>
+    </LearningShell>
   );
 }

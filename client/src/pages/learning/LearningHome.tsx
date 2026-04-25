@@ -10,7 +10,7 @@
  * All existing functionality preserved, just reorganized into a coherent workflow.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -64,7 +64,7 @@ export default function LearningHome() {
   const licensesQ = trpc.learning.licenses.list.useQuery(undefined, { enabled: !!isAuthenticated });
   const alertsQ = trpc.learning.licenses.alerts.useQuery(undefined, { enabled: !!isAuthenticated });
   const recsQ = trpc.learning.recommendations.forMe.useQuery(undefined, { enabled: !!isAuthenticated });
-  const tracksQ = trpc.learning.content.listTracks.useQuery(undefined, { enabled: !!isAuthenticated });
+  const tracksQ = trpc.learning.content.listTracks.useQuery(undefined);
 
   const [streak, setStreak] = useState<StreakSummary>({
     current: 0, longest: 0, lastDay: null, status: "none",
@@ -88,18 +88,11 @@ export default function LearningHome() {
       </div>
     );
   }
-  if (!isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <p className="text-muted-foreground">Please sign in to access this page.</p>
-        <a href={getLoginUrl()} className="text-amber-500 hover:text-amber-400 underline">Sign in</a>
-      </div>
-    );
-  }
+  const isGuest = !isAuthenticated;
 
   const role = meQ.data?.role ?? "user";
-  const isAdvisorPlus = role === "advisor" || role === "manager" || role === "admin";
-  const isAdmin = role === "admin";
+  const isAdvisorPlus = isAuthenticated && (role === "advisor" || role === "manager" || role === "admin");
+  const isAdmin = isAuthenticated && role === "admin";
 
   const summary = summaryQ.data;
   const licenses = licensesQ.data ?? [];
@@ -107,7 +100,7 @@ export default function LearningHome() {
   const recs = recsQ.data ?? [];
   const tracks = tracksQ.data ?? [];
 
-  const hasError = summaryQ.isError || licensesQ.isError || tracksQ.isError;
+  const hasError = isAuthenticated && (summaryQ.isError || licensesQ.isError || tracksQ.isError);
   const activeLicenses = licenses.filter((l: any) => l.status === "active").length;
   const expiringSoon = alerts.filter((a: any) => a.alertType === "expiration_warning").length;
 
@@ -115,6 +108,25 @@ export default function LearningHome() {
     <LearningShell title="Learning">
       <SEOHead title="Learning & Licensing" description="Track exam mastery, manage licenses, and access study tools" />
       <div className="mx-auto max-w-6xl p-4 sm:p-6 space-y-4">
+
+        {/* ─── GUEST SIGN-IN CTA ─── */}
+        {isGuest && (
+          <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10">
+            <CardContent className="py-4 flex flex-col sm:flex-row items-center gap-3">
+              <GraduationCap className="h-8 w-8 text-primary shrink-0" />
+              <div className="flex-1 text-center sm:text-left">
+                <p className="text-sm font-semibold text-foreground">Welcome to the Learning Engine</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Browse exam tracks and content freely. Sign in to track progress, take quizzes, and unlock personalized study tools.</p>
+              </div>
+              <a href={getLoginUrl("/learning")}>
+                <Button size="sm" className="gap-1.5 shrink-0">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Sign in to unlock
+                </Button>
+              </a>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ─── BREADCRUMB BAR — matches Wealth Engine pattern ─── */}
         <div className="flex flex-wrap items-center justify-between gap-2 bg-card rounded-lg border border-border px-3 py-2">
@@ -141,7 +153,7 @@ export default function LearningHome() {
           </nav>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-muted-foreground hidden sm:inline">
-              {tracks.length} tracks · {activeLicenses} licenses · {summary?.masteryPct ?? 0}% mastery
+              {tracks.length} tracks{isAuthenticated ? ` · ${activeLicenses} licenses · ${summary?.masteryPct ?? 0}% mastery` : ""}
             </span>
             <Link href="/learning/search">
               <Button variant="ghost" size="sm" className="h-7 text-xs"><Search className="h-3.5 w-3.5 mr-1" />Search</Button>
@@ -167,7 +179,7 @@ export default function LearningHome() {
 
         {/* ─── TAB BAR ─── */}
         <div className="flex gap-1 p-1 bg-card rounded-lg border border-border overflow-x-auto" role="tablist">
-          {TABS.map(tab => {
+          {TABS.filter(tab => !isGuest || tab.id === "overview" || tab.id === "study" || tab.id === "reference").map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -193,15 +205,19 @@ export default function LearningHome() {
         {/* ─── TAB CONTENT ─── */}
         <div className="space-y-4" role="tabpanel">
           {activeTab === "overview" && (
-            <OverviewTab
-              summary={summary}
-              streak={streak}
-              activeLicenses={activeLicenses}
-              expiringSoon={expiringSoon}
-              recs={recs}
-              tracks={tracks}
-              recentTracks={recentTracks}
-            />
+            isGuest ? (
+              <GuestOverviewTab tracks={tracks} tracksLoading={tracksQ.isLoading} />
+            ) : (
+              <OverviewTab
+                summary={summary}
+                streak={streak}
+                activeLicenses={activeLicenses}
+                expiringSoon={expiringSoon}
+                recs={recs}
+                tracks={tracks}
+                recentTracks={recentTracks}
+              />
+            )
           )}
           {activeTab === "study" && (
             <StudyTab tracks={tracks} tracksLoading={tracksQ.isLoading} isAdmin={isAdmin} recentTracks={recentTracks} summary={summary} />
@@ -220,6 +236,115 @@ export default function LearningHome() {
         </div>
       </div>
     </LearningShell>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GUEST OVERVIEW TAB — Public preview with tracks + benchmarks
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function GuestOverviewTab({ tracks, tracksLoading }: { tracks: any[]; tracksLoading: boolean }) {
+  // Group tracks by category
+  const grouped = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const t of tracks) {
+      const cat = t.category ?? "General";
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push(t);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [tracks]);
+
+  return (
+    <div className="space-y-4">
+      {/* Welcome hero */}
+      <Card className="border-primary/20">
+        <CardContent className="py-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <GraduationCap className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Explore Exam Tracks</h2>
+              <p className="text-xs text-muted-foreground">Browse {tracks.length} exam tracks covering securities, insurance, and financial planning</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="p-2 rounded-lg bg-card border border-border/50">
+              <div className="text-xl font-bold text-foreground">{tracks.length}</div>
+              <div className="text-[10px] text-muted-foreground">Exam Tracks</div>
+            </div>
+            <div className="p-2 rounded-lg bg-card border border-border/50">
+              <div className="text-xl font-bold text-foreground">{grouped.length}</div>
+              <div className="text-[10px] text-muted-foreground">Categories</div>
+            </div>
+            <div className="p-2 rounded-lg bg-card border border-border/50">
+              <div className="text-xl font-bold text-foreground">
+                {tracks.reduce((sum: number, t: any) => sum + (t.questionCount ?? 0), 0)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">Questions</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Track grid */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <BookOpen className="h-5 w-5" />
+            Available Tracks
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {tracksLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {[1,2,3,4].map(i => <div key={i} className="h-28 rounded-lg bg-card/50 animate-pulse" />)}
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {grouped.map(([category, catTracks]) => (
+                <div key={category}>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{category}</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {catTracks.map((t: any) => (
+                      <Link key={t.id} href={`/learning/tracks/${t.slug}`}>
+                        <Card className="card-lift cursor-pointer h-full">
+                          <CardContent className="p-3">
+                            <div className="text-xl">{t.emoji ?? "📘"}</div>
+                            <div className="font-semibold text-sm mt-1.5">{t.name}</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{t.subtitle ?? t.description ?? ""}</div>
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <Badge variant="outline" className="text-[9px]">{t.chapterCount ?? 0} sections</Badge>
+                              {(t.questionCount ?? 0) > 0 && (
+                                <Badge variant="outline" className="text-[9px]">{t.questionCount} Q</Badge>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Industry Benchmarks */}
+      <DisclosureSection minLevel={1} label="Industry Benchmarks">
+        <BenchmarkGrid
+          title="Licensing & CE Context"
+          items={[
+            { label: "SIE Pass Rate", value: "74%", source: "FINRA SIE Exam Statistics 2024", status: "neutral" },
+            { label: "Series 7 Pass Rate", value: "72%", source: "FINRA Series 7 Exam Statistics 2024", status: "neutral" },
+            { label: "Series 66 Pass Rate", value: "73%", source: "NASAA Series 66 Statistics 2024", status: "neutral" },
+            { label: "CFP Pass Rate", value: "67%", source: "CFP Board Exam Statistics 2024", status: "warning" },
+          ]}
+        />
+      </DisclosureSection>
+    </div>
   );
 }
 

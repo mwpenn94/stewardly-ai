@@ -169,6 +169,7 @@ const EXEMPT_ROUTES = new Set<string>([
   "/learning/exam/:moduleSlug",
   "/learning/discipline/:slug",
   "/learning/case/:caseId",
+  "/learning/case",
   // Pass 7+ dynamic integration sub-pages / wealth-engine sub-pages
   // These are internal tabs within the WealthEngineHub, not standalone routes
   "/wealth-engine/retirement",
