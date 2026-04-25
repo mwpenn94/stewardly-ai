@@ -6,7 +6,7 @@
  * same underlying data via `learning.licenses.alerts`.
  */
 
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -89,7 +89,7 @@ export default function LicenseTracker() {
 
 
   return (
-    <AppShell title="License Tracker">
+    <LearningShell title="License Tracker">
       <SEOHead title="License Tracker" description="Track professional licenses and CE credits" />
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <header className="flex items-center justify-between">
@@ -251,6 +251,6 @@ export default function LicenseTracker() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

@@ -6,7 +6,7 @@
  */
 import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 // import { trpc } from "@/lib/trpc"; // Will be used when getShared endpoint is built
 import { Button } from "@/components/ui/button";
@@ -38,7 +38,7 @@ export default function SharedPlaylist() {
   }, [shareToken]);
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title={playlist?.name ? `Shared: ${playlist.name}` : "Shared Playlist"} description="View a shared study playlist" />
       <div className="min-h-screen">
         <div className="px-4 sm:px-6 lg:px-10 py-4 border-b border-border">
@@ -134,6 +134,6 @@ export default function SharedPlaylist() {
           )}
         </div>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

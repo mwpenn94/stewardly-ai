@@ -11,7 +11,7 @@
  * Authoring is gated by role: non-advisors are redirected away.
  */
 
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
@@ -128,7 +128,7 @@ export default function ContentStudio() {
     );
   }
 
-    return <AppShell title="Content Studio"><SEOHead title="Content Studio" description="Author and manage learning content" /><div className="p-6 text-sm text-muted-foreground">Loading…</div></AppShell>;
+    return <LearningShell title="Content Studio"><SEOHead title="Content Studio" description="Author and manage learning content" /><div className="p-6 text-sm text-muted-foreground">Loading…</div></LearningShell>;
   }
   if (!isAdvisorPlus) {
     return <Redirect to="/learning" />;
@@ -139,7 +139,7 @@ export default function ContentStudio() {
   const pending = pendingQ.data ?? [];
 
   return (
-    <AppShell title="Content Studio">
+    <LearningShell title="Content Studio">
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <header>
           <h1 className="text-3xl font-semibold flex items-center gap-2">
@@ -294,7 +294,7 @@ export default function ContentStudio() {
           </>
         )}
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }
 

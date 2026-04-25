@@ -11,7 +11,7 @@
 
 import { useMemo } from "react";
 import { useParams, useLocation } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Loader2, BookOpen, AlertTriangle } from "lucide-react";
@@ -82,17 +82,17 @@ export default function ExamSimulatorPage() {
   }
 
     return (
-      <AppShell title="Exam Simulator">
+      <LearningShell title="Exam Simulator">
         <div className="flex items-center justify-center min-h-[50vh]">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (!track) {
     return (
-      <AppShell title="Exam Simulator">
+      <LearningShell title="Exam Simulator">
         <div className="max-w-lg mx-auto p-6 space-y-4">
           <Card>
             <CardContent className="py-8 text-center space-y-3">
@@ -106,13 +106,13 @@ export default function ExamSimulatorPage() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (questionPool.length === 0) {
     return (
-      <AppShell title="Exam Simulator">
+      <LearningShell title="Exam Simulator">
         <div className="max-w-lg mx-auto p-6 space-y-4">
           <Card>
             <CardContent className="py-8 text-center space-y-3">
@@ -133,7 +133,7 @@ export default function ExamSimulatorPage() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 

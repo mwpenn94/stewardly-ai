@@ -6,7 +6,7 @@
  */
 import { useState, useCallback } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -70,11 +70,11 @@ export default function Playlists() {
 
   // Auth guard
   if (authLoading) {
-    return <AppShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></AppShell>;
+    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
   }
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Playlists" description="Curated study playlists" />
         <div className="container py-16 text-center space-y-4">
           <ListMusic className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -82,14 +82,14 @@ export default function Playlists() {
           <p className="text-muted-foreground">Sign in to create and manage playlists.</p>
           <Button onClick={() => window.location.href = getLoginUrl("/learning/playlists")}>Sign In</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   const playlists = playlistsQ.data ?? [];
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Playlists" description="Curated study playlists" />
       <div className="container max-w-3xl py-8 space-y-6">
         {/* Header */}
@@ -193,6 +193,6 @@ export default function Playlists() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

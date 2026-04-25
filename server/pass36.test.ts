@@ -164,55 +164,55 @@ describe("Pass 36: Page content quality checks", () => {
   it("HandsFreeStudy uses TTS/audio patterns", () => {
     const src = readFile("client/src/pages/learning/HandsFreeStudy.tsx");
     expect(src).toMatch(/tts|audio|speech|play|queue/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("AIQuizPage uses LLM quiz generation", () => {
     const src = readFile("client/src/pages/learning/AIQuizPage.tsx");
     expect(src).toMatch(/quiz|question|answer|difficulty/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("FormulaLab has interactive calculators", () => {
     const src = readFile("client/src/pages/learning/FormulaLab.tsx");
     expect(src).toMatch(/formula|calculator|compute|calculate/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("StudyAnalytics has charts/metrics", () => {
     const src = readFile("client/src/pages/learning/StudyAnalytics.tsx");
     expect(src).toMatch(/analytics|streak|accuracy|mastery/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("ProgressExport has CSV/JSON export", () => {
     const src = readFile("client/src/pages/learning/ProgressExport.tsx");
     expect(src).toMatch(/csv|json|export|download/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("Bookmarks has bookmark management", () => {
     const src = readFile("client/src/pages/learning/Bookmarks.tsx");
     expect(src).toMatch(/bookmark|note|remove|search/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("Playlists has CRUD operations", () => {
     const src = readFile("client/src/pages/learning/Playlists.tsx");
     expect(src).toMatch(/playlist|create|remove|share/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("StudyGroups has group management", () => {
     const src = readFile("client/src/pages/learning/StudyGroups.tsx");
     expect(src).toMatch(/group|invite|join|member/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("DiscoveryHistory has exploration log", () => {
     const src = readFile("client/src/pages/learning/DiscoveryHistory.tsx");
     expect(src).toMatch(/discovery|question|answer|explore/i);
-    expect(src).toContain("AppShell");
+    expect(src).toMatch(/AppShell|LearningShell/);
   });
 
   it("PomodoroTimer has timer logic", () => {

@@ -29,7 +29,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
@@ -279,10 +279,10 @@ export default function LearningReview() {
   // Loading state
   if (dueQ.isLoading) {
     return (
-      <AppShell title="Review">
+      <LearningShell title="Review">
         <SEOHead title="Review due items" description="SRS review session" />
         <div className="p-6 text-sm text-muted-foreground">Loading due items…</div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -292,7 +292,7 @@ export default function LearningReview() {
   // "nothing is due" and the user would think their progress was wiped.
   if (dueQ.isError) {
     return (
-      <AppShell title="Review">
+      <LearningShell title="Review">
         <SEOHead title="Review" description="SRS review session" />
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/learning")}>
@@ -323,7 +323,7 @@ export default function LearningReview() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -332,7 +332,7 @@ export default function LearningReview() {
   // track browser.
   if (total === 0) {
     return (
-      <AppShell title="Review">
+      <LearningShell title="Review">
         <SEOHead title="All caught up" description="No items due for review" />
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/learning")}>
@@ -364,7 +364,7 @@ export default function LearningReview() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -372,7 +372,7 @@ export default function LearningReview() {
   const reviewCount = items.length - newCount;
 
   return (
-    <AppShell title={studyAhead ? "Study Ahead" : "Review"}>
+    <LearningShell title={studyAhead ? "Study Ahead" : "Review"}>
       <SEOHead
         title={studyAhead ? "Study new cards" : "Review due items"}
         description="SRS review session"
@@ -473,7 +473,7 @@ export default function LearningReview() {
         )}
       </div>
       <KeyboardHelpOverlay shortcuts={REVIEW_SHORTCUTS} title="Review shortcuts" />
-    </AppShell>
+    </LearningShell>
   );
 }
 

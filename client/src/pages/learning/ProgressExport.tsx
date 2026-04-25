@@ -6,7 +6,7 @@
  */
 import { useState, useCallback } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -146,11 +146,11 @@ export default function ProgressExport() {
 
   // Auth guard
   if (authLoading) {
-    return <AppShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></AppShell>;
+    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
   }
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Progress Export" description="Export your learning data" />
         <div className="container py-16 text-center space-y-4">
           <Download className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -158,7 +158,7 @@ export default function ProgressExport() {
           <p className="text-muted-foreground">Sign in to export your learning data.</p>
           <Button onClick={() => window.location.href = getLoginUrl("/learning/export")}>Sign In</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -166,7 +166,7 @@ export default function ProgressExport() {
   const totalSessions = sessionsQ.data?.length ?? 0;
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Progress Export" description="Export your learning data" />
       <div className="container max-w-3xl py-8 space-y-6">
         {/* Header */}
@@ -249,6 +249,6 @@ export default function ProgressExport() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

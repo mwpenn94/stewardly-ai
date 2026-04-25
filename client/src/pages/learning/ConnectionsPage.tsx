@@ -7,7 +7,7 @@
  */
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -64,7 +64,7 @@ export default function ConnectionsPage() {
 
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Card className="max-w-sm"><CardContent className="p-6 text-center space-y-3">
             <Network className="h-8 w-8 mx-auto text-primary" />
@@ -72,12 +72,12 @@ export default function ConnectionsPage() {
             <a href={getLoginUrl()}><Button size="sm">Sign In</Button></a>
           </CardContent></Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Connections" description="Cross-discipline concept connections" />
       <div className="min-h-screen">
         <div className="px-4 sm:px-6 lg:px-10 py-4 border-b border-border">
@@ -155,6 +155,6 @@ export default function ConnectionsPage() {
           )}
         </div>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

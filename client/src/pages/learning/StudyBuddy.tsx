@@ -10,7 +10,7 @@
  */
 import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -79,7 +79,7 @@ export default function StudyBuddy() {
 
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Study Buddy" />
         <div className="container py-12 text-center">
           <Brain className="h-16 w-16 mx-auto text-primary/60 mb-4" />
@@ -87,7 +87,7 @@ export default function StudyBuddy() {
           <p className="text-muted-foreground mb-6">Sign in to access your AI-powered study companion.</p>
           <Button asChild><a href={getLoginUrl("/learning/study-buddy")}>Sign In</a></Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -101,7 +101,7 @@ export default function StudyBuddy() {
   };
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Study Buddy — AI Study Companion" />
       <div className="container py-6 space-y-6 max-w-6xl">
         {/* Header */}
@@ -334,6 +334,6 @@ export default function StudyBuddy() {
           ))}
         </div>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

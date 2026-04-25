@@ -14,7 +14,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { trpc } from "@/lib/trpc";
@@ -207,16 +207,16 @@ export default function LearningQuizRunner() {
 
   if (trackQ.isLoading || questionsQ.isLoading) {
     return (
-      <AppShell title="Quiz">
+      <LearningShell title="Quiz">
       <SEOHead title="Quiz" description="Practice quiz with explanations" />
         <div className="p-6 text-sm text-muted-foreground">Loading quiz…</div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (!track) {
     return (
-      <AppShell title="Quiz">
+      <LearningShell title="Quiz">
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button
             variant="ghost"
@@ -231,13 +231,13 @@ export default function LearningQuizRunner() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (rawQuestions.length === 0) {
     return (
-      <AppShell title={`${track.name} · Quiz`}>
+      <LearningShell title={`${track.name} · Quiz`}>
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button
             variant="ghost"
@@ -259,14 +259,14 @@ export default function LearningQuizRunner() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   // Pre-session configure card (pass 3) — pick deck size + ordering.
   if (!started) {
     return (
-      <AppShell title={`${track.name} · Quiz`}>
+      <LearningShell title={`${track.name} · Quiz`}>
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button
             variant="ghost"
@@ -374,7 +374,7 @@ export default function LearningQuizRunner() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -383,7 +383,7 @@ export default function LearningQuizRunner() {
     : [];
 
   return (
-    <AppShell title={`${track.name} · Quiz`}>
+    <LearningShell title={`${track.name} · Quiz`}>
       <div className="mx-auto max-w-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
           <Button
@@ -505,7 +505,7 @@ export default function LearningQuizRunner() {
           )
         )}
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }
 

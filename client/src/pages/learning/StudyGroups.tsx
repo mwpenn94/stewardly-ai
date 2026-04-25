@@ -6,7 +6,7 @@
  */
 import { useState, useCallback, useMemo } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -330,11 +330,11 @@ export default function StudyGroups() {
 
   // Auth guard
   if (authLoading) {
-    return <AppShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></AppShell>;
+    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
   }
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Study Groups" description="Collaborative study spaces" />
         <div className="container py-16 text-center space-y-4">
           <Users className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -342,7 +342,7 @@ export default function StudyGroups() {
           <p className="text-muted-foreground">Sign in to create or join study groups.</p>
           <Button onClick={() => window.location.href = getLoginUrl("/learning/groups")}>Sign In</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -351,17 +351,17 @@ export default function StudyGroups() {
   // If a group is selected, show detail view
   if (selectedGroup) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title={`${selectedGroup.name} — Study Group`} description="Study group details" />
         <div className="container max-w-3xl py-8">
           <GroupDetail group={selectedGroup} userId={user!.id} onBack={() => setSelectedGroup(null)} />
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Study Groups" description="Collaborative study spaces" />
       <div className="container max-w-3xl py-8 space-y-6">
         {/* Header */}
@@ -478,6 +478,6 @@ export default function StudyGroups() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

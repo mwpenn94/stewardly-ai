@@ -7,7 +7,7 @@
  */
 import { useState, useCallback, useEffect } from "react";
 import { useRoute, Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -89,7 +89,7 @@ export default function StudySession() {
 
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Card className="max-w-sm"><CardContent className="p-6 text-center space-y-3">
             <BookOpen className="h-8 w-8 mx-auto text-primary" />
@@ -97,7 +97,7 @@ export default function StudySession() {
             <a href={getLoginUrl()}><Button size="sm">Sign In</Button></a>
           </CardContent></Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -106,7 +106,7 @@ export default function StudySession() {
   const hardCount = Object.values(ratings).filter((r) => r === "hard").length;
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title={`Study: ${track?.name ?? trackSlug}`} description="Flashcard study session" />
       <div className="min-h-screen flex flex-col">
         {/* Header */}
@@ -214,6 +214,6 @@ export default function StudySession() {
           )}
         </div>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

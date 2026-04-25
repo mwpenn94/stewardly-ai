@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -243,7 +243,7 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
 
 
   return (
-    <AppShell title="Achievements">
+    <LearningShell title="Achievements">
       <SEOHead title="Achievements" description="Track learning milestones, streaks, and mastery" />
     <div className="max-w-3xl mx-auto px-4 py-6 pb-20 md:pb-6">
       <h1 className="font-heading text-2xl font-bold mb-1">Achievements</h1>
@@ -348,6 +348,6 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
         })}
       </div>
     </div>
-    </AppShell>
+    </LearningShell>
   );
 }

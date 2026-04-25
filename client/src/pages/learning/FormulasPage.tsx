@@ -8,7 +8,7 @@
  */
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -71,7 +71,7 @@ export default function FormulasPage() {
 
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Card className="max-w-sm">
             <CardContent className="p-6 text-center space-y-3">
@@ -83,12 +83,12 @@ export default function FormulasPage() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Formulas" description="Browse all financial formulas by discipline" />
       <div className="min-h-screen">
         {/* Header */}
@@ -236,6 +236,6 @@ export default function FormulasPage() {
           )}
         </div>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

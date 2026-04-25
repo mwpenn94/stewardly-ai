@@ -39,7 +39,7 @@ import {
 import { useAudioCompanion } from "@/components/AudioCompanion";
 import { useCelebration } from "@/lib/CelebrationEngine";
 import { sendFeedback } from "@/lib/feedbackSpecs";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -249,30 +249,30 @@ const params = useParams<{ moduleSlug?: string }>();
 
   if (isLoadingData) {
     return (
-      <AppShell title="Exam Simulator">
+      <LearningShell title="Exam Simulator">
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
           <p className="text-sm text-muted-foreground">Loading exam questions...</p>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (loadError) {
     return (
-      <AppShell title="Exam Simulator">
+      <LearningShell title="Exam Simulator">
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
           <AlertTriangle className="h-8 w-8 text-amber-400" />
           <p className="text-sm text-muted-foreground">Could not load questions: {loadError}</p>
           <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (questionPool.length === 0 && !poolProp) {
     return (
-      <AppShell title="Exam Simulator">
+      <LearningShell title="Exam Simulator">
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
           <BookOpen className="h-8 w-8 text-muted-foreground/50" />
           <p className="text-sm text-muted-foreground">
@@ -282,7 +282,7 @@ const params = useParams<{ moduleSlug?: string }>();
           </p>
           <Button variant="outline" onClick={handleBack}>Back to Learning</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 

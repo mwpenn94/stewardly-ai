@@ -11,7 +11,7 @@
  */
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -130,7 +130,7 @@ export default function GlobalLeaderboard() {
 
   if (!user) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Leaderboard | Learning" />
         <div className="container py-12 text-center">
           <Trophy className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
@@ -138,12 +138,12 @@ export default function GlobalLeaderboard() {
           <p className="text-muted-foreground mb-6">Sign in to see your ranking and compete with peers.</p>
           <Button asChild><a href={getLoginUrl()}>Sign In</a></Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Leaderboard | Learning" />
       <div className="container py-6 max-w-5xl">
         {/* Header */}
@@ -446,6 +446,6 @@ export default function GlobalLeaderboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

@@ -17,7 +17,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { usePlatformIntelligence } from "@/components/PlatformIntelligence";
 import { trpc } from "@/lib/trpc";
@@ -35,6 +35,9 @@ import {
   Shuffle,
   ListOrdered,
   TrendingDown,
+  Bookmark,
+  BookmarkCheck,
+  Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCelebration } from "@/lib/CelebrationEngine";
@@ -75,6 +78,39 @@ export default function LearningFlashcardStudy() {
   const track = trackQ.data;
   const rawCards = flashcardsQ.data ?? [];
 
+  // Chapter filter state
+  const chaptersQ = trpc.learning.content.listChapters.useQuery(
+    { trackId: trackQ.data?.id ?? 0 },
+    { enabled: !!trackQ.data?.id },
+  );
+  const chapters = chaptersQ.data ?? [];
+  const [chapterFilter, setChapterFilter] = useState<number | null>(null);
+  const [bookmarked, setBookmarked] = useState<Set<number>>(new Set());
+
+  // Filter cards by chapter if selected
+  const filteredCards = useMemo(() => {
+    if (!chapterFilter) return rawCards;
+    return rawCards.filter((c: any) => c.chapterId === chapterFilter);
+  }, [rawCards, chapterFilter]);
+
+  // Get chapter name for a card
+  const getChapterLabel = (card: any) => {
+    if (card.chapterId && chapters.length > 0) {
+      const ch = chapters.find((c: any) => c.id === card.chapterId);
+      return ch?.name ?? card.sourceLabel ?? track?.name;
+    }
+    return card.sourceLabel ?? track?.name ?? "";
+  };
+
+  const toggleBookmark = (cardId: number) => {
+    setBookmarked(prev => {
+      const next = new Set(prev);
+      if (next.has(cardId)) next.delete(cardId);
+      else next.add(cardId);
+      return next;
+    });
+  };
+
   // ── Deck config (pass 3 — shuffle + session size + weakest-first) ──
   const [started, setStarted] = useState(false);
   const [mode, setMode] = useState<StudyMode>("shuffle");
@@ -86,14 +122,14 @@ export default function LearningFlashcardStudy() {
   // Compose the deck pure-function-style so tests can lock in ordering.
   const cards = useMemo(() => {
     const masteryLookup = buildMasteryLookup(masteryQ.data ?? []);
-    return buildStudyDeck(rawCards, {
+    return buildStudyDeck(filteredCards, {
       mode,
       limit,
       seed: sessionSeed,
       masteryLookup,
       itemKeyOf: (f: any) => `flashcard:${f.id}`,
     });
-  }, [rawCards, mode, limit, sessionSeed, masteryQ.data]);
+  }, [filteredCards, mode, limit, sessionSeed, masteryQ.data]);
 
   // Session state
   const [index, setIndex] = useState(0);
@@ -168,18 +204,26 @@ export default function LearningFlashcardStudy() {
     setStarted(true);
   };
 
-  if (authLoading || trackQ.isLoading || flashcardsQ.isLoading) {
+  if (authLoading) {
     return (
-      <AppShell title="Flashcards">
+      <LearningShell title="Flashcards">
+        <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
+        <div className="p-6 text-sm text-muted-foreground">Loading…</div>
+      </LearningShell>
+    );
+  }
+  if (trackQ.isLoading || flashcardsQ.isLoading) {
+    return (
+      <LearningShell title="Flashcards">
         <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
         <div className="p-6 text-sm text-muted-foreground">Loading deck…</div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (!track) {
     return (
-      <AppShell title="Flashcards">
+      <LearningShell title="Flashcards">
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button
             variant="ghost"
@@ -194,13 +238,13 @@ export default function LearningFlashcardStudy() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (rawCards.length === 0) {
     return (
-      <AppShell title={`${track.name} · Flashcards`}>
+      <LearningShell title={`${track.name} · Flashcards`}>
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button
             variant="ghost"
@@ -222,7 +266,7 @@ export default function LearningFlashcardStudy() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -230,42 +274,65 @@ export default function LearningFlashcardStudy() {
   // ordering mode before the runner starts. Hidden once started.
   if (!started) {
     return (
-      <AppShell title={`${track.name} · Flashcards`}>
+      <LearningShell title={`${track.name} · Flashcards`}>
         <div className="mx-auto max-w-2xl p-6 space-y-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/learning/tracks/${track.slug}`)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to {track.name}
-          </Button>
+          {/* Header matching Knowledge Explorer */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(`/learning/tracks/${track.slug}`)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-xl font-semibold">{track.name} — Flashcards</h1>
+                <p className="text-sm text-muted-foreground">
+                  {rawCards.length} cards from the WealthBridge library
+                </p>
+              </div>
+            </div>
+            {isAuthenticated && masteryQ.data && (
+              <div className="text-xs text-muted-foreground">
+                <Badge variant="outline">
+                  {masteryQ.data.filter((m: any) => m.itemKey?.startsWith('flashcard:') && m.confidence >= 4).length}/{rawCards.length} mastered
+                </Badge>
+              </div>
+            )}
+          </div>
           <Card>
             <CardContent className="p-6 space-y-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="font-semibold">Start flashcard session</p>
-                  <p className="text-xs text-muted-foreground">
-                    {rawCards.length} cards available in this track
-                  </p>
-                </div>
-              </div>
 
               <div className="space-y-3">
+                <div>
+                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Chapter
+                  </p>
+                  <select
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    value={chapterFilter ?? ""}
+                    onChange={(e) => setChapterFilter(e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">All chapters ({filteredCards.length})</option>
+                    {chapters.map((ch: any) => (
+                      <option key={ch.id} value={ch.id}>{ch.name}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                     Session size
                   </p>
                   <div className="flex gap-2 flex-wrap">
-                    {[10, 20, 50, rawCards.length].map((n, i) => {
+                    {[10, 20, 50, filteredCards.length].map((n, i) => {
                       const isAll = i === 3;
                       const label = isAll ? "All" : String(n);
-                      const val = isAll ? rawCards.length : Math.min(n, rawCards.length);
+                      const val = isAll ? filteredCards.length : Math.min(n, filteredCards.length);
                       const active = limit === val;
                       // Skip duplicates (e.g. if track has only 7 cards)
-                      if (!isAll && n > rawCards.length) return null;
+                      if (!isAll && n > filteredCards.length) return null;
                       return (
                         <Button
                           key={`${label}-${val}`}
@@ -322,7 +389,7 @@ export default function LearningFlashcardStudy() {
                 </div>
 
                 <div className="pt-2 text-xs text-muted-foreground text-center">
-                  {formatSessionLabel(rawCards.length, limit, mode)}
+                  {formatSessionLabel(filteredCards.length, limit, mode)}
                 </div>
               </div>
 
@@ -337,21 +404,29 @@ export default function LearningFlashcardStudy() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell title={`${track.name} · Flashcards`}>
+    <LearningShell title={`${track.name} · Flashcards`}>
       <div className="mx-auto max-w-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/learning/tracks/${track.slug}`)}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to {track.name}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/learning/tracks/${track.slug}`)}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-semibold">{track.name} — Flashcards</h1>
+              <p className="text-xs text-muted-foreground">
+                {rawCards.length} cards from the WealthBridge library
+              </p>
+            </div>
+          </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Badge variant="outline" className="text-emerald-600">
               ✓ {correctCount}
@@ -399,28 +474,40 @@ export default function LearningFlashcardStudy() {
                     e.preventDefault();
                     setFlipped((f) => !f);
                     sendFeedback("learning.flashcard_flip");
-
                   }
                 }}
               >
-                <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
+                <CardContent className="relative p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
+                  {/* Bookmark icon */}
+                  <button
+                    className="absolute top-4 right-4 text-muted-foreground hover:text-accent transition-colors"
+                    onClick={(e) => { e.stopPropagation(); toggleBookmark(current.id); }}
+                    aria-label={bookmarked.has(current.id) ? "Remove bookmark" : "Bookmark this card"}
+                  >
+                    {bookmarked.has(current.id) ? (
+                      <BookmarkCheck className="h-5 w-5 text-accent" />
+                    ) : (
+                      <Bookmark className="h-5 w-5" />
+                    )}
+                  </button>
+
+                  {/* Chapter label */}
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-3">
+                    {getChapterLabel(current)}
+                  </p>
+
                   {flipped ? (
                     <>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-                        Definition
-                      </p>
-                      <p className="text-base leading-relaxed">
+                      <p className="text-xl font-semibold mb-3">{current.term}</p>
+                      <p className="text-base leading-relaxed text-muted-foreground">
                         {current.definition}
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-                        Term
-                      </p>
                       <p className="text-xl font-semibold">{current.term}</p>
-                      <p className="text-xs text-muted-foreground mt-3">
-                        Click or press Space to reveal
+                      <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
+                        <span>👁</span> Reveal Definition (Space)
                       </p>
                     </>
                   )}
@@ -433,17 +520,17 @@ export default function LearningFlashcardStudy() {
                   className="border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800 dark:border-rose-900 dark:text-rose-400"
                   onClick={() => mark(false)}
                   disabled={!flipped || recordReview.isPending}
-                  aria-label="Mark this card as got it wrong"
+                  aria-label="Still learning this card"
                 >
-                  <X className="h-4 w-4 mr-2" /> Got it wrong
+                  <X className="h-4 w-4 mr-2" /> Still Learning
                 </Button>
                 <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground"
                   onClick={() => mark(true)}
                   disabled={!flipped || recordReview.isPending}
-                  aria-label="Mark this card as got it right"
+                  aria-label="Got this card"
                 >
-                  <Check className="h-4 w-4 mr-2" /> Got it right
+                  <Check className="h-4 w-4 mr-2" /> Got It
                 </Button>
               </div>
               {!flipped && (
@@ -455,7 +542,7 @@ export default function LearningFlashcardStudy() {
           )
         )}
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }
 

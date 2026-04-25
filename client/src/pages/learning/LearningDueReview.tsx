@@ -26,7 +26,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import {
@@ -206,16 +206,16 @@ export default function LearningDueReview() {
   }
 
     return (
-      <AppShell title="Due Review">
+      <LearningShell title="Due Review">
         <SEOHead title="Due Review" description="SRS review across all exam tracks" />
         <div className="p-6 text-sm text-muted-foreground">Loading your due items…</div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   if (total === 0) {
     return (
-      <AppShell title="Due Review">
+      <LearningShell title="Due Review">
         <SEOHead title="Due Review" description="SRS review across all exam tracks" />
         <div className="mx-auto max-w-2xl p-6 space-y-4">
           <Button variant="ghost" size="sm" onClick={() => navigate("/learning")}>
@@ -239,12 +239,12 @@ export default function LearningDueReview() {
             </CardContent>
           </Card>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell title="Due Review">
+    <LearningShell title="Due Review">
       <SEOHead title="Due Review" description="SRS review across all exam tracks" />
       <div className="mx-auto max-w-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
@@ -373,7 +373,7 @@ export default function LearningDueReview() {
           )
         )}
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }
 

@@ -7,7 +7,7 @@
  */
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useLocation, Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -170,17 +170,17 @@ export default function HandsFreeStudy() {
   // Auth guard
   if (authLoading) {
     return (
-      <AppShell>
+      <LearningShell>
         <div className="container py-8 space-y-4">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-64 w-full" />
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Hands-Free Study" description="Audio-based learning sessions" />
         <div className="container py-16 text-center space-y-4">
           <Headphones className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -188,7 +188,7 @@ export default function HandsFreeStudy() {
           <p className="text-muted-foreground">Sign in to start audio learning sessions.</p>
           <Button onClick={() => window.location.href = getLoginUrl("/learning/hands-free")}>Sign In</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -197,7 +197,7 @@ export default function HandsFreeStudy() {
   const totalAvailable = (reviewQ.data?.items?.length ?? 0) + (defsQ.data?.length ?? 0);
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Hands-Free Study" description="Audio-based learning sessions" />
       <div className="container max-w-3xl py-8 space-y-6">
         {/* Header */}
@@ -360,6 +360,6 @@ export default function HandsFreeStudy() {
           </div>
         )}
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

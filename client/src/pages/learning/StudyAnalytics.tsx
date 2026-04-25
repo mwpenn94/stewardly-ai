@@ -11,7 +11,7 @@
  */
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -211,10 +211,10 @@ export default function StudyAnalytics() {
     };
   }, [deepAnalyticsQ.data?.topicMastery]);
 
-  if (authLoading) return <AppShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></AppShell>;
+  if (authLoading) return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Study Analytics" description="Track your learning progress" />
         <div className="container py-16 text-center space-y-4">
           <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -222,7 +222,7 @@ export default function StudyAnalytics() {
           <p className="text-muted-foreground">Sign in to view your learning analytics.</p>
           <Button onClick={() => window.location.href = getLoginUrl("/learning/analytics")}>Sign In</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
@@ -232,7 +232,7 @@ export default function StudyAnalytics() {
   const topicMastery = deepAnalyticsQ.data?.topicMastery ?? [];
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Study Analytics" description="Track your learning progress and performance" />
       <div className="container max-w-6xl py-8 space-y-6">
         <div className="flex items-center gap-3">
@@ -340,6 +340,6 @@ export default function StudyAnalytics() {
           </TabsContent>
         </Tabs>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

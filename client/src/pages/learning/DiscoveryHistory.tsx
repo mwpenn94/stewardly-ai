@@ -6,7 +6,7 @@
  */
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -45,11 +45,11 @@ export default function DiscoveryHistory() {
 
   // Auth guard
   if (authLoading) {
-    return <AppShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></AppShell>;
+    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
   }
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Discovery History" description="Your AI exploration journey" />
         <div className="container py-16 text-center space-y-4">
           <Compass className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -57,14 +57,14 @@ export default function DiscoveryHistory() {
           <p className="text-muted-foreground">Sign in to view your discovery history.</p>
           <Button onClick={() => window.location.href = getLoginUrl("/learning/discovery")}>Sign In</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   const total = historyQ.data?.length ?? 0;
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Discovery History" description="Your AI exploration journey" />
       <div className="container max-w-3xl py-8 space-y-6">
         {/* Header */}
@@ -138,6 +138,6 @@ export default function DiscoveryHistory() {
           </div>
         )}
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

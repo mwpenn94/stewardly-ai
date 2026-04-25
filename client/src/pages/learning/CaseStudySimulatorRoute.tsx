@@ -22,7 +22,7 @@
 
 import { useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,7 @@ export default function CaseStudySimulatorRoute() {
 
   if (selected) {
     return (
-      <AppShell title={`${selected.title} · Case Study`}>
+      <LearningShell title={`${selected.title} · Case Study`}>
         <SEOHead title={selected.title} description={selected.situation.slice(0, 140)} />
         <div className="py-4">
           <CaseStudySimulator
@@ -70,12 +70,12 @@ export default function CaseStudySimulatorRoute() {
             }}
           />
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell title="Case Studies">
+    <LearningShell title="Case Studies">
       <SEOHead title="Case Studies" description="Branching scenario practice for advisors" />
       <div className="mx-auto max-w-4xl p-6 space-y-6">
         <div className="flex items-center gap-3">
@@ -148,6 +148,6 @@ export default function CaseStudySimulatorRoute() {
           .
         </p>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }

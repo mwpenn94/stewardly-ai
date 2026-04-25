@@ -11,7 +11,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -219,7 +219,7 @@ export default function DisciplineDeepDive() {
   ];
 
   return (
-    <AppShell title="Deep Dive">
+    <LearningShell title="Deep Dive">
       <SEOHead title="Deep Dive" description="Deep dive into discipline concepts and formulas" />
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <div className="flex items-center gap-3">
@@ -277,7 +277,7 @@ export default function DisciplineDeepDive() {
           </motion.div>
         </AnimatePresence>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }
 

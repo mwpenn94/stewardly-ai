@@ -26,7 +26,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import {
@@ -97,7 +97,7 @@ export default function LearningSearch() {
   }, [tracksQ.data]);
 
   return (
-    <AppShell title="Search Learning Content">
+    <LearningShell title="Search Learning Content">
       <SEOHead
         title="Search Learning Content"
         description="Search across definitions, flashcards, practice questions, and tracks"
@@ -215,7 +215,7 @@ export default function LearningSearch() {
           />
         )}
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }
 

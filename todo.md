@@ -9112,3 +9112,18 @@
 - [x] Remove duplicate Series 7 track (series-7 slug has 0 content, series7 has real content)
 - [x] Make listTracks, getTrackBySlug, listChapters, listFlashcards, listQuestions public procedures (read-only content should be accessible)
 - [ ] Validate all fixes on LIVE deployed site (not just local dev) — pending deployment
+
+## Fix: Missing Navigation, Routes, and Dashboard Links (from video analysis April 24, 2026)
+- [ ] Register all learning pages as routes in App.tsx (CaseStudySimulator, ConnectionMap, FormulaLab/FormulasPage, QuickQuiz, ConnectionsPage, CasesPage, AIQuizPage, HandsFreeStudy, AchievementSystem, ProgressExport, StudyAnalytics, StudyGroups, Bookmarks, Playlists, DiscoveryHistory)
+- [ ] Add all missing items to sidebar navigation (Case Simulator, Connection Map, Formula Ref, Quick Quiz, Concept Links, Case Library, AI Quiz, Hands-Free, Achievements, Progress Report, Analytics, Study Groups, Bookmarks, Playlists, Discovery Log)
+- [ ] Add missing modules to LearningHome dashboard (Mastery Modules: Case Study Simulator, Connection Map; Quick Study sections)
+- [ ] Validate all nav items load their pages on LIVE deployed site
+
+## Learning Engine Parity+ with Knowledge Explorer (April 24, 2026)
+- [x] Build LearningShell component — dedicated sidebar for all learning pages (Overview: Dashboard, Search; Mastery Modules: Exam Simulator, Formula Lab, Case Simulator, Connection Map; Exam Tracks: Track Library; Quick Study: Study Session, Formula Ref, Quick Quiz, Concept Links)
+- [x] Rebuild TracksIndex — category grouping, section counts, question count badges, mastery progress bars, Study/Quiz/Cards quick action buttons
+- [x] Enhance Track Detail — Audio Study tab with Edge TTS, Exam Overview cards (Disciplines, Content, Format, Focus), chapter sidebar with section counts
+- [x] Wire ALL learning pages to use LearningShell instead of plain AppShell
+- [ ] Make LearningHome accessible to guests (remove auth gate, show preview with sign-in CTA for interactive features)
+- [x] Polish flashcard study — achievement toasts, progress bar styling, chapter label on cards
+- [ ] Verify all sidebar nav items load their target pages

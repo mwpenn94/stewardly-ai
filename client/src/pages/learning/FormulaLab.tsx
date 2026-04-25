@@ -6,7 +6,7 @@
  */
 import { useState, useMemo, useCallback } from "react";
 import { Link } from "wouter";
-import AppShell from "@/components/AppShell";
+import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -237,11 +237,11 @@ export default function FormulaLab() {
 
   // Auth guard
   if (authLoading) {
-    return <AppShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></AppShell>;
+    return <LearningShell><div className="container py-8"><Skeleton className="h-64 w-full" /></div></LearningShell>;
   }
   if (!isAuthenticated) {
     return (
-      <AppShell>
+      <LearningShell>
         <SEOHead title="Formula Lab" description="Interactive financial formula playground" />
         <div className="container py-16 text-center space-y-4">
           <Calculator className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -249,12 +249,12 @@ export default function FormulaLab() {
           <p className="text-muted-foreground">Sign in to explore financial formulas.</p>
           <Button onClick={() => window.location.href = getLoginUrl("/learning/formula-lab")}>Sign In</Button>
         </div>
-      </AppShell>
+      </LearningShell>
     );
   }
 
   return (
-    <AppShell>
+    <LearningShell>
       <SEOHead title="Formula Lab" description="Interactive financial formula playground" />
       <div className="container max-w-5xl py-8 space-y-6">
         {/* Header */}
@@ -386,6 +386,6 @@ export default function FormulaLab() {
           </div>
         </div>
       </div>
-    </AppShell>
+    </LearningShell>
   );
 }
