@@ -9336,3 +9336,5 @@
 - [x] BUG: 404 Page Not Found — /learning/audio/:slug route was missing, now created AudioStudyPage.tsx
 - [x] BUG: Learning Engine mobile tabs — already handled with overflow-x-auto scrollbar-none (horizontal scroll on mobile)
 - [x] BUG: Audio Study track detail page — AudioStudyPage.tsx now fetches chapters/subsections/flashcards with actual KE content
+- [x] BUG: AudioStudyPage error "No procedure found on path learning.content.listFlashcardsForTrack" — fixed: procedure is listFlashcards
+- [x] BUG: AudioStudyPage chapters show "No content yet" — fixed: raw fetch needs {"json":{...}} superjson wrapper

@@ -1,14 +1,18 @@
 /**
  * AudioStudyPage.tsx — Track-specific Audio Study player
  *
- * Pass 157. Fetches chapters and subsections for a specific track,
+ * Pass 157b. Fetches chapters and subsections for a specific track,
  * builds TTS-optimized scripts from the actual Knowledge Explorer
  * content (subsection paragraphs, definitions, flashcards), and
  * plays them through the AudioCompanion.
  *
  * Route: /learning/audio/:slug
+ *
+ * Fixes from 157a:
+ * - Procedure name: listFlashcards (not listFlashcardsForTrack)
+ * - Subsection fetch: uses {"json":{...}} wrapper for superjson tRPC format
  */
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Link, useRoute } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
@@ -20,11 +24,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowLeft, Headphones, Play, Pause, Volume2,
-  BookOpen, Layers, Loader2, LogIn, CheckCircle2,
+  ArrowLeft, Headphones, Play, Pause,
+  BookOpen, Layers, Loader2, LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export default function AudioStudyPage() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
@@ -32,7 +36,7 @@ export default function AudioStudyPage() {
   const slug = params?.slug ?? "";
   const audio = useAudioCompanion();
 
-  // Fetch track + chapters
+  // ── Fetch track + chapters ──
   const trackQ = trpc.learning.content.getTrackBySlug.useQuery({ slug }, { enabled: !!slug });
   const track = trackQ.data;
   const chaptersQ = trpc.learning.content.listChapters.useQuery(
@@ -41,31 +45,40 @@ export default function AudioStudyPage() {
   );
   const chapters = chaptersQ.data ?? [];
 
-  // Fetch subsections for all chapters
-  const [allSubsections, setAllSubsections] = useState<Record<number, any[]>>({});
-  const [loadingSubsections, setLoadingSubsections] = useState(false);
-
-  // Fetch flashcards for this track
-  const flashcardsQ = trpc.learning.content.listFlashcardsForTrack.useQuery(
+  // ── Fetch flashcards — correct procedure name: listFlashcards ──
+  const flashcardsQ = trpc.learning.content.listFlashcards.useQuery(
     { trackId: track?.id ?? 0 },
     { enabled: !!track?.id }
   );
   const flashcards = flashcardsQ.data ?? [];
 
-  // Fetch subsections for each chapter
+  // ── Fetch subsections for all chapters via raw fetch with correct superjson wrapping ──
+  const [allSubsections, setAllSubsections] = useState<Record<number, any[]>>({});
+  const [loadingSubsections, setLoadingSubsections] = useState(false);
+  const fetchedChapterIdsRef = useRef<string>("");
+
   useEffect(() => {
     if (chapters.length === 0) return;
+    // Deduplicate — only fetch once per unique set of chapter IDs
+    const chapterIdKey = chapters.map(c => c.id).sort().join(",");
+    if (fetchedChapterIdsRef.current === chapterIdKey) return;
+    fetchedChapterIdsRef.current = chapterIdKey;
+
     setLoadingSubsections(true);
     const fetchAll = async () => {
       const results: Record<number, any[]> = {};
-      // We'll fetch one by one since we can't do parallel tRPC queries in useEffect
       for (const ch of chapters) {
         try {
-          const res = await fetch(`/api/trpc/learning.content.listSubsections?input=${encodeURIComponent(JSON.stringify({ chapterId: ch.id }))}`, {
-            credentials: "include",
-          });
+          // tRPC superjson GET format: input must be {"json": {...}}
+          const inputPayload = JSON.stringify({ json: { chapterId: ch.id } });
+          const res = await fetch(
+            `/api/trpc/learning.content.listSubsections?input=${encodeURIComponent(inputPayload)}`,
+            { credentials: "include" }
+          );
           const data = await res.json();
-          results[ch.id] = data?.result?.data ?? [];
+          // superjson response shape: result.data.json
+          const subs = data?.result?.data?.json ?? data?.result?.data ?? [];
+          results[ch.id] = Array.isArray(subs) ? subs : [];
         } catch {
           results[ch.id] = [];
         }
@@ -74,9 +87,9 @@ export default function AudioStudyPage() {
       setLoadingSubsections(false);
     };
     fetchAll();
-  }, [chapters.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [chapters]);
 
-  // Build audio items from actual content
+  // ── Build audio items from actual content ──
   const audioItems = useMemo((): AudioItem[] => {
     const items: AudioItem[] = [];
 
@@ -86,13 +99,12 @@ export default function AudioStudyPage() {
         id: `ch-intro-${ch.id}`,
         type: "chapter",
         title: `Chapter: ${ch.title}`,
-        script: `Chapter: ${ch.title}. ${ch.description || ""}. Let's explore this topic.`,
+        script: `Chapter: ${ch.title}. ${ch.description || ch.intro || ""}. Let's explore this topic.`,
       });
 
-      // Subsections for this chapter
+      // Subsections for this chapter — use actual paragraph content
       const subs = allSubsections[ch.id] ?? [];
       for (const sub of subs) {
-        // Build TTS from paragraphs
         let paragraphText = "";
         if (Array.isArray(sub.paragraphs)) {
           paragraphText = sub.paragraphs
@@ -134,7 +146,6 @@ export default function AudioStudyPage() {
   }, [chapters, allSubsections, flashcards]);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentChapterIdx, setCurrentChapterIdx] = useState<number | null>(null);
 
   // Start full track playback
   const startFullPlayback = useCallback(() => {
@@ -151,11 +162,8 @@ export default function AudioStudyPage() {
   const playChapter = useCallback((chapterIdx: number) => {
     const ch = chapters[chapterIdx];
     if (!ch) return;
-    const chapterItems = audioItems.filter(
-      item => item.id.startsWith(`ch-intro-${ch.id}`) || item.id.startsWith(`sub-`)
-    );
-    // More precise: get items for this chapter
     const startIdx = audioItems.findIndex(item => item.id === `ch-intro-${ch.id}`);
+    if (startIdx < 0) return;
     const nextChapter = chapters[chapterIdx + 1];
     const endIdx = nextChapter
       ? audioItems.findIndex(item => item.id === `ch-intro-${nextChapter.id}`)
@@ -165,7 +173,6 @@ export default function AudioStudyPage() {
     if (slice.length > 0) {
       audio.dismiss();
       audio.enqueue(slice);
-      setCurrentChapterIdx(chapterIdx);
       setIsPlaying(true);
       toast.success(`Playing chapter: ${ch.title}`);
     }
@@ -178,7 +185,7 @@ export default function AudioStudyPage() {
 
   const isLoading = trackQ.isLoading || chaptersQ.isLoading || loadingSubsections;
 
-  // Auth guard
+  // ── Auth guard ──
   if (authLoading) {
     return <LearningShell><div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></LearningShell>;
   }
@@ -200,6 +207,7 @@ export default function AudioStudyPage() {
     );
   }
 
+  // ── Render ──
   return (
     <LearningShell>
       <SEOHead title={`Audio Study — ${track?.title ?? track?.name ?? slug}`} description="Listen to track content" />
@@ -272,7 +280,7 @@ export default function AudioStudyPage() {
                       <div className="min-w-0 flex-1">
                         <h3 className="text-sm font-medium truncate">{ch.title}</h3>
                         <p className="text-[10px] text-muted-foreground">
-                          {subCount > 0 ? `${subCount} sections` : "No content yet"}
+                          {subCount > 0 ? `${subCount} sections with content` : (subs.length > 0 ? `${subs.length} sections` : "Loading...")}
                         </p>
                       </div>
                       <Button
