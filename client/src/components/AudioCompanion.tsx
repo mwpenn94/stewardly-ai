@@ -16,11 +16,26 @@
 import { authFetch } from "@/lib/sessionToken";
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { useLocation } from "wouter";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Volume2, Pause, Play, SkipForward, SkipBack,
-  ChevronDown, ChevronUp, Mic, MicOff, X,
+  ChevronDown, ChevronUp, Minus, Plus, BookOpen, ListMusic, X, AudioLines,
 } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+
+/** Read the selected voice ID from localStorage (set by VoiceTab in settings) */
+function getSelectedVoiceId(): string {
+  try {
+    return localStorage.getItem("tts-voice") || "guy";
+  } catch { return "guy"; }
+}
+
+function setSelectedVoiceId(id: string): void {
+  try { localStorage.setItem("tts-voice", id); } catch { /* ignore */ }
+}
 
 /* ── types ─────────────────────────────────────────────────────── */
 
@@ -41,11 +56,14 @@ interface AudioState {
   position: number;
   duration: number;
   mode: "expanded" | "minimized" | "hidden";
-  voiceListening: boolean;
+  /** Current voice ID for TTS */
+  voiceId: string;
   /** Index of current item within the original enqueued list (for progress persistence) */
   queueIndex: number;
 }
 
+/** Discrete speed steps for cycling */
+const SPEED_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3] as const;
 interface AudioActions {
   play: (item: AudioItem) => void;
   enqueue: (items: AudioItem[]) => void;
@@ -55,11 +73,14 @@ interface AudioActions {
   previous: () => void;
   setSpeed: (speed: number) => void;
   adjustSpeed: (delta: number) => void;
+  /** Cycle through SPEED_STEPS: 1 = forward, -1 = backward */
+  cycleSpeed: (direction: 1 | -1) => void;
   minimize: () => void;
   expand: () => void;
   dismiss: () => void;
   readCurrentPage: () => void;
-  toggleVoiceListening: () => void;
+  /** Change the TTS voice */
+  setVoice: (voiceId: string) => void;
   speak: (text: string) => void;
 }
 
@@ -181,13 +202,15 @@ async function fetchTtsWithRetry(
   text: string,
   speed: number,
   maxRetries = 2,
+  voice?: string,
 ): Promise<{ blob: Blob; url: string } | null> {
+  const voiceId = voice || getSelectedVoiceId();
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const res = await authFetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, speed }),
+        body: JSON.stringify({ text, speed, voice: voiceId }),
       });
 
       if (res.ok) {
@@ -252,7 +275,7 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
       position: progress?.position ?? 0,
       duration: 0,
       mode: persisted?.currentItem ? "minimized" : "hidden",
-      voiceListening: false,
+      voiceId: getSelectedVoiceId(),
       queueIndex: progress?.queueIndex ?? 0,
     };
   });
@@ -557,6 +580,22 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
       if (audioRef.current) audioRef.current.playbackRate = newSpeed;
       setState(prev => ({ ...prev, speed: newSpeed }));
     },
+    cycleSpeed: (direction: 1 | -1) => {
+      const currentIdx = SPEED_STEPS.findIndex(s => Math.abs(s - state.speed) < 0.01);
+      let nextIdx: number;
+      if (currentIdx === -1) {
+        // Current speed isn't a standard step — snap to nearest
+        nextIdx = SPEED_STEPS.reduce((best, s, i) =>
+          Math.abs(s - state.speed) < Math.abs(SPEED_STEPS[best] - state.speed) ? i : best, 0);
+      } else {
+        nextIdx = currentIdx + direction;
+        if (nextIdx >= SPEED_STEPS.length) nextIdx = 0;
+        if (nextIdx < 0) nextIdx = SPEED_STEPS.length - 1;
+      }
+      const newSpeed = SPEED_STEPS[nextIdx];
+      if (audioRef.current) audioRef.current.playbackRate = newSpeed;
+      setState(prev => ({ ...prev, speed: newSpeed }));
+    },
 
     minimize: () => setState(prev => ({ ...prev, mode: "minimized" })),
     expand: () => setState(prev => ({ ...prev, mode: "expanded" })),
@@ -598,8 +637,9 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
       }
     },
 
-    toggleVoiceListening: () => {
-      setState(prev => ({ ...prev, voiceListening: !prev.voiceListening }));
+    setVoice: (voiceId: string) => {
+      setSelectedVoiceId(voiceId);
+      setState(prev => ({ ...prev, voiceId }));
     },
 
     speak: speakShort,
@@ -613,12 +653,43 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
   );
 }
 
+/* ── Voice catalog (static, matches server VOICE_CATALOG) ────────── */
+
+const VOICE_OPTIONS = [
+  // US Female
+  { id: "ava", label: "Ava", gender: "female", locale: "US", desc: "Warm, professional" },
+  { id: "aria", label: "Aria", gender: "female", locale: "US", desc: "Clear, versatile" },
+  { id: "emma", label: "Emma", gender: "female", locale: "US", desc: "Friendly, conversational" },
+  { id: "jenny", label: "Jenny", gender: "female", locale: "US", desc: "Bright, energetic" },
+  { id: "michelle", label: "Michelle", gender: "female", locale: "US", desc: "Calm, reassuring" },
+  { id: "ana", label: "Ana", gender: "female", locale: "US", desc: "Young, approachable" },
+  // US Male
+  { id: "andrew", label: "Andrew", gender: "male", locale: "US", desc: "Authoritative, polished" },
+  { id: "brian", label: "Brian", gender: "male", locale: "US", desc: "Confident, modern" },
+  { id: "christopher", label: "Christopher", gender: "male", locale: "US", desc: "Deep, trustworthy" },
+  { id: "eric", label: "Eric", gender: "male", locale: "US", desc: "Smooth, professional" },
+  { id: "guy", label: "Guy", gender: "male", locale: "US", desc: "Warm, natural" },
+  { id: "roger", label: "Roger", gender: "male", locale: "US", desc: "Mature, composed" },
+  { id: "steffan", label: "Steffan", gender: "male", locale: "US", desc: "Friendly, relaxed" },
+  // UK
+  { id: "libby", label: "Libby", gender: "female", locale: "UK", desc: "British, articulate" },
+  { id: "sonia", label: "Sonia", gender: "female", locale: "UK", desc: "British, elegant" },
+  { id: "ryan", label: "Ryan", gender: "male", locale: "UK", desc: "British, confident" },
+  { id: "thomas", label: "Thomas", gender: "male", locale: "UK", desc: "British, warm" },
+  // AU
+  { id: "natasha", label: "Natasha", gender: "female", locale: "AU", desc: "Australian, friendly" },
+  { id: "william", label: "William", gender: "male", locale: "AU", desc: "Australian, easygoing" },
+] as const;
+
+const VOICE_LOCALES = ["US", "UK", "AU"] as const;
+
 /* ── UI component ──────────────────────────────────────────────── */
 
 function AudioCompanionUI() {
   const audio = useAudioCompanion();
   const [location] = useLocation();
   const shouldReduceMotion = useReducedMotion();
+  const [showQueue, setShowQueue] = useState(false);
 
   // Auto-minimize when on HandsFreeStudy page
   const isHandsFreePage = location.startsWith("/learning/hands-free");
@@ -637,17 +708,24 @@ function AudioCompanionUI() {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  const currentVoice = VOICE_OPTIONS.find(v => v.id === audio.voiceId) || VOICE_OPTIONS.find(v => v.id === "guy")!;
+  const totalItems = audio.queueIndex + 1 + audio.queue.length;
+
+  /* ── Minimized bar ─────────────────────────────────────────── */
   if (audio.mode === "minimized") {
     return (
       <motion.div
         initial={shouldReduceMotion ? { y: 0, opacity: 1 } : { y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={shouldReduceMotion ? { duration: 0 } : undefined}
-        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/95 backdrop-blur-md shadow-lg max-w-[90vw] md:bottom-4"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-card/95 backdrop-blur-md shadow-lg max-w-[92vw] md:bottom-4"
       >
         <Volume2 className="w-3.5 h-3.5 text-primary flex-none" />
-        <span className="text-xs text-foreground truncate max-w-[150px]">
+        <span className="text-xs text-foreground truncate max-w-[140px]">
           {audio.currentItem.title}
+        </span>
+        <span className="text-[10px] text-muted-foreground tabular-nums flex-none">
+          {audio.queueIndex + 1}/{totalItems}
         </span>
         <button type="button" onClick={audio.playing ? audio.pause : audio.resume}
           aria-label={audio.playing ? "Pause" : "Play"}
@@ -659,7 +737,8 @@ function AudioCompanionUI() {
           className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer">
           <SkipForward className="w-3.5 h-3.5" />
         </button>
-        <div className="w-16 h-1 rounded-full bg-border overflow-hidden" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100} aria-valuetext={`${Math.round(progress)}% complete`}>
+        <div className="w-16 h-1 rounded-full bg-border overflow-hidden" role="progressbar"
+          aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
           <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <button type="button" onClick={audio.expand}
@@ -671,15 +750,17 @@ function AudioCompanionUI() {
     );
   }
 
+  /* ── Expanded player ───────────────────────────────────────── */
   return (
     <motion.div
       initial={shouldReduceMotion ? { y: 0, opacity: 1 } : { y: 40, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={shouldReduceMotion ? { duration: 0 } : undefined}
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/98 backdrop-blur-md shadow-2xl md:bottom-4 md:left-auto md:right-4 md:w-[400px] md:rounded-xl md:border"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/98 backdrop-blur-md shadow-2xl md:bottom-4 md:left-auto md:right-4 md:w-[420px] md:rounded-xl md:border"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="px-4 py-3">
+        {/* Header: title + controls */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <Volume2 className="w-4 h-4 text-primary flex-none" />
@@ -689,11 +770,24 @@ function AudioCompanionUI() {
               </div>
               <div className="text-[10px] text-muted-foreground capitalize">
                 {audio.currentItem.type.replace(/_/g, " ")}
-                {audio.queue.length > 0 && ` · ${audio.queueIndex + 1} of ${audio.queueIndex + 1 + audio.queue.length}`}
+                {totalItems > 1 && ` · ${audio.queueIndex + 1} of ${totalItems}`}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {audio.queue.length > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" onClick={() => setShowQueue(q => !q)}
+                    aria-label={showQueue ? "Hide queue" : "Show queue"}
+                    className={`w-7 h-7 flex items-center justify-center rounded-md cursor-pointer transition-colors
+                      ${showQueue ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"}`}>
+                    <ListMusic className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Queue ({audio.queue.length})</TooltipContent>
+              </Tooltip>
+            )}
             <button type="button" onClick={audio.minimize}
               aria-label="Minimize player"
               className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground cursor-pointer">
@@ -707,6 +801,7 @@ function AudioCompanionUI() {
           </div>
         </div>
 
+        {/* Progress bar */}
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[10px] text-muted-foreground tabular-nums w-8 text-right">
             {formatTime(audio.position)}
@@ -720,18 +815,29 @@ function AudioCompanionUI() {
           </span>
         </div>
 
+        {/* Transport controls */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <button type="button" onClick={() => audio.adjustSpeed(0.25)}
-              aria-label={`Playback speed ${audio.speed.toFixed(2)}x, click to increase`}
-              className="px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground border border-border cursor-pointer tabular-nums">
+          {/* Speed control: - / value / + */}
+          <div className="flex items-center gap-0.5">
+            <button type="button" onClick={() => audio.cycleSpeed(-1)}
+              aria-label="Decrease speed"
+              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground cursor-pointer">
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="px-1 text-xs text-muted-foreground tabular-nums min-w-[3rem] text-center select-none">
               {audio.speed.toFixed(2)}x
+            </span>
+            <button type="button" onClick={() => audio.cycleSpeed(1)}
+              aria-label="Increase speed"
+              className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground cursor-pointer">
+              <Plus className="w-3 h-3" />
             </button>
           </div>
 
+          {/* Play / skip controls */}
           <div className="flex items-center gap-2">
             <button type="button" onClick={audio.previous}
-              aria-label="Previous track"
+              aria-label="Restart current"
               className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground cursor-pointer">
               <SkipBack className="w-4 h-4" />
             </button>
@@ -747,23 +853,98 @@ function AudioCompanionUI() {
             </button>
           </div>
 
-          <div className="flex items-center gap-1">
-            <button type="button" onClick={audio.toggleVoiceListening}
-              className={`w-8 h-8 flex items-center justify-center rounded-full cursor-pointer transition-colors
-                ${audio.voiceListening ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
-              aria-label={audio.voiceListening ? "Disable voice commands" : "Enable voice commands"}
-              title="Voice commands">
-              {audio.voiceListening ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-            </button>
-          </div>
+          {/* Voice selector */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button"
+                aria-label={`Voice: ${currentVoice.label}. Click to change.`}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground border border-border cursor-pointer">
+                <AudioLines className="w-3 h-3" />
+                <span className="max-w-[4rem] truncate">{currentVoice.label}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="top" align="end" className="w-64 p-0">
+              <div className="p-2 border-b border-border">
+                <div className="text-xs font-medium text-foreground">Voice</div>
+                <div className="text-[10px] text-muted-foreground">Select a voice for audio playback</div>
+              </div>
+              <ScrollArea className="max-h-56">
+                {VOICE_LOCALES.map(locale => (
+                  <div key={locale}>
+                    <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-muted/30">
+                      {locale === "US" ? "American" : locale === "UK" ? "British" : "Australian"}
+                    </div>
+                    {VOICE_OPTIONS.filter(v => v.locale === locale).map(voice => (
+                      <button
+                        key={voice.id}
+                        type="button"
+                        onClick={() => audio.setVoice(voice.id)}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-accent/50 cursor-pointer transition-colors
+                          ${voice.id === audio.voiceId ? "bg-primary/10 text-primary" : "text-foreground"}`}
+                      >
+                        <span className="text-xs font-medium">{voice.label}</span>
+                        <span className="text-[10px] text-muted-foreground">{voice.desc}</span>
+                        {voice.id === audio.voiceId && (
+                          <Badge variant="secondary" className="ml-auto text-[9px] px-1 py-0">Active</Badge>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </ScrollArea>
+            </PopoverContent>
+          </Popover>
         </div>
 
-        {audio.queue.length > 0 && (
+        {/* Up next preview (when queue not expanded) */}
+        {audio.queue.length > 0 && !showQueue && (
           <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
             Up next: {audio.queue[0].title}
             {audio.queue.length > 1 && ` (+${audio.queue.length - 1} more)`}
           </div>
         )}
+
+        {/* Queue view */}
+        <AnimatePresence>
+          {showQueue && audio.queue.length > 0 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-2 pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    Queue ({audio.queue.length})
+                  </span>
+                </div>
+                <ScrollArea className="max-h-32">
+                  <div className="space-y-0.5">
+                    {audio.queue.slice(0, 20).map((item, i) => (
+                      <div key={item.id}
+                        className="flex items-center gap-2 px-2 py-1 rounded text-[11px] hover:bg-accent/30 transition-colors">
+                        <span className="text-muted-foreground tabular-nums w-4 text-right flex-none">
+                          {audio.queueIndex + 2 + i}
+                        </span>
+                        <span className="truncate text-foreground">{item.title}</span>
+                        <Badge variant="outline" className="ml-auto text-[9px] px-1 py-0 flex-none capitalize">
+                          {item.type.replace(/_/g, " ")}
+                        </Badge>
+                      </div>
+                    ))}
+                    {audio.queue.length > 20 && (
+                      <div className="text-[10px] text-muted-foreground text-center py-1">
+                        +{audio.queue.length - 20} more items
+                      </div>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

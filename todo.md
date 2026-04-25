@@ -9397,3 +9397,25 @@
 - [x] Convergence verification pass 2: FOUND 1 issue (DOM nesting div-in-p hydration error in AudioStudyPage) — FIXED. Counter RESET.
 - [x] Convergence verification pass 3 (fresh angle): ZERO new actionable issues — mobile responsive, ErrorBoundary wrapped, no hardcoded URLs, no race conditions, touch targets acceptable, z-index minor only
 - [x] Convergence verification pass 4: ZERO new issues — data integrity, deployment readiness, type safety, dependencies all verified. 2 CONSECUTIVE CLEAN PASSES → CONVERGENCE CONFIRMED ★
+
+## Pass 160 — Audio Study UX Overhaul (User Feedback)
+
+- [x] BUG: Speed control only increases — add separate +/- buttons for bidirectional speed control
+- [x] Replace mic icon with voice selector popover (quick voice picker in player)
+- [x] Voice selection: read tts-voice from localStorage, pass to TTS fetch, show current voice name
+- [x] Elevated player UX: richer expanded view with queue preview, chapter progress, voice picker
+- [x] Diagrams/Graphical Aids section on AudioStudyPage (from track.examOverview.diagrams)
+- [x] Connections section on AudioStudyPage (concept connections for the track)
+- [x] Formulas section on AudioStudyPage (formulas relevant to the track discipline)
+- [x] Cases section on AudioStudyPage (case studies for the track)
+- [x] FS Applications section on AudioStudyPage
+- [x] Definitions section on AudioStudyPage
+- [x] Flashcards section on AudioStudyPage
+- [x] Practice Questions section on AudioStudyPage
+- [x] Include ALL content types (definitions, formulas, cases, FS apps, diagrams, flashcards, questions) in TTS audio script pipeline
+- [x] Complete AudioStudyPage rewrite using getHandsFreeContent(trackId) for all 7 content types
+- [x] Collapsible ContentSection cards with per-section Play buttons
+- [x] Content overview badge bar showing counts for all content types
+- [x] DOM nesting fix (Skeleton div-in-h1/span hydration error)
+- [x] Removed unused imports and dead code (SECTION_ICONS, SECTION_COLORS, isPlaying state, user destructuring, FileText, useEffect)
+- [x] Convergence verification passes (2 consecutive clean passes)
