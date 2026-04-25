@@ -1,79 +1,76 @@
 /**
- * StudyAnalytics.tsx — Study performance analytics dashboard
+ * StudyAnalytics.tsx — KE-style Study Analytics Dashboard
  *
- * Pass 63. Enhanced with Chart.js visualizations wired to the
- * learning.studyAnalytics tRPC endpoint (trends, topicMastery, efficiency).
- * Retains the original mastery/session data and adds:
- *   - Accuracy trend line chart
- *   - Topic mastery radar chart
- *   - Efficiency gauge cards
- *   - AI-generated recommendations
+ * Pass 149. Full rewrite with recharts (AreaChart, BarChart, RadarChart),
+ * KE StatCard with trend arrows, time range selector, discipline progress
+ * table with color bars, SRS effectiveness gauges, and animated motion.
  */
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BarChart3, ArrowLeft, Brain, Trophy, Clock,
   TrendingUp, Target, Flame, BookOpen, Zap,
   Calendar, CheckCircle2, Lightbulb, Gauge,
-  Award, Activity, PieChart, LogIn,
+  Award, Activity, LogIn, ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid,
+  PolarAngleAxis, PolarRadiusAxis, Cell,
+} from "recharts";
 
-// ─── Chart.js lazy loader ──────────────────────────────────────────────────
-const CHART_COLORS = [
-  "rgba(212, 168, 67, 0.8)",
-  "rgba(20, 184, 166, 0.8)",
-  "rgba(14, 165, 233, 0.8)",
-  "rgba(239, 68, 68, 0.8)",
-  "rgba(168, 85, 247, 0.8)",
-  "rgba(249, 115, 22, 0.8)",
-  "rgba(34, 197, 94, 0.8)",
-  "rgba(99, 102, 241, 0.8)",
-];
-const CHART_BORDERS = CHART_COLORS.map(c => c.replace("0.8)", "1)"));
+type TimeRange = "7d" | "30d" | "90d" | "all";
 
-function useChartJS() {
-  const [ready, setReady] = useState(false);
-  const chartModule = useRef<any>(null);
-  useEffect(() => {
-    let mounted = true;
-    import("chart.js").then(mod => {
-      mod.Chart.register(...mod.registerables);
-      chartModule.current = mod;
-      if (mounted) setReady(true);
-    });
-    return () => { mounted = false; };
-  }, []);
-  return { ready, Chart: chartModule.current?.Chart };
+const CHART_COLORS = ["#8B5CF6", "#10B981", "#F59E0B", "#3B82F6", "#EF4444", "#EC4899", "#14B8A6", "#F97316"];
+
+const TOOLTIP_STYLE = {
+  background: "var(--card)",
+  border: "1px solid var(--border)",
+  borderRadius: "8px",
+  fontSize: "12px",
+};
+
+/* ── KE StatCard ── */
+function StatCard({ icon: Icon, label, value, sub, trend, delay = 0 }: {
+  icon: any; label: string; value: string; sub?: string; trend?: "up" | "down" | "flat"; delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, type: "spring", stiffness: 200, damping: 20 }}
+      className="bg-card border border-border rounded-xl p-5"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
+          <Icon className="w-4 h-4 text-primary" />
+        </div>
+        <span className="text-xs text-muted-foreground font-mono tracking-wider uppercase">{label}</span>
+      </div>
+      <div className="flex items-end gap-2">
+        <span className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>{value}</span>
+        {trend && (
+          <span className={`text-xs flex items-center gap-0.5 mb-1 ${
+            trend === "up" ? "text-green-500" : trend === "down" ? "text-red-400" : "text-muted-foreground"
+          }`}>
+            {trend === "up" ? <ArrowUp className="w-3 h-3" /> : trend === "down" ? <ArrowDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+          </span>
+        )}
+      </div>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+    </motion.div>
+  );
 }
 
-function CanvasChart({ config, height = 250, ariaLabel = "Chart" }: { config: any; height?: number; ariaLabel?: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const chartRef = useRef<any>(null);
-  const { ready, Chart } = useChartJS();
-  useEffect(() => {
-    if (!ready || !Chart || !canvasRef.current) return;
-    if (chartRef.current) chartRef.current.destroy();
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) return;
-    chartRef.current = new Chart(ctx, config);
-    return () => { chartRef.current?.destroy(); };
-  }, [ready, Chart, config]);
-  if (!ready) return <Skeleton className="w-full" style={{ height }} />;
-  return <canvas ref={canvasRef} style={{ maxHeight: height }} role="img" aria-label={ariaLabel} />;
-}
-
+/* ── Efficiency Gauge ── */
 function EfficiencyGauge({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
   const pct = Math.max(0, Math.min(100, value));
   const color = pct >= 75 ? "text-green-500" : pct >= 50 ? "text-yellow-500" : "text-red-500";
@@ -89,7 +86,7 @@ function EfficiencyGauge({ label, value, icon }: { label: string; value: number;
             strokeDasharray={`${pct}, 100`} strokeLinecap="round" />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg font-bold">{Math.round(pct)}</span>
+          <span className="text-lg font-bold font-mono">{Math.round(pct)}</span>
         </div>
       </div>
       <span className="text-xs text-muted-foreground text-center">{label}</span>
@@ -97,34 +94,50 @@ function EfficiencyGauge({ label, value, icon }: { label: string; value: number;
   );
 }
 
+function formatDuration(mins: number): string {
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
 export default function StudyAnalytics() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
 
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
   const masteryQ = trpc.learning.mastery.getMine.useQuery(undefined, { enabled: !!isAuthenticated });
   // @ts-expect-error — overload resolution mismatch
   const sessionsQ = trpc.learningSocial.studySessions.list.useQuery({ limit: 50 }, { enabled: !!isAuthenticated });
-
   const [analyticsLimit] = useState(200);
   const deepAnalyticsQ = trpc.learning.studyAnalytics.useQuery(
     { limit: analyticsLimit },
     { enabled: !!isAuthenticated, staleTime: 60_000 },
   );
 
+  /* ── Compute analytics from mastery data ── */
   const analytics = useMemo(() => {
     const items = masteryQ.data ?? [];
     const summary = summaryQ.data;
     const sessions = sessionsQ.data ?? [];
+
+    const now = Date.now();
+    const msPerDay = 86400000;
+    const rangeDays = timeRange === "7d" ? 7 : timeRange === "30d" ? 30 : timeRange === "90d" ? 90 : 365;
+    const cutoff = now - rangeDays * msPerDay;
+
+    // Review dates for streak calculation
     const reviewDates = new Set<string>();
     for (const item of items) {
-      // @ts-expect-error — strict mode fix
+      // @ts-expect-error
       if (item.lastReviewedAt) {
-        // @ts-expect-error — strict mode fix
+        // @ts-expect-error
         const d = new Date(item.lastReviewedAt);
         reviewDates.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
       }
     }
+
+    // Streak
     const today = new Date();
     let streak = 0;
     for (let i = 0; i < 365; i++) {
@@ -134,6 +147,8 @@ export default function StudyAnalytics() {
       if (reviewDates.has(key)) streak++;
       else if (i > 0) break;
     }
+
+    // Accuracy
     let totalCorrect = 0, totalReviews = 0;
     for (const item of items) {
       // @ts-expect-error
@@ -142,11 +157,15 @@ export default function StudyAnalytics() {
       totalReviews += (item.correctCount ?? 0) + (item.incorrectCount ?? 0);
     }
     const accuracy = totalReviews > 0 ? (totalCorrect / totalReviews) * 100 : 0;
+
+    // By type
     const byType: Record<string, number> = {};
     for (const item of items) {
       const type = item.itemType ?? "unknown";
       byType[type] = (byType[type] ?? 0) + 1;
     }
+
+    // Mastery levels
     const levels = { beginner: 0, learning: 0, reviewing: 0, mastered: 0 };
     for (const item of items) {
       // @ts-expect-error
@@ -156,19 +175,90 @@ export default function StudyAnalytics() {
       else if (interval >= 1) levels.learning++;
       else levels.beginner++;
     }
+
+    // Study time
     let totalMinutes = 0;
     for (const s of sessions) totalMinutes += s.durationMinutes ?? 0;
-    const weeklyActivity: { day: string; count: number }[] = [];
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-      weeklyActivity.push({ day: dayNames[d.getDay()], count: reviewDates.has(key) ? 1 : 0 });
+
+    // Daily activity data for AreaChart
+    const dailyMap = new Map<string, { studied: number; mastered: number }>();
+    for (const item of items) {
+      // @ts-expect-error
+      if (item.lastReviewedAt && new Date(item.lastReviewedAt).getTime() >= cutoff) {
+        // @ts-expect-error
+        const dateStr = new Date(item.lastReviewedAt).toISOString().split("T")[0];
+        const existing = dailyMap.get(dateStr) || { studied: 0, mastered: 0 };
+        existing.studied++;
+        // @ts-expect-error
+        if ((item.interval ?? 0) >= 21) existing.mastered++;
+        dailyMap.set(dateStr, existing);
+      }
     }
+    const dailyData: Array<{ date: string; studied: number; mastered: number }> = [];
+    for (let i = Math.min(rangeDays, 60) - 1; i >= 0; i--) {
+      const d = new Date(now - i * msPerDay);
+      const dateStr = d.toISOString().split("T")[0];
+      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const entry = dailyMap.get(dateStr) || { studied: 0, mastered: 0 };
+      dailyData.push({ date: label, ...entry });
+    }
+
+    // Confidence distribution for BarChart
+    const confidenceDist = [0, 0, 0, 0, 0, 0];
+    for (const item of items) {
+      // @ts-expect-error
+      const interval = item.interval ?? 0;
+      if (interval >= 21) confidenceDist[5]++;
+      else if (interval >= 14) confidenceDist[4]++;
+      else if (interval >= 7) confidenceDist[3]++;
+      else if (interval >= 3) confidenceDist[2]++;
+      else if (interval >= 1) confidenceDist[1]++;
+      else confidenceDist[0]++;
+    }
+    const confidenceData = confidenceDist.map((count, level) => ({
+      level: `${level}`,
+      count,
+      label: ["New", "Low", "Fair", "Good", "Strong", "Mastered"][level],
+    }));
+
+    // Discipline breakdown for table
+    const disciplineMap: Record<string, { total: number; studied: number; mastered: number; correct: number; reviews: number }> = {};
+    for (const item of items) {
+      // @ts-expect-error
+      const disc = item.discipline || item.trackId || "General";
+      if (!disciplineMap[disc]) disciplineMap[disc] = { total: 0, studied: 0, mastered: 0, correct: 0, reviews: 0 };
+      disciplineMap[disc].total++;
+      disciplineMap[disc].studied++;
+      // @ts-expect-error
+      if ((item.interval ?? 0) >= 21) disciplineMap[disc].mastered++;
+      // @ts-expect-error
+      disciplineMap[disc].correct += item.correctCount ?? 0;
+      // @ts-expect-error
+      disciplineMap[disc].reviews += (item.correctCount ?? 0) + (item.incorrectCount ?? 0);
+    }
+    const disciplineData = Object.entries(disciplineMap)
+      .map(([name, d]) => ({
+        name: name.length > 18 ? name.slice(0, 18) + "..." : name,
+        fullName: name,
+        total: d.total,
+        studied: d.studied,
+        mastered: d.mastered,
+        progress: d.total > 0 ? Math.round((d.mastered / d.total) * 100) : 0,
+        accuracy: d.reviews > 0 ? Math.round((d.correct / d.reviews) * 100) : 0,
+        color: CHART_COLORS[Object.keys(disciplineMap).indexOf(name) % CHART_COLORS.length],
+      }))
+      .sort((a, b) => b.progress - a.progress);
+
+    // Radar data
+    const radarData = disciplineData.slice(0, 8).map(d => ({
+      discipline: d.name,
+      progress: d.progress,
+      accuracy: d.accuracy,
+    }));
+
     return {
       totalItems: items.length, totalReviews, accuracy, streak, levels, byType,
-      totalMinutes, weeklyActivity,
+      totalMinutes, dailyData, confidenceData, disciplineData, radarData,
       // @ts-expect-error
       masteredCount: summary?.masteredCount ?? levels.mastered,
       // @ts-expect-error
@@ -176,43 +266,17 @@ export default function StudyAnalytics() {
       newFlashcards: summary?.newFlashcards ?? 0,
       newQuestions: summary?.newQuestions ?? 0,
     };
-  }, [masteryQ.data, summaryQ.data, sessionsQ.data]);
+  }, [masteryQ.data, summaryQ.data, sessionsQ.data, timeRange]);
 
-  const topicRadarConfig = useMemo(() => {
-    const topics = deepAnalyticsQ.data?.topicMastery ?? [];
-    if (topics.length === 0) return null;
-    const top8 = topics.slice(0, 8);
-    return {
-      type: "radar" as const,
-      data: {
-        labels: top8.map((t: any) => t.topic.length > 12 ? t.topic.slice(0, 12) + "…" : t.topic),
-        datasets: [
-          { label: "Accuracy %", data: top8.map((t: any) => Math.round(t.accuracy * 100)), backgroundColor: "rgba(212, 168, 67, 0.2)", borderColor: CHART_BORDERS[0], pointBackgroundColor: CHART_BORDERS[0] },
-          { label: "Study Minutes", data: top8.map((t: any) => Math.round(t.totalStudyMinutes)), backgroundColor: "rgba(20, 184, 166, 0.2)", borderColor: CHART_BORDERS[1], pointBackgroundColor: CHART_BORDERS[1] },
-        ],
-      },
-      options: { responsive: true, plugins: { legend: { position: "bottom" as const } }, scales: { r: { beginAtZero: true, ticks: { display: false }, grid: { color: "rgba(128,128,128,0.15)" } } } },
-    };
-  }, [deepAnalyticsQ.data?.topicMastery]);
+  /* ── Auth guard ── */
+  if (authLoading) return (
+    <LearningShell>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground font-mono text-sm">Loading analytics...</div>
+      </div>
+    </LearningShell>
+  );
 
-  const topicBarConfig = useMemo(() => {
-    const topics = deepAnalyticsQ.data?.topicMastery ?? [];
-    if (topics.length === 0) return null;
-    const top8 = topics.slice(0, 8);
-    return {
-      type: "bar" as const,
-      data: {
-        labels: top8.map((t: any) => t.topic.length > 15 ? t.topic.slice(0, 15) + "…" : t.topic),
-        datasets: [
-          { label: "Correct", data: top8.map((t: any) => t.totalCorrect), backgroundColor: CHART_COLORS[0], borderColor: CHART_BORDERS[0], borderWidth: 1 },
-          { label: "Attempted", data: top8.map((t: any) => t.totalQuestions), backgroundColor: CHART_COLORS[2], borderColor: CHART_BORDERS[2], borderWidth: 1 },
-        ],
-      },
-      options: { responsive: true, plugins: { legend: { position: "bottom" as const } }, scales: { y: { beginAtZero: true, grid: { color: "rgba(128,128,128,0.1)" } }, x: { grid: { display: false } } } },
-    };
-  }, [deepAnalyticsQ.data?.topicMastery]);
-
-  if (authLoading) return <LearningShell><div className="min-h-screen flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div></LearningShell>;
   if (!isAuthenticated) {
     return (
       <LearningShell>
@@ -222,7 +286,9 @@ export default function StudyAnalytics() {
             <BarChart3 className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Study Analytics</h1>
             <p className="text-sm text-muted-foreground mb-6">Sign in to view your learning analytics.</p>
-            <a href={getLoginUrl("/learning/analytics")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"><LogIn className="w-4 h-4" /> Sign In</a>
+            <a href={getLoginUrl("/learning/analytics")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground">
+              <LogIn className="w-4 h-4" /> Sign In
+            </a>
           </div>
         </div>
       </LearningShell>
@@ -238,115 +304,490 @@ export default function StudyAnalytics() {
     <LearningShell>
       <SEOHead title="Study Analytics" description="Track your learning progress and performance" />
       <div className="min-h-screen px-6 lg:px-10 py-8">
+        {/* ── Header ── */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-1">
             <Link href="/learning">
               <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
               </motion.div>
             </Link>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
-              <BarChart3 className="w-5 h-5" style={{ color: "var(--primary-foreground)" }} />
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+              Study Analytics
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground ml-12">
+            Track your learning progress, identify strengths, and optimize your study strategy.
+          </p>
+        </motion.div>
+
+        {/* ── Time Range Selector ── */}
+        <div className="flex gap-2 mb-6">
+          {(["7d", "30d", "90d", "all"] as TimeRange[]).map(range => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                timeRange === range
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {range === "all" ? "All Time" : range}
+            </button>
+          ))}
+          {deepAnalyticsQ.data && (
+            <span className="ml-auto text-[10px] font-mono px-2 py-1.5 rounded bg-accent text-accent-foreground">
+              {deepAnalyticsQ.data.sessionCount} sessions
+            </span>
+          )}
+        </div>
+
+        {/* ── Summary Stats ── */}
+        {isLoading ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <StatCard
+              icon={Flame} label="Streak" delay={0.05}
+              value={`${trends?.currentStreak ?? analytics.streak}d`}
+              sub={trends?.longestStreak ? `Best: ${trends.longestStreak} days` : undefined}
+              trend={analytics.streak > 3 ? "up" : analytics.streak > 0 ? "flat" : undefined}
+            />
+            <StatCard
+              icon={Target} label="Accuracy" delay={0.1}
+              value={`${trends ? (trends.overallAccuracy * 100).toFixed(1) : analytics.accuracy.toFixed(1)}%`}
+              sub={`${analytics.totalReviews} total reviews`}
+              trend={trends?.accuracyTrend != null ? (trends.accuracyTrend >= 0.01 ? "up" : trends.accuracyTrend <= -0.01 ? "down" : "flat") : undefined}
+            />
+            <StatCard
+              icon={Clock} label="Study Time" delay={0.15}
+              value={formatDuration(trends?.totalStudyMinutes ?? analytics.totalMinutes)}
+              sub={trends?.avgSessionMinutes ? `Avg: ${trends.avgSessionMinutes.toFixed(0)}m/session` : `${analytics.streak} day streak`}
+            />
+            <StatCard
+              icon={Trophy} label="Mastered" delay={0.2}
+              value={`${analytics.masteredCount}`}
+              sub={`${analytics.dueCount} due for review`}
+              trend={analytics.masteredCount > 10 ? "up" : analytics.masteredCount > 0 ? "flat" : undefined}
+            />
+          </div>
+        )}
+
+        {/* ── Charts Grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Study Activity AreaChart */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="bg-card border border-border rounded-xl p-5"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Study Activity</h3>
             </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Study Analytics</h1>
-              <p className="text-xs text-muted-foreground font-mono">Your learning performance at a glance</p>
+            <div className="h-[250px]">
+              {analytics.dailyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analytics.dailyData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="studiedGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="masteredGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Area type="monotone" dataKey="studied" stroke="#8B5CF6" fill="url(#studiedGrad)" strokeWidth={2} name="Studied" />
+                    <Area type="monotone" dataKey="mastered" stroke="#10B981" fill="url(#masteredGrad)" strokeWidth={2} name="Mastered" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  <Activity className="w-8 h-8 mr-2 opacity-30" /> Start studying to see activity trends
+                </div>
+              )}
             </div>
-            {deepAnalyticsQ.data && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent text-accent-foreground">{deepAnalyticsQ.data.sessionCount} sessions</span>
+          </motion.div>
+
+          {/* Confidence Distribution BarChart */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-card border border-border rounded-xl p-5"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Brain className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Confidence Distribution</h3>
+            </div>
+            <div className="h-[250px]">
+              {analytics.confidenceData.some(d => d.count > 0) ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.confidenceData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                    <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]} name="Items">
+                      {analytics.confidenceData.map((_, index) => (
+                        <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  <Brain className="w-8 h-8 mr-2 opacity-30" /> No confidence data yet
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Discipline Radar */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="bg-card border border-border rounded-xl p-5"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Target className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Discipline Coverage</h3>
+            </div>
+            <div className="h-[280px]">
+              {analytics.radarData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={analytics.radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                    <PolarGrid stroke="var(--border)" opacity={0.3} />
+                    <PolarAngleAxis dataKey="discipline" tick={{ fontSize: 9, fill: "var(--muted-foreground)" }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 8, fill: "var(--muted-foreground)" }} />
+                    <Radar name="Progress" dataKey="progress" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.2} strokeWidth={2} />
+                    <Radar name="Accuracy" dataKey="accuracy" stroke="#10B981" fill="#10B981" fillOpacity={0.1} strokeWidth={2} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  <Target className="w-8 h-8 mr-2 opacity-30" /> Study more to see discipline coverage
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* SRS Effectiveness */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-card border border-border rounded-xl p-5"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Flame className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>SRS Effectiveness</h3>
+            </div>
+            {efficiency ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <EfficiencyGauge label="Overall" value={efficiency.overallScore} icon={<Award className="h-6 w-6" />} />
+                <EfficiencyGauge label="Time" value={efficiency.timeEfficiency} icon={<Clock className="h-6 w-6" />} />
+                <EfficiencyGauge label="Accuracy" value={efficiency.accuracyEfficiency} icon={<Target className="h-6 w-6" />} />
+                <EfficiencyGauge label="Consistency" value={efficiency.consistencyScore} icon={<Calendar className="h-6 w-6" />} />
+              </div>
+            ) : (
+              <div className="space-y-5 mt-4">
+                <div>
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                    <span>Mastery Rate</span>
+                    <span className="font-mono">{analytics.totalItems > 0 ? Math.round((analytics.levels.mastered / analytics.totalItems) * 100) : 0}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${analytics.totalItems > 0 ? (analytics.levels.mastered / analytics.totalItems) * 100 : 0}%` }}
+                      transition={{ delay: 0.6, duration: 0.8 }}
+                      className="h-full rounded-full bg-green-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                    <span>Accuracy</span>
+                    <span className="font-mono">{analytics.accuracy.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${analytics.accuracy}%` }}
+                      transition={{ delay: 0.7, duration: 0.8 }}
+                      className="h-full rounded-full bg-violet-500"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="text-center p-3 rounded-lg bg-muted/30">
+                    <p className="text-xl font-bold" style={{ fontFamily: "var(--font-display)" }}>{analytics.totalReviews}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">Total Reviews</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/30">
+                    <p className="text-xl font-bold" style={{ fontFamily: "var(--font-display)" }}>{analytics.dueCount}</p>
+                    <p className="text-[10px] text-muted-foreground font-mono">Due Items</p>
+                  </div>
+                </div>
+              </div>
             )}
+          </motion.div>
+        </div>
+
+        {/* ── Mastery Distribution ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="bg-card border border-border rounded-xl p-5 mb-8"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Brain className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Mastery Distribution</h3>
+          </div>
+          <div className="space-y-3">
+            {[
+              { label: "Mastered", count: analytics.levels.mastered, color: "bg-green-500", pct: analytics.totalItems > 0 ? (analytics.levels.mastered / analytics.totalItems) * 100 : 0 },
+              { label: "Reviewing", count: analytics.levels.reviewing, color: "bg-blue-500", pct: analytics.totalItems > 0 ? (analytics.levels.reviewing / analytics.totalItems) * 100 : 0 },
+              { label: "Learning", count: analytics.levels.learning, color: "bg-yellow-500", pct: analytics.totalItems > 0 ? (analytics.levels.learning / analytics.totalItems) * 100 : 0 },
+              { label: "New", count: analytics.levels.beginner, color: "bg-gray-400", pct: analytics.totalItems > 0 ? (analytics.levels.beginner / analytics.totalItems) * 100 : 0 },
+            ].map(level => (
+              <div key={level.label} className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span>{level.label}</span>
+                  <span className="text-muted-foreground font-mono">{level.count} ({level.pct.toFixed(0)}%)</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${level.pct}%` }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className={`h-full rounded-full ${level.color}`}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         </motion.div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview" className="gap-1"><Activity className="h-3.5 w-3.5" /> Overview</TabsTrigger>
-            <TabsTrigger value="topics" className="gap-1"><PieChart className="h-3.5 w-3.5" /> Topics</TabsTrigger>
-            <TabsTrigger value="efficiency" className="gap-1"><Gauge className="h-3.5 w-3.5" /> Efficiency</TabsTrigger>
-            <TabsTrigger value="insights" className="gap-1"><Lightbulb className="h-3.5 w-3.5" /> Insights</TabsTrigger>
-          </TabsList>
+        {/* ── Discipline Breakdown Table ── */}
+        {analytics.disciplineData.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="bg-card border border-border rounded-xl p-5 mb-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Discipline Breakdown</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Discipline</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Total</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Studied</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Mastered</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Progress</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Accuracy</th>
+                    <th className="py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase w-32">Bar</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analytics.disciplineData.map((d) => (
+                    <tr key={d.fullName} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
+                      <td className="py-2.5 px-3 font-medium">{d.fullName}</td>
+                      <td className="py-2.5 px-3 text-right font-mono text-muted-foreground">{d.total}</td>
+                      <td className="py-2.5 px-3 text-right font-mono">{d.studied}</td>
+                      <td className="py-2.5 px-3 text-right font-mono text-green-500">{d.mastered}</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-semibold">{d.progress}%</td>
+                      <td className="py-2.5 px-3 text-right font-mono">{d.accuracy}%</td>
+                      <td className="py-2.5 px-3">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${d.progress}%`, background: d.color }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
 
-          {/* OVERVIEW */}
-          <TabsContent value="overview" className="space-y-6 mt-4">
-            {isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card><CardContent className="pt-4"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Flame className="h-4 w-4 text-orange-500" /><span className="text-xs">Streak</span></div><div className="text-2xl font-bold">{trends?.currentStreak ?? analytics.streak} days</div>{trends?.longestStreak != null && trends.longestStreak > 0 && <div className="text-xs text-muted-foreground">Best: {trends.longestStreak} days</div>}</CardContent></Card>
-                  <Card><CardContent className="pt-4"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Target className="h-4 w-4 text-green-500" /><span className="text-xs">Accuracy</span></div><div className="text-2xl font-bold">{trends ? (trends.overallAccuracy * 100).toFixed(1) : analytics.accuracy.toFixed(1)}%</div>{trends?.accuracyTrend != null && <div className={`text-xs ${trends.accuracyTrend >= 0 ? "text-green-500" : "text-red-500"}`}>{trends.accuracyTrend >= 0 ? "↑" : "↓"} {Math.abs(trends.accuracyTrend * 100).toFixed(1)}% trend</div>}</CardContent></Card>
-                  <Card><CardContent className="pt-4"><div className="flex items-center gap-2 text-muted-foreground mb-1"><BookOpen className="h-4 w-4 text-blue-500" /><span className="text-xs">Sessions/Week</span></div><div className="text-2xl font-bold">{trends?.sessionsPerWeek?.toFixed(1) ?? "—"}</div><div className="text-xs text-muted-foreground">{trends?.totalSessions ?? 0} total sessions</div></CardContent></Card>
-                  <Card><CardContent className="pt-4"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="h-4 w-4 text-purple-500" /><span className="text-xs">Study Time</span></div><div className="text-2xl font-bold">{trends ? `${Math.floor(trends.totalStudyMinutes / 60)}h ${Math.round(trends.totalStudyMinutes % 60)}m` : `${Math.round(analytics.totalMinutes / 60)}h ${analytics.totalMinutes % 60}m`}</div>{trends?.avgSessionMinutes != null && <div className="text-xs text-muted-foreground">Avg: {trends.avgSessionMinutes.toFixed(0)}m/session</div>}</CardContent></Card>
-                </div>
-                <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Brain className="h-5 w-5" /> Mastery Distribution</CardTitle></CardHeader><CardContent className="space-y-3">{[
-                  { label: "Mastered", count: analytics.levels.mastered, color: "bg-green-500", pct: analytics.totalItems > 0 ? (analytics.levels.mastered / analytics.totalItems) * 100 : 0 },
-                  { label: "Reviewing", count: analytics.levels.reviewing, color: "bg-blue-500", pct: analytics.totalItems > 0 ? (analytics.levels.reviewing / analytics.totalItems) * 100 : 0 },
-                  { label: "Learning", count: analytics.levels.learning, color: "bg-yellow-500", pct: analytics.totalItems > 0 ? (analytics.levels.learning / analytics.totalItems) * 100 : 0 },
-                  { label: "New", count: analytics.levels.beginner, color: "bg-gray-400", pct: analytics.totalItems > 0 ? (analytics.levels.beginner / analytics.totalItems) * 100 : 0 },
-                ].map(level => (
-                  <div key={level.label} className="space-y-1"><div className="flex justify-between text-sm"><span>{level.label}</span><span className="text-muted-foreground">{level.count} ({level.pct.toFixed(0)}%)</span></div><div className="h-2 rounded-full bg-muted overflow-hidden"><div className={`h-full rounded-full ${level.color}`} style={{ width: `${level.pct}%` }} /></div></div>
-                ))}</CardContent></Card>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Calendar className="h-5 w-5" /> Weekly Activity</CardTitle></CardHeader><CardContent><div className="flex items-end gap-2 h-24">{analytics.weeklyActivity.map((day, i) => (<div key={i} className="flex-1 flex flex-col items-center gap-1"><div className={`w-full rounded-t transition-all ${day.count > 0 ? "bg-primary" : "bg-muted"}`} style={{ height: day.count > 0 ? "100%" : "8px" }} /><span className="text-xs text-muted-foreground">{day.day}</span></div>))}</div></CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Zap className="h-5 w-5" /> Content Breakdown</CardTitle></CardHeader><CardContent><div className="grid grid-cols-2 gap-3">{Object.entries(analytics.byType).map(([type, count]) => (<div key={type} className="text-center p-3 rounded-lg bg-muted/50"><div className="text-lg font-bold">{count}</div><div className="text-xs text-muted-foreground capitalize">{type}s</div></div>))}</div></CardContent></Card>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card><CardContent className="pt-4 text-center"><Trophy className="mx-auto h-8 w-8 text-yellow-500 mb-2" /><div className="text-2xl font-bold">{analytics.masteredCount}</div><div className="text-xs text-muted-foreground">Items Mastered</div></CardContent></Card>
-                  <Card><CardContent className="pt-4 text-center"><TrendingUp className="mx-auto h-8 w-8 text-blue-500 mb-2" /><div className="text-2xl font-bold">{analytics.dueCount}</div><div className="text-xs text-muted-foreground">Due for Review</div></CardContent></Card>
-                  <Card><CardContent className="pt-4 text-center"><BookOpen className="mx-auto h-8 w-8 text-green-500 mb-2" /><div className="text-2xl font-bold">{analytics.newFlashcards + analytics.newQuestions}</div><div className="text-xs text-muted-foreground">New Items Available</div></CardContent></Card>
-                </div>
-              </>
-            )}
-          </TabsContent>
+        {/* ── Topic Mastery Details ── */}
+        {topicMastery.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+            className="bg-card border border-border rounded-xl p-5 mb-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Award className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Topic Mastery Details</h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Topic</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Sessions</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Accuracy</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Study Time</th>
+                    <th className="text-center py-2 px-3 text-muted-foreground font-mono tracking-wider uppercase">Level</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topicMastery.map((t: any, i: number) => (
+                    <tr key={i} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
+                      <td className="py-2.5 px-3 font-medium capitalize">{t.topic}</td>
+                      <td className="py-2.5 px-3 text-right font-mono">{t.sessionsCount}</td>
+                      <td className="py-2.5 px-3 text-right">
+                        <span className={`font-mono ${t.accuracy >= 0.9 ? "text-green-500" : t.accuracy >= 0.7 ? "text-yellow-500" : "text-red-500"}`}>
+                          {(t.accuracy * 100).toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono">{t.totalStudyMinutes.toFixed(0)}m</td>
+                      <td className="py-2.5 px-3 text-center">
+                        <Badge variant={t.masteryLevel === "mastered" ? "default" : t.masteryLevel === "advanced" ? "secondary" : "outline"} className="text-xs capitalize">
+                          {t.masteryLevel}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        )}
 
-          {/* TOPICS */}
-          <TabsContent value="topics" className="space-y-6 mt-4">
-            {deepAnalyticsQ.isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><Skeleton className="h-72" /><Skeleton className="h-72" /></div>
-            ) : topicMastery.length === 0 ? (
-              <Card><CardContent className="py-12 text-center"><Brain className="mx-auto h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No Topic Data Yet</h3><p className="text-muted-foreground">Complete some study sessions to see topic-level analytics.</p><Button variant="outline" className="mt-4" asChild><Link href="/learning">Start Studying</Link></Button></CardContent></Card>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Target className="h-5 w-5" /> Topic Mastery Radar</CardTitle><CardDescription>Accuracy and study time across your top topics</CardDescription></CardHeader><CardContent>{topicRadarConfig ? <CanvasChart config={topicRadarConfig} height={280} ariaLabel="Topic mastery radar chart showing accuracy and study time across top topics" /> : <div className="h-64 flex items-center justify-center text-muted-foreground">Not enough data</div>}</CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><BarChart3 className="h-5 w-5" /> Questions by Topic</CardTitle><CardDescription>Correct vs attempted across topics</CardDescription></CardHeader><CardContent>{topicBarConfig ? <CanvasChart config={topicBarConfig} height={280} ariaLabel="Topic questions bar chart showing correct versus attempted across topics" /> : <div className="h-64 flex items-center justify-center text-muted-foreground">Not enough data</div>}</CardContent></Card>
+        {/* ── Insights ── */}
+        {efficiency && efficiency.recommendations.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="bg-card border border-border rounded-xl p-5 mb-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Lightbulb className="w-4 h-4 text-yellow-500" />
+              <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Personalized Recommendations</h3>
+              <span className="text-[10px] font-mono text-muted-foreground ml-auto">
+                Based on {deepAnalyticsQ.data?.sessionCount ?? 0} sessions
+              </span>
+            </div>
+            <div className="space-y-3">
+              {efficiency.recommendations.map((rec: string, i: number) => (
+                <div key={i} className="flex gap-3 p-3 rounded-lg bg-accent/30">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <p className="text-sm leading-relaxed">{rec}</p>
                 </div>
-                <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Award className="h-5 w-5" /> Topic Mastery Details</CardTitle></CardHeader><CardContent><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="py-2 pr-4 font-medium">Topic</th><th className="py-2 pr-4 font-medium text-center">Sessions</th><th className="py-2 pr-4 font-medium text-center">Accuracy</th><th className="py-2 pr-4 font-medium text-center">Study Time</th><th className="py-2 font-medium text-center">Level</th></tr></thead><tbody>{topicMastery.map((t: any, i: number) => (<tr key={i} className="border-b border-border/50"><td className="py-2 pr-4 font-medium capitalize">{t.topic}</td><td className="py-2 pr-4 text-center">{t.sessionsCount}</td><td className="py-2 pr-4 text-center"><span className={t.accuracy >= 0.9 ? "text-green-500" : t.accuracy >= 0.7 ? "text-yellow-500" : "text-red-500"}>{(t.accuracy * 100).toFixed(1)}%</span></td><td className="py-2 pr-4 text-center">{t.totalStudyMinutes.toFixed(0)}m</td><td className="py-2 text-center"><Badge variant={t.masteryLevel === "mastered" ? "default" : t.masteryLevel === "advanced" ? "secondary" : "outline"} className="text-xs capitalize">{t.masteryLevel}</Badge></td></tr>))}</tbody></table></div></CardContent></Card>
-              </>
-            )}
-          </TabsContent>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
-          {/* EFFICIENCY */}
-          <TabsContent value="efficiency" className="space-y-6 mt-4">
-            {deepAnalyticsQ.isLoading ? <Skeleton className="h-64" /> : !efficiency ? (
-              <Card><CardContent className="py-12 text-center"><Gauge className="mx-auto h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No Efficiency Data Yet</h3><p className="text-muted-foreground">Complete study sessions to see efficiency metrics.</p></CardContent></Card>
-            ) : (
-              <>
-                <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Gauge className="h-5 w-5" /> Efficiency Scores</CardTitle><CardDescription>How effectively you're using your study time</CardDescription></CardHeader><CardContent><div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <EfficiencyGauge label="Overall" value={efficiency.overallScore} icon={<Award className="h-6 w-6" />} />
-                  <EfficiencyGauge label="Time Efficiency" value={efficiency.timeEfficiency} icon={<Clock className="h-6 w-6" />} />
-                  <EfficiencyGauge label="Accuracy" value={efficiency.accuracyEfficiency} icon={<Target className="h-6 w-6" />} />
-                  <EfficiencyGauge label="Consistency" value={efficiency.consistencyScore} icon={<Calendar className="h-6 w-6" />} />
-                </div></CardContent></Card>
-                {trends && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5" /> Improvement Rate</CardTitle></CardHeader><CardContent className="space-y-4"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Accuracy improvement</span><span className={`font-bold ${trends.improvementRate >= 0 ? "text-green-500" : "text-red-500"}`}>{trends.improvementRate >= 0 ? "+" : ""}{(trends.improvementRate * 100).toFixed(1)}%</span></div><Progress value={Math.max(0, Math.min(100, 50 + trends.improvementRate * 200))} className="h-2" /><p className="text-xs text-muted-foreground">Comparing accuracy between your first and most recent quartile of sessions.{trends.improvementRate > 0 ? " You're improving!" : trends.improvementRate < 0 ? " Consider reviewing fundamentals." : " Holding steady."}</p></CardContent></Card>
-                    <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Flame className="h-5 w-5" /> Strongest Topic</CardTitle></CardHeader><CardContent>{trends.strongestTopic ? <div className="text-center py-4"><div className="text-3xl font-bold capitalize text-primary mb-2">{trends.strongestTopic}</div><p className="text-sm text-muted-foreground">Your highest accuracy topic across all sessions</p></div> : <p className="text-muted-foreground text-center py-4">Complete more sessions to identify your strongest topic.</p>}</CardContent></Card>
+        {/* ── Improvement Rate + Strongest Topic ── */}
+        {trends && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.65 }}
+              className="bg-card border border-border rounded-xl p-5"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Improvement Rate</h3>
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Accuracy improvement</span>
+                <span className={`font-bold font-mono ${trends.improvementRate >= 0 ? "text-green-500" : "text-red-500"}`}>
+                  {trends.improvementRate >= 0 ? "+" : ""}{(trends.improvementRate * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(0, Math.min(100, 50 + trends.improvementRate * 200))}%` }}
+                  transition={{ delay: 0.8, duration: 0.6 }}
+                  className="h-full rounded-full bg-primary"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Comparing accuracy between your first and most recent quartile of sessions.
+                {trends.improvementRate > 0 ? " You're improving!" : trends.improvementRate < 0 ? " Consider reviewing fundamentals." : " Holding steady."}
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="bg-card border border-border rounded-xl p-5"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Flame className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Strongest Topic</h3>
+              </div>
+              {trends.strongestTopic ? (
+                <div className="text-center py-4">
+                  <div className="text-3xl font-bold capitalize text-primary mb-2" style={{ fontFamily: "var(--font-display)" }}>
+                    {trends.strongestTopic}
                   </div>
-                )}
-              </>
-            )}
-          </TabsContent>
+                  <p className="text-sm text-muted-foreground">Your highest accuracy topic across all sessions</p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-4">Complete more sessions to identify your strongest topic.</p>
+              )}
+            </motion.div>
+          </div>
+        )}
 
-          {/* INSIGHTS */}
-          <TabsContent value="insights" className="space-y-6 mt-4">
-            {deepAnalyticsQ.isLoading ? <Skeleton className="h-48" /> : !efficiency || efficiency.recommendations.length === 0 ? (
-              <Card><CardContent className="py-12 text-center"><Lightbulb className="mx-auto h-12 w-12 text-muted-foreground mb-4" /><h3 className="text-lg font-semibold mb-2">No Insights Yet</h3><p className="text-muted-foreground">Complete more study sessions to get personalized recommendations.</p></CardContent></Card>
-            ) : (
-              <Card><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Lightbulb className="h-5 w-5 text-yellow-500" /> Personalized Recommendations</CardTitle><CardDescription>Based on analysis of {deepAnalyticsQ.data?.sessionCount ?? 0} study sessions</CardDescription></CardHeader><CardContent className="space-y-3">{efficiency.recommendations.map((rec: string, i: number) => (<div key={i} className="flex gap-3 p-3 rounded-lg bg-muted/50"><CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" /><p className="text-sm">{rec}</p></div>))}</CardContent></Card>
-            )}
-          </TabsContent>
-        </Tabs>
+        {/* ── Content Breakdown ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.75 }}
+          className="bg-card border border-border rounded-xl p-5 mb-8"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Zap className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Content Breakdown</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Object.entries(analytics.byType).map(([type, count]) => (
+              <div key={type} className="text-center p-4 rounded-lg bg-muted/30">
+                <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>{count}</div>
+                <div className="text-xs text-muted-foreground font-mono capitalize">{type}s</div>
+              </div>
+            ))}
+            <div className="text-center p-4 rounded-lg bg-muted/30">
+              <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>{analytics.newFlashcards + analytics.newQuestions}</div>
+              <div className="text-xs text-muted-foreground font-mono">New Available</div>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </LearningShell>
   );

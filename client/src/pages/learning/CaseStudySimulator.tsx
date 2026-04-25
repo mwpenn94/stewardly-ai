@@ -286,7 +286,7 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
         )}
 
         <div className="p-6 rounded-xl border border-border bg-card/60">
-          <h1 className="font-heading text-xl font-bold mb-4">{cs.title}</h1>
+          <h1 className="font-bold text-xl font-bold mb-4">{cs.title}</h1>
           <div className="flex items-start gap-3 mb-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
             <Users className="w-5 h-5 text-primary flex-none mt-0.5" />
             <div>
@@ -323,8 +323,8 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
         <div className={`w-16 h-16 rounded-2xl ${passed ? "bg-emerald-500/10" : "bg-amber-500/10"} flex items-center justify-center mx-auto mb-4`}>
           {passed ? <Award className="w-8 h-8 text-emerald-400" /> : <RotateCcw className="w-8 h-8 text-amber-400" />}
         </div>
-        <h2 className="font-heading text-2xl font-bold mb-2">{passed ? "Case Complete!" : "Review Needed"}</h2>
-        <p className="text-3xl font-heading font-bold text-primary mb-1">{pct}%</p>
+        <h2 className="font-bold text-2xl font-bold mb-2">{passed ? "Case Complete!" : "Review Needed"}</h2>
+        <p className="text-3xl font-bold" style={{ fontFamily: "var(--font-display)" }} text-primary mb-1">{pct}%</p>
         <p className="text-sm text-muted-foreground mb-6">{totalScore}/{maxPossibleScore} points · {history.length} decisions</p>
         {complianceFlags.length > 0 && (
           <div className="text-left mb-6 p-4 rounded-xl border border-amber-500/20 bg-amber-500/5">

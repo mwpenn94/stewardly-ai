@@ -101,7 +101,7 @@ export default function FormulasPage() {
             </Link>
             <FlaskConical className="w-5 h-5 text-primary" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Formula Reference</h1>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Formula Reference</h1>
               <p className="text-xs text-muted-foreground font-mono">{filtered.length} of {formulas.length} formulas</p>
             </div>
           </div>

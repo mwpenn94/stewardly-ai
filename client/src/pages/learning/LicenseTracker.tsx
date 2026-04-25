@@ -94,7 +94,7 @@ export default function LicenseTracker() {
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-semibold flex items-center gap-2">
+            <h1 className="text-3xl font-bold flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
               <Shield className="h-8 w-8 text-primary" />
               License Tracker
             </h1>

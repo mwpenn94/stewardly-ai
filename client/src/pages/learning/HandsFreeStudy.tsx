@@ -1,12 +1,13 @@
 /**
- * HandsFreeStudy.tsx — Hands-free audio learning session
+ * HandsFreeStudy.tsx — KE-style Hands-Free Audio Learning
  *
- * Pass 36. Queues flashcards and definitions for TTS playback.
- * User listens, taps to rate confidence, or lets auto-advance handle it.
- * Integrates with AudioCompanion for persistent playback across pages.
+ * Pass 149. Full rewrite with audio chimes (Web Audio API), section-based content
+ * with colored badges, voice/speed settings, circular transport controls,
+ * keyboard shortcuts (Space/arrows/Esc), coming-up queue preview, repeat mode,
+ * and rich completion screen.
  */
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { useLocation, Link } from "wouter";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import LearningShell from "@/components/LearningShell";
 import { SEOHead } from "@/components/SEOHead";
 import { trpc } from "@/lib/trpc";
@@ -14,43 +15,98 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useAudioCompanion, type AudioItem } from "@/components/AudioCompanion";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Headphones, Play, Pause, SkipForward, RotateCcw,
-  Volume2, ArrowLeft, Shuffle, ListOrdered, Clock,
-  Brain, BookOpen, Loader2, CheckCircle2,
+  Headphones, Play, Pause, SkipForward, SkipBack, Square,
+  Volume2, ArrowLeft, Shuffle, Settings, ChevronDown,
+  Brain, BookOpen, Loader2, CheckCircle2, Repeat,
+  Calculator, FileText, Briefcase, LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
-type StudyMode = "flashcards" | "definitions" | "mixed";
-type PlaybackState = "idle" | "playing" | "paused" | "complete";
+type SectionType = "definitions" | "formulas" | "cases" | "applications";
+type Phase = "setup" | "playing" | "complete";
+
+interface ContentItem {
+  type: SectionType;
+  label: string;
+  text: string;
+  key: string;
+}
+
+const SECTION_CONFIG: { type: SectionType; label: string; icon: any; color: string }[] = [
+  { type: "definitions", label: "Definitions", icon: BookOpen, color: "#3B82F6" },
+  { type: "formulas", label: "Formulas", icon: Calculator, color: "#10B981" },
+  { type: "cases", label: "Case Studies", icon: FileText, color: "#F59E0B" },
+  { type: "applications", label: "Applications", icon: Briefcase, color: "#8B5CF6" },
+];
+
+const SPEED_OPTIONS = [
+  { label: "0.75x", value: 0.75 },
+  { label: "1x", value: 1.0 },
+  { label: "1.25x", value: 1.25 },
+  { label: "1.5x", value: 1.5 },
+  { label: "2x", value: 2.0 },
+];
+
+/* ── Audio Chimes via Web Audio API ── */
+function playChime(type: "start" | "section" | "complete") {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+
+    if (type === "start") {
+      osc.frequency.setValueAtTime(523, ctx.currentTime); // C5
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.15); // E5
+      osc.frequency.setValueAtTime(784, ctx.currentTime + 0.3); // G5
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } else if (type === "section") {
+      osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+      osc.frequency.setValueAtTime(523, ctx.currentTime + 0.1); // C5
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.25);
+    } else {
+      osc.frequency.setValueAtTime(523, ctx.currentTime);
+      osc.frequency.setValueAtTime(659, ctx.currentTime + 0.15);
+      osc.frequency.setValueAtTime(784, ctx.currentTime + 0.3);
+      osc.frequency.setValueAtTime(1047, ctx.currentTime + 0.45);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.6);
+    }
+  } catch { /* AudioContext not available */ }
+}
 
 export default function HandsFreeStudy() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
-  const [, navigate] = useLocation();
   const audio = useAudioCompanion();
-
   const studySession = useStudySession({ discipline: "hands-free" });
 
-  // Config
-  const [mode, setMode] = useState<StudyMode>("mixed");
-  const [shuffle, setShuffle] = useState(true);
-  const [autoAdvance, setAutoAdvance] = useState(true);
-  const [selectedTrack, setSelectedTrack] = useState<string>("all");
+  // Settings
+  const [enabledSections, setEnabledSections] = useState<SectionType[]>(["definitions", "formulas", "cases", "applications"]);
+  const [repeatMode, setRepeatMode] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [speed, setSpeed] = useState(1.0);
 
-  // Session state
-  const [sessionStarted, setSessionStarted] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
-  const [completedCount, setCompletedCount] = useState(0);
-  const [sessionItems, setSessionItems] = useState<AudioItem[]>([]);
+  // Playback state
+  const [phase, setPhase] = useState<Phase>("setup");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [contentQueue, setContentQueue] = useState<ContentItem[]>([]);
+  const [currentItemIndex, setCurrentItemIndex] = useState(0);
+  const [currentSection, setCurrentSection] = useState<SectionType | null>(null);
+  const playingRef = useRef(false);
 
   // Data
   const tracksQ = trpc.learning.content.listTracks.useQuery(undefined, { enabled: !!isAuthenticated });
@@ -59,117 +115,225 @@ export default function HandsFreeStudy() {
   const summaryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: !!isAuthenticated });
   const recordReview = trpc.learning.mastery.recordReview.useMutation();
 
-  // Build audio queue from available content
-  const buildQueue = useCallback(() => {
-    const items: AudioItem[] = [];
+  const toggleSection = useCallback((type: SectionType) => {
+    setEnabledSections(prev =>
+      prev.includes(type) ? prev.filter(s => s !== type) : [...prev, type]
+    );
+  }, []);
 
-    // Add flashcards from review queue
-    if (mode === "flashcards" || mode === "mixed") {
-      const reviewItems = reviewQ.data?.items ?? [];
-      for (const item of reviewItems) {
-        if (item.kind === "flashcard" && item.flashcard) {
-          items.push({
-            id: `fc-${item.flashcard.id}`,
-            type: "definition",
-            // @ts-expect-error — property access on loosely typed object
-            title: item.flashcard.front ?? "Flashcard",
-            // @ts-expect-error — strict mode fix
-            script: `Term: ${item.flashcard.front}. ... Definition: ${item.flashcard.back}`,
-            contentId: String(item.flashcard.id),
-          });
-        }
-      }
-    }
+  /* ── Build content queue ── */
+  const buildQueue = useCallback((): ContentItem[] => {
+    const items: ContentItem[] = [];
+    const defs = defsQ.data ?? [];
+    const reviewItems = reviewQ.data?.items ?? [];
 
-    // Add definitions
-    if (mode === "definitions" || mode === "mixed") {
-      const defs = defsQ.data ?? [];
-      for (const def of defs.slice(0, 30)) {
+    if (enabledSections.includes("definitions")) {
+      for (const def of defs.slice(0, 40)) {
         items.push({
-          id: `def-${def.id}`,
-          type: "definition",
-          title: def.term,
-          script: `${def.term}. ... ${def.definition}`,
-          contentId: String(def.id),
+          type: "definitions",
+          label: def.term,
+          text: `${def.term}. ${def.definition}`,
+          key: `def-${def.id}`,
         });
       }
     }
 
-    // Shuffle if enabled
-    if (shuffle) {
-      for (let i = items.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [items[i], items[j]] = [items[j], items[i]];
+    if (enabledSections.includes("formulas")) {
+      // Use flashcards that look like formulas
+      for (const item of reviewItems.slice(0, 15)) {
+        if (item.kind === "flashcard" && item.flashcard) {
+          const front = (item.flashcard as any).front ?? "Formula";
+          const back = (item.flashcard as any).back ?? "";
+          if (front.toLowerCase().includes("formula") || front.includes("=") || back.includes("=")) {
+            items.push({
+              type: "formulas",
+              label: front,
+              text: `Formula: ${front}. ${back}`,
+              key: `formula-${item.flashcard.id}`,
+            });
+          }
+        }
       }
     }
 
-    return items;
-  }, [mode, shuffle, reviewQ.data, defsQ.data]);
+    if (enabledSections.includes("cases")) {
+      // Use flashcards that look like case studies
+      for (const item of reviewItems) {
+        if (item.kind === "flashcard" && item.flashcard) {
+          const front = (item.flashcard as any).front ?? "";
+          if (front.toLowerCase().includes("case") || front.toLowerCase().includes("scenario")) {
+            items.push({
+              type: "cases",
+              label: front,
+              text: `Case Study: ${front}. ${(item.flashcard as any).back ?? ""}`,
+              key: `case-${item.flashcard.id}`,
+            });
+          }
+        }
+      }
+    }
 
-  const startSession = useCallback(() => {
-    const items = buildQueue();
-    if (items.length === 0) {
+    if (enabledSections.includes("applications")) {
+      // Use remaining flashcards as applications
+      for (const item of reviewItems.slice(0, 20)) {
+        if (item.kind === "flashcard" && item.flashcard) {
+          const front = (item.flashcard as any).front ?? "Application";
+          const back = (item.flashcard as any).back ?? "";
+          if (!items.some(i => i.key === `formula-${item.flashcard!.id}` || i.key === `case-${item.flashcard!.id}`)) {
+            items.push({
+              type: "applications",
+              label: front,
+              text: `${front}. ${back}`,
+              key: `app-${item.flashcard.id}`,
+            });
+          }
+        }
+      }
+    }
+
+    // Shuffle
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+
+    return items;
+  }, [enabledSections, defsQ.data, reviewQ.data]);
+
+  /* ── Start playback ── */
+  const startPlayback = useCallback(() => {
+    const queue = buildQueue();
+    if (queue.length === 0) {
       toast.error("No content available. Import content first.");
       return;
     }
-    setSessionItems(items);
-    setCurrentIndex(0);
-    setCompletedCount(0);
-    setSessionStarted(true);
-    setPlaybackState("playing");
+    setContentQueue(queue);
+    setCurrentItemIndex(0);
+    setPhase("playing");
+    setIsPlaying(true);
+    playingRef.current = true;
+    playChime("start");
 
-    // Enqueue all items in AudioCompanion
-    audio.enqueue(items);
-    audio.play(items[0]);
-    toast.success(`Started hands-free session with ${items.length} items`);
+    // Enqueue in AudioCompanion
+    const audioItems: AudioItem[] = queue.map(item => ({
+      id: item.key,
+      type: "definition",
+      title: item.label,
+      script: item.text,
+      contentId: item.key,
+    }));
+    audio.enqueue(audioItems);
+    if (audioItems[0]) audio.play(audioItems[0]);
+    toast.success(`Started session with ${queue.length} items`);
   }, [buildQueue, audio]);
 
-  const handleNext = useCallback(() => {
-    if (currentIndex < sessionItems.length - 1) {
-      const nextIdx = currentIndex + 1;
-      setCurrentIndex(nextIdx);
-      setCompletedCount((c) => c + 1);
-      studySession.recordItem();
-      audio.play(sessionItems[nextIdx]);
-    } else {
-      setPlaybackState("complete");
-      setCompletedCount(sessionItems.length);
-      studySession.recordItem();
-      studySession.flush();
-      toast.success("Session complete!");
-    }
-  }, [currentIndex, sessionItems, audio]);
-
-  const handleMarkKnown = useCallback(() => {
-    const item = sessionItems[currentIndex];
-    if (item) {
-      const itemKey = item.id.startsWith("fc-") ? `flashcard:${item.contentId}` : `definition:${item.contentId}`;
-      recordReview.mutate({ itemKey, itemType: item.id.startsWith("fc-") ? "flashcard" : "definition", correct: true });
-    }
-    handleNext();
-  }, [currentIndex, sessionItems, recordReview, handleNext]);
-
-  const handleMarkUnsure = useCallback(() => {
-    const item = sessionItems[currentIndex];
-    if (item) {
-      const itemKey = item.id.startsWith("fc-") ? `flashcard:${item.contentId}` : `definition:${item.contentId}`;
-      recordReview.mutate({ itemKey, itemType: item.id.startsWith("fc-") ? "flashcard" : "definition", correct: false });
-    }
-    handleNext();
-  }, [currentIndex, sessionItems, recordReview, handleNext]);
-
-  const resetSession = useCallback(() => {
-    setSessionStarted(false);
-    setPlaybackState("idle");
-    setCurrentIndex(0);
-    setCompletedCount(0);
-    setSessionItems([]);
+  /* ── Stop playback ── */
+  const stopPlayback = useCallback(() => {
+    setPhase("complete");
+    setIsPlaying(false);
+    playingRef.current = false;
     audio.dismiss();
-  }, [audio]);
+    playChime("complete");
+    studySession.flush();
+  }, [audio, studySession]);
 
-  // Auth guard
+  /* ── Toggle pause ── */
+  const togglePause = useCallback(() => {
+    if (isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+    } else {
+      audio.resume();
+      setIsPlaying(true);
+    }
+  }, [isPlaying, audio]);
+
+  /* ── Skip forward ── */
+  const skipForward = useCallback(() => {
+    if (currentItemIndex < contentQueue.length - 1) {
+      const nextIdx = currentItemIndex + 1;
+      setCurrentItemIndex(nextIdx);
+      setCurrentSection(contentQueue[nextIdx].type);
+      studySession.recordItem();
+
+      // Play section chime if section changed
+      if (contentQueue[nextIdx].type !== contentQueue[currentItemIndex]?.type) {
+        playChime("section");
+      }
+
+      const audioItem: AudioItem = {
+        id: contentQueue[nextIdx].key,
+        type: "definition",
+        title: contentQueue[nextIdx].label,
+        script: contentQueue[nextIdx].text,
+        contentId: contentQueue[nextIdx].key,
+      };
+      audio.play(audioItem);
+    } else if (repeatMode) {
+      setCurrentItemIndex(0);
+      const audioItem: AudioItem = {
+        id: contentQueue[0].key,
+        type: "definition",
+        title: contentQueue[0].label,
+        script: contentQueue[0].text,
+        contentId: contentQueue[0].key,
+      };
+      audio.play(audioItem);
+    } else {
+      stopPlayback();
+    }
+  }, [currentItemIndex, contentQueue, audio, repeatMode, stopPlayback, studySession]);
+
+  /* ── Skip backward ── */
+  const skipBackward = useCallback(() => {
+    if (currentItemIndex > 0) {
+      const prevIdx = currentItemIndex - 1;
+      setCurrentItemIndex(prevIdx);
+      setCurrentSection(contentQueue[prevIdx].type);
+      const audioItem: AudioItem = {
+        id: contentQueue[prevIdx].key,
+        type: "definition",
+        title: contentQueue[prevIdx].label,
+        script: contentQueue[prevIdx].text,
+        contentId: contentQueue[prevIdx].key,
+      };
+      audio.play(audioItem);
+    }
+  }, [currentItemIndex, contentQueue, audio]);
+
+  /* ── Keyboard shortcuts ── */
+  useEffect(() => {
+    if (phase !== "playing") return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.code === "Space") { e.preventDefault(); togglePause(); }
+      if (e.key === "ArrowRight") skipForward();
+      if (e.key === "ArrowLeft") skipBackward();
+      if (e.key === "Escape") stopPlayback();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [phase, togglePause, skipForward, skipBackward, stopPlayback]);
+
+  /* ── Section counts ── */
+  const sectionCounts = useMemo(() => {
+    const defs = defsQ.data ?? [];
+    const reviewItems = reviewQ.data?.items ?? [];
+    return {
+      definitions: defs.length,
+      formulas: reviewItems.filter((i: any) => i.kind === "flashcard").length,
+      cases: reviewItems.filter((i: any) => i.kind === "flashcard" && ((i.flashcard as any)?.front ?? "").toLowerCase().includes("case")).length,
+      applications: reviewItems.filter((i: any) => i.kind === "flashcard").length,
+    };
+  }, [defsQ.data, reviewQ.data]);
+
+  const currentItem = contentQueue[currentItemIndex];
+  const progress = contentQueue.length > 0 ? Math.round(((currentItemIndex + 1) / contentQueue.length) * 100) : 0;
+  const totalAvailable = (defsQ.data?.length ?? 0) + (reviewQ.data?.items?.length ?? 0);
+
+  /* ── Auth guard ── */
   if (authLoading) {
-    return <LearningShell><div className="min-h-screen flex items-center justify-center"><div className="animate-pulse text-muted-foreground">Loading...</div></div></LearningShell>;
+    return <LearningShell><div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div></LearningShell>;
   }
   if (!isAuthenticated) {
     return (
@@ -180,184 +344,345 @@ export default function HandsFreeStudy() {
             <Headphones className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Hands-Free Study</h1>
             <p className="text-sm text-muted-foreground mb-6">Sign in to start audio learning sessions.</p>
-            <a href={getLoginUrl("/learning/hands-free")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground"><Headphones className="w-4 h-4" /> Sign In</a>
+            <a href={getLoginUrl("/learning/hands-free")} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-medium bg-primary text-primary-foreground">
+              <LogIn className="w-4 h-4" /> Sign In
+            </a>
           </div>
         </div>
       </LearningShell>
     );
   }
 
-  const currentItem = sessionItems[currentIndex];
-  const progressPct = sessionItems.length > 0 ? (completedCount / sessionItems.length) * 100 : 0;
-  const totalAvailable = (reviewQ.data?.items?.length ?? 0) + (defsQ.data?.length ?? 0);
-
   return (
     <LearningShell>
       <SEOHead title="Hands-Free Study" description="Audio-based learning sessions" />
-      <div className="min-h-screen px-6 lg:px-10 py-8 max-w-3xl mx-auto space-y-6">
-        {/* Header — KE pattern */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="min-h-screen">
+        {/* ── Header ── */}
+        <div className="px-6 lg:px-10 py-6 border-b border-border">
           <div className="flex items-center gap-3">
             <Link href="/learning">
               <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
               </motion.div>
             </Link>
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "var(--primary)" }}>
-              <Headphones className="w-5 h-5" style={{ color: "var(--primary-foreground)" }} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
+              <Headphones className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Hands-Free Study</h1>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>
+                Hands-Free Study
+              </h1>
               <p className="text-xs text-muted-foreground font-mono">Listen and learn — no screen required</p>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        {!sessionStarted ? (
-          /* ── Setup Screen ── */
-          <div className="space-y-4">
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card>
-                <CardContent className="pt-4 text-center">
-                  <div className="text-2xl font-bold">{totalAvailable}</div>
-                  <div className="text-xs text-muted-foreground">Items Available</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4 text-center">
-                  <div className="text-2xl font-bold">{reviewQ.data?.dueTotal ?? 0}</div>
-                  <div className="text-xs text-muted-foreground">Due for Review</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-4 text-center">
-                  <div className="text-2xl font-bold">{(summaryQ.data as any)?.mastered ?? 0}</div>
-                  <div className="text-xs text-muted-foreground">Mastered</div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Config */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Session Settings</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Content Type</span>
-                  <Select value={mode} onValueChange={(v) => setMode(v as StudyMode)}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mixed">Mixed</SelectItem>
-                      <SelectItem value="flashcards">Flashcards Only</SelectItem>
-                      <SelectItem value="definitions">Definitions Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <Shuffle className="h-4 w-4" /> Shuffle Order
-                  </span>
-                  <Switch checked={shuffle} onCheckedChange={setShuffle} />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <SkipForward className="h-4 w-4" /> Auto-Advance
-                  </span>
-                  <Switch checked={autoAdvance} onCheckedChange={setAutoAdvance} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Button className="w-full h-14 text-lg" onClick={startSession} disabled={totalAvailable === 0}>
-              <Headphones className="mr-2 h-5 w-5" />
-              Start Listening Session
-            </Button>
-          </div>
-        ) : playbackState === "complete" ? (
-          /* ── Complete Screen ── */
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-6 py-8">
-            <CheckCircle2 className="mx-auto h-16 w-16 text-green-500" />
-            <h2 className="text-2xl font-bold">Session Complete!</h2>
-            <p className="text-muted-foreground">
-              You reviewed {completedCount} of {sessionItems.length} items.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={resetSession} variant="outline">
-                <RotateCcw className="mr-2 h-4 w-4" /> New Session
-              </Button>
-              <Button asChild>
-                <Link href="/learning">Back to Learning</Link>
-              </Button>
-            </div>
-          </motion.div>
-        ) : (
-          /* ── Active Session ── */
-          <div className="space-y-4">
-            {/* Progress */}
-            <div className="space-y-1">
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>{currentIndex + 1} of {sessionItems.length}</span>
-                <span>{Math.round(progressPct)}% complete</span>
-              </div>
-              <Progress value={progressPct} className="h-2" />
-            </div>
-
-            {/* Current Card */}
-            <AnimatePresence mode="wait">
+        <div className="px-6 lg:px-10 py-8">
+          <AnimatePresence mode="wait">
+            {/* ═══════════ SETUP PHASE ═══════════ */}
+            {phase === "setup" && (
               <motion.div
-                key={currentItem?.id}
-                initial={{ opacity: 0, x: 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }}
-                transition={{ duration: 0.2 }}
+                key="setup"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="max-w-3xl mx-auto space-y-8"
               >
-                <Card className="border-2 border-primary/20">
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <Badge variant="outline" className="text-xs">
-                        {currentItem?.id.startsWith("fc-") ? "Flashcard" : "Definition"}
-                      </Badge>
-                      <Volume2 className="h-5 w-5 text-primary animate-pulse" />
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Items Available", value: totalAvailable },
+                    { label: "Due for Review", value: reviewQ.data?.dueTotal ?? 0 },
+                    { label: "Mastered", value: (summaryQ.data as any)?.mastered ?? 0 },
+                  ].map(stat => (
+                    <div key={stat.label} className="bg-card border border-border rounded-xl p-4 text-center">
+                      <div className="text-2xl font-bold font-mono">{stat.value}</div>
+                      <div className="text-[10px] text-muted-foreground">{stat.label}</div>
                     </div>
-                    <h3 className="text-xl font-semibold">{currentItem?.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{currentItem?.script}</p>
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
+
+                {/* Section Selection */}
+                <section>
+                  <h2 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                    <BookOpen className="w-4 h-4 text-primary" />
+                    Content Sections
+                  </h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    {SECTION_CONFIG.map(sec => {
+                      const Icon = sec.icon;
+                      const count = sectionCounts[sec.type] ?? 0;
+                      return (
+                        <button
+                          key={sec.type}
+                          onClick={() => toggleSection(sec.type)}
+                          className={`text-left p-4 rounded-xl border transition-all ${
+                            enabledSections.includes(sec.type)
+                              ? "border-primary bg-primary/5"
+                              : "border-border opacity-50"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <Icon className="w-4 h-4" style={{ color: sec.color }} />
+                            <span className="text-sm font-medium">{sec.label}</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto font-mono">{count}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">
+                            {enabledSections.includes(sec.type) ? "Included" : "Excluded"}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+
+                {/* Playback Settings */}
+                <section>
+                  <button
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="flex items-center gap-2 text-sm font-semibold mb-3"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    <Settings className="w-4 h-4 text-primary" />
+                    Playback Settings
+                    <ChevronDown className={`w-3 h-3 transition-transform ${showSettings ? "rotate-180" : ""}`} />
+                  </button>
+                  <AnimatePresence>
+                    {showSettings && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden space-y-4"
+                      >
+                        {/* Speed */}
+                        <div>
+                          <label className="text-xs text-muted-foreground block mb-1">Speed</label>
+                          <div className="flex gap-2">
+                            {SPEED_OPTIONS.map(s => (
+                              <button
+                                key={s.value}
+                                onClick={() => setSpeed(s.value)}
+                                className={`px-3 py-1.5 rounded-lg border text-xs transition-all ${
+                                  speed === s.value
+                                    ? "border-primary bg-primary/10 text-primary font-medium"
+                                    : "border-border hover:border-primary/30"
+                                }`}
+                              >
+                                {s.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Repeat */}
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => setRepeatMode(!repeatMode)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-all ${
+                              repeatMode ? "border-primary bg-primary/10 text-primary" : "border-border"
+                            }`}
+                          >
+                            <Repeat className="w-3 h-3" />
+                            {repeatMode ? "Repeat On" : "Repeat Off"}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </section>
+
+                {/* Start Button */}
+                <button
+                  onClick={startPlayback}
+                  disabled={enabledSections.length === 0 || totalAvailable === 0}
+                  className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Headphones className="w-4 h-4" />
+                  Start Listening Session
+                </button>
               </motion.div>
-            </AnimatePresence>
+            )}
 
-            {/* Controls */}
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={handleMarkUnsure}>
-                <Brain className="mr-2 h-4 w-4" /> Still Learning
-              </Button>
-              <Button className="flex-1" onClick={handleMarkKnown}>
-                <CheckCircle2 className="mr-2 h-4 w-4" /> Got It
-              </Button>
-            </div>
+            {/* ═══════════ PLAYING PHASE ═══════════ */}
+            {phase === "playing" && (
+              <motion.div
+                key="playing"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="max-w-2xl mx-auto"
+              >
+                {/* Now Playing Card */}
+                <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+                  {/* Progress */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+                    <span>{currentItemIndex + 1} / {contentQueue.length}</span>
+                    <span className="font-mono">{progress}%</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-6">
+                    <motion.div
+                      className="h-full rounded-full bg-primary"
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
 
-            <div className="flex gap-2 justify-center">
-              <Button variant="ghost" size="sm" onClick={() => { audio.pause(); setPlaybackState("paused"); }}>
-                <Pause className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => { audio.resume(); setPlaybackState("playing"); }}>
-                <Play className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleNext}>
-                <SkipForward className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={resetSession}>
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
+                  {/* Current section badge */}
+                  {currentItem && (() => {
+                    const sec = SECTION_CONFIG.find(s => s.type === currentItem.type);
+                    const Icon = sec?.icon || BookOpen;
+                    return (
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon className="w-4 h-4" style={{ color: sec?.color }} />
+                        <span className="text-xs font-mono" style={{ color: sec?.color }}>{sec?.label}</span>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Current item */}
+                  {currentItem && (
+                    <div className="mb-6">
+                      <h2 className="text-lg font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>
+                        {currentItem.label}
+                      </h2>
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+                        {currentItem.text}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Audio indicator */}
+                  {isPlaying && (
+                    <div className="flex items-center gap-2 text-xs text-primary mb-4">
+                      <Volume2 className="w-3 h-3 animate-pulse" />
+                      <span>Playing...</span>
+                    </div>
+                  )}
+
+                  {/* Transport Controls */}
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={skipBackward}
+                      disabled={currentItemIndex === 0}
+                      className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
+                      title="Previous (Left Arrow)"
+                    >
+                      <SkipBack className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={togglePause}
+                      className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                      title="Play/Pause (Space)"
+                    >
+                      {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
+                    </button>
+                    <button
+                      onClick={skipForward}
+                      disabled={currentItemIndex >= contentQueue.length - 1 && !repeatMode}
+                      className="w-10 h-10 rounded-full border border-border flex items-center justify-center hover:bg-accent transition-colors disabled:opacity-30"
+                      title="Next (Right Arrow)"
+                    >
+                      <SkipForward className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={stopPlayback}
+                      className="w-10 h-10 rounded-full border border-destructive/30 text-destructive flex items-center justify-center hover:bg-destructive/10 transition-colors"
+                      title="Stop (Escape)"
+                    >
+                      <Square className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Keyboard hints */}
+                  <p className="text-center text-[10px] text-muted-foreground mt-4 font-mono">
+                    Space: pause/resume · Arrows: skip · Esc: stop
+                  </p>
+
+                  {/* Repeat indicator */}
+                  {repeatMode && (
+                    <div className="flex items-center justify-center gap-1 mt-3 text-[10px] text-primary">
+                      <Repeat className="w-3 h-3" />
+                      Repeat mode active
+                    </div>
+                  )}
+                </div>
+
+                {/* Coming Up queue */}
+                <div className="bg-card border border-border rounded-xl p-4">
+                  <h3 className="text-xs font-semibold mb-3" style={{ fontFamily: "var(--font-display)" }}>
+                    Coming Up
+                  </h3>
+                  <div className="space-y-1 max-h-[200px] overflow-y-auto">
+                    {contentQueue.slice(currentItemIndex + 1, currentItemIndex + 8).map((item, i) => {
+                      const sec = SECTION_CONFIG.find(s => s.type === item.type);
+                      return (
+                        <div key={i} className="flex items-center gap-2 p-2 rounded-lg text-xs text-muted-foreground">
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sec?.color }} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                      );
+                    })}
+                    {contentQueue.length - currentItemIndex - 1 > 8 && (
+                      <p className="text-[10px] text-muted-foreground text-center py-1">
+                        +{contentQueue.length - currentItemIndex - 9} more items
+                      </p>
+                    )}
+                    {contentQueue.length - currentItemIndex - 1 === 0 && (
+                      <p className="text-[10px] text-muted-foreground text-center py-2">
+                        Last item in queue
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ═══════════ COMPLETE PHASE ═══════════ */}
+            {phase === "complete" && (
+              <motion.div
+                key="complete"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="max-w-2xl mx-auto text-center"
+              >
+                <div className="bg-card border border-border rounded-2xl p-8">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200, delay: 0.2 }}
+                    className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center bg-green-500/10"
+                  >
+                    <CheckCircle2 className="w-10 h-10 text-green-500" />
+                  </motion.div>
+                  <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>
+                    Session Complete
+                  </h2>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    You listened through {contentQueue.length} items.
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-6 font-mono">
+                    {currentItemIndex + 1} of {contentQueue.length} completed
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <button
+                      onClick={() => { setPhase("setup"); setContentQueue([]); }}
+                      className="px-6 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-accent transition-colors flex items-center gap-2"
+                    >
+                      <ArrowLeft className="w-4 h-4" /> New Session
+                    </button>
+                    <button
+                      onClick={startPlayback}
+                      className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+                    >
+                      <Repeat className="w-4 h-4" /> Replay
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </LearningShell>
   );

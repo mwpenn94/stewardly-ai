@@ -77,7 +77,7 @@ export default function CasesPage() {
             </Link>
             <Scale className="w-5 h-5 text-primary" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Case Studies</h1>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Case Studies</h1>
               <p className="text-xs text-muted-foreground font-mono">{filtered.length} of {cases.length} cases</p>
             </div>
           </div>

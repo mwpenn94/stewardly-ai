@@ -47,15 +47,15 @@ export function DiscussionPanel({ groupId }: { groupId: number }) {
   const messages = messagesQ.data ?? [];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div className="rounded-2xl border border-border bg-card/80 overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
+        <h3 className="flex items-center gap-2 font-semibold" style={{ fontFamily: "var(--font-display)" }}>
           <MessageSquare className="h-5 w-5 text-blue-400" />
           Discussion
-        </CardTitle>
-        <CardDescription>Share insights and ask questions</CardDescription>
-      </CardHeader>
-      <CardContent>
+        </h3>
+        <p className="text-xs text-muted-foreground mt-0.5">Share insights and ask questions</CardDescription>
+      </div>
+      <div className="p-5">
         {user && (
           <div className="flex gap-2 mb-4">
             <Textarea
@@ -104,8 +104,8 @@ export function DiscussionPanel({ groupId }: { groupId: number }) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -144,18 +144,18 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
   const completedGoals = goals.filter((g: any) => g.status === "completed");
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="rounded-2xl border border-border bg-card/80 overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <h3 className="flex items-center gap-2 font-semibold" style={{ fontFamily: "var(--font-display)" }}>
               <Target className="h-5 w-5 text-teal-400" />
               Shared Goals
               {activeGoals.length > 0 && (
                 <Badge variant="secondary" className="text-xs">{activeGoals.length} active</Badge>
               )}
-            </CardTitle>
-            <CardDescription>Track group learning objectives together</CardDescription>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Track group learning objectives together</CardDescription>
           </div>
           {user && (
             <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
@@ -163,8 +163,8 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
             </Button>
           )}
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-5">
         {showAdd && (
           <div className="space-y-2 mb-4 p-3 border rounded-lg bg-muted/30">
             <Input
@@ -234,8 +234,8 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -268,15 +268,15 @@ export function ActivityFeedPanel({ groupId }: { groupId: number }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+    <div className="rounded-2xl border border-border bg-card/80 overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
+        <h3 className="flex items-center gap-2 font-semibold" style={{ fontFamily: "var(--font-display)" }}>
           <Activity className="h-5 w-5 text-green-400" />
           Group Activity
-        </CardTitle>
-        <CardDescription>Recent activity from group members</CardDescription>
-      </CardHeader>
-      <CardContent>
+        </h3>
+        <p className="text-xs text-muted-foreground mt-0.5">Recent activity from group members</CardDescription>
+      </div>
+      <div className="p-5">
         {activityQ.isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
@@ -307,8 +307,8 @@ export function ActivityFeedPanel({ groupId }: { groupId: number }) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -348,18 +348,18 @@ export function CollaborativeNotesPanel({ groupId }: { groupId: number }) {
   const notes = notesQ.data ?? [];
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="rounded-2xl border border-border bg-card/80 overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2">
+            <h3 className="flex items-center gap-2 font-semibold" style={{ fontFamily: "var(--font-display)" }}>
               <FileText className="h-5 w-5 text-purple-400" />
               Shared Notes
               {notes.length > 0 && (
                 <Badge variant="secondary" className="text-xs">{notes.length}</Badge>
               )}
-            </CardTitle>
-            <CardDescription>Collaborative study notes for the group</CardDescription>
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Collaborative study notes for the group</CardDescription>
           </div>
           {user && (
             <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
@@ -367,8 +367,8 @@ export function CollaborativeNotesPanel({ groupId }: { groupId: number }) {
             </Button>
           )}
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-5">
         {showAdd && (
           <div className="space-y-2 mb-4 p-3 border rounded-lg bg-muted/30">
             <Input
@@ -451,8 +451,8 @@ export function CollaborativeNotesPanel({ groupId }: { groupId: number }) {
             ))}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 

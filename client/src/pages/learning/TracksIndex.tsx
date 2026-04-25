@@ -124,7 +124,7 @@ export default function TracksIndex() {
               </motion.div>
             </Link>
             <BookOpen className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-bold tracking-tight">Exam & Learning Tracks</h1>
+            <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Exam & Learning Tracks</h1>
           </div>
           <p className="text-sm text-muted-foreground ml-12 leading-relaxed max-w-2xl">
             {stats.tracks > 0 ? (

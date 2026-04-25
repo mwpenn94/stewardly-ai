@@ -102,28 +102,28 @@ export default function LearningSearch() {
         title="Search Learning Content"
         description="Search across definitions, flashcards, practice questions, and tracks"
       />
-      <div className="mx-auto max-w-3xl p-6 space-y-4">
-        <div>
-          <Button
-            variant="ghost"
-            size="sm"
+      <div className="mx-auto max-w-3xl p-6 space-y-5">
+        {/* KE-style sticky header */}
+        <div className="sticky top-0 z-10 -mx-6 px-6 py-3 backdrop-blur-md bg-background/80 border-b border-border">
+          <button
+            type="button"
             onClick={() => navigate("/learning")}
-            className="mb-3"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-2 cursor-pointer"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Learning
-          </Button>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-            <SearchIcon className="h-6 w-6 text-accent" />
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Learning
+          </button>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+            <SearchIcon className="h-6 w-6 text-primary" />
             Search
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Definitions, flashcards, practice questions, and exam tracks.
+          <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+            Definitions · Flashcards · Practice Questions · Exam Tracks
           </p>
         </div>
 
-        {/* Search input */}
-        <Card>
-          <CardContent className="p-4">
+        {/* KE-style search input card */}
+        <div className="rounded-2xl border border-border bg-card/80 backdrop-blur-sm overflow-hidden">
+          <div className="p-4">
             <div className="flex items-center gap-2">
               <SearchIcon
                 className="h-4 w-4 text-muted-foreground"
@@ -136,17 +136,17 @@ export default function LearningSearch() {
                 onChange={(e) => setRaw(e.target.value)}
                 autoFocus
                 aria-label="Search learning content"
-                className="flex-1"
+                className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
               />
               {raw && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
+                  type="button"
                   onClick={() => setRaw("")}
                   aria-label="Clear search"
+                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer px-2 py-1 rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   Clear
-                </Button>
+                </button>
               )}
             </div>
             {enabled && counts.total > 0 && (
@@ -177,35 +177,33 @@ export default function LearningSearch() {
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Results */}
         {!enabled ? (
-          <Card>
-            <CardContent className="p-8 text-center space-y-2">
-              <SearchIcon className="h-8 w-8 mx-auto text-muted-foreground opacity-40" />
-              <p className="text-sm text-muted-foreground">
-                Type at least 2 characters to search.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-2xl border border-border bg-card/60 p-10 text-center space-y-3">
+            <SearchIcon className="h-10 w-10 mx-auto text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">
+              Type at least 2 characters to search.
+            </p>
+            <p className="text-[10px] font-mono text-muted-foreground/50">Ctrl+K to focus</p>
+          </div>
         ) : searchQ.isLoading ? (
-          <p className="text-sm text-muted-foreground">Searching…</p>
+          <div className="flex items-center gap-2 py-8 justify-center">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-muted-foreground">Searching…</span>
+          </div>
         ) : counts.total === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center space-y-2">
-              <p className="text-sm text-muted-foreground">
-                No results for <strong>{debounced}</strong>.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Admins can import more content from{" "}
-                <Link href="/learning/studio" className="underline">Content Studio
-                </Link>
-                .
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-2xl border border-border bg-card/60 p-10 text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              No results for <strong className="text-foreground">{debounced}</strong>.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Admins can import more content from{" "}
+              <Link href="/learning/studio" className="text-primary hover:underline">Content Studio</Link>.
+            </p>
+          </div>
         ) : (
           <ResultGroups
             grouped={grouped}
@@ -267,7 +265,7 @@ function ResultGroups({
             return (
               <button type="button"
                 key={`track-${r.id}`}
-                className="w-full text-left p-3 border rounded-md hover:border-primary/50 transition-colors cursor-pointer"
+                className="w-full text-left p-3 rounded-xl border border-border/50 hover:border-primary/30 transition-colors cursor-pointer"
                 onClick={() => {
                   if (meta?.slug) onNavigate(`/learning/tracks/${meta.slug}`);
                 }}
@@ -313,24 +311,20 @@ function ResultSection({
   children: React.ReactNode;
 }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          {icon}
-          {title}
-          <Badge variant="outline" className="text-[10px] ml-1">
-            {count}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">{children}</CardContent>
-    </Card>
+    <div className="rounded-2xl border border-border bg-card/80 overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+        <div className="text-primary">{icon}</div>
+        <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>{title}</span>
+        <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md">{count}</span>
+      </div>
+      <div className="p-3 space-y-2">{children}</div>
+    </div>
   );
 }
 
 function ResultRow({ result, query }: { result: SearchResult; query: string }) {
   return (
-    <div className="p-3 border rounded-md">
+    <div className="p-3 rounded-xl border border-border/50 hover:border-primary/30 transition-colors">
       <div className="font-medium text-sm">
         <HighlightedText text={result.title} query={query} />
       </div>

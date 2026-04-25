@@ -311,7 +311,7 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getColor(selectedNode.discipline) }} />
                   <span className="text-xs text-muted-foreground">{selectedNode.discipline}</span>
                 </div>
-                <h3 className="font-heading text-sm font-semibold">{selectedNode.term}</h3>
+                <h3 className="font-bold text-sm" style={{ fontFamily: "var(--font-display)" }}>{selectedNode.term}</h3>
               </div>
               <button type="button" onClick={() => setSelectedNode(null)} className="w-6 h-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground cursor-pointer">
                 <X className="w-3.5 h-3.5" />

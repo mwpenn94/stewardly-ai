@@ -281,7 +281,7 @@ export default function LearningReview() {
     return (
       <LearningShell title="Review">
         <SEOHead title="Review due items" description="SRS review session" />
-        <div className="p-6 text-sm text-muted-foreground">Loading due items…</div>
+        <div className="min-h-[60vh] flex items-center justify-center"><div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-sm text-muted-foreground">Loading due items…</span></div></div>
       </LearningShell>
     );
   }
@@ -303,7 +303,7 @@ export default function LearningReview() {
               <div className="mx-auto w-16 h-16 rounded-full bg-rose-500/15 flex items-center justify-center">
                 <X className="h-8 w-8 text-rose-500" />
               </div>
-              <p className="text-lg font-heading font-semibold">
+              <p className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>
                 Couldn&rsquo;t load your review session
               </p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
@@ -343,7 +343,7 @@ export default function LearningReview() {
               <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center">
                 <Check className="h-8 w-8 text-emerald-500" />
               </div>
-              <p className="text-2xl font-heading font-semibold">All caught up</p>
+              <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>All caught up</p>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 Nothing is due for review right now. Your next item will surface
                 here once its memory window opens.
@@ -719,7 +719,7 @@ function CompletionCard({
           />
         </div>
         <div className="space-y-2">
-          <p className="text-2xl font-heading font-semibold">
+          <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>
             {pct === 100 ? "Flawless!" : isGreat ? "Great session" : "Session complete"}
           </p>
           <p className="text-sm text-muted-foreground">

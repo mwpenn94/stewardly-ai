@@ -209,7 +209,7 @@ export default function LearningQuizRunner() {
     return (
       <LearningShell title="Quiz">
       <SEOHead title="Quiz" description="Practice quiz with explanations" />
-        <div className="p-6 text-sm text-muted-foreground">Loading quiz…</div>
+        <div className="min-h-[60vh] flex items-center justify-center"><div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-sm text-muted-foreground">Loading quiz…</span></div></div>
       </LearningShell>
     );
   }
@@ -282,7 +282,7 @@ export default function LearningQuizRunner() {
                   <HelpCircle className="h-5 w-5 text-accent" />
                 </div>
                 <div>
-                  <p className="font-semibold">Start practice quiz</p>
+                  <p className="font-bold" style={{ fontFamily: "var(--font-display)" }}>Start practice quiz</p>
                   <p className="text-xs text-muted-foreground">
                     {rawQuestions.length} questions available in this track
                   </p>

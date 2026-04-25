@@ -134,7 +134,7 @@ export default function GlobalLeaderboard() {
         <SEOHead title="Leaderboard | Learning" />
         <div className="container py-12 text-center">
           <Trophy className="h-12 w-12 mx-auto text-yellow-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Learning Leaderboard</h2>
+          <h2 className="text-2xl font-bold mb-2" style={{ fontFamily: "var(--font-display)" }}>Learning Leaderboard</h2>
           <p className="text-muted-foreground mb-6">Sign in to see your ranking and compete with peers.</p>
           <Button asChild><a href={getLoginUrl()}>Sign In</a></Button>
         </div>
@@ -152,7 +152,7 @@ export default function GlobalLeaderboard() {
             <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
+            <h1 className="text-2xl font-bold flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
               <Trophy className="h-6 w-6 text-yellow-500" />
               Learning Leaderboard
             </h1>

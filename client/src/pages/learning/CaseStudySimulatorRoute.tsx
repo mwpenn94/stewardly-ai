@@ -84,7 +84,7 @@ export default function CaseStudySimulatorRoute() {
           </Button>
         </div>
         <div>
-          <h1 className="text-2xl font-heading font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
             <Briefcase className="h-7 w-7 text-accent" />
             Case Studies
           </h1>

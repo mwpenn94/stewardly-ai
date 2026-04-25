@@ -153,7 +153,7 @@ export default function LearningHome() {
                   <GraduationCap className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1 text-center sm:text-left">
-                  <h2 className="text-base font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Welcome to the Learning Engine</h2>
+                  <h2 className="text-base font-bold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Welcome to the Learning Engine</h2>
                   <p className="text-xs text-muted-foreground mt-1">Browse exam tracks and content freely. Sign in to track progress, take quizzes, and unlock personalized study tools.</p>
                 </div>
                 <a href={getLoginUrl("/learning")}>
@@ -176,7 +176,7 @@ export default function LearningHome() {
               </motion.div>
             </Link>
             <GraduationCap className="w-5 h-5 text-primary" />
-            <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>
+            <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>
               Learning Engine
             </h1>
           </div>
@@ -335,7 +335,7 @@ function GuestOverviewTab({ tracks, tracksLoading, stats }: { tracks: any[]; tra
                   <span className="text-lg">{meta.icon}</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>{meta.label}</h2>
+                  <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>{meta.label}</h2>
                   <p className="text-xs text-muted-foreground">{meta.description}</p>
                 </div>
                 <span className="ml-auto text-xs font-mono text-muted-foreground">{list.length} {list.length === 1 ? "track" : "tracks"}</span>
@@ -418,7 +418,7 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">Today's Priority</p>
-                <h3 className="text-base font-bold" style={{ fontFamily: "var(--font-heading)" }}>{todayAction.label}</h3>
+                <h3 className="text-base font-bold" style={{ fontFamily: "var(--font-bold)" }}>{todayAction.label}</h3>
               </div>
               <ArrowRight className="w-5 h-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </div>
@@ -439,7 +439,7 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
         className="p-5 rounded-xl border border-border bg-card"
       >
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)" }}>Weekly Study Goal</span>
+          <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-bold)" }}>Weekly Study Goal</span>
           <span className="text-xs font-mono text-muted-foreground">{Math.min(streak.current, 7)}/7 days</span>
         </div>
         <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
@@ -461,7 +461,7 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
       <section>
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-primary" />
-          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>My Learning Plan</h2>
+          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>My Learning Plan</h2>
         </div>
         <LearningPlanSteps summary={summary} tracks={tracks} activeLicenses={activeLicenses} expiringSoon={expiringSoon} streak={streak} />
       </section>
@@ -472,7 +472,7 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <PlayCircle className="w-4 h-4 text-primary" />
-              <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Continue Studying</h2>
+              <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Continue Studying</h2>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -490,7 +490,7 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
                   >
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary" />
                     <div className="text-2xl mb-2">{rt.emoji}</div>
-                    <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-heading)" }}>{rt.name}</h3>
+                    <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-bold)" }}>{rt.name}</h3>
                     <p className="text-[10px] font-mono text-muted-foreground mt-1">{ageStr}</p>
                   </motion.div>
                 </Link>
@@ -522,7 +522,7 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Recommendations</h2>
+            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Recommendations</h2>
           </div>
           <div className="space-y-2">
             {recs.map((r: any, idx: number) => (
@@ -535,7 +535,7 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
               >
                 <Badge variant="outline" className="text-[10px] font-mono shrink-0">P{r.priority}</Badge>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)" }}>{r.reason}</div>
+                  <div className="text-sm font-semibold" style={{ fontFamily: "var(--font-bold)" }}>{r.reason}</div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {r.action}{r.estimatedMinutes ? ` · ${r.estimatedMinutes} min` : ""}{r.trackSlug ? ` · ${r.trackSlug}` : ""}
                   </div>
@@ -586,7 +586,7 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary, stats
                   <Clock className="w-6 h-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-base font-bold" style={{ fontFamily: "var(--font-heading)" }}>
+                  <h3 className="text-base font-bold" style={{ fontFamily: "var(--font-bold)" }}>
                     {summary.dueNow} items due for review
                   </h3>
                   <p className="text-xs text-muted-foreground">Spaced repetition keeps knowledge fresh. Start a review session now.</p>
@@ -602,7 +602,7 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary, stats
       <section>
         <div className="flex items-center gap-2 mb-1">
           <Trophy className="w-4 h-4 text-primary" />
-          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Mastery Modules</h2>
+          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Mastery Modules</h2>
         </div>
         <p className="text-xs text-muted-foreground mb-4">Interactive modules for deep learning, practice, and application.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -620,7 +620,7 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary, stats
         <section>
           <div className="flex items-center gap-2 mb-4">
             <PlayCircle className="w-4 h-4 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Continue Where You Left Off</h2>
+            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Continue Where You Left Off</h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {recentTracks.map((rt, i) => {
@@ -637,7 +637,7 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary, stats
                   >
                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary" />
                     <div className="text-2xl mb-2">{rt.emoji}</div>
-                    <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-heading)" }}>{rt.name}</h3>
+                    <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-bold)" }}>{rt.name}</h3>
                     <p className="text-[10px] font-mono text-muted-foreground mt-1">{ageStr}</p>
                   </motion.div>
                 </Link>
@@ -652,7 +652,7 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary, stats
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Library className="w-4 h-4 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Exam & Learning Tracks</h2>
+            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Exam & Learning Tracks</h2>
           </div>
           <Link href="/learning/tracks">
             <span className="text-xs font-mono text-primary hover:underline flex items-center gap-1 cursor-pointer">
@@ -696,7 +696,7 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary, stats
                       <span className="text-lg">{meta.icon}</span>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>{meta.label}</h3>
+                      <h3 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>{meta.label}</h3>
                       <p className="text-xs text-muted-foreground">{meta.description}</p>
                     </div>
                     <span className="ml-auto text-xs font-mono text-muted-foreground">{list.length} {list.length === 1 ? "track" : "tracks"}</span>
@@ -715,7 +715,7 @@ function StudyTab({ tracks, tracksLoading, isAdmin, recentTracks, summary, stats
 
       {/* ─── QUICK STUDY ACTIONS (KE-style) ─── */}
       <section>
-        <h2 className="text-lg font-semibold mb-4 tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Quick Study</h2>
+        <h2 className="text-lg font-semibold mb-4 tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Quick Study</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <QuickAction href="/learning/hands-free" icon={Headphones} label="Hands-Free Study" desc="Auto-play TTS through discipline content" delay={0.05} />
           <QuickAction href="/learning/formulas" icon={Calculator} label="Formula Reference" desc="Browse all financial formulas with examples" delay={0.1} />
@@ -740,7 +740,7 @@ function ReferenceTab({ tracks }: { tracks: any[] }) {
       <section>
         <div className="flex items-center gap-2 mb-1">
           <Brain className="w-4 h-4 text-primary" />
-          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Reference & Deep Learning</h2>
+          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Reference & Deep Learning</h2>
         </div>
         <p className="text-xs text-muted-foreground mb-4">Explore concepts, formulas, and connections across all disciplines.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -759,7 +759,7 @@ function ReferenceTab({ tracks }: { tracks: any[] }) {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Scale className="w-4 h-4 text-primary" />
-          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Applied Learning</h2>
+          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Applied Learning</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <ModuleCard href="/learning/cases" icon={Scale} label="Cases Library" desc="Browse all case studies with difficulty ratings and discipline tags." accent="#D97706" delay={0.05} badge="Cases" />
@@ -775,7 +775,7 @@ function ReferenceTab({ tracks }: { tracks: any[] }) {
               >
                 <span className="text-xl shrink-0">{t.emoji ?? "📘"}</span>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-heading)" }}>{t.name}</h4>
+                  <h4 className="text-sm font-semibold group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-bold)" }}>{t.name}</h4>
                   <p className="text-[10px] text-muted-foreground">Case studies</p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
@@ -804,7 +804,7 @@ function ManageTab({ activeLicenses, expiringSoon, isAdvisorPlus, isAdmin }: {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Shield className="w-4 h-4 text-primary" />
-          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>License & Compliance</h2>
+          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>License & Compliance</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-xl border border-border bg-card">
@@ -813,7 +813,7 @@ function ManageTab({ activeLicenses, expiringSoon, isAdvisorPlus, isAdmin }: {
                 <Shield className="w-5 h-5 text-emerald-500" />
               </div>
               <div>
-                <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>{activeLicenses}</div>
+                <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-bold)" }}>{activeLicenses}</div>
                 <div className="text-xs text-muted-foreground">active licenses</div>
               </div>
               {expiringSoon > 0 && (
@@ -833,7 +833,7 @@ function ManageTab({ activeLicenses, expiringSoon, isAdvisorPlus, isAdmin }: {
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Trophy className="w-4 h-4 text-primary" />
-          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>My Learning</h2>
+          <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>My Learning</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <QuickAction href="/learning/achievements" icon={Trophy} label="Achievements" desc="Streaks, goals, and milestones earned through study" delay={0.05} />
@@ -851,7 +851,7 @@ function ManageTab({ activeLicenses, expiringSoon, isAdvisorPlus, isAdmin }: {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <Settings className="w-4 h-4 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-heading)" }}>Administration</h2>
+            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Administration</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {isAdvisorPlus && (
@@ -893,7 +893,7 @@ function ModuleCard({ href, icon: Icon, label, desc, accent, delay, badge }: {
             <span className="text-[9px] font-mono px-2 py-0.5 rounded-full border border-border text-muted-foreground">{badge}</span>
           )}
         </div>
-        <h3 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-heading)" }}>{label}</h3>
+        <h3 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors" style={{ fontFamily: "var(--font-bold)" }}>{label}</h3>
         <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
         <div className="mt-3 flex items-center gap-1 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
           <span>Launch</span>
@@ -921,7 +921,7 @@ function QuickAction({ href, icon: Icon, label, desc, delay }: {
           <Icon className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold" style={{ fontFamily: "var(--font-heading)" }}>{label}</h4>
+          <h4 className="text-sm font-semibold" style={{ fontFamily: "var(--font-bold)" }}>{label}</h4>
           <p className="text-xs text-muted-foreground truncate">{desc}</p>
         </div>
         <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
@@ -957,7 +957,7 @@ function TrackCard({ track, color, index }: { track: any; color: string; index: 
       </div>
 
       <Link href={`/learning/tracks/${track.slug}`}>
-        <h3 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors cursor-pointer" style={{ fontFamily: "var(--font-heading)" }}>
+        <h3 className="text-sm font-semibold mb-1 group-hover:text-primary transition-colors cursor-pointer" style={{ fontFamily: "var(--font-bold)" }}>
           {track.title ?? track.name}
         </h3>
       </Link>
@@ -1055,7 +1055,7 @@ function StatCard({ label, value, detail, detailWarning, progress, color, icon: 
         </div>
         <span className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">{label}</span>
       </div>
-      <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>{value}</div>
+      <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-bold)" }}>{value}</div>
       {progress !== undefined && (
         <div className="h-1 bg-muted rounded-full overflow-hidden mt-2">
           <motion.div
@@ -1103,7 +1103,7 @@ function StreakStatCard({ streak, delay }: { streak: StreakSummary; delay: numbe
         </div>
         <span className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">Streak</span>
       </div>
-      <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-heading)", color }}>{streak.current}</div>
+      <div className="text-2xl font-bold" style={{ fontFamily: "var(--font-bold)", color }}>{streak.current}</div>
       <div className="text-[10px] text-muted-foreground mt-1.5 font-mono">{label}</div>
       {streak.longest > 0 && (
         <div className="text-[10px] text-muted-foreground mt-0.5 font-mono">
@@ -1182,7 +1182,7 @@ function LearningPlanSteps({ summary, tracks, activeLicenses, expiringSoon, stre
               {item.status === "done" ? "✓" : idx + 1}
             </div>
             <div className="flex-1 min-w-0">
-              <p className={`text-sm font-semibold ${item.status === "done" ? "line-through text-muted-foreground" : ""}`} style={{ fontFamily: "var(--font-heading)" }}>{item.label}</p>
+              <p className={`text-sm font-semibold ${item.status === "done" ? "line-through text-muted-foreground" : ""}`} style={{ fontFamily: "var(--font-bold)" }}>{item.label}</p>
               <p className="text-[10px] text-muted-foreground font-mono">{item.detail}</p>
             </div>
             <Badge variant="outline" className={`text-[9px] font-mono h-5 shrink-0 ${

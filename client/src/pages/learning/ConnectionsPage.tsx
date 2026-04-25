@@ -89,7 +89,7 @@ export default function ConnectionsPage() {
             </Link>
             <Network className="w-5 h-5 text-primary" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Connections Map</h1>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Connections Map</h1>
               <p className="text-xs text-muted-foreground font-mono">{filtered.length} cross-discipline links</p>
             </div>
           </div>

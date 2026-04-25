@@ -81,7 +81,7 @@ export default function FSToolkitPage() {
             </Link>
             <FileSpreadsheet className="w-5 h-5 text-primary" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight">FS Toolkit</h1>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>FS Toolkit</h1>
               <p className="text-xs text-muted-foreground font-mono">{apps.length} applications</p>
             </div>
           </div>

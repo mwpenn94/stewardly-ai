@@ -208,7 +208,9 @@ export default function LearningFlashcardStudy() {
     return (
       <LearningShell title="Flashcards">
         <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
-        <div className="p-6 text-sm text-muted-foreground">Loading…</div>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground text-sm">Loading…</div>
+        </div>
       </LearningShell>
     );
   }
@@ -216,7 +218,12 @@ export default function LearningFlashcardStudy() {
     return (
       <LearningShell title="Flashcards">
         <SEOHead title="Flashcards" description="Study flashcards with spaced repetition" />
-        <div className="p-6 text-sm text-muted-foreground">Loading deck…</div>
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-muted-foreground">Loading deck…</span>
+          </div>
+        </div>
       </LearningShell>
     );
   }
@@ -287,7 +294,7 @@ export default function LearningFlashcardStudy() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-xl font-semibold">{track.name} — Flashcards</h1>
+                <h1 className="text-xl font-bold" style={{ fontFamily: "var(--font-display)" }}>{track.name} — Flashcards</h1>
                 <p className="text-sm text-muted-foreground">
                   {rawCards.length} cards from the WealthBridge library
                 </p>
@@ -421,7 +428,7 @@ export default function LearningFlashcardStudy() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-lg font-semibold">{track.name} — Flashcards</h1>
+              <h1 className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>{track.name} — Flashcards</h1>
               <p className="text-xs text-muted-foreground">
                 {rawCards.length} cards from the WealthBridge library
               </p>

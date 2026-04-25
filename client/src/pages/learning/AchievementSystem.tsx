@@ -262,22 +262,22 @@ export default function AchievementSystem({ data, onGoalTap }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         <div className="p-3 rounded-xl border border-border bg-card/60 text-center">
           <Flame className={`w-5 h-5 mx-auto mb-1 ${d.streak.current > 0 ? "text-amber-400" : "text-muted-foreground/30"}`} />
-          <div className="text-lg font-heading font-bold">{d.streak.current}</div>
+          <div className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}">{d.streak.current}</div>
           <div className="text-[10px] text-muted-foreground">Day Streak</div>
         </div>
         <div className="p-3 rounded-xl border border-border bg-card/60 text-center">
           <Crown className="w-5 h-5 mx-auto mb-1 text-purple-400" />
-          <div className="text-lg font-heading font-bold">{d.totalMastered}</div>
+          <div className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}">{d.totalMastered}</div>
           <div className="text-[10px] text-muted-foreground">Mastered</div>
         </div>
         <div className="p-3 rounded-xl border border-border bg-card/60 text-center">
           <Award className="w-5 h-5 mx-auto mb-1 text-emerald-400" />
-          <div className="text-lg font-heading font-bold">{d.examsCompleted}</div>
+          <div className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}">{d.examsCompleted}</div>
           <div className="text-[10px] text-muted-foreground">Exams</div>
         </div>
         <div className="p-3 rounded-xl border border-border bg-card/60 text-center">
           <Calendar className="w-5 h-5 mx-auto mb-1 text-chart-3" />
-          <div className="text-lg font-heading font-bold">{Math.round(d.totalStudyMinutes / 60)}h</div>
+          <div className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}">{Math.round(d.totalStudyMinutes / 60)}h</div>
           <div className="text-[10px] text-muted-foreground">Study Time</div>
         </div>
       </div>

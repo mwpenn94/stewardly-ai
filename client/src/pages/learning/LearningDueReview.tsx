@@ -208,7 +208,7 @@ export default function LearningDueReview() {
     return (
       <LearningShell title="Due Review">
         <SEOHead title="Due Review" description="SRS review across all exam tracks" />
-        <div className="p-6 text-sm text-muted-foreground">Loading your due items…</div>
+        <div className="min-h-[60vh] flex items-center justify-center"><div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /><span className="text-sm text-muted-foreground">Loading your due items…</span></div></div>
       </LearningShell>
     );
   }
@@ -263,7 +263,7 @@ export default function LearningDueReview() {
 
         {/* Header */}
         <div>
-          <h1 className="text-xl font-semibold tracking-tight flex items-center gap-2">
+          <h1 className="text-xl font-bold tracking-tight flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
             <Sparkles className="h-5 w-5 text-accent" />
             Due Review
           </h1>

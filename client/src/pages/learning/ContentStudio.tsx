@@ -142,7 +142,7 @@ export default function ContentStudio() {
     <LearningShell title="Content Studio">
       <div className="mx-auto max-w-5xl p-6 space-y-6">
         <header>
-          <h1 className="text-3xl font-semibold flex items-center gap-2">
+          <h1 className="text-3xl font-bold flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
             <Sparkles className="h-8 w-8 text-primary" />
             Content Studio
           </h1>

@@ -150,7 +150,7 @@ export default function LearningTrackDetail() {
             </Link>
             <span className="text-3xl shrink-0">{track.emoji ?? "📘"}</span>
             <div className="min-w-0">
-              <h1 className="text-xl font-bold tracking-tight">{track.title ?? track.name}</h1>
+              <h1 className="text-xl font-bold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>{track.title ?? track.name}</h1>
               <p className="text-sm text-muted-foreground">
                 {track.subtitle ?? track.description ?? ""}
               </p>
