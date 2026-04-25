@@ -156,6 +156,9 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const generationRef = useRef(0);
+  const speakItemRef = useRef<((item: AudioItem, speed: number) => Promise<void>) | null>(null);
+  const speedRef = useRef(state.speed);
+  speedRef.current = state.speed;
 
   const speakItem = useCallback(async (item: AudioItem, speed: number) => {
     const thisGen = ++generationRef.current;
@@ -186,6 +189,8 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
           setState(prev => {
             if (prev.queue.length > 0) {
               const [next, ...rest] = prev.queue;
+              // Auto-advance: speak the next item
+              setTimeout(() => speakItemRef.current?.(next, speedRef.current), 50);
               return { ...prev, currentItem: next, queue: rest, position: 0 };
             }
             return { ...prev, playing: false, currentItem: null, mode: "hidden" };
@@ -216,6 +221,8 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
         setState(prev => {
           if (prev.queue.length > 0) {
             const [next, ...rest] = prev.queue;
+            // Auto-advance: speak the next item
+            setTimeout(() => speakItemRef.current?.(next, speedRef.current), 50);
             return { ...prev, currentItem: next, queue: rest };
           }
           return { ...prev, playing: false, currentItem: null, mode: "hidden" };
@@ -225,6 +232,9 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
       setState(prev => ({ ...prev, playing: true }));
     }
   }, []);
+
+  // Keep speakItemRef in sync so onended can call it
+  speakItemRef.current = speakItem;
 
   const speakShort = useCallback((text: string) => {
     if (!window.speechSynthesis) return;

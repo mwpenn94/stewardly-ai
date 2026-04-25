@@ -9305,3 +9305,14 @@
 - [x] Fix Learning Engine page mobile tabs overlapping and spacing issues
 - [x] Fix Hands-Free Study mobile layout — reduced padding, responsive buttons, bottom safe area for audio player
 - [x] Fix critical crash: undefined is not an object (evaluating 'a.getUTCFullYear') — LearningShell.tsx summarizeStreak(entries) missing 2nd Date arg
+## Pull-to-Refresh on Mobile
+- [ ] Create reusable PullToRefresh component with touch gesture handling
+- [ ] Integrate into LearningHome dashboard
+- [ ] Integrate into HandsFreeStudy page
+- [ ] Integrate into LearningDueReview page
+- [ ] Integrate into LearningFlashcardStudy page
+## Bug Fix: Hands-Free Study Playback Breaks After First Item
+- [x] Diagnose playback loop — two root causes: (1) AudioCompanion onended never calls speakItem for next, (2) HandsFreeStudy double-play + no sync
+- [x] Fix AudioCompanion: add speakItemRef/speedRef, onended now calls speakItem for auto-advance
+- [x] Fix HandsFreeStudy: remove double-play, add useEffect to sync currentItemIndex with AudioCompanion auto-advance
+- [x] Fix HandsFreeStudy: add playing state sync with AudioCompanion

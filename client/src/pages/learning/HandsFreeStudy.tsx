@@ -230,8 +230,10 @@ export default function HandsFreeStudy() {
       script: item.text,
       contentId: item.key,
     }));
+    // Only use enqueue — it auto-plays the first item if nothing is playing.
+    // Do NOT also call audio.play() which would double-play and desync the queue.
+    audio.dismiss(); // Clear any previous state first
     audio.enqueue(audioItems);
-    if (audioItems[0]) audio.play(audioItems[0]);
     toast.success(`Started session with ${queue.length} items`);
   }, [buildQueue, audio]);
 
@@ -308,6 +310,35 @@ export default function HandsFreeStudy() {
       audio.play(audioItem);
     }
   }, [currentItemIndex, contentQueue, audio]);
+
+  /* ── Sync with AudioCompanion auto-advance ── */
+  useEffect(() => {
+    if (phase !== "playing" || contentQueue.length === 0) return;
+    const currentAudioId = audio.currentItem?.id;
+    if (!currentAudioId) {
+      // AudioCompanion finished all items — complete the session
+      if (playingRef.current) {
+        stopPlayback();
+      }
+      return;
+    }
+    // Find the matching index in our local queue
+    const matchIdx = contentQueue.findIndex(item => item.key === currentAudioId);
+    if (matchIdx >= 0 && matchIdx !== currentItemIndex) {
+      setCurrentItemIndex(matchIdx);
+      setCurrentSection(contentQueue[matchIdx].type);
+      studySession.recordItem();
+    }
+  }, [audio.currentItem?.id, phase, contentQueue, currentItemIndex, studySession, stopPlayback]);
+
+  /* ── Sync playing state with AudioCompanion ── */
+  useEffect(() => {
+    if (phase !== "playing") return;
+    if (audio.playing !== isPlaying) {
+      setIsPlaying(audio.playing);
+      playingRef.current = audio.playing;
+    }
+  }, [audio.playing, phase, isPlaying]);
 
   /* ── Keyboard shortcuts ── */
   useEffect(() => {
