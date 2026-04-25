@@ -1160,6 +1160,39 @@ export const learningRouter = router({
       };
     }),
 
+  /**
+   * Activity Calendar — returns daily study session counts for the past N days.
+   * Used by the GitHub-style contribution heatmap in StudyAnalytics.
+   */
+  activityCalendar: protectedProcedure
+    .input(z.object({ days: z.number().int().min(30).max(400).default(365) }).optional())
+    .query(async ({ ctx, input }) => {
+      const { getDb: getDbFn } = await import("../db");
+      const { learningStudySessions } = await import("../../drizzle/schema");
+      const { sql } = await import("drizzle-orm");
+      const db = await getDbFn();
+      if (!db) return [];
+      const days = input?.days ?? 365;
+      const cutoff = new Date(Date.now() - days * 86400000);
+      const rows = await db
+        .select({
+          date: sql<string>`DATE(${learningStudySessions.createdAt})`.as("date"),
+          count: sql<number>`COUNT(*)`.as("count"),
+          minutes: sql<number>`COALESCE(SUM(${learningStudySessions.durationMinutes}), 0)`.as("minutes"),
+        })
+        .from(learningStudySessions)
+        .where(
+          sql`${learningStudySessions.userId} = ${ctx.user.id} AND ${learningStudySessions.createdAt} >= ${cutoff}`,
+        )
+        .groupBy(sql`DATE(${learningStudySessions.createdAt})`)
+        .orderBy(sql`DATE(${learningStudySessions.createdAt})`);
+      return rows.map((r: any) => ({
+        date: String(r.date),
+        count: Number(r.count),
+        minutes: Number(r.minutes),
+      }));
+    }),
+
   // Admin-only seed
   seed: adminProcedure.mutation(async ({ ctx }) => {
     if (!canSeedContent({ id: ctx.user.id, role: (ctx.user.role as any) ?? "user" })) {

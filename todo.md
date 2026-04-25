@@ -9248,3 +9248,17 @@
 - [x] GAP-5: LearningShell Sidebar Search Bar — Added quick search button in sidebar header that triggers Ctrl+K command palette
 - [x] GAP-6: SRS Forecasting tRPC Procedure — mastery.forecast procedure + getReviewForecast service function
 - [x] GAP-7: Streak Milestone Detection — recordActivity returns milestone info, all study pages fire celebration toasts
+
+## Pass 152: Recursive Optimization — Expert Assessment + Optimize + Validate
+- [x] GAP-1: Study Activity Heatmap — GitHub-style contribution calendar in StudyAnalytics showing daily study activity over past year
+- [x] GAP-2: SRS Settings Panel — /learning/settings page for configuring daily review cap, new card quota, daily goal, nudge preferences
+- [x] GAP-3: Learning Path Recommendations Enhancement — Richer recommendation cards with priority colors, action buttons, time estimates, urgency badges
+- [x] GAP-4: LearningShell Settings Nav Item — Added Settings link in sidebar footer linking to /learning/settings
+- [x] GAP-5: Activity Calendar tRPC Procedure — activityCalendar procedure grouping sessions by date for heatmap data
+
+## Pass 152: Recursive Optimization
+- [x] GAP-1: Study Activity Heatmap
+- [x] GAP-2: SRS Settings Panel
+- [x] GAP-3: Learning Path Recommendations Enhancement
+- [x] GAP-4: LearningShell Settings Nav Item
+- [x] GAP-5: Activity Calendar tRPC Procedure

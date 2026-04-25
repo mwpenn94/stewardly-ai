@@ -29,6 +29,128 @@ import {
 
 type TimeRange = "7d" | "30d" | "90d" | "all";
 
+/* ── GitHub-style Activity Heatmap ── */
+function ActivityHeatmap() {
+  const calendarQ = trpc.learning.activityCalendar.useQuery(undefined, { staleTime: 120_000 });
+  const data = calendarQ.data ?? [];
+  const activityMap = useMemo(() => {
+    const map = new Map<string, { count: number; minutes: number }>();
+    for (const d of data) map.set(d.date, { count: d.count, minutes: d.minutes });
+    return map;
+  }, [data]);
+
+  // Build 52-week grid (364 days ending today)
+  const weeks = useMemo(() => {
+    const today = new Date();
+    const result: { date: Date; dateStr: string; count: number; minutes: number }[][] = [];
+    const start = new Date(today);
+    start.setDate(start.getDate() - 363 - start.getDay());
+    let current = new Date(start);
+    let week: { date: Date; dateStr: string; count: number; minutes: number }[] = [];
+    while (current <= today) {
+      const ds = current.toISOString().slice(0, 10);
+      const entry = activityMap.get(ds);
+      week.push({ date: new Date(current), dateStr: ds, count: entry?.count ?? 0, minutes: entry?.minutes ?? 0 });
+      if (week.length === 7) { result.push(week); week = []; }
+      current.setDate(current.getDate() + 1);
+    }
+    if (week.length > 0) result.push(week);
+    return result;
+  }, [activityMap]);
+
+  const totalSessions = data.reduce((s, d) => s + d.count, 0);
+  const totalMinutes = data.reduce((s, d) => s + d.minutes, 0);
+  const activeDays = data.filter(d => d.count > 0).length;
+  const maxCount = Math.max(1, ...data.map(d => d.count));
+
+  const getColor = (count: number) => {
+    if (count === 0) return "bg-muted/40";
+    const ratio = count / maxCount;
+    if (ratio <= 0.25) return "bg-emerald-900/60";
+    if (ratio <= 0.5) return "bg-emerald-700/70";
+    if (ratio <= 0.75) return "bg-emerald-500/80";
+    return "bg-emerald-400";
+  };
+
+  const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  if (calendarQ.isLoading) {
+    return (
+      <div className="bg-card border border-border rounded-xl p-5 mb-6">
+        <Skeleton className="h-4 w-40 mb-4" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.6 }}
+      className="bg-card border border-border rounded-xl p-5 mb-6"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Study Activity</h3>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span><strong className="text-foreground">{totalSessions}</strong> sessions</span>
+          <span><strong className="text-foreground">{activeDays}</strong> active days</span>
+          <span><strong className="text-foreground">{Math.round(totalMinutes / 60)}</strong> hours</span>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="inline-flex flex-col gap-0.5 min-w-fit">
+          {/* Month labels */}
+          <div className="flex gap-0.5 mb-1 ml-[18px]">
+            {weeks.map((week, wi) => {
+              const firstDay = week[0];
+              if (!firstDay) return <div key={wi} className="w-[11px]" />;
+              const isFirstWeekOfMonth = firstDay.date.getDate() <= 7;
+              return (
+                <div key={wi} className="w-[11px] text-[9px] text-muted-foreground leading-none">
+                  {isFirstWeekOfMonth ? monthLabels[firstDay.date.getMonth()] : ""}
+                </div>
+              );
+            })}
+          </div>
+          {/* Day rows */}
+          {[0, 1, 2, 3, 4, 5, 6].map(dayIdx => (
+            <div key={dayIdx} className="flex gap-0.5 items-center">
+              <div className="w-[14px] text-[9px] text-muted-foreground leading-none">
+                {dayIdx === 1 ? "M" : dayIdx === 3 ? "W" : dayIdx === 5 ? "F" : ""}
+              </div>
+              {weeks.map((week, wi) => {
+                const cell = week[dayIdx];
+                if (!cell) return <div key={wi} className="w-[11px] h-[11px]" />;
+                return (
+                  <div
+                    key={wi}
+                    className={`w-[11px] h-[11px] rounded-[2px] ${getColor(cell.count)} transition-colors`}
+                    title={`${cell.dateStr}: ${cell.count} sessions, ${cell.minutes} min`}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-1 mt-3 text-[9px] text-muted-foreground">
+        <span>Less</span>
+        <div className="w-[11px] h-[11px] rounded-[2px] bg-muted/40" />
+        <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-900/60" />
+        <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-700/70" />
+        <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-500/80" />
+        <div className="w-[11px] h-[11px] rounded-[2px] bg-emerald-400" />
+        <span>More</span>
+      </div>
+    </motion.div>
+  );
+}
+
 const CHART_COLORS = ["#8B5CF6", "#10B981", "#F59E0B", "#3B82F6", "#EF4444", "#EC4899", "#14B8A6", "#F97316"];
 
 const TOOLTIP_STYLE = {
@@ -835,6 +957,8 @@ export default function StudyAnalytics() {
           </div>
         )}
 
+        {/* ── Study Activity Heatmap ── */}
+        <ActivityHeatmap />
         {/* ── SRS Review Forecast ── */}
         <ForecastChart />
 

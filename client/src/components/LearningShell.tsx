@@ -237,6 +237,23 @@ function SidebarContent({
         )}
       </div>
 
+      {/* Settings link */}
+      <div className="border-t border-border/30 px-3 py-2">
+        {!collapsed ? (
+          <Link href="/learning/settings" onClick={onNavigate}>
+            <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+              <Settings className="h-3.5 w-3.5" />
+              <span>Study Settings</span>
+            </div>
+          </Link>
+        ) : (
+          <Link href="/learning/settings" onClick={onNavigate}>
+            <div className="flex flex-col items-center cursor-pointer" title="Study Settings">
+              <Settings className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+            </div>
+          </Link>
+        )}
+      </div>
       {/* Collapse toggle (desktop only) */}
       <div className="hidden lg:flex border-t border-border/30 px-2 py-2">
         {/* Rendered by parent — this is a placeholder for alignment */}

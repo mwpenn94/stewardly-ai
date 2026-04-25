@@ -158,6 +158,7 @@ const HandsFreeStudy = lazy(() => import("./pages/learning/HandsFreeStudy"));
 const AIQuizPage = lazy(() => import("./pages/learning/AIQuizPage"));
 const FormulaLab = lazy(() => import("./pages/learning/FormulaLab"));
 const StudyAnalytics = lazy(() => import("./pages/learning/StudyAnalytics"));
+const LearningSettings = lazy(() => import("./pages/learning/LearningSettings"));
 const ProgressExport = lazy(() => import("./pages/learning/ProgressExport"));
 const Bookmarks = lazy(() => import("./pages/learning/Bookmarks"));
 const Playlists = lazy(() => import("./pages/learning/Playlists"));
@@ -357,6 +358,7 @@ function Router() {
         <Route path="/learning/tracks" component={TracksIndex} />
         <Route path="/learning/session/:trackSlug" component={StudySession} />
         <Route path="/learning/shared/:shareToken" component={SharedPlaylist} />
+        <Route path="/learning/settings" component={LearningSettings} />
         <Route path="/learning/leaderboard" component={GlobalLeaderboard} />
 
         {/* Consolidated Hub Pages */}

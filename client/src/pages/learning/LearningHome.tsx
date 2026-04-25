@@ -520,28 +520,57 @@ function OverviewTab({ summary, streak, activeLicenses, expiringSoon, recs, trac
       {/* Recommendations */}
       {recs.length > 0 && (
         <section>
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Recommendations</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h2 className="text-lg font-semibold tracking-tight" style={{ fontFamily: "var(--font-bold)" }}>Personalized Recommendations</h2>
+            </div>
+            <Badge variant="secondary" className="text-[10px] font-mono">{recs.length} suggestions</Badge>
           </div>
           <div className="space-y-2">
-            {recs.map((r: any, idx: number) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="flex items-start gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all"
-              >
-                <Badge variant="outline" className="text-[10px] font-mono shrink-0">P{r.priority}</Badge>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold" style={{ fontFamily: "var(--font-bold)" }}>{r.reason}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {r.action}{r.estimatedMinutes ? ` · ${r.estimatedMinutes} min` : ""}{r.trackSlug ? ` · ${r.trackSlug}` : ""}
+            {recs.map((r: any, idx: number) => {
+              const priorityColors: Record<number, { bg: string; border: string; icon: string; badge: string }> = {
+                1: { bg: "bg-red-500/5", border: "border-red-500/20 hover:border-red-500/40", icon: "text-red-500", badge: "bg-red-500/10 text-red-600 dark:text-red-400" },
+                2: { bg: "bg-amber-500/5", border: "border-amber-500/20 hover:border-amber-500/40", icon: "text-amber-500", badge: "bg-amber-500/10 text-amber-600 dark:text-amber-400" },
+                3: { bg: "bg-blue-500/5", border: "border-blue-500/20 hover:border-blue-500/40", icon: "text-blue-500", badge: "bg-blue-500/10 text-blue-600 dark:text-blue-400" },
+              };
+              const pc = priorityColors[r.priority] ?? { bg: "bg-muted/30", border: "border-border hover:border-primary/30", icon: "text-muted-foreground", badge: "bg-muted text-muted-foreground" };
+              const PriorityIcon = r.priority === 1 ? AlertTriangle : r.priority === 2 ? Clock : Sparkles;
+              const actionHref = r.trackSlug ? `/learning/tracks/${r.trackSlug}` : r.priority === 1 ? "/learning/review" : "/learning";
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className={`flex items-start gap-3 p-4 rounded-xl border ${pc.border} ${pc.bg} transition-all`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${pc.badge}`}>
+                    <PriorityIcon className="w-4 h-4" />
                   </div>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${pc.badge}`}>
+                        {r.priority === 1 ? "URGENT" : r.priority === 2 ? "IMPORTANT" : r.priority <= 4 ? "SUGGESTED" : "OPTIONAL"}
+                      </span>
+                      {r.estimatedMinutes && (
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <Clock className="w-2.5 h-2.5" />{r.estimatedMinutes}m
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm font-semibold" style={{ fontFamily: "var(--font-bold)" }}>{r.reason}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{r.action}</div>
+                    <Link href={actionHref}>
+                      <Button variant="ghost" size="sm" className="mt-2 h-7 text-xs px-2 hover:bg-primary/10 hover:text-primary">
+                        {r.priority === 1 ? "Start Review" : r.trackSlug ? "Open Track" : "Take Action"}
+                        <ArrowRight className="w-3 h-3 ml-1" />
+                      </Button>
+                    </Link>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </section>
       )}
