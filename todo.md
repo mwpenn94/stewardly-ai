@@ -9316,3 +9316,16 @@
 - [x] Fix AudioCompanion: add speakItemRef/speedRef, onended now calls speakItem for auto-advance
 - [x] Fix HandsFreeStudy: remove double-play, add useEffect to sync currentItemIndex with AudioCompanion auto-advance
 - [x] Fix HandsFreeStudy: add playing state sync with AudioCompanion
+## Pass 156: Playback Loop Testing + Background Audio Persistence
+- [x] End-to-end playback loop audit — found 4 issues: speed not connected, TTS failure silent death, no session persistence, no error recovery
+- [x] Fix: Speed setting synced to AudioCompanion on change and at start
+- [x] Fix: TTS failure recovery — Web Speech onerror + total fallback auto-advance to prevent silent death
+- [x] Fix: Stale generation guard in catch block
+- [x] Background audio persistence — sessionStorage saves phase/contentQueue/currentItemIndex/speed/repeatMode
+- [x] Session restore on mount — if AudioCompanion still playing, restore HandsFreeStudy playing phase
+- [x] Session cleanup on stop/complete
+- [x] Resume indicator — "Session in progress" banner with Resume button when AudioCompanion is still playing
+- [x] Unit tests for playback and persistence logic (20 tests pass: queue advancement, enqueue, session persistence, speed sync, TTS failure recovery)
+- [x] Recursion Pass 1: Expert Assessment (5 findings: F1 restore race, F2 skipForward queue desync, F3 speed acceptable, F4 inline logic DRY, F5 repeat mode not handled)
+- [x] Recursion Pass 2: Optimize findings (F1 restore race fixed, F2 skip queue desync fixed, F4 DRY restoreSession extracted, F5 repeat mode re-enqueue added)
+- [x] Recursion Pass 3: Validate convergence (repeat mode race condition fixed with repeatPendingRef, all 227 tests pass, no runtime errors)

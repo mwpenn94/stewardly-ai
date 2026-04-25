@@ -210,7 +210,8 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
         return;
       }
     } catch {
-      // Server TTS unavailable, fall through to Web Speech API
+      // Server TTS unavailable — fall through to Web Speech API below
+      if (generationRef.current !== thisGen) return; // stale, discard
     }
 
     // Fallback: Web Speech API
@@ -228,9 +229,31 @@ export function AudioCompanionProvider({ children }: { children: React.ReactNode
           return { ...prev, playing: false, currentItem: null, mode: "hidden" };
         });
       };
+      utterance.onerror = () => {
+        // Web Speech API also failed — auto-advance to next item
+        setState(prev => {
+          if (prev.queue.length > 0) {
+            const [next, ...rest] = prev.queue;
+            setTimeout(() => speakItemRef.current?.(next, speedRef.current), 200);
+            return { ...prev, currentItem: next, queue: rest };
+          }
+          return { ...prev, playing: false, currentItem: null, mode: "hidden" };
+        });
+      };
       window.speechSynthesis.speak(utterance);
       setState(prev => ({ ...prev, playing: true }));
+      return;
     }
+
+    // Both TTS and Web Speech API unavailable — auto-advance to prevent silent death
+    setState(prev => {
+      if (prev.queue.length > 0) {
+        const [next, ...rest] = prev.queue;
+        setTimeout(() => speakItemRef.current?.(next, speedRef.current), 200);
+        return { ...prev, currentItem: next, queue: rest };
+      }
+      return { ...prev, playing: false, currentItem: null, mode: "hidden" };
+    });
   }, []);
 
   // Keep speakItemRef in sync so onended can call it

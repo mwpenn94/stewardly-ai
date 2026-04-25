@@ -95,6 +95,28 @@ export default function HandsFreeStudy() {
   const audio = useAudioCompanion();
   const studySession = useStudySession({ discipline: "hands-free" });
 
+  // Session persistence key
+  const SESSION_KEY = "stewardly-handsfree-session";
+
+  /* ── Shared session restore helper (FINDING-4 DRY) ── */
+  const restoreSession = useCallback(() => {
+    try {
+      const raw = sessionStorage.getItem(SESSION_KEY);
+      if (!raw) return false;
+      const saved = JSON.parse(raw);
+      if (saved.phase !== "playing" || !Array.isArray(saved.contentQueue) || saved.contentQueue.length === 0) return false;
+      setContentQueue(saved.contentQueue);
+      setSpeed(saved.speed ?? 1.0);
+      setRepeatMode(saved.repeatMode ?? false);
+      setPhase("playing");
+      setIsPlaying(audio.playing);
+      playingRef.current = audio.playing;
+      const matchIdx = saved.contentQueue.findIndex((item: ContentItem) => item.key === audio.currentItem?.id);
+      setCurrentItemIndex(matchIdx >= 0 ? matchIdx : saved.currentItemIndex ?? 0);
+      return true;
+    } catch { return false; }
+  }, [audio.playing, audio.currentItem?.id]);
+
   // Settings
   const [enabledSections, setEnabledSections] = useState<SectionType[]>(["definitions", "formulas", "cases", "applications"]);
   const [repeatMode, setRepeatMode] = useState(false);
@@ -208,6 +230,11 @@ export default function HandsFreeStudy() {
     return items;
   }, [enabledSections, defsQ.data, reviewQ.data]);
 
+  /* ── Sync speed to AudioCompanion ── */
+  useEffect(() => {
+    audio.setSpeed(speed);
+  }, [speed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* ── Start playback ── */
   const startPlayback = useCallback(() => {
     const queue = buildQueue();
@@ -222,6 +249,9 @@ export default function HandsFreeStudy() {
     playingRef.current = true;
     playChime("start");
 
+    // Sync speed to AudioCompanion before enqueuing
+    audio.setSpeed(speed);
+
     // Enqueue in AudioCompanion
     const audioItems: AudioItem[] = queue.map(item => ({
       id: item.key,
@@ -235,11 +265,12 @@ export default function HandsFreeStudy() {
     audio.dismiss(); // Clear any previous state first
     audio.enqueue(audioItems);
     toast.success(`Started session with ${queue.length} items`);
-  }, [buildQueue, audio]);
+  }, [buildQueue, audio, speed]);
 
   /* ── Stop playback ── */
   const stopPlayback = useCallback(() => {
     setPhase("complete");
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
     setIsPlaying(false);
     playingRef.current = false;
     audio.dismiss();
@@ -258,7 +289,7 @@ export default function HandsFreeStudy() {
     }
   }, [isPlaying, audio]);
 
-  /* ── Skip forward ── */
+  /* ── Skip forward (FINDING-2: re-enqueue remaining to keep AudioCompanion queue in sync) ── */
   const skipForward = useCallback(() => {
     if (currentItemIndex < contentQueue.length - 1) {
       const nextIdx = currentItemIndex + 1;
@@ -271,57 +302,85 @@ export default function HandsFreeStudy() {
         playChime("section");
       }
 
-      const audioItem: AudioItem = {
-        id: contentQueue[nextIdx].key,
-        type: "definition",
-        title: contentQueue[nextIdx].label,
-        script: contentQueue[nextIdx].text,
-        contentId: contentQueue[nextIdx].key,
-      };
-      audio.play(audioItem);
+      // Dismiss + re-enqueue from the skip point so AudioCompanion's queue stays in sync
+      const remaining = contentQueue.slice(nextIdx).map(item => ({
+        id: item.key,
+        type: "definition" as const,
+        title: item.label,
+        script: item.text,
+        contentId: item.key,
+      }));
+      audio.dismiss();
+      audio.enqueue(remaining);
     } else if (repeatMode) {
       setCurrentItemIndex(0);
-      const audioItem: AudioItem = {
-        id: contentQueue[0].key,
-        type: "definition",
-        title: contentQueue[0].label,
-        script: contentQueue[0].text,
-        contentId: contentQueue[0].key,
-      };
-      audio.play(audioItem);
+      // Re-enqueue full queue for repeat
+      const allItems = contentQueue.map(item => ({
+        id: item.key,
+        type: "definition" as const,
+        title: item.label,
+        script: item.text,
+        contentId: item.key,
+      }));
+      audio.dismiss();
+      audio.enqueue(allItems);
     } else {
       stopPlayback();
     }
   }, [currentItemIndex, contentQueue, audio, repeatMode, stopPlayback, studySession]);
 
-  /* ── Skip backward ── */
+  /* ── Skip backward (FINDING-2: re-enqueue from skip point) ── */
   const skipBackward = useCallback(() => {
     if (currentItemIndex > 0) {
       const prevIdx = currentItemIndex - 1;
       setCurrentItemIndex(prevIdx);
       setCurrentSection(contentQueue[prevIdx].type);
-      const audioItem: AudioItem = {
-        id: contentQueue[prevIdx].key,
-        type: "definition",
-        title: contentQueue[prevIdx].label,
-        script: contentQueue[prevIdx].text,
-        contentId: contentQueue[prevIdx].key,
-      };
-      audio.play(audioItem);
+      // Dismiss + re-enqueue from the skip-back point
+      const remaining = contentQueue.slice(prevIdx).map(item => ({
+        id: item.key,
+        type: "definition" as const,
+        title: item.label,
+        script: item.text,
+        contentId: item.key,
+      }));
+      audio.dismiss();
+      audio.enqueue(remaining);
     }
   }, [currentItemIndex, contentQueue, audio]);
 
-  /* ── Sync with AudioCompanion auto-advance ── */
+  /* ── Sync with AudioCompanion auto-advance (FINDING-5: repeat mode support) ── */
+  const repeatPendingRef = useRef(false);
   useEffect(() => {
     if (phase !== "playing" || contentQueue.length === 0) return;
     const currentAudioId = audio.currentItem?.id;
     if (!currentAudioId) {
-      // AudioCompanion finished all items — complete the session
-      if (playingRef.current) {
-        stopPlayback();
+      // AudioCompanion finished all items
+      // Use playingRef OR repeatPendingRef to guard against the brief window
+      // where the playing-state sync effect sets playingRef=false before we re-enqueue
+      if (playingRef.current || repeatPendingRef.current) {
+        repeatPendingRef.current = false;
+        if (repeatMode) {
+          // Re-enqueue the full content queue for repeat
+          setCurrentItemIndex(0);
+          setCurrentSection(contentQueue[0].type);
+          const allItems = contentQueue.map(item => ({
+            id: item.key,
+            type: "definition" as const,
+            title: item.label,
+            script: item.text,
+            contentId: item.key,
+          }));
+          repeatPendingRef.current = true; // Mark pending until audio restarts
+          audio.enqueue(allItems);
+          playChime("section");
+        } else {
+          stopPlayback();
+        }
       }
       return;
     }
+    // Audio is playing an item — clear any repeat pending flag
+    repeatPendingRef.current = false;
     // Find the matching index in our local queue
     const matchIdx = contentQueue.findIndex(item => item.key === currentAudioId);
     if (matchIdx >= 0 && matchIdx !== currentItemIndex) {
@@ -329,7 +388,7 @@ export default function HandsFreeStudy() {
       setCurrentSection(contentQueue[matchIdx].type);
       studySession.recordItem();
     }
-  }, [audio.currentItem?.id, phase, contentQueue, currentItemIndex, studySession, stopPlayback]);
+  }, [audio.currentItem?.id, phase, contentQueue, currentItemIndex, studySession, stopPlayback, repeatMode, audio]);
 
   /* ── Sync playing state with AudioCompanion ── */
   useEffect(() => {
@@ -353,6 +412,29 @@ export default function HandsFreeStudy() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [phase, togglePause, skipForward, skipBackward, stopPlayback]);
+
+  /* ── Persist session state for background navigation ── */
+  useEffect(() => {
+    if (phase === "playing" && contentQueue.length > 0) {
+      try {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          phase, contentQueue, currentItemIndex, speed, repeatMode,
+        }));
+      } catch { /* quota or private mode */ }
+    } else if (phase === "setup" || phase === "complete") {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }, [phase, contentQueue, currentItemIndex, speed, repeatMode]);
+
+  /* ── Restore session on mount if AudioCompanion is still playing (FINDING-1: proper deps) ── */
+  const hasRestoredRef = useRef(false);
+  useEffect(() => {
+    if (hasRestoredRef.current || phase !== "setup" || !audio.currentItem) return;
+    if (restoreSession()) {
+      hasRestoredRef.current = true;
+      toast.info("Resumed hands-free session");
+    }
+  }, [audio.currentItem?.id, phase, restoreSession]);
 
   /* ── Section counts ── */
   const sectionCounts = useMemo(() => {
@@ -427,6 +509,36 @@ export default function HandsFreeStudy() {
                 exit={{ opacity: 0, y: -20 }}
                 className="max-w-3xl mx-auto space-y-8"
               >
+                {/* Resume banner — shown when AudioCompanion is still playing from a previous session */}
+                {audio.currentItem && phase === "setup" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-primary/10 border border-primary/20 rounded-xl p-4 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-none">
+                        <Volume2 className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">Session in progress</p>
+                        <p className="text-xs text-muted-foreground truncate">Now playing: {audio.currentItem.title}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (!restoreSession()) {
+                          // Fallback: just expand the audio companion
+                          audio.expand();
+                        }
+                      }}
+                      className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors flex-none"
+                    >
+                      Resume
+                    </button>
+                  </motion.div>
+                )}
+
                 {/* Stats row */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
