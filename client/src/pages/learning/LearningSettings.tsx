@@ -20,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import {
   Settings, ArrowLeft, Clock, Brain, Zap, Bell,
   Target, BookOpen, Save, RotateCcw, LogIn,
@@ -77,7 +77,6 @@ function SettingCard({ icon: Icon, title, description, children, delay = 0 }: {
 
 export default function LearningSettings() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const { toast } = useToast();
 
   const allSettingsQ = trpc.learningSocial.settings.getAll.useQuery(undefined, {
     enabled: !!isAuthenticated,
@@ -121,11 +120,11 @@ export default function LearningSettings() {
         upsertMut.mutateAsync({ settingKey: key, settingValue: JSON.stringify(value) }),
       );
       await Promise.all(promises);
-      toast({ title: "Settings saved", description: "Your study preferences have been updated." });
+      toast.success("Settings saved", { description: "Your study preferences have been updated." });
       setDirty(false);
       allSettingsQ.refetch();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message ?? "Failed to save settings", variant: "destructive" });
+      toast.error("Error", { description: err.message ?? "Failed to save settings" });
     } finally {
       setSaving(false);
     }

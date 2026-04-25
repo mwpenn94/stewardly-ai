@@ -9262,3 +9262,6 @@
 - [x] GAP-3: Learning Path Recommendations Enhancement
 - [x] GAP-4: LearningShell Settings Nav Item
 - [x] GAP-5: Activity Calendar tRPC Procedure
+
+## Pass 152 Hotfix: Deployment Build Fix
+- [x] Fix LearningSettings.tsx import — replaced non-existent @/hooks/use-toast with sonner toast (matching project convention)
