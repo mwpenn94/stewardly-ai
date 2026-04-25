@@ -202,7 +202,12 @@ export default function ConnectionMap({ nodes, edges, onNodeClick }: Props) {
 
     const { width, height } = dimensions;
     const simNodes = graphNodes.map(n => ({ ...n, x: width / 2 + (Math.random() - 0.5) * 100, y: height / 2 + (Math.random() - 0.5) * 100 }));
-    const simEdges = graphEdges.map(e => ({ ...e }));
+    // Filter edges to only include those whose source AND target exist in nodes
+    // (prevents D3 "node not found" crash when edges reference stale/missing IDs)
+    const nodeIdSet = new Set(simNodes.map((n: any) => String(n.id)));
+    const simEdges = graphEdges
+      .filter(e => nodeIdSet.has(String(e.source)) && nodeIdSet.has(String(e.target)))
+      .map(e => ({ ...e }));
 
     const simulation = forceSimulation(simNodes as any)
       .force("link", forceLink(simEdges as any).id((d: any) => d.id).distance(80).strength((d: any) => d.strength * 0.5))

@@ -1,7 +1,7 @@
 /**
  * LearningShell — Secondary sidebar navigation for all /learning/* pages.
  *
- * Renders INSIDE AppShell's main content area. Provides Knowledge Explorer-style
+ * Renders INSIDE AppShell's main content area. Provides Learning Engine
  * sidebar with grouped navigation (Overview, Mastery Modules, Exam Tracks, Quick Study)
  * plus streak/mastery stats at the bottom.
  *
@@ -125,8 +125,8 @@ function SidebarContent({
             <GraduationCap className="h-5 w-5 text-primary shrink-0" />
             {!collapsed && (
               <div>
-                <div className="text-sm font-semibold text-foreground">Knowledge</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Explorer</div>
+                <div className="text-sm font-semibold text-foreground">Learning</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Engine</div>
               </div>
             )}
           </div>
@@ -288,7 +288,7 @@ export default function LearningShell({ children, title }: LearningShellProps) {
               <Menu className="h-4 w-4" />
             </Button>
             <GraduationCap className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-foreground">Knowledge Explorer</span>
+            <span className="text-sm font-medium text-foreground">Learning Engine</span>
           </div>
 
           {children}

@@ -6107,6 +6107,43 @@ export const learningGroupMembers = mysqlTable("learning_group_members", {
   userIdx: index("idx_learning_group_members_user").on(t.userId),
 }));
 
+export const learningGroupGoals = mysqlTable("learning_group_goals", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  targetDate: timestamp("target_date"),
+  status: mysqlEnum("status", ["active", "completed", "abandoned"]).default("active").notNull(),
+  createdBy: int("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+}, (t) => ({
+  groupIdx: index("idx_learning_group_goals_group").on(t.groupId),
+}));
+
+export const learningGroupNotes = mysqlTable("learning_group_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  userId: int("user_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (t) => ({
+  groupIdx: index("idx_learning_group_notes_group").on(t.groupId),
+}));
+
+export const learningGroupActivity = mysqlTable("learning_group_activity", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: int("group_id").notNull(),
+  userId: int("user_id").notNull(),
+  action: varchar("action", { length: 100 }).notNull(),
+  detail: text("detail"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  groupIdx: index("idx_learning_group_activity_group").on(t.groupId),
+}));
+
 export const learningSharedQuizzes = mysqlTable("learning_shared_quizzes", {
   id: int("id").autoincrement().primaryKey(),
   groupId: int("group_id").notNull(),

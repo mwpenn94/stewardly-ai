@@ -1,7 +1,7 @@
 /**
- * TracksIndex.tsx — Exam & Learning Tracks (Knowledge Explorer parity)
+ * TracksIndex.tsx — Exam & Learning Tracks (Learning Engine parity)
  *
- * Matches the reference Knowledge Explorer Track Library:
+ * Matches the reference Learning Engine Track Library:
  * - Aggregate stats header (tracks, chapters, questions, flashcards)
  * - Category-grouped track cards with rich metadata
  * - Section counts, mastery progress bars, quick action buttons
@@ -81,6 +81,8 @@ export default function TracksIndex() {
   const { isAuthenticated } = useAuth();
   // Public procedure — no auth required
   const tracksQ = trpc.learning.content.listTracks.useQuery();
+  // Per-track mastery for authenticated users
+  const masteryQ = trpc.learning.mastery.summary.useQuery(undefined, { enabled: isAuthenticated });
 
   const tracks = tracksQ.data ?? [];
 
@@ -189,7 +191,7 @@ export default function TracksIndex() {
                   {/* Track cards */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {list.map((track: any, i: number) => (
-                      <TrackCard key={track.id} track={track} meta={meta} index={i} />
+                      <TrackCard key={track.id} track={track} meta={meta} index={i} masteryPct={masteryQ.data?.masteryPct ?? 0} />
                     ))}
                   </div>
                 </motion.section>
@@ -202,10 +204,9 @@ export default function TracksIndex() {
   );
 }
 
-/* ─── Track Card (matches Knowledge Explorer reference) ─── */
-function TrackCard({ track, meta, index }: { track: any; meta: any; index: number }) {
+/* ─── Track Card (matches Learning Engine reference) ─── */
+function TrackCard({ track, meta, index, masteryPct }: { track: any; meta: any; index: number; masteryPct: number }) {
   const sections = computeSectionCount(track);
-  const masteryPct = 0; // TODO: wire to actual mastery data
 
   return (
     <motion.div
@@ -257,7 +258,7 @@ function TrackCard({ track, meta, index }: { track: any; meta: any; index: numbe
 
           {/* Mastery progress */}
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-[10px] text-muted-foreground">0/{(track.flashcardCount ?? 0) + (track.questionCount ?? 0)} mastered</span>
+            <span className="text-[10px] text-muted-foreground">{Math.round(masteryPct * ((track.flashcardCount ?? 0) + (track.questionCount ?? 0)) / 100)}/{(track.flashcardCount ?? 0) + (track.questionCount ?? 0)} mastered</span>
             <Progress value={masteryPct} className="h-1 flex-1" />
             <span className="text-[10px] text-muted-foreground">{masteryPct}%</span>
           </div>

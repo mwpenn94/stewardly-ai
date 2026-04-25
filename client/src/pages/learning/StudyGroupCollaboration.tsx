@@ -1,8 +1,11 @@
 /**
- * StudyGroupCollaboration.tsx — Enhanced study group collaboration features
+ * StudyGroupCollaboration.tsx — Full study group collaboration features
  *
- * Pass 81. Wires Discussion panel to real peerGroups.messages tRPC backend.
- * Goals, Notes, and Activity panels show design-preview banners (no backend yet).
+ * All 4 panels wired to real tRPC endpoints:
+ *   Discussion → peerGroups.messages / postMessage
+ *   Goals → social.groups.listGoals / addGoal / toggleGoal
+ *   Notes → social.groups.listNotes / addNote / updateNote
+ *   Activity → social.groups.listActivity
  */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -14,21 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Target, MessageSquare, FileText, Activity,
-  Plus, Send, Users, BookOpen, Trophy, Info,
+  Plus, Send, CheckCircle2, Clock, Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
-
-/* ─── Design Preview Banner ─── */
-function DesignPreviewBanner({ feature }: { feature: string }) {
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs mb-4">
-      <Info className="h-3.5 w-3.5 shrink-0" />
-      <span><strong>{feature}</strong> is a design preview — backend coming in a future pass.</span>
-    </div>
-  );
-}
 
 /* ─── Discussion Panel (wired to peerGroups.messages) ─── */
 export function DiscussionPanel({ groupId }: { groupId: number }) {
@@ -62,7 +56,6 @@ export function DiscussionPanel({ groupId }: { groupId: number }) {
         <CardDescription>Share insights and ask questions</CardDescription>
       </CardHeader>
       <CardContent>
-        {/* New post */}
         {user && (
           <div className="flex gap-2 mb-4">
             <Textarea
@@ -76,9 +69,7 @@ export function DiscussionPanel({ groupId }: { groupId: number }) {
               className="shrink-0 self-end"
               disabled={postMut.isPending || !newPost.trim()}
               onClick={() => {
-                if (newPost.trim()) {
-                  postMut.mutate({ groupId, content: newPost.trim() });
-                }
+                if (newPost.trim()) postMut.mutate({ groupId, content: newPost.trim() });
               }}
             >
               <Send className="h-4 w-4" />
@@ -118,8 +109,40 @@ export function DiscussionPanel({ groupId }: { groupId: number }) {
   );
 }
 
-/* ─── Shared Goals Panel (design preview) ─── */
+/* ─── Shared Goals Panel (wired to groups.listGoals / addGoal / toggleGoal) ─── */
 export function SharedGoalsPanel({ groupId }: { groupId: number }) {
+  const { user } = useAuth();
+  const [showAdd, setShowAdd] = useState(false);
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const utils = trpc.useUtils();
+
+  const goalsQ = trpc.learning.social.groups.listGoals.useQuery(
+    { groupId },
+    { enabled: !!groupId },
+  );
+
+  const addMut = trpc.learning.social.groups.addGoal.useMutation({
+    onSuccess: () => {
+      utils.learning.social.groups.listGoals.invalidate({ groupId });
+      utils.learning.social.groups.listActivity.invalidate({ groupId });
+      setTitle(""); setDesc(""); setShowAdd(false);
+      toast.success("Goal added");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const toggleMut = trpc.learning.social.groups.toggleGoal.useMutation({
+    onSuccess: () => {
+      utils.learning.social.groups.listGoals.invalidate({ groupId });
+      toast.success("Goal updated");
+    },
+  });
+
+  const goals = goalsQ.data ?? [];
+  const activeGoals = goals.filter((g: any) => g.status === "active");
+  const completedGoals = goals.filter((g: any) => g.status === "completed");
+
   return (
     <Card>
       <CardHeader>
@@ -128,25 +151,122 @@ export function SharedGoalsPanel({ groupId }: { groupId: number }) {
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-teal-400" />
               Shared Goals
+              {activeGoals.length > 0 && (
+                <Badge variant="secondary" className="text-xs">{activeGoals.length} active</Badge>
+              )}
             </CardTitle>
             <CardDescription>Track group learning objectives together</CardDescription>
           </div>
+          {user && (
+            <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
+              <Plus className="h-4 w-4 mr-1" /> Add Goal
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
-        <DesignPreviewBanner feature="Shared Goals" />
-        <div className="text-center py-6 text-muted-foreground">
-          <Target className="mx-auto h-10 w-10 opacity-30 mb-2" />
-          <p className="text-sm">Set shared learning goals and track progress as a group.</p>
-          <p className="text-xs mt-1">Coming soon — group goals with progress tracking and deadlines.</p>
-        </div>
+        {showAdd && (
+          <div className="space-y-2 mb-4 p-3 border rounded-lg bg-muted/30">
+            <Input
+              placeholder="Goal title..."
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+            />
+            <Textarea
+              placeholder="Description (optional)..."
+              value={desc}
+              onChange={e => setDesc(e.target.value)}
+              className="min-h-[50px]"
+            />
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                disabled={addMut.isPending || !title.trim()}
+                onClick={() => addMut.mutate({ groupId, title: title.trim(), description: desc.trim() || undefined })}
+              >
+                {addMut.isPending ? "Adding..." : "Add Goal"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {goalsQ.isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-12" />)}
+          </div>
+        ) : goals.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <Target className="mx-auto h-10 w-10 opacity-30 mb-2" />
+            <p className="text-sm">No goals yet. Set a shared learning objective!</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {activeGoals.map((g: any) => (
+              <div key={g.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                <Checkbox
+                  checked={false}
+                  onCheckedChange={() => toggleMut.mutate({ goalId: g.id, status: "completed" })}
+                  className="mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{g.title}</p>
+                  {g.description && <p className="text-xs text-muted-foreground mt-0.5">{g.description}</p>}
+                  {g.targetDate && (
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      Due {new Date(g.targetDate).toLocaleDateString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {completedGoals.length > 0 && (
+              <>
+                <p className="text-xs text-muted-foreground mt-3 mb-1 font-medium">Completed ({completedGoals.length})</p>
+                {completedGoals.map((g: any) => (
+                  <div key={g.id} className="flex items-center gap-3 p-2 border rounded-lg opacity-60">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm line-through">{g.title}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-/* ─── Activity Feed Panel (design preview) ─── */
+/* ─── Activity Feed Panel (wired to groups.listActivity) ─── */
 export function ActivityFeedPanel({ groupId }: { groupId: number }) {
+  const activityQ = trpc.learning.social.groups.listActivity.useQuery(
+    { groupId, limit: 50 },
+    { enabled: !!groupId },
+  );
+
+  const items = activityQ.data ?? [];
+
+  const actionLabel = (action: string) => {
+    switch (action) {
+      case "added_goal": return "set a new goal";
+      case "added_note": return "shared a note";
+      case "completed_goal": return "completed a goal";
+      case "joined": return "joined the group";
+      default: return action.replace(/_/g, " ");
+    }
+  };
+
+  const actionIcon = (action: string) => {
+    switch (action) {
+      case "added_goal": return <Target className="h-3.5 w-3.5 text-teal-400" />;
+      case "added_note": return <FileText className="h-3.5 w-3.5 text-purple-400" />;
+      case "completed_goal": return <CheckCircle2 className="h-3.5 w-3.5 text-green-400" />;
+      default: return <Activity className="h-3.5 w-3.5 text-muted-foreground" />;
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -157,35 +277,180 @@ export function ActivityFeedPanel({ groupId }: { groupId: number }) {
         <CardDescription>Recent activity from group members</CardDescription>
       </CardHeader>
       <CardContent>
-        <DesignPreviewBanner feature="Activity Feed" />
-        <div className="text-center py-6 text-muted-foreground">
-          <Activity className="mx-auto h-10 w-10 opacity-30 mb-2" />
-          <p className="text-sm">See quiz completions, goal progress, and member activity.</p>
-          <p className="text-xs mt-1">Coming soon — real-time group activity stream.</p>
-        </div>
+        {activityQ.isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <Activity className="mx-auto h-10 w-10 opacity-30 mb-2" />
+            <p className="text-sm">No activity yet. Goals and notes will appear here.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item: any) => (
+              <div key={item.id} className="flex items-start gap-2 p-2 border rounded-lg">
+                <div className="mt-0.5">{actionIcon(item.action)}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm">
+                    <span className="font-medium">Member #{item.userId}</span>{" "}
+                    {actionLabel(item.action)}
+                    {item.detail && <span className="text-muted-foreground"> — {item.detail}</span>}
+                  </p>
+                  <span className="text-[10px] text-muted-foreground">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleString([], {
+                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                    }) : ""}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-/* ─── Collaborative Notes Panel (design preview) ─── */
+/* ─── Collaborative Notes Panel (wired to groups.listNotes / addNote) ─── */
 export function CollaborativeNotesPanel({ groupId }: { groupId: number }) {
+  const { user } = useAuth();
+  const [showAdd, setShowAdd] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const utils = trpc.useUtils();
+
+  const notesQ = trpc.learning.social.groups.listNotes.useQuery(
+    { groupId },
+    { enabled: !!groupId },
+  );
+
+  const addMut = trpc.learning.social.groups.addNote.useMutation({
+    onSuccess: () => {
+      utils.learning.social.groups.listNotes.invalidate({ groupId });
+      utils.learning.social.groups.listActivity.invalidate({ groupId });
+      setTitle(""); setContent(""); setShowAdd(false);
+      toast.success("Note shared");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const updateMut = trpc.learning.social.groups.updateNote.useMutation({
+    onSuccess: () => {
+      utils.learning.social.groups.listNotes.invalidate({ groupId });
+      setEditingId(null); setEditContent("");
+      toast.success("Note updated");
+    },
+  });
+
+  const notes = notesQ.data ?? [];
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-purple-400" />
-          Shared Notes
-        </CardTitle>
-        <CardDescription>Collaborative study notes for the group</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-purple-400" />
+              Shared Notes
+              {notes.length > 0 && (
+                <Badge variant="secondary" className="text-xs">{notes.length}</Badge>
+              )}
+            </CardTitle>
+            <CardDescription>Collaborative study notes for the group</CardDescription>
+          </div>
+          {user && (
+            <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
+              <Plus className="h-4 w-4 mr-1" /> Add Note
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
-        <DesignPreviewBanner feature="Shared Notes" />
-        <div className="text-center py-6 text-muted-foreground">
-          <FileText className="mx-auto h-10 w-10 opacity-30 mb-2" />
-          <p className="text-sm">Share and collaborate on study notes with your group.</p>
-          <p className="text-xs mt-1">Coming soon — collaborative note-taking with markdown support.</p>
-        </div>
+        {showAdd && (
+          <div className="space-y-2 mb-4 p-3 border rounded-lg bg-muted/30">
+            <Input
+              placeholder="Note title..."
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+            />
+            <Textarea
+              placeholder="Note content (markdown supported)..."
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+              <Button
+                size="sm"
+                disabled={addMut.isPending || !title.trim() || !content.trim()}
+                onClick={() => addMut.mutate({ groupId, title: title.trim(), content: content.trim() })}
+              >
+                {addMut.isPending ? "Sharing..." : "Share Note"}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {notesQ.isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 2 }).map((_, i) => <Skeleton key={i} className="h-20" />)}
+          </div>
+        ) : notes.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            <FileText className="mx-auto h-10 w-10 opacity-30 mb-2" />
+            <p className="text-sm">No shared notes yet. Start collaborating!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {notes.map((note: any) => (
+              <div key={note.id} className="p-3 border rounded-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <h4 className="text-sm font-medium">{note.title}</h4>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-muted-foreground">
+                      {note.updatedAt ? new Date(note.updatedAt).toLocaleDateString() : ""}
+                    </span>
+                    {user && note.userId === user.id && editingId !== note.id && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => { setEditingId(note.id); setEditContent(note.content); }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {editingId === note.id ? (
+                  <div className="space-y-2 mt-2">
+                    <Textarea
+                      value={editContent}
+                      onChange={e => setEditContent(e.target.value)}
+                      className="min-h-[80px]"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+                      <Button
+                        size="sm"
+                        disabled={updateMut.isPending}
+                        onClick={() => updateMut.mutate({ noteId: note.id, content: editContent })}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{note.content}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

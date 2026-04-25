@@ -19,6 +19,7 @@ import {
   learningSharedQuizzes, learningQuizChallenges, learningChallengeResults,
   learningBookmarks, learningPlaylists, learningPlaylistItems,
   learningPlaylistShares, learningPendingInvites, learningDiscoveryHistory,
+  learningGroupGoals, learningGroupNotes, learningGroupActivity,
 } from "../../drizzle/schema";
 
 // ─── Study Sessions ─────────────────────────────────────────────────────────
@@ -217,6 +218,85 @@ const groupsRouter = router({
       if (!db) return [];
       return db.select().from(learningGroupMembers)
         .where(eq(learningGroupMembers.groupId, input.groupId));
+    }),
+
+  // ─── Goals ───
+  listGoals: protectedProcedure
+    .input(z.object({ groupId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(learningGroupGoals)
+        .where(eq(learningGroupGoals.groupId, input.groupId))
+        .orderBy(desc(learningGroupGoals.createdAt));
+    }),
+  addGoal: protectedProcedure
+    .input(z.object({ groupId: z.number(), title: z.string().min(1).max(255), description: z.string().optional(), targetDate: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [r] = await db.insert(learningGroupGoals).values({
+        groupId: input.groupId, title: input.title, description: input.description ?? null,
+        targetDate: input.targetDate ? new Date(input.targetDate) : null, createdBy: ctx.user.id,
+      });
+      await db.insert(learningGroupActivity).values({ groupId: input.groupId, userId: ctx.user.id, action: "added_goal", detail: input.title });
+      return { id: Number(r.insertId) };
+    }),
+  toggleGoal: protectedProcedure
+    .input(z.object({ goalId: z.number(), status: z.enum(["active", "completed", "abandoned"]) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      await db.update(learningGroupGoals).set({
+        status: input.status, completedAt: input.status === "completed" ? new Date() : null,
+      }).where(eq(learningGroupGoals.id, input.goalId));
+      return { ok: true };
+    }),
+
+  // ─── Notes ───
+  listNotes: protectedProcedure
+    .input(z.object({ groupId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(learningGroupNotes)
+        .where(eq(learningGroupNotes.groupId, input.groupId))
+        .orderBy(desc(learningGroupNotes.updatedAt));
+    }),
+  addNote: protectedProcedure
+    .input(z.object({ groupId: z.number(), title: z.string().min(1).max(255), content: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [r] = await db.insert(learningGroupNotes).values({
+        groupId: input.groupId, userId: ctx.user.id, title: input.title, content: input.content,
+      });
+      await db.insert(learningGroupActivity).values({ groupId: input.groupId, userId: ctx.user.id, action: "added_note", detail: input.title });
+      return { id: Number(r.insertId) };
+    }),
+  updateNote: protectedProcedure
+    .input(z.object({ noteId: z.number(), title: z.string().optional(), content: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const updates: Record<string, any> = {};
+      if (input.title) updates.title = input.title;
+      if (input.content) updates.content = input.content;
+      if (Object.keys(updates).length === 0) return { ok: true };
+      await db.update(learningGroupNotes).set(updates).where(eq(learningGroupNotes.id, input.noteId));
+      return { ok: true };
+    }),
+
+  // ─── Activity Feed ───
+  listActivity: protectedProcedure
+    .input(z.object({ groupId: z.number(), limit: z.number().min(1).max(100).default(50) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(learningGroupActivity)
+        .where(eq(learningGroupActivity.groupId, input.groupId))
+        .orderBy(desc(learningGroupActivity.createdAt))
+        .limit(input.limit);
     }),
 });
 

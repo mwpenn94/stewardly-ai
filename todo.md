@@ -9166,3 +9166,12 @@
 - [x] Verify no console.log in production pages, no hardcoded localhost URLs
 - [x] Verify no missing alt text on images
 - [x] All 12,335 tests passing (506 test files)
+
+## Pass 89: Learning Engine UI Cleanup — Remove Old Knowledge Explorer Remnants
+- [x] Remove duplicate "Knowledge Explorer" header/hamburger from LearningShell — hamburger is consistent with app pattern (kept), branding changed to "Learning Engine"
+- [x] Audit all learning pages for old "Knowledge Explorer" branding and replace with "Learning Engine" — 4 files updated
+- [x] Remove any duplicate navigation elements — hamburger is consistent with AppShell pattern per user confirmation
+- [x] Ensure consistent design language across all Learning Engine pages — all Knowledge Explorer branding replaced, theme tokens used consistently, no hardcoded hex colors
+- [x] Verify all learning page content counts match actual DB data — merged duplicate Series 7 track (60003→2), now 20 tracks, 81 chapters, 1117 questions, 1005 flashcards
+- [x] Deep sweep all engines for any remaining partial implementations or unfulfilled items — StudyGroupCollaboration Goals/Notes/Activity wired to real DB (3 new tables, 7 new endpoints), TracksIndex masteryPct wired to mastery.summary, all design preview banners removed
+- [x] FIX BUG: ConnectionMap crashes with "node not found: 1017" — filtered edges to only include source/target IDs present in node set before D3 force init

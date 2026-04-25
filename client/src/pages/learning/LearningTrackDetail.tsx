@@ -1,7 +1,7 @@
 /**
- * LearningTrackDetail.tsx — Track Detail (Knowledge Explorer parity)
+ * LearningTrackDetail.tsx — Track Detail (Learning Engine parity)
  *
- * Matches the reference Knowledge Explorer track page:
+ * Matches the reference Learning Engine track page:
  * - Tab navigation: Practice Quiz, Flashcards, Audio Study, Chapters
  * - Exam Overview cards (Disciplines, Content, Format, Focus)
  * - Chapter sidebar on left, content rendering on right
@@ -157,7 +157,7 @@ export default function LearningTrackDetail() {
             </div>
           </div>
 
-          {/* ─── Tab navigation (Knowledge Explorer style) ─── */}
+          {/* ─── Tab navigation (Learning Engine style) ─── */}
           <div className="flex items-center gap-2 flex-wrap ml-10">
             <TabButton
               active={activeTab === "quiz"}
