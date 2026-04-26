@@ -72,6 +72,9 @@ describe("Learning Social Router", () => {
     expect(learningSocialRouter._def.procedures).toHaveProperty("audioProgress.recordBatch");
     expect(learningSocialRouter._def.procedures).toHaveProperty("audioProgress.getTrackProgress");
     expect(learningSocialRouter._def.procedures).toHaveProperty("audioProgress.getStats");
+    expect(learningSocialRouter._def.procedures).toHaveProperty("audioProgress.getDueItems");
+    expect(learningSocialRouter._def.procedures).toHaveProperty("audioProgress.recordReview");
+    expect(learningSocialRouter._def.procedures).toHaveProperty("audioProgress.getReviewStats");
   });
 
   it("covers all 15 orphaned learning tables", () => {

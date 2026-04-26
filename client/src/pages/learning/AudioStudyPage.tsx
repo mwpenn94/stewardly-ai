@@ -1,11 +1,11 @@
 /**
  * AudioStudyPage.tsx — Track-specific Audio Study player
  *
- * Pass 161. Adds:
- * - Discipline picker for cross-track content exploration
- * - Audio study progress tracking (segment-level, synced to study analytics)
- * - Progress badges on content sections showing completed segment counts
- * - Study stats summary (total time, segments completed, streak)
+ * Pass 162. Adds:
+ * - Spaced repetition integration (SM-2 variant for audio)
+ * - "Due for Review" section with priority-sorted items
+ * - Post-listen rating dialog (Easy/Good/Hard)
+ * - Review stats summary (due now, due today, mastered, total reviewed)
  *
  * Route: /learning/audio/:slug
  */
@@ -29,11 +29,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft, Headphones, Play, Pause,
   BookOpen, Layers, Loader2, LogIn, HelpCircle,
   Calculator, Briefcase, Lightbulb, Image as ImageIcon,
   GitBranch, ChevronDown, ChevronUp, CheckCircle2,
-  Timer, Flame, Filter,
+  Timer, Flame, Filter, RotateCcw, Brain, Zap, Star,
+  Clock, Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -100,10 +108,30 @@ export default function AudioStudyPage() {
     { enabled: !!isAuthenticated }
   );
 
+  // ── Spaced repetition: due items for this track ──
+  const dueItemsQ = trpc.learningSocial.audioProgress.getDueItems.useQuery(
+    { trackSlug: slug, limit: 30 },
+    { enabled: !!isAuthenticated && !!slug }
+  );
+  const reviewStatsQ = trpc.learningSocial.audioProgress.getReviewStats.useQuery(
+    { trackSlug: slug },
+    { enabled: !!isAuthenticated && !!slug }
+  );
+
   // ── Progress recording mutations ──
   const recordSegment = trpc.learningSocial.audioProgress.recordSegment.useMutation();
+  const recordReview = trpc.learningSocial.audioProgress.recordReview.useMutation();
   const recordStudySession = trpc.learningSocial.studySessions.record.useMutation();
   const utils = trpc.useUtils();
+
+  // ── Review rating dialog state ──
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [ratingItem, setRatingItem] = useState<{
+    segmentId: string; segmentTitle: string; segmentType: string; trackSlug: string;
+  } | null>(null);
+  const reviewStartRef = useRef<number>(0);
+  const reviewQueueRef = useRef<Array<{ segmentId: string; segmentTitle: string; segmentType: string; trackSlug: string }>>([]);
+  const reviewIndexRef = useRef(0);
 
   // ── Track session start time for duration calculation ──
   const sessionStartRef = useRef<number | null>(null);
@@ -453,6 +481,101 @@ export default function AudioStudyPage() {
     }
   }, [audioItems, audio]);
 
+  // ── Play a single review item and open rating dialog after ──
+  const playReviewItem = useCallback((item: { segmentId: string; segmentTitle: string; segmentType: string; trackSlug: string }) => {
+    // Find the matching AudioItem from the full list
+    const audioItem = audioItems.find(ai => ai.id === item.segmentId);
+    if (audioItem) {
+      audio.dismiss();
+      audio.enqueue([audioItem]);
+      reviewStartRef.current = Date.now();
+      // Set up the rating dialog to open when this segment completes
+      reviewQueueRef.current = [item];
+      reviewIndexRef.current = 0;
+      setRatingItem(item);
+      toast.info(`Reviewing: ${item.segmentTitle}`);
+    } else {
+      // Item not in current audioItems (different track or filtered out)
+      toast.error("This segment is not available in the current view.");
+    }
+  }, [audioItems, audio]);
+
+  // ── Start review session: enqueue all due items ──
+  const startReviewSession = useCallback(() => {
+    const dueItems = dueItemsQ.data?.dueItems ?? [];
+    if (dueItems.length === 0) {
+      toast.info("No items due for review right now.");
+      return;
+    }
+    const reviewAudioItems = dueItems
+      .map(di => audioItems.find(ai => ai.id === di.segmentId))
+      .filter((ai): ai is AudioItem => !!ai);
+    if (reviewAudioItems.length === 0) {
+      toast.error("Due items are not available in the current content view.");
+      return;
+    }
+    audio.dismiss();
+    audio.enqueue(reviewAudioItems);
+    reviewStartRef.current = Date.now();
+    // Build review queue and set first item for rating
+    reviewQueueRef.current = dueItems.map(di => ({
+      segmentId: di.segmentId, segmentTitle: di.segmentTitle,
+      segmentType: di.segmentType, trackSlug: di.trackSlug,
+    }));
+    reviewIndexRef.current = 0;
+    setRatingItem(reviewQueueRef.current[0]);
+    sessionStartRef.current = Date.now();
+    segmentsPlayedRef.current = 0;
+    toast.success(`Started review session: ${reviewAudioItems.length} items`);
+  }, [dueItemsQ.data, audioItems, audio]);
+
+  // ── Handle rating submission ──
+  const submitRating = useCallback((rating: "easy" | "good" | "hard") => {
+    if (!ratingItem) return;
+    const durationMs = Date.now() - (reviewStartRef.current || Date.now());
+    recordReview.mutate({
+      trackSlug: ratingItem.trackSlug,
+      segmentId: ratingItem.segmentId,
+      segmentType: ratingItem.segmentType,
+      segmentTitle: ratingItem.segmentTitle,
+      durationMs,
+      rating,
+    }, {
+      onSuccess: (result) => {
+        const days = Math.round(result.intervalDays);
+        const label = rating === "easy" ? "Easy" : rating === "good" ? "Good" : "Hard";
+        toast.success(`Rated ${label} — next review in ${days === 0 ? "< 1" : days} day${days !== 1 ? "s" : ""}`);
+        utils.learningSocial.audioProgress.getDueItems.invalidate();
+        utils.learningSocial.audioProgress.getReviewStats.invalidate();
+        utils.learningSocial.audioProgress.getTrackProgress.invalidate();
+      },
+    });
+    setRatingDialogOpen(false);
+    // Advance to next review item in queue
+    const nextIdx = reviewIndexRef.current + 1;
+    reviewIndexRef.current = nextIdx;
+    if (nextIdx < reviewQueueRef.current.length) {
+      setRatingItem(reviewQueueRef.current[nextIdx]);
+      reviewStartRef.current = Date.now();
+    } else {
+      setRatingItem(null);
+      reviewQueueRef.current = [];
+      reviewIndexRef.current = 0;
+    }
+  }, [ratingItem, recordReview, utils]);
+
+  // ── Open rating dialog when a review segment completes ──
+  const audioStartedRef = useRef(false);
+  useEffect(() => {
+    if (!ratingItem) { audioStartedRef.current = false; return; }
+    if (audio.playing) { audioStartedRef.current = true; return; }
+    // Only open dialog if audio actually started and then stopped
+    if (audioStartedRef.current && !audio.playing) {
+      setRatingDialogOpen(true);
+      audioStartedRef.current = false;
+    }
+  }, [ratingItem, audio.playing]);
+
   const isDataLoading = trackQ.isLoading || chaptersQ.isLoading;
   const isContentLoading = contentQ.isLoading;
   const isLoading = isDataLoading || isContentLoading;
@@ -636,6 +759,103 @@ export default function AudioStudyPage() {
                       <Progress value={(totalCompleted / audioItems.length) * 100} className="h-1.5" />
                     </div>
                   )}
+                </motion.div>
+              )}
+
+              {/* ── DUE FOR REVIEW (Spaced Repetition) ── */}
+              {(dueItemsQ.data && dueItemsQ.data.totalDue > 0) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-amber-500/5 via-orange-500/5 to-red-500/5 border border-amber-500/20 rounded-xl overflow-hidden"
+                >
+                  <div className="p-3 sm:p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                          <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-semibold" style={{ fontFamily: "var(--font-display)" }}>
+                            Due for Review
+                          </h3>
+                          <p className="text-[10px] text-muted-foreground">
+                            {dueItemsQ.data.totalDue} item{dueItemsQ.data.totalDue !== 1 ? "s" : ""} ready to reinforce
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-[10px] h-7 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                        onClick={startReviewSession}
+                        aria-label={`Start review session with ${dueItemsQ.data.totalDue} items`}
+                      >
+                        <Brain className="w-3 h-3" /> Start Review
+                      </Button>
+                    </div>
+                    {/* Review stats mini-bar */}
+                    {reviewStatsQ.data && (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                        <div className="text-center p-1.5 bg-background/40 rounded-lg">
+                          <div className="text-sm font-bold text-amber-400">{reviewStatsQ.data.dueNow}</div>
+                          <div className="text-[9px] text-muted-foreground">Due Now</div>
+                        </div>
+                        <div className="text-center p-1.5 bg-background/40 rounded-lg">
+                          <div className="text-sm font-bold text-orange-400">{reviewStatsQ.data.dueToday}</div>
+                          <div className="text-[9px] text-muted-foreground">Due Today</div>
+                        </div>
+                        <div className="text-center p-1.5 bg-background/40 rounded-lg">
+                          <div className="text-sm font-bold text-emerald-400">{reviewStatsQ.data.mastered}</div>
+                          <div className="text-[9px] text-muted-foreground">Mastered</div>
+                        </div>
+                        <div className="text-center p-1.5 bg-background/40 rounded-lg">
+                          <div className="text-sm font-bold text-blue-400">{reviewStatsQ.data.totalReviewed}</div>
+                          <div className="text-[9px] text-muted-foreground">Reviewed</div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Due items list (max 5 visible, rest behind Start Review) */}
+                    <div className="space-y-1">
+                      {dueItemsQ.data.dueItems.slice(0, 5).map((item, i) => {
+                        const overdueDays = Math.max(0, Math.floor((Date.now() - new Date(item.nextReviewAt!).getTime()) / 86400000));
+                        return (
+                          <motion.div
+                            key={item.segmentId}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                            className="flex items-center gap-2 p-2 bg-background/30 border border-border/30 rounded-lg hover:bg-background/50 transition-colors group"
+                          >
+                            <div className="w-5 h-5 rounded flex items-center justify-center flex-none bg-amber-500/10">
+                              <Clock className="w-3 h-3 text-amber-400" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] font-medium truncate">{item.segmentTitle}</p>
+                              <p className="text-[9px] text-muted-foreground">
+                                {item.segmentType} · {item.repetitions} review{item.repetitions !== 1 ? "s" : ""}
+                                {overdueDays > 0 && <span className="text-amber-400"> · {overdueDays}d overdue</span>}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                              onClick={() => playReviewItem(item)}
+                              aria-label={`Review ${item.segmentTitle}`}
+                            >
+                              <Play className="w-3 h-3" />
+                            </Button>
+                          </motion.div>
+                        );
+                      })}
+                      {dueItemsQ.data.totalDue > 5 && (
+                        <p className="text-[10px] text-muted-foreground text-center pt-1">
+                          +{dueItemsQ.data.totalDue - 5} more — click Start Review to begin
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
@@ -962,6 +1182,59 @@ export default function AudioStudyPage() {
           )}
         </div>
       </div>
+
+      {/* ── RATING DIALOG (Spaced Repetition) ── */}
+      <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Brain className="w-4 h-4 text-amber-400" />
+              Rate Your Recall
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              How well did you remember <strong>{ratingItem?.segmentTitle}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-3 pt-2">
+            <Button
+              variant="outline"
+              className="flex-col gap-1.5 h-auto py-4 border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50 transition-all"
+              onClick={() => submitRating("hard")}
+            >
+              <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-red-400" />
+              </div>
+              <span className="text-xs font-semibold text-red-400">Hard</span>
+              <span className="text-[9px] text-muted-foreground">Review soon</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-col gap-1.5 h-auto py-4 border-amber-500/30 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all"
+              onClick={() => submitRating("good")}
+            >
+              <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <Star className="w-4 h-4 text-amber-400" />
+              </div>
+              <span className="text-xs font-semibold text-amber-400">Good</span>
+              <span className="text-[9px] text-muted-foreground">Normal pace</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-col gap-1.5 h-auto py-4 border-emerald-500/30 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all"
+              onClick={() => submitRating("easy")}
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-emerald-400" />
+              </div>
+              <span className="text-xs font-semibold text-emerald-400">Easy</span>
+              <span className="text-[9px] text-muted-foreground">Extend interval</span>
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground text-center mt-1">
+            Your rating adjusts when this content appears again for review.
+          </p>
+        </DialogContent>
+      </Dialog>
     </LearningShell>
   );
 }

@@ -12,7 +12,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { eq, and, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, desc, inArray, sql, lte, isNotNull, asc, gte } from "drizzle-orm";
 import {
   learningStudySessions, learningAchievements, learningSettings,
   learningAiQuizQuestions, learningStudyGroups, learningGroupMembers,
@@ -30,15 +30,17 @@ const audioProgressRouter = router({
   /** Record a completed audio segment */
   recordSegment: protectedProcedure
     .input(z.object({
-      trackSlug: z.string().min(1),
-      segmentId: z.string().min(1),
-      segmentType: z.string().min(1),
+      trackSlug: z.string().min(1).max(128),
+      segmentId: z.string().min(1).max(255),
+      segmentType: z.string().min(1).max(64),
       segmentTitle: z.string().min(1).max(512),
       durationMs: z.number().int().min(0).default(0),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const now = new Date();
+      const nextReview = new Date(now.getTime() + 86400000); // +1 day
       const [r] = await db.insert(audioStudyProgress).values({
         userId: ctx.user.id,
         trackSlug: input.trackSlug,
@@ -46,6 +48,10 @@ const audioProgressRouter = router({
         segmentType: input.segmentType,
         segmentTitle: input.segmentTitle,
         durationMs: input.durationMs,
+        nextReviewAt: nextReview,
+        intervalDays: 1,
+        easeFactor: 2.5,
+        repetitions: 0,
       });
       return { id: Number(r.insertId) };
     }),
@@ -54,9 +60,9 @@ const audioProgressRouter = router({
   recordBatch: protectedProcedure
     .input(z.object({
       segments: z.array(z.object({
-        trackSlug: z.string().min(1),
-        segmentId: z.string().min(1),
-        segmentType: z.string().min(1),
+        trackSlug: z.string().min(1).max(128),
+        segmentId: z.string().min(1).max(255),
+        segmentType: z.string().min(1).max(64),
         segmentTitle: z.string().min(1).max(512),
         durationMs: z.number().int().min(0).default(0),
       })).min(1).max(500),
@@ -141,6 +147,150 @@ const audioProgressRouter = router({
       streakDays: streak,
     };
   }),
+  /** Get segments due for spaced repetition review */
+  getDueItems: protectedProcedure
+    .input(z.object({
+      trackSlug: z.string().min(1).optional(),
+      limit: z.number().int().min(1).max(100).default(30),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { dueItems: [], totalDue: 0 };
+      const now = new Date();
+      const conditions = [
+        eq(audioStudyProgress.userId, ctx.user.id),
+        isNotNull(audioStudyProgress.nextReviewAt),
+        lte(audioStudyProgress.nextReviewAt, now),
+      ];
+      if (input.trackSlug) {
+        conditions.push(eq(audioStudyProgress.trackSlug, input.trackSlug));
+      }
+      const [countRow] = await db.select({
+        total: sql<number>`COUNT(DISTINCT ${audioStudyProgress.segmentId})`.as("total"),
+      }).from(audioStudyProgress)
+        .where(and(...conditions));
+      // Fetch rows ordered by soonest due, over-fetch to dedupe by segmentId
+      const rows = await db.select().from(audioStudyProgress)
+        .where(and(...conditions))
+        .orderBy(asc(audioStudyProgress.nextReviewAt))
+        .limit(input.limit * 3);
+      const seen = new Set<string>();
+      const deduped = rows.filter(r => {
+        if (seen.has(r.segmentId)) return false;
+        seen.add(r.segmentId);
+        return true;
+      }).slice(0, input.limit);
+      return {
+        dueItems: deduped.map(r => ({
+          segmentId: r.segmentId,
+          segmentTitle: r.segmentTitle,
+          segmentType: r.segmentType,
+          trackSlug: r.trackSlug,
+          nextReviewAt: r.nextReviewAt,
+          intervalDays: r.intervalDays ?? 1,
+          easeFactor: r.easeFactor ?? 2.5,
+          repetitions: r.repetitions ?? 0,
+          lastListenedAt: r.completedAt,
+        })),
+        totalDue: Number(countRow.total),
+      };
+    }),
+  /** Record a review with self-rating to update spaced repetition schedule */
+  recordReview: protectedProcedure
+    .input(z.object({
+      trackSlug: z.string().min(1).max(128),
+      segmentId: z.string().min(1).max(255),
+      segmentType: z.string().min(1).max(64),
+      segmentTitle: z.string().min(1).max(512),
+      durationMs: z.number().int().min(0).default(0),
+      rating: z.enum(["easy", "good", "hard"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      // Get the latest row for this segment to read current SR state
+      const [latest] = await db.select().from(audioStudyProgress)
+        .where(and(
+          eq(audioStudyProgress.userId, ctx.user.id),
+          eq(audioStudyProgress.segmentId, input.segmentId),
+        ))
+        .orderBy(desc(audioStudyProgress.completedAt))
+        .limit(1);
+      // SM-2 algorithm
+      let interval = latest?.intervalDays ?? 1;
+      let ef = latest?.easeFactor ?? 2.5;
+      let reps = (latest?.repetitions ?? 0) + 1;
+      switch (input.rating) {
+        case "easy":
+          interval = Math.min(interval * 2.5, 365);
+          ef = Math.min(ef + 0.15, 3.0);
+          break;
+        case "good":
+          interval = Math.min(interval * ef, 365);
+          break;
+        case "hard":
+          interval = Math.max(interval * 0.5, 0.5);
+          ef = Math.max(ef - 0.2, 1.3);
+          break;
+      }
+      const now = new Date();
+      const nextReview = new Date(now.getTime() + interval * 86400000);
+      const [r] = await db.insert(audioStudyProgress).values({
+        userId: ctx.user.id,
+        trackSlug: input.trackSlug,
+        segmentId: input.segmentId,
+        segmentType: input.segmentType,
+        segmentTitle: input.segmentTitle,
+        durationMs: input.durationMs,
+        nextReviewAt: nextReview,
+        intervalDays: interval,
+        easeFactor: ef,
+        repetitions: reps,
+      });
+      return { id: Number(r.insertId), nextReviewAt: nextReview, intervalDays: interval };
+    }),
+  /** Get aggregate review stats for the user */
+  getReviewStats: protectedProcedure
+    .input(z.object({ trackSlug: z.string().min(1).optional() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { dueNow: 0, dueToday: 0, mastered: 0, totalReviewed: 0 };
+      const now = new Date();
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
+      const baseConditions = [
+        eq(audioStudyProgress.userId, ctx.user.id),
+        isNotNull(audioStudyProgress.nextReviewAt),
+      ];
+      if (input?.trackSlug) {
+        baseConditions.push(eq(audioStudyProgress.trackSlug, input.trackSlug));
+      }
+      const [dueNowRow] = await db.select({
+        cnt: sql<number>`COUNT(DISTINCT ${audioStudyProgress.segmentId})`.as("cnt"),
+      }).from(audioStudyProgress)
+        .where(and(...baseConditions, lte(audioStudyProgress.nextReviewAt, now)));
+      const [dueTodayRow] = await db.select({
+        cnt: sql<number>`COUNT(DISTINCT ${audioStudyProgress.segmentId})`.as("cnt"),
+      }).from(audioStudyProgress)
+        .where(and(...baseConditions, lte(audioStudyProgress.nextReviewAt, endOfDay)));
+      const [masteredRow] = await db.select({
+        cnt: sql<number>`COUNT(DISTINCT ${audioStudyProgress.segmentId})`.as("cnt"),
+      }).from(audioStudyProgress)
+        .where(and(
+          ...baseConditions,
+          gte(audioStudyProgress.intervalDays, 21),
+        ));
+      const [totalRow] = await db.select({
+        cnt: sql<number>`COUNT(DISTINCT ${audioStudyProgress.segmentId})`.as("cnt"),
+      }).from(audioStudyProgress)
+        .where(and(...baseConditions));
+      return {
+        dueNow: Number(dueNowRow.cnt),
+        dueToday: Number(dueTodayRow.cnt),
+        mastered: Number(masteredRow.cnt),
+        totalReviewed: Number(totalRow.cnt),
+      };
+    }),
 });
 
 // ─── Study Sessions ─────────────────────────────────────────────────────────

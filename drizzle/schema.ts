@@ -8002,9 +8002,15 @@ export const audioStudyProgress = mysqlTable("audio_study_progress", {
   segmentTitle: varchar("segment_title", { length: 512 }).notNull(),
   durationMs: int("duration_ms").default(0).notNull(),
   completedAt: timestamp("completed_at").defaultNow().notNull(),
+  // Spaced repetition fields (SM-2 variant)
+  nextReviewAt: timestamp("next_review_at"),
+  intervalDays: float("interval_days").default(1),
+  easeFactor: float("ease_factor").default(2.5),
+  repetitions: int("repetitions").default(0),
 }, (t) => ({
   userTrackIdx: index("idx_asp_user_track").on(t.userId, t.trackSlug),
   completedIdx: index("idx_asp_completed").on(t.completedAt),
+  dueReviewIdx: index("idx_asp_due_review").on(t.userId, t.nextReviewAt),
 }));
 export type AudioStudyProgressRecord = typeof audioStudyProgress.$inferSelect;
 export type InsertAudioStudyProgress = typeof audioStudyProgress.$inferInsert;

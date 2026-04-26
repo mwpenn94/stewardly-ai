@@ -9449,3 +9449,31 @@
 - [x] Validation Pass 2 (fix: removed sql import shadow in getStats)
 - [x] Convergence Pass 3 (clean pass 1 of 2)
 - [x] Convergence Pass 4 (clean pass 2 of 2) — CONVERGENCE CONFIRMED
+
+## Pass 162 — Spaced Repetition Integration for Audio Study (Recursive Convergence)
+
+### Feature: Spaced Repetition — Due for Review
+- [x] Design spaced repetition algorithm (SM-2 variant adapted for audio segments)
+- [x] Add review scheduling fields to audio_study_progress table (nextReviewAt, interval, easeFactor, repetitions)
+- [x] tRPC procedure: audioProgress.getDueItems (get segments due for review for a track)
+- [x] tRPC procedure: audioProgress.recordReview (update review scheduling after re-listen)
+- [x] tRPC procedure: audioProgress.getReviewStats (aggregate review stats — due today, upcoming, mastered)
+- [x] Update recordSegment to initialize spaced repetition fields on first listen
+- [x] Frontend: "Due for Review" section on AudioStudyPage with priority-sorted items
+- [x] Frontend: Review mode — one-click "Start Review" that queues due items in AudioCompanion
+- [x] Frontend: Post-review self-rating (Easy/Good/Hard) to adjust intervals via rating dialog
+- [x] Frontend: Review stats bar showing due today, upcoming (7d), mastered, total reviewed
+- [x] Frontend: Review queue advancement — multi-item review sessions with auto-advance
+- [x] Frontend: Individual item review via play button on due items list
+- [x] Integration: wire review completion to existing progress tracking + session recording
+- [x] Security: Zod max length limits on all string inputs matching DB column sizes
+
+### Recursive Convergence Passes
+- [x] Expert Assessment pass (audit codebase, design algorithm)
+- [x] Optimization Pass 1 (code quality, type safety, performance — 1 fix: rating dialog polling → reactive useEffect)
+- [x] Validation Pass 1 (tests: 13/13 passed, runtime verification, edge cases)
+- [x] Optimization Pass 2 (accessibility: aria-labels, mobile: responsive grids, touch-friendly play buttons)
+- [x] Validation Pass 2 (clean pass 1 of 2 — pre-reset)
+- [x] Convergence Pass 3 (fix: review queue advancement bug + Zod max limits — counter reset)
+- [x] Convergence Pass 4 (clean pass 1 of 2 after reset — error propagation, boundary conditions, SM-2 math, race conditions)
+- [x] Convergence Pass 5 (clean pass 2 of 2 — user journey, data persistence, extensibility) — CONVERGENCE CONFIRMED
