@@ -13,6 +13,7 @@ import { requireDb } from "../db";
 import { users, billingEvents } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { PLANS, PLAN_ORDER, getPlan, getPlanPrice } from "./products";
+import { generateStripeInvoice, syncPricingToStripe } from "./invoiceIntegration";
 
 function getStripe() {
   if (!ENV.stripeSecretKey) {
@@ -172,5 +173,19 @@ export const billingRouter = router({
         .where(eq(billingEvents.userId, ctx.user!.id))
         .orderBy(desc(billingEvents.createdAt))
         .limit(input?.limit ?? 20);
+    }),
+  /** Generate a usage-based invoice using the pricing engine */
+  generateInvoice: protectedProcedure
+    .input(z.object({
+      periodStart: z.number(),
+      periodEnd: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await requireDb();
+      const [user] = await db.select({ stripeCustomerId: users.stripeCustomerId }).from(users).where(eq(users.id, ctx.user!.id));
+      if (!user?.stripeCustomerId) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "No billing account found." });
+      }
+      return generateStripeInvoice(ctx.user!.id, user.stripeCustomerId, input.periodStart, input.periodEnd);
     }),
 });

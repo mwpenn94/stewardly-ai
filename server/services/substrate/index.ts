@@ -68,6 +68,8 @@ export {
 export {
   routeRequest,
   registerBYOProvider,
+  testBYOEndpoint,
+  getBYOProviders,
   getRoutingStats,
   getCircuitBreakerStatus,
   getRecentDecisions,
@@ -197,3 +199,23 @@ export {
   type AssembledPrompt,
   type MemorySlot,
 } from "./promptEngine";
+
+// M&V Persistence
+export {
+  persistSavingsEvent,
+  persistSavingsEventsBatch,
+  queryUserEvents,
+  materializePeriodSummary,
+  getLatestPeriodSummary,
+  getUserPeriodSummaries,
+  getPlatformSavingsMetrics,
+} from "./mvPersistence";
+
+
+// Memory Persistence (DB bridge)
+export {
+  persistConsolidatedMemories,
+  hydrateWorkingMemory,
+  saveEpisode,
+  getPersistedMemoryStats,
+} from "./memoryPersistence";

@@ -81,7 +81,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       {
         label: "Wealth Engine", icon: Calculator, path: "/wealth-engine",
-        match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan", "/financial-twin", "/products", "/my-work", "/tax-projector", "/insurance-applications", "/advisory-execution", "/carrier-connector", "/suitability-panel", "/sovereign-study"],
+        match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan", "/financial-twin", "/products", "/my-work", "/tax-projector", "/insurance-applications", "/advisory-execution", "/carrier-connector", "/suitability-panel", "/sovereign-study", "/mv-dashboard"],
       },
     ],
   },
@@ -256,7 +256,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
     );
 
   return (
-    <div className="flex flex-col h-full bg-sidebar text-foreground">
+    <div className="flex flex-col h-full bg-sidebar/80 backdrop-blur-xl text-foreground glass-surface">
       <div className="flex items-center justify-between px-2.5 py-2 flex-none border-b border-border">
         {!collapsed && (
           <span className="font-heading text-[14px] font-bold tracking-tight">Stewardly</span>

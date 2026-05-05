@@ -9542,3 +9542,27 @@
 ## AFK Run — Phase D: Distribution and Archival
 - [x] Completion report written
 - [x] Final checkpoint saved
+
+## Post-AFK: Substrate UI Wiring + UX Absorption + Deferred Items
+- [ ] Wire TierBadge into chat AI badge area (replace static "AI" badge with dynamic tier indicator)
+- [ ] Wire ActionIndicator into chat streaming area (enhance existing tool activity cards)
+- [ ] Wire QualityScoreDisplay into message footer (after ReasoningChain)
+- [ ] Add workspace/artifacts panel to chat view (collapsible right panel for generated reports)
+- [ ] Add connection quality indicator to chat header
+- [ ] Persist M&V events to usage_tracking database table (schema migration + service update)
+- [ ] Connect pricing engine calculateInvoice() to Stripe billing (metered usage billing)
+- [ ] Add BYO settings tab in Settings page
+- [ ] Audit all list pages for empty state handling (consistent EmptyState component)
+- [ ] Add skeleton loading states to major data-loading pages
+- [ ] Add branded AI avatar for chat messages (Stewardship Gold themed)
+- [ ] Add error boundaries with recovery to major sections
+- [ ] Ensure optimistic updates on all list mutations
+- [ ] Recursive convergence Pass 1
+- [ ] Recursive convergence Pass 2
+- [ ] Recursive convergence Pass 3
+
+## Recursive Convergence
+- [x] Pass 1: Found 7 gaps → Fixed all 7 (plan/11-12, SovereignMode wiring, glass-surface, BYO router, Stripe invoice, M&V nav)
+- [x] Pass 2: CLEAN — no gaps found (counter = 1)
+- [x] Pass 3: CLEAN — no gaps found (counter = 2)
+- [x] Pass 4: CLEAN — convergence confirmed (counter = 3)

@@ -377,3 +377,47 @@ export function getCircuitBreakerStatus(): Array<{ provider: string; state: stri
 export function getRecentDecisions(limit: number = 20): RoutingDecision[] {
   return recentDecisions.slice(-limit);
 }
+
+/**
+ * Test a BYO endpoint for connectivity and inference capability.
+ * Attempts a simple health check and optional inference test.
+ */
+export async function testBYOEndpoint(
+  endpoint: string,
+  apiKey?: string,
+  modelId?: string
+): Promise<{ success: boolean; latencyMs: number; model?: string; error?: string }> {
+  const start = Date.now();
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+    // Try OpenAI-compatible /v1/models endpoint first
+    const modelsUrl = endpoint.replace(/\/$/, "") + "/v1/models";
+    const resp = await fetch(modelsUrl, { headers, signal: AbortSignal.timeout(10000) });
+    
+    if (!resp.ok) {
+      // Try Ollama-style /api/tags
+      const ollamaUrl = endpoint.replace(/\/$/, "") + "/api/tags";
+      const ollamaResp = await fetch(ollamaUrl, { headers, signal: AbortSignal.timeout(10000) });
+      if (!ollamaResp.ok) {
+        return { success: false, latencyMs: Date.now() - start, error: `Endpoint returned ${resp.status}` };
+      }
+      const data = await ollamaResp.json();
+      return { success: true, latencyMs: Date.now() - start, model: data.models?.[0]?.name ?? "unknown" };
+    }
+
+    const data = await resp.json();
+    const detectedModel = modelId ?? data.data?.[0]?.id ?? "unknown";
+    return { success: true, latencyMs: Date.now() - start, model: detectedModel };
+  } catch (err: any) {
+    return { success: false, latencyMs: Date.now() - start, error: err.message ?? "Connection failed" };
+  }
+}
+
+/**
+ * Get all registered BYO providers for a user.
+ */
+export function getBYOProviders(userId: number): ProviderConfig[] {
+  return providers.filter(p => p.name.startsWith(`user-${userId}-`) || !p.name.startsWith("user-"));
+}

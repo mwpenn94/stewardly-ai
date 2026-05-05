@@ -29,8 +29,9 @@ import VoiceTab from "./settings/VoiceTab";
 import ConnectedAccountsTab from "./settings/ConnectedAccountsTab";
 import ShortcutsTab from "./settings/ShortcutsTab";
 import { LanguageTab } from "./settings/LanguageTab";
+import BYOModelTab from "./settings/BYOModelTab";
 
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts" | "shortcuts" | "language";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts" | "shortcuts" | "language" | "byo-model";
 
 interface NavItem { id: SettingsTab; label: string; icon: React.ElementType; slug: string; }
 interface NavSection { group: string; items: NavItem[]; }
@@ -44,6 +45,7 @@ const NAV_SECTIONS: NavSection[] = [
   { group: "AI & Knowledge", items: [
     { id: "knowledge", label: "Knowledge Base", icon: FileText, slug: "knowledge" },
     { id: "ai-tuning", label: "AI Tuning", icon: Sparkles, slug: "ai-tuning" },
+    { id: "byo-model" as SettingsTab, label: "BYO Model", icon: Brain, slug: "byo-model" },
     { id: "voice", label: "Voice & Speech", icon: Mic, slug: "voice" },
   ]},
   { group: "Preferences", items: [
@@ -236,6 +238,7 @@ export default function SettingsHub() {
                 {activeTab === "data-sharing" && <DataSharingTab />}
                 {activeTab === "shortcuts" && <ShortcutsTab />}
                 {activeTab === "language" && <LanguageTab />}
+                {activeTab === "byo-model" && <BYOModelTab />}
               </>
             )}
           </div>

@@ -8014,3 +8014,60 @@ export const audioStudyProgress = mysqlTable("audio_study_progress", {
 }));
 export type AudioStudyProgressRecord = typeof audioStudyProgress.$inferSelect;
 export type InsertAudioStudyProgress = typeof audioStudyProgress.$inferInsert;
+
+// ─── M&V (MEASUREMENT & VERIFICATION) SAVINGS EVENTS ──────────────────────
+export const mvSavingsEvents = mysqlTable("mv_savings_events", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("event_id", { length: 64 }).notNull(),
+  userId: int("user_id").notNull(),
+  category: mysqlEnum("mv_category", [
+    "ai_cost_optimization",
+    "time_savings",
+    "search_efficiency",
+    "document_processing",
+    "compliance_automation",
+    "memory_context_reduction",
+  ]).notNull(),
+  actualCost: decimal("actual_cost", { precision: 10, scale: 6 }).notNull(),
+  baselineCost: decimal("baseline_cost", { precision: 10, scale: 6 }).notNull(),
+  savings: decimal("savings", { precision: 10, scale: 6 }).notNull(),
+  operation: varchar("operation", { length: 128 }).notNull(),
+  model: varchar("model", { length: 100 }),
+  tokensUsed: int("tokens_used"),
+  tokensBaseline: int("tokens_baseline"),
+  timeMs: int("time_ms"),
+  baselineTimeMs: int("baseline_time_ms"),
+  metadata: json("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userCategoryIdx: index("idx_mv_user_category").on(t.userId, t.category),
+  userDateIdx: index("idx_mv_user_date").on(t.userId, t.createdAt),
+  categoryDateIdx: index("idx_mv_category_date").on(t.category, t.createdAt),
+}));
+export type MVSavingsEvent = typeof mvSavingsEvents.$inferSelect;
+export type InsertMVSavingsEvent = typeof mvSavingsEvents.$inferInsert;
+
+// ─── M&V PERIOD SUMMARIES (materialized for billing) ──────────────────────
+export const mvPeriodSummaries = mysqlTable("mv_period_summaries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  totalSavings: decimal("total_savings", { precision: 12, scale: 4 }).notNull(),
+  aiCostOptimization: decimal("ai_cost_optimization_amt", { precision: 10, scale: 4 }).default("0"),
+  timeSavings: decimal("time_savings_amt", { precision: 10, scale: 4 }).default("0"),
+  searchEfficiency: decimal("search_efficiency_amt", { precision: 10, scale: 4 }).default("0"),
+  documentProcessing: decimal("document_processing_amt", { precision: 10, scale: 4 }).default("0"),
+  complianceAutomation: decimal("compliance_automation_amt", { precision: 10, scale: 4 }).default("0"),
+  memoryContextReduction: decimal("memory_context_reduction_amt", { precision: 10, scale: 4 }).default("0"),
+  eventCount: int("event_count").default(0).notNull(),
+  customerSavingsShare: decimal("customer_savings_share", { precision: 5, scale: 4 }).default("0.3000"),
+  creditAmount: decimal("credit_amount", { precision: 10, scale: 4 }).default("0"),
+  invoiceId: varchar("invoice_id", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => ({
+  userPeriodIdx: index("idx_mvps_user_period").on(t.userId, t.periodStart),
+  invoiceIdx: index("idx_mvps_invoice").on(t.invoiceId),
+}));
+export type MVPeriodSummary = typeof mvPeriodSummaries.$inferSelect;
+export type InsertMVPeriodSummary = typeof mvPeriodSummaries.$inferInsert;

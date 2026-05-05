@@ -15,6 +15,9 @@ import {
   getRecentDecisions,
   searchCascade,
   classify,
+  registerBYOProvider,
+  testBYOEndpoint,
+  getBYOProviders,
 } from "../services/substrate";
 
 export const substrateRouter = router({
@@ -101,5 +104,44 @@ export const substrateRouter = router({
         dateRange: input.dateRange,
         categories: input.categories,
       });
+    }),
+
+  // ─── BYO Setup Agent ─────────────────────────────────────────────────
+  /** Register a BYO provider (local model, enterprise key, etc.) */
+  registerBYO: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(100),
+      type: z.enum(["ollama", "lm-studio", "llama-cpp", "vllm", "tgi", "openai-compatible", "azure-openai", "anthropic-enterprise"]),
+      endpoint: z.string().url(),
+      apiKey: z.string().optional(),
+      modelId: z.string().optional(),
+      priority: z.number().min(1).max(10).default(5),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return registerBYOProvider(ctx.user.id, {
+        name: input.name,
+        type: input.type,
+        endpoint: input.endpoint,
+        apiKey: input.apiKey,
+        modelId: input.modelId,
+        priority: input.priority,
+      });
+    }),
+
+  /** Test a BYO endpoint for connectivity and inference capability */
+  testBYO: protectedProcedure
+    .input(z.object({
+      endpoint: z.string().url(),
+      apiKey: z.string().optional(),
+      modelId: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return testBYOEndpoint(input.endpoint, input.apiKey, input.modelId);
+    }),
+
+  /** Get all registered BYO providers for the current user */
+  getBYOProviders: protectedProcedure
+    .query(async ({ ctx }) => {
+      return getBYOProviders(ctx.user.id);
     }),
 });

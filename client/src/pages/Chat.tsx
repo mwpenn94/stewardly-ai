@@ -91,6 +91,12 @@ import { parseFocusModes, serializeFocusModes } from "@shared/types";
 import { parseIntent } from "@/lib/multisensory/intentParser";
 import { dispatchIntent } from "@/lib/multisensory/useGlobalShortcuts";
 import { announce } from "@/lib/multisensory/LiveAnnouncer";
+import { TierBadge } from "@/components/substrate/TierBadge";
+import { ActionIndicator, type AgentState, type ActiveTool } from "@/components/substrate/ActionIndicator";
+import { QualityScoreDisplay } from "@/components/substrate/QualityScoreDisplay";
+import { ConnectionQualityIndicator } from "@/components/substrate/ConnectionQualityIndicator";
+import { WorkspaceArtifactsPanel, type Artifact } from "@/components/substrate/WorkspaceArtifactsPanel";
+import { SovereignModeIndicator } from "@/components/substrate/SovereignModeIndicator";
 
 // ─── RICH MEDIA EXTRACTION (client-side fallback) ─────────────────
 // Mirrors server/services/richMediaService extractMediaFromResponse for the case
@@ -253,6 +259,9 @@ export default function Chat() {
   const [useStreaming, setUseStreaming] = useState(true);
   const [streamingContent, setStreamingContent] = useState("");
   const [activeToolCalls, setActiveToolCalls] = useState<Array<{ toolName: string; status: string; timestamp: number }>>([]);
+  // Workspace Artifacts Panel (manus-next-app UX absorption)
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showFocusPicker, setShowFocusPicker] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -2259,6 +2268,8 @@ export default function Chat() {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-1.5">
+            <ConnectionQualityIndicator isStreaming={isStreaming} />
+            <SovereignModeIndicator mode={currentModel?.includes('local') || currentModel?.includes('ollama') ? 'local' : 'cloud'} />
             <NotificationBell
               notifications={notifications}
               unreadCount={unreadCount}
@@ -2371,13 +2382,17 @@ export default function Chat() {
                       </div>
                     ) : (
                       <div>
-                        {/* AI Badge (2B) */}
+                        {/* AI Badge (2B) — Substrate TierBadge replaces static badge */}
                         <div className="flex items-center gap-1.5 mb-1">
-                          <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-accent/70 bg-accent/8 px-1.5 py-0.5 rounded">
-                            <Sparkles className="w-2.5 h-2.5" /> AI
-                          </span>
+                          <TierBadge
+                            model={msg.model || msg.metadata?.model as string || undefined}
+                            costTier={msg.metadata?.costTier as any || "standard"}
+                            routingTier={msg.metadata?.routingTier as any || "CLOUD"}
+                            reason={msg.metadata?.routingReason as string || undefined}
+                            isBYO={!!msg.metadata?.isBYO}
+                            className="scale-90 origin-left"
+                          />
                           {msg.createdAt && <span className="text-[9px] text-muted-foreground/60">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
-                          {msg.model && <span className="text-[9px] text-muted-foreground/60 ml-1">{msg.model}</span>}
                           {msg.contextSources && msg.contextSources > 0 && (
                             <span className="text-[9px] text-blue-400/60 ml-1">Enhanced with {msg.contextSources} sources</span>
                           )}
@@ -2498,6 +2513,15 @@ export default function Chat() {
                             responseLength={msg.content?.length}
                           />
                         )}
+                        {/* AEGIS Quality Score — shown when metadata has quality dimensions */}
+                        {msg.metadata?.qualityScore && (
+                          <QualityScoreDisplay
+                            score={msg.metadata.qualityScore as any}
+                            suggestions={msg.metadata.qualitySuggestions as string[] || undefined}
+                            compact
+                            className="mt-1"
+                          />
+                        )}
                         <div className="flex items-center gap-2 mt-1">
                           {msg.content && (
                             <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
@@ -2558,47 +2582,28 @@ export default function Chat() {
                 </div>
               ))}
 
-              {/* Tool Activity Cards — show what the AI is doing in real-time */}
-              {isStreaming && activeToolCalls.length > 0 && (
-                <div className="space-y-2 px-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  {activeToolCalls.map((tool, idx) => {
-                    const iconMap: Record<string, React.ReactNode> = {
-                      google_search: <Search className="w-3.5 h-3.5" />,
-                      web_search: <Search className="w-3.5 h-3.5" />,
-                      read_webpage: <Globe className="w-3.5 h-3.5" />,
-                      wide_research: <Brain className="w-3.5 h-3.5" />,
-                      execute_code: <Code2 className="w-3.5 h-3.5" />,
-                      analyze_data: <BarChart3 className="w-3.5 h-3.5" />,
-                      generate_image: <Image className="w-3.5 h-3.5" />,
-                      generate_document: <FileOutput className="w-3.5 h-3.5" />,
-                      lookup_stock_data: <TrendingUp className="w-3.5 h-3.5" />,
-                      research_financial_product: <Search className="w-3.5 h-3.5" />,
-                      compare_products: <Scale className="w-3.5 h-3.5" />,
-                      run_retirement_projection: <Calculator className="w-3.5 h-3.5" />,
-                      run_tax_estimate: <Calculator className="w-3.5 h-3.5" />,
-                      run_protection_analysis: <Shield className="w-3.5 h-3.5" />,
-                      run_monte_carlo: <BarChart3 className="w-3.5 h-3.5" />,
-                      run_estate_analysis: <Briefcase className="w-3.5 h-3.5" />,
-                      run_business_entity_comparison: <Scale className="w-3.5 h-3.5" />,
-                      run_income_projection: <TrendingUp className="w-3.5 h-3.5" />,
-                    };
-                    return (
-                      <div key={tool.toolName + idx} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-accent/5 border border-accent/10 animate-pulse">
-                        <div className="w-6 h-6 rounded-md bg-accent/10 flex items-center justify-center text-accent shrink-0">
-                          {iconMap[tool.toolName] || <Zap className="w-3.5 h-3.5" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium text-foreground/80 truncate">{tool.status}</div>
-                          <div className="text-[10px] text-muted-foreground">{tool.toolName.replace(/_/g, " ")}</div>
-                        </div>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-accent/60 shrink-0" />
-                      </div>
-                    );
-                  })}
+              {/* Tool Activity — Substrate ActionIndicator replaces static tool cards */}
+              {isStreaming && (
+                <div className="px-2">
+                  <ActionIndicator
+                    state={
+                      activeToolCalls.length > 0
+                        ? "tool_active" as AgentState
+                        : streamingContent
+                          ? "generating" as AgentState
+                          : "thinking" as AgentState
+                    }
+                    activeTool={
+                      activeToolCalls.length > 0
+                        ? {
+                            name: activeToolCalls[0].toolName,
+                            description: activeToolCalls[0].status,
+                            startedAt: activeToolCalls[0].timestamp,
+                          } as ActiveTool
+                        : undefined
+                    }
+                  />
                 </div>
-              )}
-              {isStreaming && !streamingContent && activeToolCalls.length === 0 && (
-                <TypingIndicator focusMode={selectedFocus?.[0] ?? "general"} />
               )}
               {/* Upgrade prompt for anonymous users */}
               {isAnonymous && anonChat.shouldPromptUpgrade && (
@@ -3370,6 +3375,14 @@ export default function Chat() {
         </div>
       </main>
 
+      {/* Workspace Artifacts Panel (manus-next-app UX absorption) */}
+      <WorkspaceArtifactsPanel
+        artifacts={artifacts}
+        isOpen={workspaceOpen}
+        onToggle={() => setWorkspaceOpen(!workspaceOpen)}
+        onClose={() => setWorkspaceOpen(false)}
+        className="hidden lg:flex"
+      />
 
       {/* Folder Create/Edit Dialog */}
       <Dialog open={folderDialogOpen} onOpenChange={setFolderDialogOpen}>

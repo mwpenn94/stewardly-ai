@@ -1093,3 +1093,103 @@ body.keyboard-nav :focus-visible {
     font-size: 1rem !important;
   }
 }
+
+
+/* manus-next-app UX Absorption - Visual Language Utilities */
+.glass-surface {
+  background: oklch(0.175 0.02 258 / 0.7);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border: 1px solid oklch(0.26 0.02 265 / 0.5);
+}
+.light .glass-surface {
+  background: oklch(1 0.004 95 / 0.8);
+  border-color: oklch(0.88 0.014 85 / 0.6);
+}
+.glass-surface-elevated {
+  background: oklch(0.18 0.024 255 / 0.85);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid oklch(0.3 0.02 265 / 0.4);
+  box-shadow: 0 8px 32px oklch(0 0 0 / 0.3), 0 2px 8px oklch(0 0 0 / 0.2);
+}
+.light .glass-surface-elevated {
+  background: oklch(1 0.004 95 / 0.92);
+  border-color: oklch(0.88 0.014 85 / 0.7);
+  box-shadow: 0 8px 32px oklch(0 0 0 / 0.08), 0 2px 8px oklch(0 0 0 / 0.04);
+}
+.depth-base { z-index: 0; }
+.depth-raised {
+  z-index: 10;
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.15), 0 1px 3px oklch(0 0 0 / 0.1);
+}
+.depth-floating {
+  z-index: 20;
+  box-shadow: 0 8px 24px oklch(0 0 0 / 0.2), 0 4px 12px oklch(0 0 0 / 0.15);
+}
+.depth-overlay {
+  z-index: 30;
+  box-shadow: 0 16px 48px oklch(0 0 0 / 0.3), 0 8px 24px oklch(0 0 0 / 0.2);
+}
+.light .depth-raised {
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.06), 0 1px 3px oklch(0 0 0 / 0.04);
+}
+.light .depth-floating {
+  box-shadow: 0 8px 24px oklch(0 0 0 / 0.08), 0 4px 12px oklch(0 0 0 / 0.05);
+}
+.light .depth-overlay {
+  box-shadow: 0 16px 48px oklch(0 0 0 / 0.12), 0 8px 24px oklch(0 0 0 / 0.08);
+}
+@keyframes workspace-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.animate-workspace-in {
+  animation: workspace-slide-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@keyframes action-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.95); }
+}
+.animate-action-pulse {
+  animation: action-pulse 1.5s ease-in-out infinite;
+}
+@keyframes tier-glow {
+  0%, 100% { box-shadow: 0 0 4px oklch(0.76 0.14 80 / 0.3); }
+  50% { box-shadow: 0 0 12px oklch(0.76 0.14 80 / 0.5), 0 0 4px oklch(0.76 0.14 80 / 0.3); }
+}
+.animate-tier-glow {
+  animation: tier-glow 2s ease-in-out infinite;
+}
+@keyframes quality-ring-fill {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: var(--quality-offset, 25); }
+}
+.animate-quality-ring {
+  animation: quality-ring-fill 1s ease-out forwards;
+}
+.sovereign-active {
+  position: relative;
+}
+.sovereign-active::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, oklch(0.76 0.14 80), oklch(0.65 0.17 160), oklch(0.76 0.14 80));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: sovereign-border-rotate 3s linear infinite;
+}
+@keyframes sovereign-border-rotate {
+  to { filter: hue-rotate(360deg); }
+}
+@keyframes disclosure-reveal {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.animate-disclosure-reveal {
+  animation: disclosure-reveal 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}

@@ -116,6 +116,7 @@ const EmbedWidget = lazy(() => import("./pages/EmbedWidget"));
 const AdvisorProfile = lazy(() => import("./pages/AdvisorProfile"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const BillingPage = lazy(() => import("./pages/BillingPage"));
+const MVDashboard = lazy(() => import("./pages/MVDashboard"));
 const APIKeys = lazy(() => import("./pages/APIKeys"));
 const WebhookManager = lazy(() => import("./pages/WebhookManager"));
 const GHLWebhookSetup = lazy(() => import("./pages/GHLWebhookSetup"));
@@ -299,6 +300,7 @@ function Router() {
         <Route path="/advisor/:id" component={AdvisorProfile} />
         <Route path="/admin/team" component={TeamManagement} />
         <Route path="/admin/billing" component={BillingPage} />
+        <Route path="/admin/savings" component={MVDashboard} />
         <Route path="/admin/api-keys" component={APIKeys} />
         <Route path="/admin/webhooks" component={WebhookManager} />
         <Route path="/admin/webhooks/ghl-setup" component={GHLWebhookSetup} />
