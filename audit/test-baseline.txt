@@ -1,0 +1,7 @@
+BASELINE TEST RESULTS (pre-Phase-A):
+Test Files: 8 failed | 504 passed (512)
+Tests: 10 failed | 12406 passed (12416)
+Duration: 104.44s
+Pre-existing failures (not introduced by this work):
+  - server/promptA-pass1.test.ts (convergence-log file missing)
+  - server/resend-key.test.ts (network timeout)

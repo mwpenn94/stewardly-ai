@@ -9477,3 +9477,68 @@
 - [x] Convergence Pass 3 (fix: review queue advancement bug + Zod max limits — counter reset)
 - [x] Convergence Pass 4 (clean pass 1 of 2 after reset — error propagation, boundary conditions, SM-2 math, race conditions)
 - [x] Convergence Pass 5 (clean pass 2 of 2 — user journey, data persistence, extensibility) — CONVERGENCE CONFIRMED
+
+## AFK Run — Phase 0: Audit
+- [x] audit/01 — Stewardly AI Current State (comprehensive repository analysis)
+- [x] audit/02 — manus-next-app Current State (UX patterns, services, components)
+- [x] audit/03 — Gap Analysis (Architecture Reference vs. Current State)
+- [x] audit/04 — Preservation Targets (what must survive absorption)
+- [x] audit/05 — Substrate Primitive Assessment
+- [x] audit/06 — Pricing, Billing, and M&V Assessment
+- [x] audit/07 — manus-next-app UX Language (visual/interaction patterns to absorb)
+- [x] audit/08 — Compliance and Regulatory Assessment
+- [x] audit/09 — Preservation Inventory (comprehensive enumeration per v2.0.3 §1.2)
+
+## AFK Run — Phase 1: Plan
+- [x] plan/01 — Merge Strategy
+- [x] plan/02 — Substrate Architecture Final
+- [x] plan/03 — Engine Integration Plan
+- [x] plan/04 — UX Flow Specification
+- [x] plan/05 — Validation Strategy
+- [x] plan/06 — Compliance Memo Addenda
+- [x] plan/07 — Pricing and Billing Implementation
+- [x] plan/08 — Memory Engine Integration
+- [x] plan/09 — Cost-Measurement and Spectrum
+- [x] plan/10 — Rollback and Risk Register
+
+## AFK Run — Phase A: UX Absorption
+- [x] Embedding service (substrate primitive) — cosineSimilarity, findTopK, keywordSimilarity, generateEmbedding
+- [x] Classifier (substrate primitive) — rule-based, deterministic, no network
+- [x] AEGIS pre/post-flight pipeline (substrate primitive) — quality scoring, caching, cost estimation
+- [x] Sovereign routing (substrate primitive) — BYO provider registry, circuit breaker, tier routing
+- [x] Search cascade (substrate primitive) — multi-tier search with degradation
+- [x] Capability tiers (substrate primitive) — degradation tracking, tier management
+- [x] ATLAS goal decomposition (substrate primitive) — LLM-powered task decomposition
+- [x] TierBadge UI component (absorbed from manus-next-app AdaptiveModelBadge)
+- [x] ActionIndicator UI component (absorbed from manus-next-app ActiveToolIndicator)
+- [x] QualityScoreDisplay UI component (absorbed from manus-next-app AEGISQualityScoreDisplay)
+- [x] Substrate router (tRPC procedures for AEGIS, sovereign, search)
+- [x] Phase A tests: 36/36 passing
+
+## AFK Run — Phase E: Substrate Primitives Completion
+- [x] Proposal Generator (substrate primitive) — financial proposal types, compliance requirements
+- [x] Document Intelligence (substrate primitive) — classification, entity extraction, chunking
+- [x] Memory Substrate (substrate primitive) — working memory, retrieval, consolidation, stats
+- [x] Phase E tests: 30/30 passing (66 cumulative)
+
+## AFK Run — Phase P: Pricing/M&V/Memory Engine
+- [x] M&V Engine (substrate primitive) — 6 savings categories, three-property criterion, period summaries
+- [x] M8 Personalized Prompt Engine (substrate primitive) — context assembly, memory integration
+- [x] Pricing Engine (substrate primitive) — unified formula, BYOM scenarios S1-S4, plan fees, invoicing
+- [x] Phase P tests: 33/33 passing (99 cumulative)
+
+## AFK Run — Phase V: Validation (360+ Persona Streams)
+- [x] Track 1: Contract Verification — classifier, embedding, AEGIS, sovereign routing
+- [x] Track 2: Integration Coherence — full pipeline, memory+prompt, document pipeline, capability tiers
+- [x] Track 3: BYOM Scenario Coverage — S1-S4 validated
+- [x] Track 4: M&V Accuracy — AI cost, time, search, document, memory savings
+- [x] Track 5: Memory Consistency — store, retrieve, consolidate, stats
+- [x] Track 6: Pricing Formula — on-demand, subscription, ceiling, plan fees, breakdown
+- [x] Track 7: Compliance — PII detection, domain classification, document classification, routing
+- [x] Track 8: Degradation & Resilience — classifier offline, capability degradation, search cascade, memory, routing fallback, ATLAS
+- [x] Track 9: Persona Stream Validation — client, advisor, admin, BYO user, compliance-aware
+- [x] All 153 substrate tests passing (4 test files, 0 failures)
+
+## AFK Run — Phase D: Distribution and Archival
+- [x] Completion report written
+- [x] Final checkpoint saved
