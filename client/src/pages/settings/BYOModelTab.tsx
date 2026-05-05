@@ -47,16 +47,29 @@ export default function BYOModelTab() {
   });
   const [testing, setTesting] = useState(false);
 
+  const testBYOMutation = trpc.substrate.testBYO.useMutation();
   const handleTestConnection = async () => {
     if (!newProvider.apiEndpoint || !newProvider.apiKey) {
       toast.error("Please fill in API endpoint and key");
       return;
     }
     setTesting(true);
-    // Simulate connection test
-    await new Promise((r) => setTimeout(r, 1500));
-    setTesting(false);
-    toast.success("Connection verified successfully");
+    try {
+      const result = await testBYOMutation.mutateAsync({
+        endpoint: newProvider.apiEndpoint,
+        apiKey: newProvider.apiKey,
+        modelId: newProvider.modelId,
+      });
+      if (result.success) {
+        toast.success(`Connection verified (${result.latencyMs}ms) — Model: ${result.model ?? "detected"}`);
+      } else {
+        toast.error(`Connection failed: ${result.error ?? "Unknown error"}`);
+      }
+    } catch (err: any) {
+      toast.error(`Test failed: ${err.message ?? "Network error"}`);
+    } finally {
+      setTesting(false);
+    }
   };
 
   const handleAddProvider = () => {

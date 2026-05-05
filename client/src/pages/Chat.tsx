@@ -1760,7 +1760,7 @@ export default function Chat() {
   const visibleLayers = SIDEBAR_PERSONA_LAYERS.filter(l => roleLevel >= (SIDEBAR_ROLE_LEVEL[l.minRole] ?? 0));
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden">
+    <div className="h-screen flex bg-background overflow-hidden antialiased">
       {/* Pass 91 (Target 7 / WCAG 2.4.1): skip-to-content link.
           Hidden until focused — first focusable element on the Chat
           page so keyboard users can jump past the conversation
@@ -1775,17 +1775,17 @@ export default function Chat() {
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+        <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
 
       {/* ─── SIDEBAR ──────────────────────────────────────────── */}
       <aside data-tour="sidebar" className={`
-        fixed lg:relative z-50 h-full bg-card border-r border-border flex flex-col
-        transition-all duration-200
+        fixed lg:relative z-50 h-full bg-sidebar border-r border-sidebar-border flex flex-col
+        transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${sidebarCollapsed ? "w-14" : "w-72"}
       `}>
-        <div className={`flex items-center border-b border-border shrink-0 ${sidebarCollapsed ? "p-2 justify-center" : "p-3 justify-between"}`}>
+        <div className={`flex items-center border-b border-sidebar-border shrink-0 ${sidebarCollapsed ? "p-2 justify-center" : "p-3 justify-between"}`}>
           {sidebarCollapsed ? (
             <div className="flex flex-col gap-1 items-center">
               <Tooltip>
@@ -1931,8 +1931,8 @@ export default function Chat() {
                 <Tooltip key={conv.id}>
                   <TooltipTrigger asChild>
                     <div
-                      className={`flex items-center justify-center p-2 rounded-lg cursor-pointer transition-colors ${
-                        conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-muted-foreground"
+                      className={`flex items-center justify-center p-2 rounded-lg cursor-pointer transition-colors duration-150 ${
+                        conv.id === conversationId ? "bg-sidebar-accent text-sidebar-foreground" : "hover:bg-sidebar-accent/50 text-muted-foreground"
                       }`}
                       onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
                     >
@@ -2269,7 +2269,7 @@ export default function Chat() {
           </Button>
           <div className="flex items-center gap-1.5">
             <ConnectionQualityIndicator isStreaming={isStreaming} />
-            <SovereignModeIndicator tier={selectedModel?.includes('local') || selectedModel?.includes('ollama') ? 'S3' : 'S1'} />
+            <SovereignModeIndicator tier={(selectedModel?.includes('local') || selectedModel?.includes('ollama')) ? 'S3' : 'S1'} />
             <NotificationBell
               notifications={notifications}
               unreadCount={unreadCount}
@@ -2322,7 +2322,7 @@ export default function Chat() {
         )}
 
         {/* ─── MESSAGES AREA ──────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scroll-mask">
           {isWelcome ? (
             <ChatGreetingV2
               userName={user?.name ?? undefined}
@@ -2338,7 +2338,7 @@ export default function Chat() {
           ) : (
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
               {messages.map((msg: any, i: number) => (
-                <div key={msg.id || i} className={`group/msg flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
+                <div key={msg.id || i} className={`group/msg flex gap-3 animate-message-in ${msg.role === "user" ? "justify-end" : ""}`}>
                   {msg.role === "assistant" && (
                     <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${tts.isSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-accent/10"}`}>
                       {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
@@ -2347,8 +2347,8 @@ export default function Chat() {
                   <div className={`max-w-[85%]`}>
                     {msg.role === "user" ? (
                       <div className="relative group/user-msg">
-                        <div className="bg-accent/15 rounded-2xl rounded-tr-sm px-4 py-2.5">
-                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <div className="bg-primary/10 border border-primary/10 rounded-2xl rounded-tr-sm px-4 py-2.5 shadow-sm">
+                          <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                         </div>
                         {/* Edit & resend button — appears on hover */}
                         <div className="absolute -bottom-2 right-2 opacity-0 group-hover/user-msg:opacity-100 transition-opacity flex gap-0.5">
@@ -2690,7 +2690,7 @@ export default function Chat() {
         )}
 
         {/* ─── INPUT AREA (Copilot-style condensed) ────────────── */}
-        <div className="p-3 sm:p-4 shrink-0">
+        <div className="p-3 sm:p-4 shrink-0 border-t border-border/40 bg-background/50 backdrop-blur-sm">
           <div className="max-w-3xl mx-auto">
             {/* Pass 2 (G59): user-visible fallback banner whenever the
                 browser can't do full continuous STT. Dismissible, persists
@@ -2749,14 +2749,14 @@ export default function Chat() {
             <input ref={imageInputRef} type="file" className="hidden" aria-label="Upload images" multiple accept="image/*" onChange={handleFileSelect} />
 
             {/* Textarea — full width, rounded pill */}
-            <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-accent/20 shadow-[0_0_8px_-3px_oklch(0.76_0.14_80_/_0.08)] focus-within:border-accent/50 focus-within:shadow-[0_0_24px_-4px_oklch(0.76_0.14_80_/_0.25)] transition-all duration-300 px-3 py-1.5">
+            <div data-tour="chat-input" className="relative bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 shadow-sm focus-within:border-primary/40 focus-within:shadow-[0_0_20px_-4px_oklch(0.76_0.14_80_/_0.15)] transition-all duration-200 px-3 py-1.5">
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={handsFreeActive && voice.isListening ? "Listening..." : userRole === "advisor" ? "Ask about clients, strategies, compliance, or financial planning..." : userRole === "admin" ? "Ask about platform management, analytics, or financial strategies..." : "Ask about financial planning, insurance, investments, or strategies..."}
-                className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0"
+                className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0 placeholder:text-muted-foreground/50"
                 rows={1}
                 disabled={isStreaming}
               />

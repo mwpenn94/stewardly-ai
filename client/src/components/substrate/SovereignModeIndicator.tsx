@@ -60,7 +60,8 @@ export function SovereignModeIndicator({
   isRouting = false,
   className = "",
 }: SovereignModeIndicatorProps) {
-  const config = TIER_CONFIG[tier] || TIER_CONFIG.S1;
+  const config = TIER_CONFIG[tier] ?? TIER_CONFIG.S1;
+  if (!config) return null;
   const Icon = config.icon;
 
   return (

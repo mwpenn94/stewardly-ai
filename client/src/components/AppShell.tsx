@@ -172,7 +172,7 @@ export default function AppShell({ children, title }: AppShellProps) {
   const totalUnread = wsUnreadCount + onboardingUnread;
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden">
+    <div className="h-screen flex bg-background overflow-hidden antialiased">
       {/* Pass 91 (Target 7 / WCAG 2.4.1): skip-to-content link.
           Hidden visually until it receives focus, then jumps over the
           sidebar nav directly to the main content. First focusable
@@ -186,7 +186,7 @@ export default function AppShell({ children, title }: AppShellProps) {
 
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
       {/* Pass 136: PersonaSidebar5 — 5-layer persona navigation.
@@ -214,7 +214,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         */}
         <header
           role="banner"
-          className="lg:hidden flex items-center h-14 px-3 shrink-0 border-b border-border/50 bg-card/30 backdrop-blur-sm safe-area-top"
+          className="lg:hidden flex items-center h-[52px] px-3 shrink-0 border-b border-border bg-background/80 backdrop-blur-xl safe-area-top"
           aria-label={title || "Page header"}
         >
           <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setMobileOpen(true)} aria-label="Open navigation">
@@ -247,7 +247,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         */}
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto overflow-x-hidden"
+          className="flex-1 overflow-y-auto overflow-x-hidden scroll-mask"
           tabIndex={-1}
           aria-label="Main content"
           aria-busy={globalBusy ? true : undefined}
@@ -274,7 +274,7 @@ export default function AppShell({ children, title }: AppShellProps) {
         </div>
 
         {/* Persistent compliance disclaimer + keyboard shortcut hint */}
-        <footer className="shrink-0 border-t border-border/30 px-4 py-1.5 flex items-center justify-between gap-4">
+        <footer className="shrink-0 border-t border-border px-4 py-1.5 flex items-center justify-between gap-4 bg-background/50 backdrop-blur-sm">
           <p className="text-[10px] text-muted-foreground/60 leading-tight">
             AI-assisted platform. Not a substitute for professional financial, legal, or tax advice.
           </p>

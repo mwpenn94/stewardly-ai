@@ -670,9 +670,9 @@ export default function WealthEngineHub() {
         {/* ─── SIDEBAR — 3 collapsible workflow stages ─── */}
         <aside role="complementary" aria-label="Wealth Engine navigation sidebar" className={`
           fixed inset-y-0 left-0 lg:sticky lg:top-0 z-50 lg:z-auto
-          w-56 shrink-0 border-r border-border bg-card flex flex-col
+          w-56 shrink-0 border-r border-border bg-sidebar flex flex-col
           max-h-[100dvh] lg:max-h-screen lg:self-start
-          transition-transform duration-200 ease-in-out
+          transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
           <div className="p-3 border-b border-border/50 flex items-center justify-between">

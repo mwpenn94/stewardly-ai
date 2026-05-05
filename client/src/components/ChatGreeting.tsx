@@ -182,7 +182,7 @@ export default function ChatGreetingV2({
   // Fallback for common.morning/afternoon/evening — add to en.ts
 
   return (
-    <div className="flex flex-col items-center justify-center gap-8 px-4 py-12 max-w-xl mx-auto">
+    <div className="flex flex-col items-center justify-center gap-8 px-4 py-16 max-w-xl mx-auto">
       {/* AI health warning — only shown when degraded */}
       {!aiHealthy && (
         <motion.div className="w-full flex items-center gap-2.5 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm" initial="hidden" animate="visible" variants={variant} custom={0}>
@@ -193,8 +193,8 @@ export default function ChatGreetingV2({
 
       {/* Greeting — clean and personal */}
       <motion.div className="text-center space-y-2" initial="hidden" animate="visible" variants={variant} custom={1}>
-        <h2 className="font-heading text-2xl sm:text-3xl font-semibold">{greeting}</h2>
-        <p className="text-muted-foreground text-sm">
+        <h2 className="font-heading text-2xl sm:text-3xl font-semibold tracking-tight">{greeting}</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
           {isAuthenticated
             ? t("chat.howCanIHelp")
             : t("chat.emptyState.description")}
@@ -211,7 +211,7 @@ export default function ChatGreetingV2({
           <div className="flex flex-col gap-1.5">
             {resumeConversations.map((conv) => (
               <button type="button" key={conv.id} onClick={() => onResumeConversation(conv.id)}
-                className="group flex items-center gap-3 rounded-xl border border-border/60 bg-card/50 px-4 py-3 text-left transition-all hover:bg-card hover:border-accent/20 focus-visible:ring-2 focus-visible:ring-ring">
+                className="group flex items-center gap-3 rounded-xl border border-border/50 bg-card/40 px-4 py-3 text-left transition-all duration-200 hover:bg-card/80 hover:border-primary/20 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring">
                 <MessageSquare className="w-4 h-4 text-muted-foreground/50 group-hover:text-accent shrink-0 transition-colors" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate group-hover:text-accent transition-colors">{conv.title}</p>
@@ -245,7 +245,7 @@ export default function ChatGreetingV2({
         <div className="flex flex-wrap items-center justify-center gap-2">
           {suggestions.map((text) => (
             <button type="button" key={text} onClick={() => onSuggestionClick(text)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/50 px-4 py-2 text-sm text-foreground/70 hover:bg-accent/10 hover:border-accent/30 hover:text-accent transition-all focus-visible:ring-2 focus-visible:ring-ring">
+              className="inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-card/30 px-4 py-2.5 text-sm text-foreground/70 hover:bg-primary/5 hover:border-primary/30 hover:text-primary transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring shadow-sm hover:shadow">
               <Sparkles className="w-3 h-3 text-accent/60 shrink-0" />
               <span className="line-clamp-1">{text}</span>
             </button>

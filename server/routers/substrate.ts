@@ -19,6 +19,12 @@ import {
   testBYOEndpoint,
   getBYOProviders,
 } from "../services/substrate";
+import {
+  queryUserEvents,
+  getLatestPeriodSummary,
+  getUserPeriodSummaries,
+  getPlatformSavingsMetrics,
+} from "../services/substrate/mvPersistence";
 
 export const substrateRouter = router({
   // ─── AEGIS ───────────────────────────────────────────────────────────────
@@ -143,5 +149,41 @@ export const substrateRouter = router({
   getBYOProviders: protectedProcedure
     .query(async ({ ctx }) => {
       return getBYOProviders(ctx.user.id);
+    }),
+
+  // ─── M&V (Measurement & Verification) ────────────────────────────────────
+  /** Get user's savings events for a period */
+  mvUserEvents: protectedProcedure
+    .input(z.object({
+      periodStart: z.string().optional(),
+      periodEnd: z.string().optional(),
+      category: z.enum(["model_routing", "caching", "batching", "compression", "prompt_optimization"]).optional(),
+      limit: z.number().min(1).max(500).default(50),
+    }))
+    .query(async ({ ctx, input }) => {
+      const now = new Date();
+      const start = input.periodStart ? new Date(input.periodStart) : new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = input.periodEnd ? new Date(input.periodEnd) : now;
+      return queryUserEvents(ctx.user.id, start, end, input.category as any, input.limit);
+    }),
+
+  /** Get user's latest period summary */
+  mvLatestSummary: protectedProcedure
+    .query(async ({ ctx }) => {
+      return getLatestPeriodSummary(ctx.user.id);
+    }),
+
+  /** Get user's period summaries (billing history) */
+  mvPeriodSummaries: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(24).default(12) }))
+    .query(async ({ ctx, input }) => {
+      return getUserPeriodSummaries(ctx.user.id, input.limit);
+    }),
+
+  /** Get platform-wide savings metrics (admin only) */
+  mvPlatformMetrics: protectedProcedure
+    .query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") return { totalSavings: 0, totalEvents: 0, uniqueUsers: 0 };
+      return getPlatformSavingsMetrics();
     }),
 });

@@ -419,5 +419,5 @@ export async function testBYOEndpoint(
  * Get all registered BYO providers for a user.
  */
 export function getBYOProviders(userId: number): ProviderConfig[] {
-  return providers.filter(p => p.name.startsWith(`user-${userId}-`) || !p.name.startsWith("user-"));
+  return byoProviders.get(userId) ?? [];
 }

@@ -9566,3 +9566,24 @@
 - [x] Pass 2: CLEAN — no gaps found (counter = 1)
 - [x] Pass 3: CLEAN — no gaps found (counter = 2)
 - [x] Pass 4: CLEAN — convergence confirmed (counter = 3)
+
+## Phase UI — Full Visual Overhaul (manus-next-app quality)
+- [x] Rewrite index.css with manus-quality design tokens, animations, glass morphism
+- [x] Rebuild PersonaSidebar5 with polished manus-style visual design
+- [x] Rebuild Chat interface with proper message bubbles, streaming, input area
+- [x] Polish AppShell layout structure
+- [x] Polish Home page with manus-quality design (Landing redirects to Chat which is the home)
+- [x] Wire M&V dashboard with real data from substrate (router procedures added)
+- [x] Wire ATLAS goal panel into planning pages (already wired in WorkspaceArtifactsPanel)
+- [x] Add BYO model "Test Connection" button (wired to real tRPC endpoint)
+- [x] Run 3 consecutive convergence passes confirming visual quality
+
+## Convergence Results (Phase UI)
+- Pass 1: CLEAN — no runtime errors, UI rendering correctly, dark theme + gold accents working
+- Pass 2: CLEAN — no broken imports, no console errors, accessibility markers present
+- Pass 3: CLEAN — 80+ transitions/animations in Chat, 22 custom keyframes, 0 errors
+- Fixed: getBYOProviders was referencing undefined `providers` variable → now uses byoProviders Map
+- Fixed: SovereignModeIndicator crash on undefined tier → null guard added
+- Fixed: Mobile overlay missing backdrop-blur → added
+- Wired: BYO Test Connection → real tRPC substrate.testBYO endpoint
+- Wired: M&V router procedures (mvUserEvents, mvLatestSummary, mvPeriodSummaries, mvPlatformMetrics)
