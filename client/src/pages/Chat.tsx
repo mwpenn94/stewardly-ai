@@ -2269,7 +2269,7 @@ export default function Chat() {
           </Button>
           <div className="flex items-center gap-1.5">
             <ConnectionQualityIndicator isStreaming={isStreaming} />
-            <SovereignModeIndicator mode={currentModel?.includes('local') || currentModel?.includes('ollama') ? 'local' : 'cloud'} />
+            <SovereignModeIndicator tier={selectedModel?.includes('local') || selectedModel?.includes('ollama') ? 'S3' : 'S1'} />
             <NotificationBell
               notifications={notifications}
               unreadCount={unreadCount}
