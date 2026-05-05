@@ -211,9 +211,9 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         onClick={() => { navigate(item.path); onNavigate?.(); }}
         aria-current={active ? "page" : undefined}
         aria-label={badge ? `${item.label} (${badge.count} unread)` : item.label}
-        className={`group w-full flex items-center gap-2.5 rounded-lg transition-all duration-150 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
-          ${isMobile ? "py-2.5 text-[14px] min-h-[44px] px-3" : "py-[7px] text-[13px] px-2.5"}
-          ${active ? "bg-sidebar-accent text-sidebar-foreground font-medium shadow-[inset_0_0_0_1px_oklch(0.76_0.14_80/0.15)]" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50"}
+        className={`group w-full flex items-center gap-2.5 rounded-xl transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
+          ${isMobile ? "py-3 text-[14px] min-h-[44px] px-3" : "py-2 text-[13px] px-3"}
+          ${active ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"}
           ${collapsed ? "justify-center px-2" : ""}`}
         title={collapsed ? (badge ? `${item.label} (${badge.count})` : item.label) : undefined}
       >
@@ -255,11 +255,11 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
     );
 
   return (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
+    <div className="flex flex-col h-full bg-gradient-to-b from-sidebar via-sidebar to-background/50 text-sidebar-foreground">
       {/* Header */}
       <div className="flex items-center justify-between px-3 h-[52px] flex-none border-b border-sidebar-border">
         {!collapsed && (
-          <span className="font-heading text-[15px] font-bold tracking-tight text-sidebar-foreground">Stewardly</span>
+          <span className="text-[16px] font-extrabold tracking-tight bg-gradient-to-r from-primary via-primary/90 to-primary/60 bg-clip-text text-transparent">Stewardly<span className="inline-block w-1.5 h-1.5 rounded-full bg-primary ml-0.5 mb-2"></span></span>
         )}
         <div className="flex items-center gap-1">
           {!collapsed && (
@@ -276,7 +276,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
       {/* Search */}
       {!collapsed && (
         <div className="px-3 py-2 flex-none">
-          <button type="button" onClick={onSearch} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar-accent/40 text-[13px] text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
+          <button type="button" onClick={onSearch} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-card/40 border border-border/40 text-[13px] text-muted-foreground hover:text-sidebar-foreground hover:bg-card/60 hover:border-border/60 transition-all duration-200">
             <Search className="w-3.5 h-3.5 flex-none" />
             <span>{t("common.search")}</span>
             <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-sidebar border border-sidebar-border font-mono">⌘K</kbd>
@@ -359,7 +359,7 @@ export default function PersonaSidebar5({
 
   return (
     <>
-      <aside className={`hidden md:flex flex-col h-screen border-r border-sidebar-border bg-sidebar flex-none transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+      <aside className={`hidden md:flex flex-col h-screen border-r border-sidebar-border bg-sidebar flex-none sidebar-glow transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${collapsed ? "w-[52px]" : "w-[240px]"}`}>
         <SidebarInner {...inner} />
       </aside>

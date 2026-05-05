@@ -42,7 +42,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-heading: "DM Serif Display", "Satoshi", ui-serif, Georgia, serif;
+  --font-heading: "Plus Jakarta Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 /*
@@ -56,7 +56,7 @@
 */
 :root {
   --font-sans: "Plus Jakarta Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-heading: "DM Serif Display", "Satoshi", ui-serif, Georgia, serif;
+  --font-heading: "Plus Jakarta Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --radius: 0.625rem;
 
@@ -414,7 +414,8 @@ body.color-blind-mode [role="button"][aria-disabled="true"] {
     touch-action: manipulation;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+    font-family: var(--font-sans);
+    font-weight: 700;
     letter-spacing: -0.3px;
   }
   code, pre, kbd {
@@ -464,6 +465,68 @@ body.color-blind-mode [role="button"][aria-disabled="true"] {
       max-width: 1280px;
     }
   }
+}
+
+/* ═══ AMBIENT GLOW & DEPTH ═══ */
+.sidebar-glow {
+  position: relative;
+}
+.sidebar-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    oklch(0.76 0.14 80 / 0.3) 30%,
+    oklch(0.76 0.14 80 / 0.15) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.chat-ambient {
+  position: relative;
+}
+.chat-ambient::before {
+  content: '';
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 40%;
+  background: radial-gradient(
+    ellipse at center,
+    oklch(0.76 0.14 80 / 0.03) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.input-glow {
+  position: relative;
+}
+.input-glow::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 10%;
+  right: 10%;
+  height: 20px;
+  background: oklch(0.76 0.14 80 / 0.08);
+  filter: blur(16px);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: opacity 300ms;
+  opacity: 0;
+}
+.input-glow:focus-within::after {
+  opacity: 1;
 }
 
 /* ═══ MANUS-QUALITY MICRO-INTERACTIONS ═══ */

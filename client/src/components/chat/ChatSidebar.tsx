@@ -348,8 +348,8 @@ function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversat
   return (
     <DropdownMenu>
       <div
-        className={`group flex items-center gap-2 ${indent ? "pl-6 pr-3" : "px-3"} py-2 rounded-lg text-sm cursor-pointer transition-colors ${
-          conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
+        className={`group flex items-center gap-2 ${indent ? "pl-6 pr-3" : "px-3"} py-2.5 rounded-xl text-sm cursor-pointer transition-all duration-200 ${
+          conv.id === conversationId ? "bg-primary/10 text-primary border border-primary/20 shadow-sm" : "hover:bg-card/60 text-foreground border border-transparent hover:border-border/40"
         }`}
         onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
       >

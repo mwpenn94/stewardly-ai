@@ -9587,3 +9587,11 @@
 - Fixed: Mobile overlay missing backdrop-blur → added
 - Wired: BYO Test Connection → real tRPC substrate.testBYO endpoint
 - Wired: M&V router procedures (mvUserEvents, mvLatestSummary, mvPeriodSummaries, mvPlatformMetrics)
+
+## Phase UI v2 — Dramatic Visual Overhaul (user reports no visible change)
+- [x] Replace suggestion pills with solid glass cards (not dashed borders)
+- [x] Add visible gradient glow behind greeting area
+- [x] Make sidebar nav items have visible card-like backgrounds on hover
+- [x] Make input area more visually prominent with glow effect
+- [x] Add subtle gradient to sidebar background
+- [x] Ensure the chat greeting font is visually distinctive and premium
