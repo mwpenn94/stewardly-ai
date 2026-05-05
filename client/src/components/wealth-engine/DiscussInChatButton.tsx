@@ -41,7 +41,7 @@ export function DiscussInChatButton({ prompt, label, className }: Props) {
     <Button
       variant="ghost"
       size="sm"
-      className={`gap-2 text-xs text-muted-foreground hover:text-accent ${className ?? ""}`}
+      className={`gap-2 text-xs text-muted-foreground hover:text-primary ${className ?? ""}`}
       onClick={handleClick}
     >
       <MessageSquare className="h-3.5 w-3.5" />

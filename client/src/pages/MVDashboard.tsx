@@ -139,7 +139,7 @@ export default function MVDashboard() {
                 <span className="text-muted-foreground">Usage vs. Ceiling</span>
                 <span className="font-medium text-primary">0% of ceiling</span>
               </div>
-              <div className="h-2 rounded-full bg-accent/50 overflow-hidden">
+              <div className="h-2 rounded-full bg-primary/50 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary w-0 transition-all duration-1000" />
               </div>
               <p className="text-[10px] text-muted-foreground/60">
@@ -183,7 +183,7 @@ export default function MVDashboard() {
         </div>
 
         {/* Pricing Formula Explanation */}
-        <Card className="bg-accent/20">
+        <Card className="bg-primary/15">
           <CardContent className="p-4">
             <h3 className="text-xs font-semibold mb-2 flex items-center gap-2">
               <TrendingUp className="w-3.5 h-3.5 text-primary" />

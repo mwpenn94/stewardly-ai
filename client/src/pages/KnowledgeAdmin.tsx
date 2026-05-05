@@ -346,7 +346,7 @@ export default function KnowledgeAdmin({ embedded = false }: { embedded?: boolea
               return (
                 <div className="space-y-6">
                   {/* Health Score Hero */}
-                  <Card className="border-accent/20">
+                  <Card className="border-primary/15">
                     <CardContent className="pt-6">
                       <div className="flex items-center gap-6">
                         <div className="relative w-28 h-28 shrink-0">

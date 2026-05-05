@@ -137,7 +137,6 @@ export default function Organizations() {
     return (
       <div className="min-h-screen bg-background">
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
           <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" aria-label="Back to list" onClick={() => setShowDetail(null)}>
@@ -238,7 +237,7 @@ export default function Organizations() {
                       <TableRow key={m.roleId || m.userId}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-accent text-xs font-medium">
+                            <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xs font-medium">
                               {m.userName?.[0]?.toUpperCase() || "?"}
                             </div>
                             <div>
@@ -397,13 +396,13 @@ export default function Organizations() {
             {(Array.isArray(orgList.data) ? orgList.data : []).map((org: any) => (
               <Card
                 key={org.id}
-                className="bg-card/50 border-border/50 hover:border-accent/30 transition-colors cursor-pointer group"
+                className="bg-card/50 border-border/50 hover:border-primary/20 transition-colors cursor-pointer group"
                 onClick={() => setShowDetail(org.id)}
               >
                 <CardContent className="pt-5">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-lg bg-accent/15 flex items-center justify-center text-accent">
+                      <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                         <Building2 className="w-6 h-6" />
                       </div>
                       <div>

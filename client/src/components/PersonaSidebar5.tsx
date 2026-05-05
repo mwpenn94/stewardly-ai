@@ -255,7 +255,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
     );
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-sidebar via-sidebar to-background/50 text-sidebar-foreground">
+    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       {/* Header */}
       <div className="flex items-center justify-between px-3 h-[52px] flex-none border-b border-sidebar-border">
         {!collapsed && (
@@ -359,7 +359,7 @@ export default function PersonaSidebar5({
 
   return (
     <>
-      <aside className={`hidden md:flex flex-col h-screen border-r border-sidebar-border bg-sidebar flex-none sidebar-glow transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+      <aside className={`hidden md:flex flex-col h-screen border-r border-sidebar-border bg-sidebar flex-none transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${collapsed ? "w-[52px]" : "w-[240px]"}`}>
         <SidebarInner {...inner} />
       </aside>

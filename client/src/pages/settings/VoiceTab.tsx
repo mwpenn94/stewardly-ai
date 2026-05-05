@@ -151,7 +151,7 @@ export default function VoiceTab() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <Mic className="w-5 h-5 text-accent" />
+          <Mic className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold">Voice & Speech</h2>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -164,7 +164,7 @@ export default function VoiceTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Volume2 className="w-4 h-4 text-accent" /> Voice Behavior
+            <Volume2 className="w-4 h-4 text-primary" /> Voice Behavior
           </CardTitle>
           <CardDescription className="text-xs">
             Control when and how the AI speaks
@@ -174,7 +174,7 @@ export default function VoiceTab() {
           {/* TTS Enabled */}
           <div className="flex items-center justify-between p-3 rounded-lg border border-border">
             <div className="flex items-center gap-3">
-              {ttsEnabled ? <Volume2 className="w-4 h-4 text-accent" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
+              {ttsEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
               <div>
                 <p className="text-sm font-medium">Text-to-Speech</p>
                 <p className="text-xs text-muted-foreground">Enable voice responses from the AI</p>
@@ -234,7 +234,7 @@ export default function VoiceTab() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm flex items-center gap-2">
-            <Mic className="w-4 h-4 text-accent" /> Voice Selection
+            <Mic className="w-4 h-4 text-primary" /> Voice Selection
           </CardTitle>
           <CardDescription className="text-xs">
             Choose the voice for your AI assistant. Click the play button to preview, then select your preferred voice.
@@ -272,8 +272,8 @@ export default function VoiceTab() {
                   key={v.id}
                   className={`relative p-3 rounded-lg border transition-all cursor-pointer ${
                     isSelected
-                      ? "border-accent bg-accent/10 ring-1 ring-accent/30"
-                      : "border-border bg-secondary/30 hover:border-accent/40 hover:bg-secondary/60"
+                      ? "border-accent bg-primary/10 ring-1 ring-primary/30"
+                      : "border-border bg-secondary/30 hover:border-primary/25 hover:bg-secondary/60"
                   }`}
                   onClick={() => handleSelect(v.id)}
                 >
@@ -287,7 +287,7 @@ export default function VoiceTab() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium truncate">
                           {v.label}
-                          {isSelected && <span className="ml-1.5 text-accent text-[10px]">{"\u2713"} Active</span>}
+                          {isSelected && <span className="ml-1.5 text-primary text-[10px]">{"\u2713"} Active</span>}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
                           {v.description} {"\u00b7"} {LOCALE_LABELS[v.locale] || v.locale}
@@ -302,7 +302,7 @@ export default function VoiceTab() {
                       disabled={speakMutation.isPending && previewPlaying !== v.id}
                     >
                       {isPreviewing ? (
-                        <Square className="w-3.5 h-3.5 text-accent" />
+                        <Square className="w-3.5 h-3.5 text-primary" />
                       ) : speakMutation.isPending && previewPlaying === v.id ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (

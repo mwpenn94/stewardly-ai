@@ -50,7 +50,7 @@ export function ATLASGoalPanel({
       {/* Goal header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/30 border border-border/50 hover:bg-accent/50 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/30 border border-border/50 hover:bg-primary/50 transition-colors"
       >
         <Target className="w-3.5 h-3.5 text-primary shrink-0" />
         <span className="text-xs font-medium text-foreground flex-1 text-left truncate">{goal}</span>
@@ -67,7 +67,7 @@ export function ATLASGoalPanel({
           <span className="text-[10px] text-muted-foreground">Progress</span>
           <span className="text-[10px] font-medium text-primary">{progress}%</span>
         </div>
-        <div className="h-1.5 rounded-full bg-accent/50 overflow-hidden">
+        <div className="h-1.5 rounded-full bg-primary/50 overflow-hidden">
           <div
             className="h-full rounded-full bg-gradient-to-r from-primary/80 to-primary transition-all duration-500"
             style={{ width: `${progress}%` }}

@@ -450,7 +450,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
             <CardHeader className="py-3 cursor-pointer" onClick={() => setShowBenchmarks(b => !b)}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-accent" /> Industry Benchmarks & Context
+                  <BarChart3 className="h-4 w-4 text-primary" /> Industry Benchmarks & Context
                 </CardTitle>
                 {showBenchmarks ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
@@ -523,7 +523,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
             <CardHeader className="py-3 cursor-pointer" onClick={() => setShowDetailTable(t => !t)}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <History className="h-4 w-4 text-accent" /> Year-by-Year Detail
+                  <History className="h-4 w-4 text-primary" /> Year-by-Year Detail
                   <Badge variant="outline" className="text-[10px] ml-1">{result.data.milestones.length} snapshots</Badge>
                 </CardTitle>
                 {showDetailTable ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -604,7 +604,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
                 {backtest.data && (
                   <div className="p-4 rounded-lg border border-border/50 bg-secondary/20">
                     <div className="flex items-start gap-3">
-                      <Shield className="h-5 w-5 text-accent mt-0.5 shrink-0" />
+                      <Shield className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                       <div className="space-y-2 flex-1">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold">Historical Backtest ({horizon}-Year Windows, 1928-2025)</p>
@@ -645,7 +645,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <button type="button"
-                      className="flex items-center gap-2 text-sm font-semibold hover:text-accent transition-colors"
+                      className="flex items-center gap-2 text-sm font-semibold hover:text-primary transition-colors"
                       onClick={() => setShowMultiStress(s => !s)}
                       aria-label="Toggle multi-strategy stress comparison"
                     >
@@ -696,7 +696,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
                                 const r = entry.result;
                                 const isWinner = i === 0;
                                 return (
-                                  <TableRow key={entry.name} className={`border-border/30 ${isWinner ? "bg-accent/5" : ""}`}>
+                                  <TableRow key={entry.name} className={`border-border/30 ${isWinner ? "bg-primary/5" : ""}`}>
                                     <TableCell className="text-xs py-1.5">
                                       {entry.name}
                                       {isWinner && <Badge variant="default" className="ml-1 text-[8px] py-0">best</Badge>}
@@ -744,7 +744,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
             <CardHeader className="py-3 cursor-pointer" onClick={() => setShowProductRefs(r => !r)}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Info className="h-4 w-4 text-accent" /> Product References & Citations
+                  <Info className="h-4 w-4 text-primary" /> Product References & Citations
                   <Badge variant="outline" className="text-[10px] ml-1">
                     {(productRefs.data as any[]).length} products
                   </Badge>
@@ -775,7 +775,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
             <CardHeader className="py-3 cursor-pointer" onClick={() => setShowBackPlan(b => !b)}>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Target className="h-4 w-4 text-accent" /> Back-Plan: "What Do I Need?"
+                  <Target className="h-4 w-4 text-primary" /> Back-Plan: "What Do I Need?"
                 </CardTitle>
                 {showBackPlan ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
               </div>
@@ -834,9 +834,9 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
                   </div>
                 </div>
                 {heBackPlan.data && (
-                  <div className="p-4 rounded-lg border border-accent/30 bg-accent/5 space-y-3">
+                  <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-accent" />
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
                       <p className="text-sm font-semibold">Back-Plan Results</p>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -969,7 +969,7 @@ export default function StrategyComparisonPage({ embedded = false }: { embedded?
                 { icon: BookOpen, label: "Reference Hub", href: "/wealth-engine/references", desc: "Products, benchmarks, methodology" },
               ].map(tool => (
                 <button type="button" key={tool.href}  onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
-                  <tool.icon className="h-4 w-4 text-accent flex-shrink-0" />
+                  <tool.icon className="h-4 w-4 text-primary flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{tool.label}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{tool.desc}</p>

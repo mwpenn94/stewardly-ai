@@ -123,7 +123,7 @@ export default function SuitabilityTab() {
             </div>
 
             <div className="flex justify-center">
-              <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5" onClick={handleReset}>
+              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs gap-1.5" onClick={handleReset}>
                 <RotateCcw className="w-3 h-3" /> Update Profile
               </Button>
             </div>
@@ -149,7 +149,7 @@ export default function SuitabilityTab() {
               <div className="max-w-[85%] space-y-1.5">
                 <div className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-accent text-accent-foreground rounded-br-md"
+                    ? "bg-primary text-primary-foreground rounded-br-md"
                     : "bg-secondary border border-border/50 rounded-bl-md"
                 }`}>
                   {msg.role === "assistant" ? <Streamdown>{msg.content}</Streamdown> : msg.content}
@@ -162,7 +162,7 @@ export default function SuitabilityTab() {
                         key={j}
                         variant="outline"
                         size="sm"
-                        className="text-[11px] h-7 rounded-full border-accent/30 hover:bg-accent/10 hover:border-accent/50"
+                        className="text-[11px] h-7 rounded-full border-primary/20 hover:bg-primary/10 hover:border-primary/30"
                         onClick={() => sendMessage(btn)}
                         disabled={chatMutation.isPending}
                       >
@@ -204,7 +204,7 @@ export default function SuitabilityTab() {
             {isComplete ? (
               <div className="flex items-center gap-2">
                 <Button
-                  className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 text-sm h-9 gap-1.5"
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 text-sm h-9 gap-1.5"
                   onClick={handleSave}
                   disabled={saveMutation.isPending}
                 >
@@ -223,13 +223,13 @@ export default function SuitabilityTab() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Type your answer or tap a button above..."
-                  className="flex-1 h-9 px-3.5 rounded-full bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-accent/50 placeholder:text-muted-foreground"
+                  className="flex-1 h-9 px-3.5 rounded-full bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground"
                   disabled={chatMutation.isPending}
                 />
                 <Button
                   type="submit"
                   size="sm"
-                  className="h-9 w-9 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 p-0 shrink-0"
+                  className="h-9 w-9 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 p-0 shrink-0"
                   disabled={!input.trim() || chatMutation.isPending}
                 >
                   {chatMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}

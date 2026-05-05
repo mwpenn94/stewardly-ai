@@ -39,7 +39,7 @@ export default function ManagerDashboard() {
   });
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   const pendingItems = reviewQueue || [];
@@ -61,12 +61,11 @@ export default function ManagerDashboard() {
       <SEOHead title="Manager Dashboard" description="Team performance and management dashboard" />
     <div className="min-h-screen animate-curtain-lift">
       <div className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <Button variant="ghost" size="icon-sm" onClick={() => navigate("/") } aria-label="Back to home">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Sparkles className="w-4 h-4 text-accent" />
+          <Sparkles className="w-4 h-4 text-primary" />
           <span className="font-semibold text-sm">Manager Dashboard</span>
           {pendingCount > 0 && <Badge variant="destructive" className="text-[10px]">{pendingCount} pending</Badge>}
         </div>
@@ -111,7 +110,7 @@ export default function ManagerDashboard() {
           </Card>
           <Card className="bg-card border-border">
             <CardContent className="pt-4 pb-4">
-              <div className="flex items-center gap-2 mb-1"><FileText className="w-4 h-4 text-accent" /><span className="text-xs text-muted-foreground">Audit Entries</span></div>
+              <div className="flex items-center gap-2 mb-1"><FileText className="w-4 h-4 text-primary" /><span className="text-xs text-muted-foreground">Audit Entries</span></div>
               <p className="text-2xl font-bold font-mono tabular-nums">{auditItems.length}</p>
             </CardContent>
           </Card>

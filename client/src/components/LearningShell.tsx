@@ -166,7 +166,7 @@ function SidebarContent({
                       className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-all ${
                         active
                           ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-accent/10 hover:text-foreground"
+                          : "text-muted-foreground hover:bg-primary/10 hover:text-foreground"
                       } ${collapsed ? "justify-center" : ""}`}
                       title={collapsed ? item.label : undefined}
                     >

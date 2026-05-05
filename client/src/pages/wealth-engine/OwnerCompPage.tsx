@@ -108,7 +108,7 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-blue-400" />
               <h1 className="text-lg font-heading font-semibold">Owner Compensation</h1>
-              <Badge variant="outline" className="h-4 text-[9px] border-accent/40 text-accent px-1">
+              <Badge variant="outline" className="h-4 text-[9px] border-primary/25 text-primary px-1">
                 New
               </Badge>
             </div>
@@ -203,13 +203,13 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
         {result && (
           <>
             {/* Recommendation banner */}
-            <Card className="bg-accent/5 border-accent/30">
+            <Card className="bg-primary/5 border-primary/20">
               <CardContent className="py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
                 <div>
                   <p className="text-[10px] uppercase text-muted-foreground tracking-wider">
                     Recommended
                   </p>
-                  <p className="text-lg font-heading font-semibold text-accent">
+                  <p className="text-lg font-heading font-semibold text-primary">
                     {ENTITY_LABELS[result.recommended as Entity] ?? result.recommended}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -228,7 +228,7 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase">QBI deduction</p>
-                      <p className="text-base font-semibold text-accent tabular-nums">{fmt(best.qbi.deduction)}</p>
+                      <p className="text-base font-semibold text-primary tabular-nums">{fmt(best.qbi.deduction)}</p>
                     </div>
                   </div>
                 )}
@@ -244,7 +244,7 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
                     key={snap.entity}
                     className={
                       isBest
-                        ? "bg-accent/5 border-accent/40"
+                        ? "bg-primary/5 border-primary/25"
                         : "bg-card/60 border-border/50"
                     }
                   >
@@ -252,7 +252,7 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-sm">{ENTITY_LABELS[snap.entity as Entity] ?? snap.entity}</CardTitle>
                         {isBest && (
-                          <Badge variant="outline" className="h-4 text-[9px] border-accent/50 text-accent px-1">
+                          <Badge variant="outline" className="h-4 text-[9px] border-primary/30 text-primary px-1">
                             Best
                           </Badge>
                         )}
@@ -265,7 +265,7 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
                       <Row label="Federal income tax" value={fmt(snap.federalIncomeTax)} />
                       <Row label="State tax" value={fmt(snap.stateTax)} />
                       <Row label="QBI deduction" value={fmt(snap.qbi.deduction)} accent="text-emerald-400" />
-                      <Row label="Retirement stack" value={fmt(snap.retirementPlan.total)} accent="text-accent" />
+                      <Row label="Retirement stack" value={fmt(snap.retirementPlan.total)} accent="text-primary" />
                       <div className="border-t border-border/30 my-1" />
                       <Row label="Total taxes" value={fmt(snap.totalTaxes)} bold />
                       <Row label="Net take-home" value={fmt(snap.netTakeHome)} bold accent="text-emerald-400" />
@@ -299,7 +299,7 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
                         <StatChip label="Plan" value={((best.retirementPlan as any).plan ?? "401k").replace("_", " ")} />
                         <StatChip label="Employee" value={fmt((best.retirementPlan as any).employeeContribution ?? 0)} />
                         <StatChip label="Employer" value={fmt((best.retirementPlan as any).employerContribution ?? 0)} />
-                        <StatChip label="Total" value={fmt(best.retirementPlan.total)} accent="text-accent" />
+                        <StatChip label="Total" value={fmt(best.retirementPlan.total)} accent="text-primary" />
                         <StatChip label="After-tax save" value={fmt((best.retirementPlan as any).afterTaxSavings ?? 0)} accent="text-emerald-400" />
                       </div>
                     </CardContent>
@@ -310,7 +310,7 @@ export default function OwnerCompPage({ embedded = false }: { embedded?: boolean
                   <Card className="bg-card/60 border-border/50">
                     <CardHeader className="pb-2">
                       <div className="flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-accent" />
+                        <Shield className="w-4 h-4 text-primary" />
                         <CardTitle className="text-sm">§ 199A QBI deduction</CardTitle>
                       </div>
                     </CardHeader>

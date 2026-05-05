@@ -291,8 +291,8 @@ export default function LearningQuizRunner() {
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
-                  <HelpCircle className="h-5 w-5 text-accent" />
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <HelpCircle className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="font-bold" style={{ fontFamily: "var(--font-display)" }}>Start practice quiz</p>
@@ -560,10 +560,10 @@ function CompletionCard({
       )}
       <CardContent className="p-8 text-center space-y-5">
         <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
-          isGreat ? "bg-accent/15" : isGood ? "bg-emerald-500/15" : "bg-muted"
+          isGreat ? "bg-primary/10" : isGood ? "bg-emerald-500/15" : "bg-muted"
         }`} style={{ animation: "page-enter 0.5s ease-out" }}>
           <Trophy className={`h-8 w-8 ${
-            isGreat ? "text-accent" : isGood ? "text-emerald-500" : "text-muted-foreground"
+            isGreat ? "text-primary" : isGood ? "text-emerald-500" : "text-muted-foreground"
           }`} />
         </div>
         <div className="space-y-2">

@@ -102,7 +102,7 @@ export function CalculatorContextBar({ params, showBenchmarks = true, className 
         <Card className="border-border/50">
           <CardHeader className="pb-2 pt-3 px-4">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-accent" />
+              <TrendingUp className="h-4 w-4 text-primary" />
               <CardTitle className="text-sm">Industry Benchmarks</CardTitle>
               <Badge variant="outline" className="text-[10px]">Reference</Badge>
             </div>

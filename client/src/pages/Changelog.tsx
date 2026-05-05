@@ -50,14 +50,13 @@ export default function Changelog() {
       <div className="min-h-screen">
         {/* Header */}
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
           <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
             <Button variant="ghost" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/chat")}>
               <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Back</span>
             </Button>
             <Separator orientation="vertical" className="h-5" />
             <div className="flex items-center gap-2 min-w-0">
-              <History className="w-4 h-4 text-accent shrink-0" />
+              <History className="w-4 h-4 text-primary shrink-0" />
               <h1 className="text-sm font-semibold truncate">Changelog</h1>
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -76,7 +75,7 @@ export default function Changelog() {
           {/* Intro */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-5 h-5 text-accent" />
+              <Sparkles className="w-5 h-5 text-primary" />
               <h2 className="text-xl font-bold">Release History</h2>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -100,13 +99,13 @@ export default function Changelog() {
                     {/* Timeline dot */}
                     <div className={`absolute left-0 top-3 w-[23px] h-[23px] rounded-full border-2 flex items-center justify-center ${
                       isLatest
-                        ? "bg-accent/20 border-accent"
+                        ? "bg-primary/15 border-accent"
                         : "bg-card border-border"
                     }`}>
                       <div className={`w-2 h-2 rounded-full ${isLatest ? "bg-accent" : "bg-muted-foreground/40"}`} />
                     </div>
 
-                    <Card className={`overflow-hidden transition-all ${isLatest ? "border-accent/30" : ""}`}>
+                    <Card className={`overflow-hidden transition-all ${isLatest ? "border-primary/20" : ""}`}>
                       {/* Release header — clickable */}
                       <button type="button"
                         onClick={() => toggle(release.version)}

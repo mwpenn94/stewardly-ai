@@ -310,7 +310,7 @@ function IncomeStreamBreakdown({ bizYears }: { bizYears: any[] }) {
       <CardHeader className="py-3 cursor-pointer" onClick={() => setExpanded((v) => !v)}>
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-accent" />
+            <BarChart3 className="h-4 w-4 text-primary" />
             Income Stream Breakdown (Year {finalYear?.year ?? "N"})
             <Badge variant="outline" className="text-[10px] ml-1">
               {streamEntries.length} streams

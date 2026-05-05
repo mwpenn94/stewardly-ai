@@ -58,20 +58,20 @@ export function MessageList({
       {messages.map((msg, i) => (
         <div key={msg.id || i} className={`group/msg flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
           {msg.role === "assistant" && (
-            <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${ttsIsSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-accent/10"}`}>
-              {avatarUrl ? <img loading="lazy" src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
+            <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${ttsIsSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-primary/10"}`}>
+              {avatarUrl ? <img loading="lazy" src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-primary" />}
             </div>
           )}
           <div className="max-w-[85%]">
             {msg.role === "user" ? (
-              <div className="bg-accent/15 rounded-2xl rounded-tr-sm px-4 py-2.5">
+              <div className="bg-primary/10 rounded-2xl rounded-tr-sm px-4 py-2.5">
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               </div>
             ) : (
               <div>
                 {/* AI Badge */}
                 <div className="flex items-center gap-1.5 mb-1">
-                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-accent/70 bg-accent/8 px-1.5 py-0.5 rounded">
+                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-primary/70 bg-accent/8 px-1.5 py-0.5 rounded">
                     <Sparkles className="w-2.5 h-2.5" /> AI
                   </span>
                   {msg.createdAt && <span className="text-[9px] text-muted-foreground/50">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
@@ -113,12 +113,12 @@ export function MessageList({
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
-                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => onCopy(msg.content)}>
+                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors" onClick={() => onCopy(msg.content)}>
                           <Copy className="w-4 h-4" />
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
                       <Tooltip><TooltipTrigger asChild>
-                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => onSpeak(msg.content)}>
+                        <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors" onClick={() => onSpeak(msg.content)}>
                           <Volume2 className="w-4 h-4" />
                         </button>
                       </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
@@ -155,8 +155,8 @@ export function MessageList({
 
       {isStreaming && (
         <div className="flex gap-3">
-          <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${avatarUrl ? "" : "bg-accent/10"}`}>
-            {avatarUrl ? <img loading="lazy" src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
+          <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 ${avatarUrl ? "" : "bg-primary/10"}`}>
+            {avatarUrl ? <img loading="lazy" src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-primary" />}
           </div>
           <div className="flex items-center gap-1.5 px-3 py-2">
             <div className="w-1.5 h-1.5 rounded-full bg-accent typing-dot" />

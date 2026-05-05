@@ -805,7 +805,7 @@ function BenchmarkTab() {
               <CardContent className="space-y-2">
                 {(result as any).recommendations.map((r: any, i: number) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
-                    <Target className="h-3.5 w-3.5 text-accent mt-0.5 shrink-0" />
+                    <Target className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
                     <span>{r}</span>
                   </div>
                 ))}
@@ -1673,40 +1673,40 @@ export default function AdvancedWorkflowsPanel() {
 
       <Tabs defaultValue="policy-delivery" className="w-full">
         <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-transparent p-0">
-          <TabsTrigger value="policy-delivery" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="policy-delivery" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <FileCheck className="h-3.5 w-3.5" /> Policy Delivery
           </TabsTrigger>
-          <TabsTrigger value="exchange" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="exchange" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <ArrowLeftRight className="h-3.5 w-3.5" /> 1035 Exchange
           </TabsTrigger>
-          <TabsTrigger value="beneficiary" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="beneficiary" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <Users className="h-3.5 w-3.5" /> Beneficiary
           </TabsTrigger>
-          <TabsTrigger value="tax" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="tax" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <Receipt className="h-3.5 w-3.5" /> Tax Review
           </TabsTrigger>
-          <TabsTrigger value="benchmark" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="benchmark" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <BarChart3 className="h-3.5 w-3.5" /> Benchmark
           </TabsTrigger>
-          <TabsTrigger value="pfr-export" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="pfr-export" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <FileText className="h-3.5 w-3.5" /> PFR Export
           </TabsTrigger>
-          <TabsTrigger value="engagement" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="engagement" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <FileSignature className="h-3.5 w-3.5" /> Engagement
           </TabsTrigger>
-          <TabsTrigger value="yoy" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="yoy" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <LineChart className="h-3.5 w-3.5" /> YoY Compare
           </TabsTrigger>
-          <TabsTrigger value="underwriting" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="underwriting" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <Stethoscope className="h-3.5 w-3.5" /> Underwriting
           </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="audit" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <ClipboardCheck className="h-3.5 w-3.5" /> Audit
           </TabsTrigger>
-          <TabsTrigger value="meetings" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="meetings" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <MessageSquare className="h-3.5 w-3.5" /> Meetings
           </TabsTrigger>
-          <TabsTrigger value="diagnostic" className="gap-1 text-xs data-[state=active]:bg-accent/20">
+          <TabsTrigger value="diagnostic" className="gap-1 text-xs data-[state=active]:bg-primary/15">
             <HeartPulse className="h-3.5 w-3.5" /> Diagnostic
           </TabsTrigger>
         </TabsList>

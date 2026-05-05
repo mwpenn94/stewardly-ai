@@ -32,14 +32,14 @@ export default function SlashCommandPopover({
             role="option"
             aria-selected={idx === activeIndex}
             className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-xs ${
-              idx === activeIndex ? "bg-accent/10" : "hover:bg-secondary/40"
+              idx === activeIndex ? "bg-primary/10" : "hover:bg-secondary/40"
             }`}
             onMouseDown={(e) => {
               e.preventDefault(); // prevent input blur
               onSelect(cmd);
             }}
           >
-            <code className="font-mono text-accent shrink-0">
+            <code className="font-mono text-primary shrink-0">
               /{cmd.name}
               {cmd.args ? ` ${cmd.args}` : ""}
             </code>

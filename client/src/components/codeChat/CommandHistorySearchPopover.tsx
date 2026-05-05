@@ -82,7 +82,7 @@ export default function CommandHistorySearchPopover({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/30">
-          <Search className="h-4 w-4 text-accent shrink-0" />
+          <Search className="h-4 w-4 text-primary shrink-0" />
           <Input
             ref={inputRef}
             value={query}
@@ -118,7 +118,7 @@ export default function CommandHistorySearchPopover({
                     aria-selected={idx === activeIdx}
                     className={`flex items-center gap-2 px-3 py-2 cursor-pointer text-xs ${
                       idx === activeIdx
-                        ? "bg-accent/10"
+                        ? "bg-primary/10"
                         : "hover:bg-secondary/30"
                     }`}
                     onMouseDown={(e) => {
@@ -132,7 +132,7 @@ export default function CommandHistorySearchPopover({
                         <span
                           key={i}
                           className={
-                            seg.highlight ? "text-accent font-semibold" : ""
+                            seg.highlight ? "text-primary font-semibold" : ""
                           }
                         >
                           {seg.text}

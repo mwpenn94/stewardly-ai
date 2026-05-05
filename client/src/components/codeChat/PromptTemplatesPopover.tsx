@@ -149,7 +149,7 @@ export default function PromptTemplatesPopover({
           <X className="h-4 w-4" />
         </button>
         <h2 className="font-heading text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-          <LibraryBig className="h-4 w-4 text-accent" /> Prompt templates
+          <LibraryBig className="h-4 w-4 text-primary" /> Prompt templates
         </h2>
         <p className="text-[11px] text-muted-foreground mb-4">
           Reusable macros. Click one to insert it into the input.
@@ -253,7 +253,7 @@ export default function PromptTemplatesPopover({
 
         {/* Create form */}
         {showCreate && (
-          <div className="mb-3 p-3 rounded border border-accent/30 bg-accent/5 space-y-2">
+          <div className="mb-3 p-3 rounded border border-primary/20 bg-primary/5 space-y-2">
             <div className="space-y-1">
               <Label className="text-[10px] uppercase">Name</Label>
               <Input
@@ -317,7 +317,7 @@ export default function PromptTemplatesPopover({
                       {t.name}
                     </span>
                     {t.builtin && (
-                      <span className="text-[9px] uppercase tracking-wide text-accent">
+                      <span className="text-[9px] uppercase tracking-wide text-primary">
                         built-in
                       </span>
                     )}

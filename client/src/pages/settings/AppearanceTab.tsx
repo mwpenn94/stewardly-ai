@@ -85,7 +85,7 @@ export default function AppearanceTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Monitor className="w-4 h-4 text-accent" aria-hidden="true" /> Theme
+            <Monitor className="w-4 h-4 text-primary" aria-hidden="true" /> Theme
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -126,13 +126,13 @@ export default function AppearanceTab() {
                   onClick={() => pickTheme(opt.id)}
                   className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border transition-all card-lift ${
                     active
-                      ? "border-accent bg-accent/10 text-accent"
+                      ? "border-accent bg-primary/10 text-primary"
                       : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
                   {active && (
                     <Check
-                      className="absolute top-2 right-2 w-3 h-3 text-accent"
+                      className="absolute top-2 right-2 w-3 h-3 text-primary"
                       aria-hidden="true"
                     />
                   )}
@@ -154,7 +154,7 @@ export default function AppearanceTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Type className="w-4 h-4 text-accent" aria-hidden="true" /> Font Size
+            <Type className="w-4 h-4 text-primary" aria-hidden="true" /> Font Size
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -170,7 +170,7 @@ export default function AppearanceTab() {
                   onClick={() => pickFont(fs.value)}
                   className={`min-w-[88px] px-3 py-2 rounded-md text-xs font-medium transition-all ${
                     active
-                      ? "bg-accent text-accent-foreground"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -194,7 +194,7 @@ export default function AppearanceTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-accent" aria-hidden="true" /> Chat Message Density
+            <MessageSquare className="w-4 h-4 text-primary" aria-hidden="true" /> Chat Message Density
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -210,7 +210,7 @@ export default function AppearanceTab() {
                   onClick={() => pickDensity(d.value)}
                   className={`flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all ${
                     active
-                      ? "bg-accent text-accent-foreground"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -229,7 +229,7 @@ export default function AppearanceTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Eye className="w-4 h-4 text-accent" aria-hidden="true" /> Color vision
+            <Eye className="w-4 h-4 text-primary" aria-hidden="true" /> Color vision
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -245,7 +245,7 @@ export default function AppearanceTab() {
                   onClick={() => pickColorBlind(m.value)}
                   className={`min-w-[130px] px-3 py-2 rounded-md text-xs font-medium transition-all ${
                     active
-                      ? "bg-accent text-accent-foreground"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -270,7 +270,7 @@ export default function AppearanceTab() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Accessibility className="w-4 h-4 text-accent" aria-hidden="true" /> Accessibility
+            <Accessibility className="w-4 h-4 text-primary" aria-hidden="true" /> Accessibility
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -334,7 +334,7 @@ export default function AppearanceTab() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Layers className="w-4 h-4 text-accent" aria-hidden="true" />
+            <Layers className="w-4 h-4 text-primary" aria-hidden="true" />
             Feature Complexity
           </CardTitle>
           <p className="text-xs text-muted-foreground">
@@ -346,10 +346,10 @@ export default function AppearanceTab() {
         </CardContent>
       </Card>
 
-      <Card className="border-accent/20 bg-accent/5">
+      <Card className="border-primary/15 bg-primary/5">
         <CardContent className="pt-4 pb-4">
           <div className="flex items-start gap-2">
-            <Eye className="w-4 h-4 text-accent shrink-0 mt-0.5" aria-hidden="true" />
+            <Eye className="w-4 h-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
             <div className="text-xs text-muted-foreground">
               <span className="text-foreground font-medium">Live preview.</span> Every
               change applies instantly. To reset, pick each control's "Default" option.
@@ -382,10 +382,10 @@ function DisclosureLevelPicker() {
           onClick={() => setLevel(l.value)}
           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all text-left cursor-pointer
             ${level === l.value
-              ? "border-accent bg-accent/10 ring-1 ring-accent/20"
+              ? "border-accent bg-primary/10 ring-1 ring-primary/20"
               : l.value > maxLevel
                 ? "border-border/30 opacity-40 cursor-not-allowed"
-                : "border-border/50 hover:border-accent/30 hover:bg-card/50"
+                : "border-border/50 hover:border-primary/20 hover:bg-card/50"
             }`}
         >
           <div className={`w-2.5 h-2.5 rounded-full ${l.color} ${level === l.value ? "ring-2 ring-offset-1 ring-offset-background" : "opacity-50"}`} />
@@ -394,7 +394,7 @@ function DisclosureLevelPicker() {
             <div className="text-[11px] text-muted-foreground truncate">{l.desc}</div>
           </div>
           {level === l.value && (
-            <div className="text-[10px] font-medium text-accent bg-accent/10 px-1.5 py-0.5 rounded">Active</div>
+            <div className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">Active</div>
           )}
         </button>
       ))}

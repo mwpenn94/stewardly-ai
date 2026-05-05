@@ -178,7 +178,7 @@ function JobRow({
 }) {
   const icon =
     job.status === "running" ? (
-      <Loader2 className="h-3 w-3 animate-spin text-accent" />
+      <Loader2 className="h-3 w-3 animate-spin text-primary" />
     ) : job.status === "queued" ? (
       <Clock className="h-3 w-3 text-muted-foreground" />
     ) : job.status === "succeeded" ? (

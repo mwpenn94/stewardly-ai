@@ -424,7 +424,7 @@ export default function LearningReview() {
             {newCount > 0 && (
               <Badge
                 variant="outline"
-                className="text-accent border-accent/50"
+                className="text-primary border-primary/30"
                 aria-label={`${newCount} new items in this session`}
               >
                 <Sparkles className="h-3 w-3 mr-1" /> {newCount} new
@@ -438,7 +438,7 @@ export default function LearningReview() {
             {streak >= 3 && (
               <Badge
                 variant="outline"
-                className="text-accent border-accent/50 animate-pulse"
+                className="text-primary border-primary/30 animate-pulse"
                 aria-label={`Streak: ${streak} in a row`}
               >
                 <Flame className="h-3 w-3 mr-1" /> {streak} streak
@@ -540,7 +540,7 @@ function FlashcardView({
         <CardContent className="p-8 flex flex-col items-center justify-center min-h-[220px] text-center relative">
           <div className="absolute top-2 right-2 flex gap-1">
             {isNew && (
-              <Badge variant="outline" className="text-[10px] text-accent border-accent/50">
+              <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
                 NEW
               </Badge>
             )}
@@ -630,7 +630,7 @@ function QuestionView({
             <HelpCircle className="h-3 w-3 mr-1" /> Question
           </Badge>
           {isNew && (
-            <Badge variant="outline" className="text-[10px] text-accent border-accent/50">
+            <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
               NEW
             </Badge>
           )}
@@ -740,14 +740,14 @@ function CompletionCard({
       <CardContent className="p-8 text-center space-y-5">
         <div
           className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
-            isGreat ? "bg-accent/15" : isGood ? "bg-emerald-500/15" : "bg-muted"
+            isGreat ? "bg-primary/10" : isGood ? "bg-emerald-500/15" : "bg-muted"
           }`}
           style={{ animation: "page-enter 0.5s ease-out" }}
         >
           <Trophy
             className={`h-8 w-8 ${
               isGreat
-                ? "text-accent"
+                ? "text-primary"
                 : isGood
                   ? "text-emerald-500"
                   : "text-muted-foreground"
@@ -763,7 +763,7 @@ function CompletionCard({
             {bestStreak >= 3 && (
               <>
                 {" · "}
-                <span className="text-accent">best streak: {bestStreak}</span>
+                <span className="text-primary">best streak: {bestStreak}</span>
               </>
             )}
           </p>

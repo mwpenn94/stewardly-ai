@@ -268,7 +268,7 @@ export default function Bookmarks() {
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               {bm.discipline && (
-                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-accent text-accent-foreground truncate">
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary text-primary-foreground truncate">
                                   {bm.discipline}
                                 </span>
                               )}
@@ -336,7 +336,7 @@ export default function Bookmarks() {
                                 key="note"
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="mt-2 p-2 rounded-md bg-accent/50 border border-border/50"
+                                className="mt-2 p-2 rounded-md bg-primary/50 border border-border/50"
                               >
                                 <div className="flex items-start gap-1.5">
                                   <MessageSquare className="w-3 h-3 text-muted-foreground shrink-0 mt-0.5" />

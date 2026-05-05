@@ -193,7 +193,7 @@ export function LifeEventsBanner({
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
-          <Sparkles className="w-3 h-3 text-accent" />
+          <Sparkles className="w-3 h-3 text-primary" />
           Life events detected
           <Badge variant="outline" className="text-[10px] h-4 px-1">
             {events.length}
@@ -202,7 +202,7 @@ export function LifeEventsBanner({
         <button type="button"
           
           onClick={handleAcknowledge}
-          className="text-[10px] text-muted-foreground hover:text-accent transition-colors"
+          className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
           aria-label="Acknowledge all life events and update baseline"
         >
           Mark all handled

@@ -154,11 +154,11 @@ export default function DataSharingTab() {
                   <div key={granteeId} className="border border-border rounded-lg overflow-hidden">
                     {/* Grantee header */}
                     <button type="button"
-                      className="w-full flex items-center justify-between p-3 hover:bg-accent/5 transition-colors"
+                      className="w-full flex items-center justify-between p-3 hover:bg-primary/5 transition-colors"
                       onClick={() => setExpandedGrantee(isExpanded ? null : granteeId)}
                     >
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-xs font-medium">
+                        <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-xs font-medium">
                           #{granteeId}
                         </div>
                         <div className="text-left">
@@ -206,7 +206,7 @@ export default function DataSharingTab() {
                         {/* Per-topic permissions */}
                         <div className="space-y-2">
                           {hasAll ? (
-                            <div className="flex items-center justify-between p-2 rounded bg-accent/5">
+                            <div className="flex items-center justify-between p-2 rounded bg-primary/5">
                               <span className="text-sm">All Topics</span>
                               <Select
                                 value={activePerms.find(p => p.topic === "all")?.accessLevel || "none"}
@@ -234,7 +234,7 @@ export default function DataSharingTab() {
                               const accessInfo = ACCESS_LABELS[level];
 
                               return (
-                                <div key={topic} className="flex items-center justify-between p-2 rounded bg-accent/5">
+                                <div key={topic} className="flex items-center justify-between p-2 rounded bg-primary/5">
                                   <div className="flex items-center gap-2">
                                     <Badge variant="outline" className={`text-[10px] h-5 ${accessInfo.color}`}>
                                       {accessInfo.label}
@@ -295,7 +295,7 @@ export default function DataSharingTab() {
           <CardContent>
             <div className="space-y-2">
               {(Array.isArray(transitionsQuery.data) ? transitionsQuery.data : []).slice(-10).reverse().map((t: any) => (
-                <div key={t.id} className="flex items-center gap-2 text-xs p-2 rounded bg-accent/5">
+                <div key={t.id} className="flex items-center gap-2 text-xs p-2 rounded bg-primary/5">
                   <Badge variant="outline" className="text-[10px]">{TOPIC_LABELS[t.topic] || t.topic}</Badge>
                   <span className="text-muted-foreground">
                     #{t.fromGranteeId} → #{t.toGranteeId}

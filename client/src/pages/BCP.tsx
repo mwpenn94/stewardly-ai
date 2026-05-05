@@ -155,7 +155,6 @@ export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border/40 bg-card/50 backdrop-blur-sm sticky top-0 z-10 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="container max-w-6xl py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" aria-label="Back to admin" onClick={() => navigate("/admin")}>
@@ -163,7 +162,7 @@ export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
             </Button>
             <div>
               <h1 className="text-lg font-semibold flex items-center gap-2">
-                <Shield className="w-5 h-5 text-accent" />
+                <Shield className="w-5 h-5 text-primary" />
                 Business Continuity Plan
               </h1>
               <p className="text-xs text-muted-foreground">System dependencies, RTO/RPO targets, and health monitoring</p>
@@ -189,7 +188,7 @@ export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
               onClick={() => setActiveSection(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 activeSection === tab.id
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-secondary text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -226,7 +225,7 @@ export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm flex items-center gap-2">
-                        <span className="text-accent">{dep.icon}</span>
+                        <span className="text-primary">{dep.icon}</span>
                         {dep.name}
                         <Badge variant="outline" className="text-[9px] ml-1">{dep.category}</Badge>
                       </CardTitle>
@@ -288,7 +287,7 @@ export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
                 <Card>
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-accent" /> Overall Status
+                      <Globe className="w-4 h-4 text-primary" /> Overall Status
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -308,7 +307,7 @@ export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
                     <Card key={dep.name}>
                       <CardContent className="p-4 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="text-accent">{dep.icon}</span>
+                          <span className="text-primary">{dep.icon}</span>
                           <div>
                             <p className="text-sm font-medium">{dep.name}</p>
                             <p className="text-[10px] text-muted-foreground">{dep.category}</p>
@@ -388,7 +387,7 @@ export default function BCP({ embedded = false }: { embedded?: boolean } = {}) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-accent" /> RTO/RPO Summary
+              <BarChart3 className="w-4 h-4 text-primary" /> RTO/RPO Summary
             </CardTitle>
           </CardHeader>
           <CardContent>

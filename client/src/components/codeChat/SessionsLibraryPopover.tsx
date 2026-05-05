@@ -188,7 +188,7 @@ export default function SessionsLibraryPopover({
           <X className="h-4 w-4" />
         </button>
         <h2 className="font-heading text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-          <BookMarked className="h-4 w-4 text-accent" /> Saved sessions
+          <BookMarked className="h-4 w-4 text-primary" /> Saved sessions
         </h2>
         <p className="text-[11px] text-muted-foreground mb-3">
           Snapshot the current conversation and switch between saved
@@ -304,7 +304,7 @@ export default function SessionsLibraryPopover({
                       toast.success(`Loaded "${hit.sessionName}"`);
                     }}
                   >
-                    <div className="text-[10px] text-accent font-medium truncate">
+                    <div className="text-[10px] text-primary font-medium truncate">
                       {hit.sessionName}{" "}
                       <span className="text-muted-foreground/60">
                         · msg {hit.messageIndex + 1} ({hit.messageRole})
@@ -312,7 +312,7 @@ export default function SessionsLibraryPopover({
                     </div>
                     <div className="text-[10px] text-muted-foreground font-mono truncate">
                       {hit.snippet.slice(0, hit.matchAt)}
-                      <span className="bg-accent/30 text-accent-foreground font-medium">
+                      <span className="bg-accent/30 text-primary-foreground font-medium">
                         {hit.snippet.slice(
                           hit.matchAt,
                           hit.matchAt + hit.matchLen,
@@ -346,7 +346,7 @@ export default function SessionsLibraryPopover({
                   onClick={() => toggleTagFilter(tag)}
                   className={`text-[10px] px-2 py-0.5 rounded-full border font-mono transition-colors ${
                     active
-                      ? "bg-accent/20 border-accent/60 text-accent"
+                      ? "bg-primary/15 border-primary/40 text-primary"
                       : "border-border/40 text-muted-foreground hover:text-foreground"
                   }`}
                   aria-pressed={active}
@@ -383,7 +383,7 @@ export default function SessionsLibraryPopover({
                 key={s.id}
                 className={`flex flex-col gap-1 px-2 py-1.5 rounded border text-xs ${
                   s.id === currentSessionId
-                    ? "border-accent/50 bg-accent/5"
+                    ? "border-primary/30 bg-primary/5"
                     : "border-border/40 hover:bg-secondary/20"
                 }`}
               >

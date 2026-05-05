@@ -268,7 +268,7 @@ export default function RetirementPage({ embedded = false }: { embedded?: boolea
               <div key={i} className={`flex items-start gap-2 text-xs p-2 rounded ${
                 w.severity === "error" ? "bg-destructive/10 text-destructive" :
                 w.severity === "warning" ? "bg-amber-500/10 text-amber-400" :
-                "bg-accent/10 text-accent"
+                "bg-primary/10 text-primary"
               }`}>
                 <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>{w.message}</span>
@@ -523,7 +523,7 @@ export default function RetirementPage({ embedded = false }: { embedded?: boolea
                 {backtestRun.data && (
                   <div className="p-4 rounded-lg border border-border/50 bg-secondary/20">
                     <div className="flex items-start gap-3">
-                      <Shield className="h-5 w-5 text-accent mt-0.5 shrink-0" />
+                      <Shield className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                       <div className="space-y-2 flex-1">
                         <p className="text-sm font-semibold">
                           Historical Backtest ({horizon}-Year Windows, 1928-2025)
@@ -592,7 +592,7 @@ export default function RetirementPage({ embedded = false }: { embedded?: boolea
                 { icon: BookOpen, label: "Reference Hub", href: "/wealth-engine/references", desc: "Products, benchmarks, methodology" },
               ].map(tool => (
                 <button type="button" key={tool.href}  onClick={() => navigate(tool.href)} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors text-left">
-                  <tool.icon className="h-4 w-4 text-accent flex-shrink-0" />
+                  <tool.icon className="h-4 w-4 text-primary flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{tool.label}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{tool.desc}</p>

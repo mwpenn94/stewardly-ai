@@ -101,7 +101,7 @@ export default function SettingsHub() {
       <AppShell title={tr("common.settings")}>
         <SEOHead title={tr("common.settings")} description={tr("settings.description", "Account settings and preferences")} />
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       </AppShell>
     );
@@ -207,8 +207,8 @@ export default function SettingsHub() {
             </div>
             {needsAuth ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-                  <User className="w-8 h-8 text-accent" />
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <User className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-lg font-semibold mb-2">Sign in to access {ALL_ITEMS.find(t => t.id === activeTab)?.label}</h2>
                 <p className="text-sm text-muted-foreground mb-6 max-w-sm">

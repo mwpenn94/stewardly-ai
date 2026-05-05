@@ -250,7 +250,7 @@ export default function TeamBuilder({ embedded = false }: { embedded?: boolean }
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-              <Users className="h-6 w-6 text-accent" />
+              <Users className="h-6 w-6 text-primary" />
               Team Builder
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -421,7 +421,7 @@ export default function TeamBuilder({ embedded = false }: { embedded?: boolean }
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-heading font-semibold flex items-center gap-2">
-                  <ArrowUp className="h-5 w-5 text-accent" /> Team Roll-Up
+                  <ArrowUp className="h-5 w-5 text-primary" /> Team Roll-Up
                 </h2>
                 <p className="text-sm text-muted-foreground">Aggregate all team members' income projections into a single org-level view.</p>
               </div>
@@ -489,7 +489,7 @@ export default function TeamBuilder({ embedded = false }: { embedded?: boolean }
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-heading font-semibold flex items-center gap-2">
-                  <ArrowDown className="h-5 w-5 text-accent" /> Org Roll-Down
+                  <ArrowDown className="h-5 w-5 text-primary" /> Org Roll-Down
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   Set an organization income target and cascade per-role quotas to each team member.
@@ -566,7 +566,7 @@ export default function TeamBuilder({ embedded = false }: { embedded?: boolean }
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-heading font-semibold flex items-center gap-2">
-                  <Crosshair className="h-5 w-5 text-accent" /> Income Back-Plan
+                  <Crosshair className="h-5 w-5 text-primary" /> Income Back-Plan
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   Set a target annual income and see exactly what activity is required to achieve it.
@@ -622,7 +622,7 @@ export default function TeamBuilder({ embedded = false }: { embedded?: boolean }
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-heading font-semibold flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-accent" /> Business Economics
+                  <BarChart3 className="h-5 w-5 text-primary" /> Business Economics
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   5-year P&L, margins, CAC, LTV, and ROI for the lead team member's strategy.
@@ -774,7 +774,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string; 
     <Card className="card-lift">
       <CardContent className="pt-4 pb-3 px-4">
         <div className="flex items-center gap-2 mb-1">
-          <Icon className="h-3.5 w-3.5 text-accent" />
+          <Icon className="h-3.5 w-3.5 text-primary" />
           <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</span>
         </div>
         <div className="text-lg font-heading font-bold tabular-nums">{value}</div>

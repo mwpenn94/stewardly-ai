@@ -62,7 +62,7 @@ export function SrsWidget({ compact = false, className = "" }: SrsWidgetProps) {
 
   if (totalCards === 0 && !statsQ.isLoading) {
     return compact ? (
-      <button onClick={() => navigate("/learning/flashcards")} className={`flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-sm transition-colors hover:bg-accent/50 ${className}`}>
+      <button onClick={() => navigate("/learning/flashcards")} className={`flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-sm transition-colors hover:bg-primary/50 ${className}`}>
         <Brain className="h-4 w-4 text-muted-foreground" />
         <span className="text-muted-foreground">No flashcards yet</span>
       </button>
@@ -80,7 +80,7 @@ export function SrsWidget({ compact = false, className = "" }: SrsWidgetProps) {
     return (
       <button
         onClick={() => navigate("/learning/flashcards")}
-        className={`flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-sm transition-colors hover:bg-accent/50 ${className}`}
+        className={`flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-sm transition-colors hover:bg-primary/50 ${className}`}
       >
         <Brain className="h-4 w-4 text-purple-400" />
         <span className="font-medium">{dueCount} due</span>

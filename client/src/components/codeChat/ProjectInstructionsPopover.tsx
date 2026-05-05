@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const KIND_LABELS: Record<string, { label: string; variant: string }> = {
-  stewardly: { label: "Stewardly", variant: "bg-accent/10 text-accent border-accent/30" },
+  stewardly: { label: "Stewardly", variant: "bg-primary/10 text-primary border-primary/20" },
   claude: { label: "Claude", variant: "bg-chart-3/10 text-chart-3 border-chart-3/30" },
   agents: { label: "Agents", variant: "bg-chart-2/10 text-chart-2 border-chart-2/30" },
 };
@@ -78,7 +78,7 @@ export default function ProjectInstructionsPopover({
         </button>
 
         <h2 className="font-heading text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-          <BookOpen className="h-4 w-4 text-accent" /> Project instructions
+          <BookOpen className="h-4 w-4 text-primary" /> Project instructions
         </h2>
         <p className="text-[11px] text-muted-foreground mb-4">
           Auto-loaded files the agent reads as house rules on every message.
@@ -152,7 +152,7 @@ export default function ProjectInstructionsPopover({
                   >
                     <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/30 bg-background/80">
                       <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="h-3.5 w-3.5 text-accent shrink-0" />
+                        <FileText className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="font-mono text-xs truncate text-foreground">
                           {e.path}
                         </span>

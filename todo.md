@@ -9595,3 +9595,54 @@
 - [x] Make input area more visually prominent with glow effect
 - [x] Add subtle gradient to sidebar background
 - [x] Ensure the chat greeting font is visually distinctive and premium
+
+## Critical Bug — Mobile Layout Broken
+- [x] Fix mobile layout: content pushed off-screen to the right (only right edge visible)
+- [x] Sidebar should be fully hidden on mobile, not taking up space
+- [x] Ensure greeting, suggestion cards, and input area are centered on mobile
+
+## CSS Cleanup & Manus UX Alignment (Current Session)
+- [x] Remove overly aggressive mobile overrides (44px min on ALL buttons, 13px text-xs)
+- [x] Remove duplicate reduced-motion rules
+- [x] Remove duplicate forced-colors rules
+- [x] Remove conflicting :focus-visible rule (blue outline overriding gold)
+- [x] Consolidate accessibility rules into single clean block
+- [x] Verify ChatGreeting renders correctly on desktop + mobile
+- [x] Verify input area renders correctly without forced sizing
+- [x] Run vitest to confirm no regressions (119 tests passing)
+- [ ] Save checkpoint
+
+## Manus Visual Language Transformation (Current Session)
+- [x] Replace CSS color palette: navy+gold to pure neutral greys + blue accent (manus tokens)
+- [x] Replace accent from gold brand color to hover surface color (manus pattern)
+- [x] Strip focus-visible from 3-layer gold glow to simple 2px outline
+- [x] Strip scrollbar gold hover to neutral grey
+- [x] Remove unused glass-surface, depth-*, sovereign-active, tier-glow utilities
+- [x] Remove card-lift (manus does not lift cards)
+- [x] Update thinking-shimmer from gold to neutral grey
+- [x] Update progress-bar from gold to blue
+- [x] Update selection color from gold to blue
+- [x] Update prose-chat colors from gold accent to blue
+- [x] Strip ChatGreeting of any remaining gold/glow decoration
+- [x] Strip input area shadow-md and glow effects
+- [x] Strip sidebar of warm navy, make flat neutral
+- [x] Verify light theme also uses manus tokens
+- [x] Run vitest to confirm no regressions (119 tests passing)
+- [ ] Save checkpoint
+
+## Additional Manus Alignment Changes
+- [x] Replace all text-accent → text-primary across ALL client source files
+- [x] Replace all bg-accent/N → bg-primary/N across ALL client source files
+- [x] Replace all border-accent/N → border-primary/N across ALL files
+- [x] Replace all ring-accent → ring-primary across ALL files
+- [x] Replace bg-accent text-primary-foreground → bg-primary (action buttons)
+- [x] Replace oklch gold (0.76 0.14 80) → manus blue in ALL inline styles
+- [x] Remove ALL radial-gradient overlays from 27 page headers
+- [x] Fix EmailTemplateBuilder gold gradients → blue
+- [x] Fix GuestBanner amber → neutral
+- [x] Fix PersonaSidebar5 gradient → flat bg-sidebar
+- [x] Fix PageSuspenseFallback skeleton-gold → skeleton
+- [x] Fix WhatsNewModal emerald badges → primary blue
+- [x] Update theme-color meta tag #0f1117 → #1a1a1a
+- [x] Simplify New Conversation button to plain outline
+- [x] Simplify ChatSidebar active item (no border/shadow)

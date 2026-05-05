@@ -60,8 +60,8 @@ export function UpgradePrompt({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-3 px-4 py-3 bg-accent/5 border border-accent/20 rounded-xl">
-        <Sparkles className="w-4 h-4 text-accent shrink-0" />
+      <div className="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/15 rounded-xl">
+        <Sparkles className="w-4 h-4 text-primary shrink-0" />
         <p className="text-sm text-muted-foreground flex-1">
           {messageCount && messageCount >= 3
             ? "Want to save your progress? "
@@ -71,7 +71,7 @@ export function UpgradePrompt({
         <Button
           size="sm"
           variant="outline"
-          className="shrink-0 border-accent/30 text-accent hover:bg-accent/10"
+          className="shrink-0 border-primary/20 text-primary hover:bg-primary/10"
           onClick={() => (window.location.href = loginUrl)}
         >
           {tier.cta}
@@ -84,8 +84,8 @@ export function UpgradePrompt({
   return (
     <div className="max-w-md mx-auto p-6 bg-card border border-border rounded-2xl shadow-lg">
       <div className="text-center mb-4">
-        <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
-          <Sparkles className="w-6 h-6 text-accent" />
+        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+          <Sparkles className="w-6 h-6 text-primary" />
         </div>
         <h3 className="text-lg font-semibold">{tier.title}</h3>
         <p className="text-sm text-muted-foreground mt-1">{tier.subtitle}</p>
@@ -94,7 +94,7 @@ export function UpgradePrompt({
       <div className="space-y-3 mb-6">
         {tier.benefits.map((b, i) => (
           <div key={i} className="flex items-center gap-3 text-sm">
-            <div className="text-accent">{b.icon}</div>
+            <div className="text-primary">{b.icon}</div>
             <span>{b.text}</span>
           </div>
         ))}

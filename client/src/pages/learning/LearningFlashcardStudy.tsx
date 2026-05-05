@@ -539,12 +539,12 @@ export default function LearningFlashcardStudy() {
                 <CardContent className="relative p-8 flex flex-col items-center justify-center min-h-[220px] text-center">
                   {/* Bookmark icon */}
                   <button
-                    className="absolute top-4 right-4 text-muted-foreground hover:text-accent transition-colors"
+                    className="absolute top-4 right-4 text-muted-foreground hover:text-primary transition-colors"
                     onClick={(e) => { e.stopPropagation(); toggleBookmark(current.id); }}
                     aria-label={bookmarked.has(current.id) ? "Remove bookmark" : "Bookmark this card"}
                   >
                     {bookmarked.has(current.id) ? (
-                      <BookmarkCheck className="h-5 w-5 text-accent" />
+                      <BookmarkCheck className="h-5 w-5 text-primary" />
                     ) : (
                       <Bookmark className="h-5 w-5" />
                     )}
@@ -647,10 +647,10 @@ function CompletionCard({
       )}
       <CardContent className="p-8 text-center space-y-5">
         <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
-          isGreat ? "bg-accent/15" : isGood ? "bg-emerald-500/15" : "bg-muted"
+          isGreat ? "bg-primary/10" : isGood ? "bg-emerald-500/15" : "bg-muted"
         }`} style={{ animation: "page-enter 0.5s ease-out" }}>
           <Trophy className={`h-8 w-8 ${
-            isGreat ? "text-accent" : isGood ? "text-emerald-500" : "text-muted-foreground"
+            isGreat ? "text-primary" : isGood ? "text-emerald-500" : "text-muted-foreground"
           }`} />
         </div>
         <div className="space-y-2">

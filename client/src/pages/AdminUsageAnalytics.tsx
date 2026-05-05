@@ -151,7 +151,7 @@ export default function AdminUsageAnalytics({ embedded }: Props) {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-xl font-bold flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-accent" />
+              <BarChart3 className="w-5 h-5 text-primary" />
               Usage Analytics
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
@@ -215,7 +215,7 @@ export default function AdminUsageAnalytics({ embedded }: Props) {
                       <div key={i} className="flex items-center gap-2 text-xs">
                         <span className="w-16 text-muted-foreground font-mono">{row.date.slice(5)}</span>
                         <div className="flex-1 h-3 bg-muted/20 rounded overflow-hidden">
-                          <div className="h-full bg-accent/50 rounded" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-primary/50 rounded" style={{ width: `${pct}%` }} />
                         </div>
                         <span className="w-8 text-right font-mono text-muted-foreground">{row.activeUsers}</span>
                       </div>
@@ -251,7 +251,7 @@ export default function AdminUsageAnalytics({ embedded }: Props) {
                           <span className="text-muted-foreground">{row.count} ({Math.round(row.count / Math.max(total, 1) * 100)}%)</span>
                         </div>
                         <div className="h-3 bg-muted/20 rounded overflow-hidden">
-                          <div className={`h-full rounded ${colors[row.mode] || "bg-accent/50"}`}
+                          <div className={`h-full rounded ${colors[row.mode] || "bg-primary/50"}`}
                             style={{ width: `${(row.count / Math.max(total, 1)) * 100}%` }} />
                         </div>
                       </div>

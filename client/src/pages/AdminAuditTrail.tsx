@@ -211,8 +211,7 @@ export default function AdminAuditTrail({ embedded = false }: { embedded?: boole
       <div className="min-h-screen">
         {/* ─── Header ──────────────────────────────────────────────────── */}
         <header className="border-b border-border px-4 py-3 flex items-center gap-3 relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.65 0.15 300 / 0.15) 0%, transparent 70%)' }} />
-          <Shield className="w-5 h-5 text-accent relative" />
+          <Shield className="w-5 h-5 text-primary relative" />
           <div className="relative">
             <h1 className="text-lg font-semibold">Compliance Audit Trail</h1>
             <p className="text-xs text-muted-foreground">Permission changes, sync events, and system actions</p>
@@ -242,7 +241,7 @@ export default function AdminAuditTrail({ embedded = false }: { embedded?: boole
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <Card className="border-border/50">
               <CardContent className="p-4 text-center">
-                <History className="h-5 w-5 mx-auto mb-1 text-accent" />
+                <History className="h-5 w-5 mx-auto mb-1 text-primary" />
                 <div className="text-2xl font-bold">{summary?.totalEvents ?? 0}</div>
                 <p className="text-xs text-muted-foreground">Total Events</p>
               </CardContent>
@@ -253,7 +252,7 @@ export default function AdminAuditTrail({ embedded = false }: { embedded?: boole
               return (
                 <Card
                   key={key}
-                  className={`border-border/50 cursor-pointer transition-all hover:border-accent/40 ${filterCategory === key ? "ring-1 ring-accent" : ""}`}
+                  className={`border-border/50 cursor-pointer transition-all hover:border-primary/25 ${filterCategory === key ? "ring-1 ring-primary" : ""}`}
                   onClick={() => { setFilterCategory(filterCategory === key ? "all" : key); setPage(0); }}
                 >
                   <CardContent className="p-4 text-center">
@@ -271,7 +270,7 @@ export default function AdminAuditTrail({ embedded = false }: { embedded?: boole
             <Card className="border-border/50">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-accent" /> Top Actors
+                  <BarChart3 className="h-4 w-4 text-primary" /> Top Actors
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-3">
@@ -405,7 +404,7 @@ export default function AdminAuditTrail({ embedded = false }: { embedded?: boole
                           <div className={`w-2 h-2 rounded-full ${catCfg.color.replace("text-", "bg-")}`} />
                         </div>
 
-                        <Card className={`transition-all hover:border-accent/30 ${isExpanded ? "border-accent/40" : "border-border/50"}`}>
+                        <Card className={`transition-all hover:border-primary/20 ${isExpanded ? "border-primary/25" : "border-border/50"}`}>
                           <CardContent className="p-0">
                             <button
                               type="button"

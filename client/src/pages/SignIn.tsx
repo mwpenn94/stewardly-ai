@@ -92,7 +92,7 @@ export default function SignIn() {
           new design system instead of the old sky-blue hardcoded palette. */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-background" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-30 animate-pulse" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-30 animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-chart-2/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
@@ -101,7 +101,7 @@ export default function SignIn() {
         <div className="text-center space-y-3">
           <div className="flex justify-center">
             <div className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center shadow-[0_0_24px_-6px] shadow-accent/60">
-              <span className="text-lg font-bold text-accent-foreground font-heading">S</span>
+              <span className="text-lg font-bold text-primary-foreground font-heading">S</span>
             </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground">
@@ -112,7 +112,7 @@ export default function SignIn() {
               ? "Sign in to your Stewardly account"
               : "Get started with personalized financial intelligence"}
           </p>
-          <a href="/welcome-landing" className="text-xs text-accent hover:text-accent/80 transition-colors">
+          <a href="/welcome-landing" className="text-xs text-primary hover:text-primary/80 transition-colors">
             Learn what Stewardly can do →
           </a>
         </div>
@@ -216,7 +216,7 @@ export default function SignIn() {
             <Button
               type="submit"
               disabled={isLoading || !email || !password || (mode === "signup" && !name)}
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground border-0 h-10 font-semibold shadow-[0_8px_24px_-12px] shadow-accent/50"
+              className="w-full bg-accent hover:bg-primary/90 text-primary-foreground border-0 h-10 font-semibold shadow-[0_8px_24px_-12px] shadow-accent/50"
             >
               {isLoading
                 ? mode === "signin" ? "Signing in..." : "Creating account..."
@@ -242,7 +242,7 @@ export default function SignIn() {
                 New here?{" "}
                 <button type="button"
                   onClick={() => { setMode("signup"); setError(""); }}
-                  className="text-accent hover:text-accent/80 font-medium transition-colors"
+                  className="text-primary hover:text-primary/80 font-medium transition-colors"
                 >
                   Create an account
                 </button>
@@ -252,7 +252,7 @@ export default function SignIn() {
                 Already have an account?{" "}
                 <button type="button"
                   onClick={() => { setMode("signin"); setError(""); }}
-                  className="text-accent hover:text-accent/80 font-medium transition-colors"
+                  className="text-primary hover:text-primary/80 font-medium transition-colors"
                 >
                   Sign in
                 </button>

@@ -22,7 +22,7 @@ export function GuestBanner() {
   if (location.startsWith("/chat")) return null;
 
   return (
-    <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border-b border-amber-500/20 px-4 py-2.5">
+    <div className="bg-secondary/50 border-b border-border px-4 py-2.5">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <Shield className="w-4 h-4 text-amber-500 shrink-0" />

@@ -159,7 +159,7 @@ export default function ToolPermissionsPopover({
           <X className="h-4 w-4" />
         </button>
         <h2 className="font-heading text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-accent" /> Tool permissions
+          <ShieldCheck className="h-4 w-4 text-primary" /> Tool permissions
         </h2>
         <p className="text-[11px] text-muted-foreground mb-4">
           Narrow the set of tools the agent can call for this session.
@@ -176,7 +176,7 @@ export default function ToolPermissionsPopover({
                 key={spec.id}
                 className={`flex items-start gap-3 px-3 py-2 rounded border ${
                   isEnabled && !isMutationBlocked
-                    ? "border-accent/40 bg-accent/5"
+                    ? "border-primary/25 bg-primary/5"
                     : "border-border/40"
                 }`}
               >

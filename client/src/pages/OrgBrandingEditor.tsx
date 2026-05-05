@@ -337,7 +337,6 @@ export default function OrgBrandingEditor() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-50 relative overflow-hidden">
-          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="icon" aria-label="Back to chat" onClick={() => navigate("/chat")}>

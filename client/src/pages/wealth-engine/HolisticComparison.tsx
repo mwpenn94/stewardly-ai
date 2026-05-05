@@ -204,7 +204,7 @@ export default function HolisticComparisonPage({ embedded = false }: { embedded?
       <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-6">
         <header className="space-y-1">
           <div className="flex items-center gap-2">
-            <Scale className="w-5 h-5 text-accent" />
+            <Scale className="w-5 h-5 text-primary" />
             <h1 className="text-2xl font-bold">Holistic Comparison</h1>
           </div>
           <p className="text-sm text-muted-foreground">

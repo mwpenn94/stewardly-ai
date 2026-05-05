@@ -296,10 +296,10 @@ export default function MyFinancialTwin() {
       <AppShell title="My Financial Twin">
       <SEOHead title="My Financial Twin" description="Your personalized financial twin and insights" />
         <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-          <Fingerprint className="w-12 h-12 mx-auto mb-4 text-accent/60" />
+          <Fingerprint className="w-12 h-12 mx-auto mb-4 text-primary/60" />
           <h2 className="text-lg font-heading font-semibold mb-2">Sign in to view your Financial Twin</h2>
           <p className="text-sm text-muted-foreground mb-4">Your AI-built financial profile assembles itself from your conversations, assessments, and goals.</p>
-          <Button onClick={() => navigate("/signin")} className="bg-accent hover:bg-accent/90">Sign In</Button>
+          <Button onClick={() => navigate("/signin")} className="bg-accent hover:bg-primary/90">Sign In</Button>
         </div>
       </AppShell>
     );

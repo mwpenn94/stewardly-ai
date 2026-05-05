@@ -118,7 +118,7 @@ export default function BYOModelTab() {
                   className={`p-3 rounded-lg border text-left transition-all ${
                     isActive
                       ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                      : "border-border hover:border-primary/30 hover:bg-accent/50"
+                      : "border-border hover:border-primary/30 hover:bg-primary/50"
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">

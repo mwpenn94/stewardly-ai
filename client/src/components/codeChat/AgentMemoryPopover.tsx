@@ -33,7 +33,7 @@ import {
 
 const CATEGORY_STYLE: Record<MemoryCategory, string> = {
   project: "border-chart-2/40 text-chart-2 bg-chart-2/5",
-  preference: "border-accent/40 text-accent bg-accent/5",
+  preference: "border-primary/25 text-primary bg-primary/5",
   fact: "border-border/60 text-muted-foreground bg-muted/10",
   warning: "border-destructive/40 text-destructive bg-destructive/5",
 };
@@ -121,7 +121,7 @@ export default function AgentMemoryPopover({
         {/* Header */}
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/40">
           <div className="flex items-center gap-2 min-w-0">
-            <Brain className="h-4 w-4 text-accent shrink-0" />
+            <Brain className="h-4 w-4 text-primary shrink-0" />
             <h2 className="font-heading text-lg font-semibold text-foreground">
               Agent memory
             </h2>
@@ -184,7 +184,7 @@ export default function AgentMemoryPopover({
               size="sm"
               onClick={handleAdd}
               disabled={!newDraft.trim()}
-              className="h-7 text-[11px] bg-accent text-accent-foreground hover:bg-accent/90"
+              className="h-7 text-[11px] bg-primary text-primary-foreground hover:bg-primary/90"
               aria-label="Save memory entry"
             >
               <Plus className="h-3 w-3 mr-1" /> Save
@@ -198,7 +198,7 @@ export default function AgentMemoryPopover({
             
             className={`px-2 py-0.5 rounded-full text-[10px] border transition-colors ${
               filter === "all"
-                ? "bg-accent/10 border-accent/40 text-accent"
+                ? "bg-primary/10 border-primary/25 text-primary"
                 : "border-border text-muted-foreground hover:text-foreground"
             }`}
             onClick={() => setFilter("all")}
@@ -313,7 +313,7 @@ export default function AgentMemoryPopover({
                           <div className="flex items-center gap-0.5 shrink-0">
                             <button type="button"
                               
-                              className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
+                              className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground"
                               onClick={() => startEdit(e)}
                               aria-label="Edit memory"
                               title="Edit"

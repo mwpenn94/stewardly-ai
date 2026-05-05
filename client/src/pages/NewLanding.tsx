@@ -93,8 +93,8 @@ const CAPABILITIES = [
     title: "Live Market Data",
     description:
       "FRED/SOFR rates, census data, and real-time improvement signals on a 6-hour schedule.",
-    accent: "text-accent",
-    bg: "bg-accent/10",
+    accent: "text-primary",
+    bg: "bg-primary/10",
   },
 ] as const;
 
@@ -149,7 +149,7 @@ export default function NewLanding() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
         >
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[700px] rounded-full bg-accent/15 blur-[120px]" />
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[700px] rounded-full bg-primary/10 blur-[120px]" />
           <div className="absolute top-60 right-0 h-[300px] w-[400px] rounded-full bg-chart-2/10 blur-[100px]" />
           <div className="absolute bottom-0 left-0 h-[250px] w-[350px] rounded-full bg-chart-3/8 blur-[90px]" />
         </div>
@@ -161,7 +161,7 @@ export default function NewLanding() {
           variants={staggerContainer}
         >
           <motion.p
-            className="text-sm font-medium tracking-widest uppercase text-accent mb-4"
+            className="text-sm font-medium tracking-widest uppercase text-primary mb-4"
             variants={fadeUp}
             custom={0}
           >
@@ -174,7 +174,7 @@ export default function NewLanding() {
             custom={1}
           >
             The AI platform built for{" "}
-            <span className="text-accent">financial professionals</span>
+            <span className="text-primary">financial professionals</span>
           </motion.h1>
 
           <motion.p
@@ -288,10 +288,10 @@ export default function NewLanding() {
                   variants={fadeUp}
                   custom={i + 1}
                 >
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-accent">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <Icon className="w-5 h-5" />
                   </div>
-                  <div className="text-xs font-bold uppercase tracking-widest text-accent mb-2">
+                  <div className="text-xs font-bold uppercase tracking-widest text-primary mb-2">
                     Step {item.step}
                   </div>
                   <h3 className="font-semibold mb-1">{item.title}</h3>
@@ -315,11 +315,11 @@ export default function NewLanding() {
           variants={staggerContainer}
         >
           <motion.div
-            className="inline-flex items-center justify-center rounded-full bg-accent/10 p-3 mb-6"
+            className="inline-flex items-center justify-center rounded-full bg-primary/10 p-3 mb-6"
             variants={fadeUp}
             custom={0}
           >
-            <Lock className="w-6 h-6 text-accent" />
+            <Lock className="w-6 h-6 text-primary" />
           </motion.div>
 
           <motion.h2
@@ -356,7 +356,7 @@ export default function NewLanding() {
                   key={badge.label}
                   className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm"
                 >
-                  <BadgeIcon className="w-4 h-4 text-accent" />
+                  <BadgeIcon className="w-4 h-4 text-primary" />
                   <span>{badge.label}</span>
                 </div>
               );
@@ -371,7 +371,7 @@ export default function NewLanding() {
           >
             {TRUST_STATS.map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-3xl font-bold text-accent font-heading">
+                <div className="text-3xl font-bold text-primary font-heading">
                   {stat.value}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1 uppercase tracking-wide">
@@ -389,7 +389,7 @@ export default function NewLanding() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
         >
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full bg-accent/10 blur-[120px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[600px] rounded-full bg-primary/10 blur-[120px]" />
         </div>
 
         <motion.div

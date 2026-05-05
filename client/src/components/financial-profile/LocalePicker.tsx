@@ -40,7 +40,7 @@ export function LocalePicker() {
       <button type="button"
         
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-primary/25 hover:text-primary transition-colors"
         aria-label={`Change locale (currently ${prefs.locale} / ${prefs.currency})`}
       >
         <Globe className="w-3 h-3" />
@@ -65,7 +65,7 @@ export function LocalePicker() {
           >
             <div className="px-5 py-3 border-b border-border flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-accent" />
+                <Globe className="w-4 h-4 text-primary" />
                 <h2 id="locale-picker-title" className="text-base font-semibold">
                   Regional format
                 </h2>
@@ -156,7 +156,7 @@ export function LocalePicker() {
                 <button type="button"
                   
                   onClick={resetPrefs}
-                  className="text-xs text-muted-foreground hover:text-accent"
+                  className="text-xs text-muted-foreground hover:text-primary"
                 >
                   Reset to en-US / USD
                 </button>

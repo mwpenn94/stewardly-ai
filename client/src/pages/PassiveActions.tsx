@@ -70,7 +70,7 @@ export default function PassiveActions() {
     return (
       <AppShell title="Passive Actions">
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       </AppShell>
     );
@@ -82,7 +82,7 @@ export default function PassiveActions() {
         <AuthGate
           title="Passive Actions"
           description="Sign in to configure automated background operations for your data sources — auto-refresh, sync, monitoring, and alerts."
-          icon={<RefreshCw className="w-8 h-8 text-accent" />}
+          icon={<RefreshCw className="w-8 h-8 text-primary" />}
         />
       </AppShell>
     );

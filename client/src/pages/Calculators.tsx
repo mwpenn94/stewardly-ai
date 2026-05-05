@@ -1479,7 +1479,7 @@ export default function Calculators() {
                   <p className="p-2 text-xs text-muted-foreground">No panels found</p>
                 ) : searchResults.map(r => (
                   <button key={r.id} type="button" onClick={() => navigateToPanel(r.id)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent hover:text-accent-foreground transition-colors">
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent hover:text-primary-foreground transition-colors">
                     {r.icon}<span>{r.label}</span>
                     <span className="ml-auto text-[9px] text-muted-foreground/50">{r.group}</span>
                   </button>
@@ -1881,7 +1881,7 @@ export default function Calculators() {
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 max-h-48 overflow-y-auto">
                 {compareResults.map(r => (
                   <button key={r.id} type="button" onClick={() => { setComparePanel(r.id); setShowComparePicker(false); setCompareSearch(''); }}
-                    className="flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border border-border hover:bg-accent hover:text-accent-foreground transition-colors text-left">
+                    className="flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md border border-border hover:bg-accent hover:text-primary-foreground transition-colors text-left">
                     {r.icon}<span className="truncate">{r.label}</span>
                   </button>
                 ))}

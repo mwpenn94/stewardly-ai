@@ -140,7 +140,7 @@ export default function ScratchpadPanel({
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/40 bg-background/60">
         <div className="flex items-center gap-1.5 min-w-0">
-          <StickyNote className="h-3.5 w-3.5 text-accent shrink-0" />
+          <StickyNote className="h-3.5 w-3.5 text-primary shrink-0" />
           <span className="text-xs font-medium text-foreground">Scratchpad</span>
           <Badge
             variant="outline"

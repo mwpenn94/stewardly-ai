@@ -120,7 +120,7 @@ export function ReasoningChain(props: ReasoningChainProps) {
           expanded ? "bg-secondary/40" : ""
         }`}
       >
-        <Brain className="w-3 h-3 text-accent/70" />
+        <Brain className="w-3 h-3 text-primary/70" />
         <span className="text-muted-foreground">Reasoning</span>
         <Badge variant="outline" className={`${confidenceBg} ${confidenceColor} text-[9px] px-1.5 py-0 border-0`}>
           {confidenceLabel} ({Math.round(props.confidenceScore * 100)}%)
@@ -134,7 +134,7 @@ export function ReasoningChain(props: ReasoningChainProps) {
       </button>
 
       {expanded && (
-        <div className="mt-2 ml-1 border-l-2 border-accent/20 pl-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+        <div className="mt-2 ml-1 border-l-2 border-primary/15 pl-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
           {steps.map((step, i) => (
             <div key={i} className="flex items-start gap-2">
               <div className={`mt-0.5 p-1 rounded ${

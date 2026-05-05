@@ -128,7 +128,7 @@ function LayerFields({
 
       {!hideSaveButton && (
         <Button
-          size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5"
+          size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs gap-1.5"
           onClick={onSave} disabled={saving}
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -234,7 +234,7 @@ function UserPreferencesEditor() {
     }
   }, [query.data]);
 
-  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
   const handleSave = () => mutation.mutate({
     customPromptAdditions: promptOverlay,
@@ -262,7 +262,7 @@ function UserPreferencesEditor() {
       <Card className="bg-card/40 border-border/40">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <Brain className="w-4 h-4 text-accent" />
+            <Brain className="w-4 h-4 text-primary" />
             <Label className="text-sm font-semibold">Thinking Depth</Label>
             <TuningTooltip tip="Controls how deeply the AI reasons before responding. Extended thinking produces more thorough analysis but takes longer.">
               <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
@@ -275,7 +275,7 @@ function UserPreferencesEditor() {
                 onClick={() => setThinkingDepth(opt.value)}
                 className={`p-2.5 rounded-lg border text-left transition-all ${
                   thinkingDepth === opt.value
-                    ? "bg-accent/15 border-accent/40 text-accent"
+                    ? "bg-primary/10 border-primary/25 text-primary"
                     : "bg-secondary/30 border-border/30 text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                 }`}
               >
@@ -294,7 +294,7 @@ function UserPreferencesEditor() {
       <Card className="bg-card/40 border-border/40">
         <CardContent className="p-4">
           <div className="flex items-center gap-2 mb-3">
-            <MessageSquare className="w-4 h-4 text-accent" />
+            <MessageSquare className="w-4 h-4 text-primary" />
             <Label className="text-sm font-semibold">Response Style</Label>
           </div>
           <LayerFields
@@ -315,7 +315,7 @@ function UserPreferencesEditor() {
       <Card className="bg-card/40 border-border/40">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <SparklesIcon className="w-4 h-4 text-accent" />
+            <SparklesIcon className="w-4 h-4 text-primary" />
             <Label className="text-sm font-semibold">Creativity</Label>
             <TuningTooltip tip="Higher creativity produces more novel and varied responses. Lower values keep responses more predictable and factual.">
               <Info className="w-3.5 h-3.5 text-muted-foreground cursor-help" />
@@ -333,7 +333,7 @@ function UserPreferencesEditor() {
       <Card className="bg-card/40 border-border/40">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <BookOpen className="w-4 h-4 text-accent" />
+            <BookOpen className="w-4 h-4 text-primary" />
             <Label className="text-sm font-semibold">Context & Citations</Label>
           </div>
 
@@ -347,7 +347,7 @@ function UserPreferencesEditor() {
                     onClick={() => setContextDepth(opt.value)}
                     className={`flex-1 px-2 py-1.5 rounded-md text-center transition-all ${
                       contextDepth === opt.value
-                        ? "bg-accent/15 border border-accent/40 text-accent"
+                        ? "bg-primary/10 border border-primary/25 text-primary"
                         : "bg-secondary/30 border border-border/30 text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -385,7 +385,7 @@ function UserPreferencesEditor() {
       <Card className="bg-card/40 border-border/40">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2 mb-1">
-            <Settings2 className="w-4 h-4 text-accent" />
+            <Settings2 className="w-4 h-4 text-primary" />
             <Label className="text-sm font-semibold">Advanced</Label>
           </div>
 
@@ -508,7 +508,7 @@ function UserPreferencesEditor() {
 
       {/* ── Save Button ── */}
       <Button
-        size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5"
+        size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs gap-1.5"
         onClick={handleSave} disabled={mutation.isPending}
       >
         {mutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -542,7 +542,7 @@ function ProfessionalEditor({ userId }: { userId: number }) {
     }
   }, [query.data]);
 
-  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
   return (
     <LayerFields
@@ -585,7 +585,7 @@ function ManagerEditor({ userId }: { userId: number }) {
     }
   }, [query.data]);
 
-  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
   return (
     <LayerFields
@@ -652,7 +652,7 @@ function OrganizationEditor() {
     }
   }, [settingsQuery.data, selectedOrgId]);
 
-  if (orgsQuery.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+  if (orgsQuery.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
   const orgs = orgsQuery.data || [];
   if (orgs.length === 0) {
@@ -688,7 +688,7 @@ function OrganizationEditor() {
       </div>
 
       {selectedOrgId && settingsQuery.isLoading && (
-        <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>
+        <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
       )}
 
       {selectedOrgId && !settingsQuery.isLoading && (
@@ -843,7 +843,7 @@ function PlatformEditor() {
     }
   }, [query.data]);
 
-  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-5">
@@ -877,7 +877,7 @@ function PlatformEditor() {
 function PreviewPanel({ userId }: { userId: number }) {
   const query = trpc.aiLayers.previewConfig.useQuery({ targetUserId: userId });
 
-  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>;
+  if (query.isLoading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
   if (query.error) return <p className="text-sm text-destructive">Failed to load preview: {query.error.message}</p>;
 
   const data = query.data?.config;
@@ -984,14 +984,14 @@ export default function AITuningTab() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all ${
               activeTab === tab.id
-                ? "bg-accent/15 text-accent border border-accent/30"
+                ? "bg-primary/10 text-primary border border-primary/20"
                 : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             }`}
           >
             {tab.icon}
             <span className="hidden sm:inline">{tab.label}</span>
             {tab.layer > 0 && (
-              <span className={`text-[9px] font-mono ${activeTab === tab.id ? "text-accent/70" : "text-muted-foreground/50"}`}>
+              <span className={`text-[9px] font-mono ${activeTab === tab.id ? "text-primary/70" : "text-muted-foreground/50"}`}>
                 L{tab.layer}
               </span>
             )}
@@ -1002,7 +1002,7 @@ export default function AITuningTab() {
       {/* Layer description */}
       {activeTab !== "preview" && (
         <div className="mb-5 p-3 rounded-lg bg-card/30 border border-border/30 flex items-start gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
             {LAYER_TABS.find(t => t.id === activeTab)?.icon}
           </div>
           <div>

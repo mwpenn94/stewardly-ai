@@ -222,13 +222,13 @@ export default function StudySession() {
               className="border-b border-border bg-card/50 overflow-hidden"
             >
               <div className="px-6 py-3 flex flex-wrap gap-x-6 gap-y-1 text-[10px] font-mono text-muted-foreground">
-                <span><kbd className="px-1.5 py-0.5 rounded bg-accent text-accent-foreground">Space</kbd> Flip</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-accent text-accent-foreground">1</kbd> Easy</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-accent text-accent-foreground">2</kbd> OK</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-accent text-accent-foreground">3</kbd> Hard</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-accent text-accent-foreground">←</kbd> Prev</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-accent text-accent-foreground">→</kbd> Next</span>
-                <span><kbd className="px-1.5 py-0.5 rounded bg-accent text-accent-foreground">Esc</kbd> Exit</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-primary text-primary-foreground">Space</kbd> Flip</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-primary text-primary-foreground">1</kbd> Easy</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-primary text-primary-foreground">2</kbd> OK</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-primary text-primary-foreground">3</kbd> Hard</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-primary text-primary-foreground">←</kbd> Prev</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-primary text-primary-foreground">→</kbd> Next</span>
+                <span><kbd className="px-1.5 py-0.5 rounded bg-primary text-primary-foreground">Esc</kbd> Exit</span>
               </div>
             </motion.div>
           )}
@@ -349,7 +349,7 @@ export default function StudySession() {
                         style={{ background: flipped ? "var(--primary)" : "var(--border)" }}
                       />
 
-                      <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-4 px-2 py-0.5 rounded bg-accent/50">
+                      <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground mb-4 px-2 py-0.5 rounded bg-primary/50">
                         {flipped ? "Answer" : "Question"}
                       </span>
 
@@ -367,7 +367,7 @@ export default function StudySession() {
 
                       {/* Card number indicator */}
                       {current?.discipline && (
-                        <span className="absolute bottom-3 left-3 text-[9px] font-mono px-2 py-0.5 rounded bg-accent text-accent-foreground">
+                        <span className="absolute bottom-3 left-3 text-[9px] font-mono px-2 py-0.5 rounded bg-primary text-primary-foreground">
                           {current.discipline}
                         </span>
                       )}

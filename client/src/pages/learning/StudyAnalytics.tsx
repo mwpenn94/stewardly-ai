@@ -541,7 +541,7 @@ export default function StudyAnalytics() {
             </button>
           ))}
           {deepAnalyticsQ.data && (
-            <span className="ml-auto text-[10px] font-mono px-2 py-1.5 rounded bg-accent text-accent-foreground">
+            <span className="ml-auto text-[10px] font-mono px-2 py-1.5 rounded bg-primary text-primary-foreground">
               {deepAnalyticsQ.data.sessionCount} sessions
             </span>
           )}

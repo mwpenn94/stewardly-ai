@@ -108,7 +108,7 @@ export function VoiceSupportBanner({
         <button type="button"
           
           onClick={onDismiss}
-          className="shrink-0 rounded p-1 text-muted-foreground hover:bg-secondary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="shrink-0 rounded p-1 text-muted-foreground hover:bg-secondary/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label="Dismiss voice support notice"
         >
           <X className="h-4 w-4" aria-hidden="true" />

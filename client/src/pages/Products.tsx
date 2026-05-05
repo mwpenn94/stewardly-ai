@@ -22,7 +22,7 @@ import { useState, useMemo } from "react";
 const CATEGORY_META: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
   iul: { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Indexed Universal Life", color: "text-emerald-400" },
   whole_life: { icon: <Shield className="w-3.5 h-3.5" />, label: "Whole Life", color: "text-blue-400" },
-  term_life: { icon: <Building2 className="w-3.5 h-3.5" />, label: "Term Life", color: "text-accent" },
+  term_life: { icon: <Building2 className="w-3.5 h-3.5" />, label: "Term Life", color: "text-primary" },
   variable_life: { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Variable Life", color: "text-violet-400" },
   annuity: { icon: <Star className="w-3.5 h-3.5" />, label: "Annuities", color: "text-amber-400" },
   disability: { icon: <Heart className="w-3.5 h-3.5" />, label: "Disability", color: "text-rose-400" },
@@ -95,7 +95,7 @@ export default function Products() {
   const categories = useMemo(() => Array.from(new Set(allProducts.map(p => p.category))), [allProducts]);
 
   if (products.isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
 
   return (
@@ -104,18 +104,17 @@ export default function Products() {
     <div className="min-h-screen animate-curtain-lift">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={() => navigate("/chat")} aria-label="Back to chat">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-accent" />
+            <Package className="w-4 h-4 text-primary" />
             <span className="font-semibold text-sm">Product Catalog</span>
           </div>
           <div className="flex-1" />
           {isAdmin && (
-            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5 h-8" onClick={() => setShowCreateDialog(true)}>
+            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs gap-1.5 h-8" onClick={() => setShowCreateDialog(true)}>
               <Plus className="w-3.5 h-3.5" /> Add Product
             </Button>
           )}
@@ -146,7 +145,7 @@ export default function Products() {
               onClick={() => setActiveCategory(null)}
               className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border ${
                 !activeCategory
-                  ? "bg-accent/15 text-accent border-accent/30"
+                  ? "bg-primary/10 text-primary border-primary/20"
                   : "bg-card/50 text-muted-foreground border-border/50 hover:text-foreground"
               }`}
             >
@@ -161,7 +160,7 @@ export default function Products() {
                   onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all border ${
                     activeCategory === cat
-                      ? "bg-accent/15 text-accent border-accent/30"
+                      ? "bg-primary/10 text-primary border-primary/20"
                       : "bg-card/50 text-muted-foreground border-border/50 hover:text-foreground"
                   }`}
                 >
@@ -176,7 +175,7 @@ export default function Products() {
         {/* Results summary */}
         <p className="text-xs text-muted-foreground mb-4">
           {filtered.length} product{filtered.length !== 1 ? "s" : ""} from {grouped.length} provider{grouped.length !== 1 ? "s" : ""}
-          {search && <span className="text-accent"> matching "{search}"</span>}
+          {search && <span className="text-primary"> matching "{search}"</span>}
         </p>
 
         {/* Products grouped by company */}
@@ -184,7 +183,7 @@ export default function Products() {
           <div className="text-center py-16">
             <Package className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">No products match your filters</p>
-            <Button variant="ghost" size="sm" className="mt-2 text-xs text-accent" onClick={() => { setSearch(""); setActiveCategory(null); }}>
+            <Button variant="ghost" size="sm" className="mt-2 text-xs text-primary" onClick={() => { setSearch(""); setActiveCategory(null); }}>
               Clear filters
             </Button>
           </div>
@@ -209,7 +208,7 @@ export default function Products() {
                     return (
                       <Card
                         key={product.id}
-                        className={`bg-card/60 border-border/50 hover:border-accent/20 transition-all cursor-pointer ${isExpanded ? "ring-1 ring-accent/20" : ""}`}
+                        className={`bg-card/60 border-border/50 hover:border-primary/15 transition-all cursor-pointer ${isExpanded ? "ring-1 ring-primary/20" : ""}`}
                         onClick={() => setExpandedId(isExpanded ? null : product.id)}
                       >
                         <CardContent className="p-4 space-y-2.5">
@@ -223,7 +222,7 @@ export default function Products() {
                               </div>
                             </div>
                             {product.isPlatform && (
-                              <Badge variant="outline" className="text-[8px] shrink-0 border-accent/20 text-accent">Platform</Badge>
+                              <Badge variant="outline" className="text-[8px] shrink-0 border-primary/15 text-primary">Platform</Badge>
                             )}
                           </div>
 
@@ -274,7 +273,7 @@ export default function Products() {
                               <div className="flex items-center gap-2 pt-1">
                                 <Button
                                   variant="ghost" size="sm"
-                                  className="text-xs text-accent hover:text-accent/80 p-0 h-auto gap-1"
+                                  className="text-xs text-primary hover:text-primary/80 p-0 h-auto gap-1"
                                   onClick={(e) => { e.stopPropagation(); navigate("/chat"); }}
                                 >
                                   <MessageSquare className="w-3 h-3" /> Ask AI <ChevronRight className="w-3 h-3" />
@@ -451,7 +450,7 @@ function ProductFormDialog({
             <Button variant="ghost" size="sm" className="text-xs" onClick={onClose}>Cancel</Button>
             <Button
               size="sm"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs gap-1.5"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs gap-1.5"
               disabled={saving || !company.trim() || !name.trim()}
               onClick={() => onSubmit({
                 company: company.trim(),

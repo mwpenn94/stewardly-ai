@@ -117,7 +117,7 @@ export default function KeyboardShortcutsOverlay({
                 key={c.name}
                 className="flex items-center gap-3 text-xs font-mono"
               >
-                <code className="text-accent shrink-0 w-32">
+                <code className="text-primary shrink-0 w-32">
                   /{c.name}
                   {c.args ? ` ${c.args}` : ""}
                 </code>

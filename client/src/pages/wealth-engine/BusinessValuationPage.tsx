@@ -179,9 +179,9 @@ export default function BusinessValuationPage({ embedded = false }: { embedded?:
               {result && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg p-4 bg-accent/5 border border-accent/20">
+                    <div className="rounded-lg p-4 bg-primary/5 border border-primary/15">
                       <p className="text-[10px] uppercase text-muted-foreground tracking-wider">Today</p>
-                      <p className="text-2xl font-heading font-semibold text-accent tabular-nums">
+                      <p className="text-2xl font-heading font-semibold text-primary tabular-nums">
                         {fmt(result.currentValue)}
                       </p>
                       <p className="text-[10px] text-muted-foreground mt-0.5">

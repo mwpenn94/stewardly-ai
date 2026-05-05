@@ -57,7 +57,7 @@ export function MemoryInsightPanel({
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/30 border border-border/50 hover:bg-accent/50 transition-colors"
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/30 border border-border/50 hover:bg-primary/50 transition-colors"
       >
         <Brain className="w-3.5 h-3.5 text-primary shrink-0" />
         <span className="text-xs font-medium text-foreground flex-1 text-left">
@@ -97,7 +97,7 @@ export function MemoryInsightPanel({
                   >
                     <p className="text-[11px] text-foreground/80 line-clamp-2">{item.content}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <div className="flex-1 h-1 rounded-full bg-accent/50 overflow-hidden">
+                      <div className="flex-1 h-1 rounded-full bg-primary/50 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-primary/60"
                           style={{ width: `${item.confidence * 100}%` }}

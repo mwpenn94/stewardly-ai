@@ -111,8 +111,8 @@ export default function NotificationsTab() {
       </div>
 
       {/* In-App Only Notice */}
-      <div className="flex items-start gap-3 rounded-lg border border-accent/30 bg-accent/5 p-4">
-        <Info className="w-5 h-5 text-accent mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <Info className="w-5 h-5 text-primary mt-0.5 shrink-0" />
         <div>
           <p className="text-sm font-medium">In-App Notifications Only</p>
           <p className="text-xs text-muted-foreground mt-1">
@@ -122,10 +122,10 @@ export default function NotificationsTab() {
       </div>
 
       {/* Delivery Methods */}
-      <Card className="border-accent/20">
+      <Card className="border-primary/15">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Zap className="w-4 h-4 text-accent" /> Delivery Methods
+            <Zap className="w-4 h-4 text-primary" /> Delivery Methods
           </CardTitle>
           <CardDescription className="text-xs">Control how in-app notifications are displayed</CardDescription>
         </CardHeader>
@@ -147,10 +147,10 @@ export default function NotificationsTab() {
 
       {/* Real-Time Notification Types */}
       {REALTIME_TYPES.map(group => (
-        <Card key={group.title} className="border-accent/20">
+        <Card key={group.title} className="border-primary/15">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <span className="text-accent">{group.icon}</span> {group.title}
+              <span className="text-primary">{group.icon}</span> {group.title}
             </CardTitle>
             <CardDescription className="text-xs">{group.desc}</CardDescription>
           </CardHeader>
@@ -178,7 +178,7 @@ export default function NotificationsTab() {
         <Card key={group.title}>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <span className="text-accent">{group.icon}</span> {group.title}
+              <span className="text-primary">{group.icon}</span> {group.title}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">

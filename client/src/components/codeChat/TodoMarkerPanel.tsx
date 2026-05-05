@@ -36,7 +36,7 @@ const MARKER_KINDS = [
 type MarkerKind = (typeof MARKER_KINDS)[number];
 
 const KIND_STYLE: Record<MarkerKind, { color: string; Icon: typeof Info }> = {
-  TODO: { color: "text-accent border-accent/40 bg-accent/5", Icon: ListTodo },
+  TODO: { color: "text-primary border-primary/25 bg-primary/5", Icon: ListTodo },
   FIXME: { color: "text-destructive border-destructive/40 bg-destructive/5", Icon: AlertTriangle },
   BUG: { color: "text-destructive border-destructive/40 bg-destructive/5", Icon: Bug },
   HACK: { color: "text-amber-500 border-amber-500/40 bg-amber-500/5", Icon: Wrench },
@@ -130,7 +130,7 @@ export default function TodoMarkerPanel() {
             {author && (
               <Badge
                 variant="outline"
-                className="text-[10px] h-5 px-1.5 border-accent/40 text-accent cursor-pointer"
+                className="text-[10px] h-5 px-1.5 border-primary/25 text-primary cursor-pointer"
                 onClick={() => setAuthor(null)}
               >
                 author: {author} ×

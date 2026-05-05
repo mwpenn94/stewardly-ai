@@ -301,7 +301,7 @@ export default function Workflows() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -324,14 +324,13 @@ export default function Workflows() {
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
           <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => activeWorkflow ? setActiveWorkflow(null) : navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{activeWorkflow ? "All Workflows" : "Chat"}</span>
           </Button>
           <Separator orientation="vertical" className="h-5" />
           <div className="flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-accent" />
+            <Briefcase className="w-4 h-4 text-primary" />
             <h1 className="text-sm font-semibold">
               {activeWorkflow ? activeTemplate?.name : "Workflow Orchestration"}
             </h1>
@@ -362,7 +361,7 @@ export default function Workflows() {
                         status === "completed"
                           ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                           : status === "in_progress"
-                          ? "bg-accent/15 text-accent border border-accent/30"
+                          ? "bg-primary/10 text-primary border border-primary/20"
                           : "bg-secondary/50 text-muted-foreground border border-border/30"
                       }`}
                     >
@@ -389,7 +388,7 @@ export default function Workflows() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <Card className="bg-card/50">
                 <CardContent className="pt-4 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">
+                  <p className="text-2xl font-bold font-mono tabular-nums text-primary">
                     {activeWorkflow.stepStatuses.filter(s => s === "completed").length}/{activeTemplate.steps.length}
                   </p>
                   <p className="text-xs text-muted-foreground">Steps Done</p>
@@ -422,7 +421,7 @@ export default function Workflows() {
                   <Card
                     key={step.id}
                     className={`transition-all ${
-                      status === "in_progress" ? "border-accent/40 bg-accent/5" :
+                      status === "in_progress" ? "border-primary/25 bg-primary/5" :
                       status === "completed" ? "border-emerald-500/30 bg-emerald-500/5" :
                       "border-border/30 bg-card/30"
                     }`}
@@ -433,7 +432,7 @@ export default function Workflows() {
                     >
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
                         status === "completed" ? "bg-emerald-500/20 text-emerald-400" :
-                        status === "in_progress" ? "bg-accent/20 text-accent" :
+                        status === "in_progress" ? "bg-primary/15 text-primary" :
                         "bg-secondary text-muted-foreground"
                       }`}>
                         {STEP_ICONS[step.id] || <Circle className="w-4 h-4" />}
@@ -516,7 +515,7 @@ export default function Workflows() {
                   onClick={() => setCategoryFilter(cat)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
                     categoryFilter === cat
-                      ? "bg-accent text-accent-foreground"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -529,7 +528,7 @@ export default function Workflows() {
             {savedWorkflows.length > 0 && (
               <div>
                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-accent" /> In Progress
+                  <Clock className="w-4 h-4 text-primary" /> In Progress
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {savedWorkflows.map((wf, idx) => {
@@ -538,7 +537,7 @@ export default function Workflows() {
                     const completed = wf.stepStatuses.filter(s => s === "completed").length;
                     const pct = Math.round((completed / template.steps.length) * 100);
                     return (
-                      <Card key={idx} className="bg-card/50 hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep); }} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveWorkflow(wf); setExpandedStep(wf.currentStep); } }}>
+                      <Card key={idx} className="bg-card/50 hover:border-primary/20 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => { setActiveWorkflow(wf); setExpandedStep(wf.currentStep); }} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setActiveWorkflow(wf); setExpandedStep(wf.currentStep); } }}>
                         <CardContent className="pt-4">
                           <div className="flex items-center justify-between mb-2">
                             <h4 className="text-sm font-semibold">{template.name}</h4>
@@ -563,7 +562,7 @@ export default function Workflows() {
               <h3 className="text-sm font-semibold mb-3">Available Workflows</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredTemplates.map(template => (
-                  <Card key={template.id} className="bg-card/50 border-border/50 hover:border-accent/30 transition-colors">
+                  <Card key={template.id} className="bg-card/50 border-border/50 hover:border-primary/20 transition-colors">
                     <CardContent className="pt-5">
                       <div className="flex items-start justify-between mb-2">
                         <div>

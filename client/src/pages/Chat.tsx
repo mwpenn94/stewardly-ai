@@ -1740,7 +1740,7 @@ export default function Chat() {
   if (authLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-6 h-6 animate-spin text-accent" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -1767,7 +1767,7 @@ export default function Chat() {
           sidebar nav directly to the chat. */}
       <a
         href="#chat-main"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/40"
       >
         Skip to chat
       </a>
@@ -1780,7 +1780,7 @@ export default function Chat() {
 
       {/* ─── SIDEBAR ──────────────────────────────────────────── */}
       <aside data-tour="sidebar" className={`
-        fixed lg:relative z-50 h-full bg-sidebar border-r border-sidebar-border flex flex-col sidebar-glow
+        fixed lg:relative z-50 h-full bg-sidebar border-r border-sidebar-border flex flex-col
         transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${sidebarCollapsed ? "w-14" : "w-72"}
@@ -1807,7 +1807,7 @@ export default function Chat() {
             </div>
           ) : (
             <>
-              <Button variant="outline" size="sm" className="gap-2 text-xs flex-1 justify-start bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 hover:border-primary/50" onClick={handleNewConversation}>
+              <Button variant="outline" size="sm" className="gap-2 text-xs flex-1 justify-start hover:bg-secondary" onClick={handleNewConversation}>
                 <Plus className="w-3.5 h-3.5" /> New Conversation
               </Button>
               <div className="flex items-center gap-0.5">
@@ -1901,7 +1901,7 @@ export default function Chat() {
                 <div
                   key={result.id}
                   className={`group flex flex-col gap-0.5 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
-                    result.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
+                    result.id === conversationId ? "bg-primary/10 text-primary" : "hover:bg-secondary/50 text-foreground"
                   }`}
                   onClick={() => {
                     setConversationId(result.id);
@@ -2046,7 +2046,7 @@ export default function Chat() {
                       onMouseEnter={() => prefetchRoute(item.path)}
                       className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
                         item.match.some(m => location === m || location.startsWith(m + "/"))
-                          ? "bg-accent/15 text-accent"
+                          ? "bg-primary/10 text-primary"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
                       }`}
                     >
@@ -2211,7 +2211,7 @@ export default function Chat() {
               {sidebarCollapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
+                    <button type="button" className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-medium text-primary cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </button>
                   </TooltipTrigger>
@@ -2219,7 +2219,7 @@ export default function Chat() {
                 </Tooltip>
               ) : (
                 <>
-                  <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-[10px] font-medium text-accent">
+                  <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-medium text-primary">
                     {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -2243,7 +2243,7 @@ export default function Chat() {
       <main
         id="chat-main"
         tabIndex={-1}
-        className="flex-1 flex flex-col min-w-0"
+        className="flex-1 flex flex-col min-w-0 overflow-hidden"
         aria-label="Chat"
         aria-busy={isStreaming ? true : undefined}
       >
@@ -2269,7 +2269,7 @@ export default function Chat() {
           </Button>
           <div className="flex items-center gap-1.5">
             <ConnectionQualityIndicator isStreaming={isStreaming} />
-            <SovereignModeIndicator tier={(selectedModel?.includes('local') || selectedModel?.includes('ollama')) ? 'S3' : 'S1'} />
+            {selectedModel !== undefined && <SovereignModeIndicator tier={(selectedModel.includes('local') || selectedModel.includes('ollama')) ? 'S3' : 'S1'} />}
             <NotificationBell
               notifications={notifications}
               unreadCount={unreadCount}
@@ -2322,7 +2322,7 @@ export default function Chat() {
         )}
 
         {/* ─── MESSAGES AREA ──────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto scroll-mask chat-ambient">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {isWelcome ? (
             <ChatGreetingV2
               userName={user?.name ?? undefined}
@@ -2340,8 +2340,8 @@ export default function Chat() {
               {messages.map((msg: any, i: number) => (
                 <div key={msg.id || i} className={`group/msg flex gap-3 animate-message-in ${msg.role === "user" ? "justify-end" : ""}`}>
                   {msg.role === "assistant" && (
-                    <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${tts.isSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-accent/10"}`}>
-                      {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-accent" />}
+                    <div className={`w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shrink-0 mt-0.5 ${tts.isSpeaking && i === messages.length - 1 ? "avatar-talking" : ""} ${avatarUrl ? "" : "bg-primary/10"}`}>
+                      {avatarUrl ? <img src={avatarUrl} alt="AI" className="w-full h-full object-cover" /> : <Bot className="w-3.5 h-3.5 text-primary" />}
                     </div>
                   )}
                   <div className={`max-w-[85%]`}>
@@ -2538,12 +2538,12 @@ export default function Chat() {
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
                               </>)}
                               <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Copy message" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
+                                <button type="button" aria-label="Copy message" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
                                   <Copy className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
                               <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Read aloud" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-accent transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
+                                <button type="button" aria-label="Read aloud" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
                                   <Volume2 className="w-4 h-4" />
                                 </button>
                               </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
@@ -2620,7 +2620,7 @@ export default function Chat() {
               {followUpSuggestions.length > 0 && !isStreaming && (
                 <div className="space-y-2 px-2 py-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                    <Sparkles className="w-3 h-3 text-accent/60" />Follow-up suggestions
+                    <Sparkles className="w-3 h-3 text-primary/60" />Follow-up suggestions
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {followUpSuggestions.map((suggestion, idx) => (
@@ -2631,7 +2631,7 @@ export default function Chat() {
                           setInput(suggestion);
                           setTimeout(() => handleSendWithText(suggestion), 100);
                         }}
-                        className="group/chip inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border border-accent/30 bg-accent/5 text-accent hover:bg-accent/15 hover:border-accent/50 transition-all cursor-pointer"
+                        className="group/chip inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/30 transition-all cursor-pointer"
                       >
                         <ArrowRight className="w-3 h-3 opacity-0 -ml-1 group-hover/chip:opacity-100 group-hover/chip:ml-0 transition-all" />
                         {suggestion}
@@ -2659,7 +2659,7 @@ export default function Chat() {
 
         {/* Hands-free status bar with VoiceOrb */}
         {handsFreeActive && (
-          <div className="flex items-center justify-center gap-3 py-2.5 bg-accent/5 border-t border-accent/20 transition-all">
+          <div className="flex items-center justify-center gap-3 py-2.5 bg-primary/5 border-t border-primary/15 transition-all">
             <VoiceOrb state={voiceState} size={32} />
             <div className="flex flex-col items-start min-w-0">
               <span className="text-xs text-muted-foreground font-medium">
@@ -2690,7 +2690,7 @@ export default function Chat() {
         )}
 
         {/* ─── INPUT AREA (Copilot-style condensed) ────────────── */}
-        <div className="p-3 sm:p-4 shrink-0 border-t border-border/60 bg-card/30 backdrop-blur-md input-glow">
+        <div className="p-3 sm:p-4 shrink-0 border-t border-border bg-background">
           <div className="max-w-3xl mx-auto">
             {/* Pass 2 (G59): user-visible fallback banner whenever the
                 browser can't do full continuous STT. Dismissible, persists
@@ -2710,18 +2710,18 @@ export default function Chat() {
               <div
                 role="region"
                 aria-label="Live response caption"
-                className="mb-2 rounded-lg border border-accent/30 bg-card/80 backdrop-blur-sm px-3 py-2 text-xs text-foreground/90 shadow-sm animate-message-in"
+                className="mb-2 rounded-lg border border-primary/20 bg-card/80 backdrop-blur-sm px-3 py-2 text-xs text-foreground/90 shadow-sm animate-message-in"
               >
                 <div className="flex items-start gap-2">
                   <AudioLines
-                    className="w-3 h-3 text-accent shrink-0 mt-0.5"
+                    className="w-3 h-3 text-primary shrink-0 mt-0.5"
                     aria-hidden="true"
                   />
                   <div className="flex-1 leading-snug">{captionText}</div>
                   <button type="button"
                     
                     onClick={() => setCaptionText("")}
-                    className="shrink-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-sm"
+                    className="shrink-0 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-sm"
                     aria-label="Dismiss caption"
                   >
                     <X className="w-3 h-3" aria-hidden="true" />
@@ -2749,7 +2749,7 @@ export default function Chat() {
             <input ref={imageInputRef} type="file" className="hidden" aria-label="Upload images" multiple accept="image/*" onChange={handleFileSelect} />
 
             {/* Textarea — full width, rounded pill */}
-            <div data-tour="chat-input" className="relative bg-card/80 backdrop-blur-md rounded-2xl border border-border/80 shadow-lg shadow-black/15 focus-within:border-primary/60 focus-within:shadow-[0_0_40px_-4px_oklch(0.76_0.14_80_/_0.25),0_0_15px_-2px_oklch(0.76_0.14_80_/_0.1)] transition-all duration-300 px-4 py-2">
+            <div data-tour="chat-input" className="relative bg-card border border-border rounded-full focus-within:border-foreground/20 transition-colors px-4 py-2">
               <Textarea
                 ref={textareaRef}
                 value={input}
@@ -2770,7 +2770,7 @@ export default function Chat() {
                   <TooltipTrigger asChild>
                     <button type="button"
                       className={`p-2.5 rounded-full transition-all ${
-                        showAddMenu ? "bg-accent/20 text-accent rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                        showAddMenu ? "bg-primary/15 text-primary rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                       }`}
                       onClick={() => setShowAddMenu(!showAddMenu)}
                       aria-label={showAddMenu ? "Close context menu" : "Add context"}
@@ -2873,7 +2873,7 @@ export default function Chat() {
                         <button type="button"
                           key={opt.value}
                           className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                            selectedFocus.includes(opt.value) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                            selectedFocus.includes(opt.value) ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
                           }`}
                           onClick={() => { toggleFocus(opt.value); setShowModeMenu(false); }}
                         >
@@ -2890,7 +2890,7 @@ export default function Chat() {
                             <button type="button"
                               key={opt.value}
                               className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                                mode === opt.value ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                                mode === opt.value ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
                               }`}
                               onClick={() => { setMode(opt.value); setShowModeMenu(false); }}
                             >
@@ -2911,7 +2911,7 @@ export default function Chat() {
                               ? m === "loop" ? "bg-amber-500/15 text-amber-400"
                                 : m === "consensus" ? "bg-purple-500/15 text-purple-400"
                                 : m === "codechat" ? "bg-emerald-500/15 text-emerald-400"
-                                : "bg-accent/15 text-accent"
+                                : "bg-primary/10 text-primary"
                               : "hover:bg-secondary/60"
                           }`}
                           onClick={() => { setChatMode(m); if (m !== "single") setAdvancedOpen(true); setShowModeMenu(false); }}
@@ -2969,7 +2969,7 @@ export default function Chat() {
                             {showDivider && <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider py-1">{opt.family}</div>}
                             <button type="button"
                               className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] ${
-                                selectedModels.includes(opt.id) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                                selectedModels.includes(opt.id) ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
                               }`}
                               onClick={() => toggleModel(opt.id)}
                             >
@@ -2982,7 +2982,7 @@ export default function Chat() {
                     })()}
                     <button type="button"
                       onClick={() => setShowModelMenu(false)}
-                      className="w-full mt-3 py-2.5 rounded-xl bg-accent text-accent-foreground text-sm font-medium min-h-[44px]"
+                      className="w-full mt-3 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
                     >
                       Done
                     </button>
@@ -3037,7 +3037,7 @@ export default function Chat() {
                       ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
                       : selectedModels.includes("auto")
                         ? "bg-secondary/30 border border-border text-muted-foreground hover:text-foreground"
-                        : "bg-accent/15 text-accent border border-accent/30"
+                        : "bg-primary/10 text-primary border border-primary/20"
                   }`}
                   onClick={() => setShowModelMenu(!showModelMenu)}
                   title={isMultiModel ? `Consensus mode: ${selectedModels.join(", ")}` : `Model: ${modelLabel}`}
@@ -3063,7 +3063,7 @@ export default function Chat() {
                               {showDivider && <div className="px-2 py-0.5 text-[9px] text-muted-foreground/60 uppercase tracking-wider">{opt.family}</div>}
                               <button type="button"
                                 className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                                  selectedModels.includes(opt.id) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
+                                  selectedModels.includes(opt.id) ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
                                 }`}
                                 onClick={() => toggleModel(opt.id)}
                               >
@@ -3255,7 +3255,7 @@ export default function Chat() {
                     <button type="button"
                       className={`h-7 px-2 text-[10px] rounded-full border transition-all flex items-center gap-1 ${
                         useStreaming
-                          ? "bg-accent/15 text-accent border-accent/30"
+                          ? "bg-primary/10 text-primary border-primary/20"
                           : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                       }`}
                       onClick={() => setUseStreaming(!useStreaming)}
@@ -3301,7 +3301,7 @@ export default function Chat() {
                   <TooltipTrigger asChild>
                     <button type="button"
                       data-tour="voice-toggle"
-                      className="p-2 rounded-full bg-accent/15 text-accent transition-all"
+                      className="p-2 rounded-full bg-primary/10 text-primary transition-all"
                       onClick={() => { setTtsEnabled(false); tts.cancel(); }}
                       aria-label="Mute audio"
                     >
@@ -3316,7 +3316,7 @@ export default function Chat() {
               {isStreaming ? (
                 <Button
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
+                  className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                   disabled
                   aria-label="Sending message"
                 >
@@ -3325,7 +3325,7 @@ export default function Chat() {
               ) : (input.trim() || attachments.length > 0) ? (
                 <Button
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
+                  className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                   onClick={handleSend}
                   aria-label="Send message"
                 >

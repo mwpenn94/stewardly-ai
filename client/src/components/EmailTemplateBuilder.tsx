@@ -49,14 +49,14 @@ export default function EmailTemplateBuilder({ onSend, initial }: EmailTemplateB
 <body style="margin:0;padding:0;background:#f8fafc;font-family:system-ui,-apple-system,sans-serif;">
   <div style="max-width:600px;margin:0 auto;padding:20px;">
     ${template.preheader ? `<div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${template.preheader}</div>` : ""}
-    <div style="background:linear-gradient(135deg,#c8a052,#a07830);color:white;padding:32px 24px;text-align:center;border-radius:12px 12px 0 0;">
+    <div style="background:linear-gradient(135deg,#1a93fe,#0070d6);color:white;padding:32px 24px;text-align:center;border-radius:12px 12px 0 0;">
       <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.02em;">${template.heading || "Email Heading"}</h1>
     </div>
     <div style="padding:32px 24px;background:white;border:1px solid #e2e8f0;border-top:0;">
       <p style="font-size:16px;line-height:1.7;color:#334155;margin:0 0 24px;">${template.body || "Email body text..."}</p>
       ${template.ctaText ? `
       <div style="text-align:center;margin:24px 0;">
-        <a href="${template.ctaUrl || "#"}" style="display:inline-block;background:linear-gradient(135deg,#c8a052,#a07830);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">${template.ctaText}</a>
+        <a href="${template.ctaUrl || "#"}" style="display:inline-block;background:linear-gradient(135deg,#1a93fe,#0070d6);color:white;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">${template.ctaText}</a>
       </div>` : ""}
     </div>
     <div style="padding:20px 24px;background:#1a1a2e;text-align:center;font-size:12px;color:#94a3b8;border-radius:0 0 12px 12px;">

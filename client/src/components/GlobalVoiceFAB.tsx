@@ -49,10 +49,10 @@ export function GlobalVoiceFAB() {
               w-12 h-12 rounded-full shadow-lg
               transition-all duration-300 ease-out
               hover:scale-110 hover:shadow-xl
-              focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background
+              focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background
               ${pil.handsFreeActive
                 ? "bg-red-500/20 text-red-400 animate-pulse"
-                : "bg-accent/10 text-accent hover:bg-accent/20 backdrop-blur-sm border border-accent/20"
+                : "bg-primary/10 text-primary hover:bg-primary/15 backdrop-blur-sm border border-primary/15"
               }
             `}
             aria-label={pil.handsFreeActive ? "Stop hands-free mode" : "Start hands-free voice mode (Shift+V)"}

@@ -180,7 +180,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
           for data loading. Pairs with the existing tabIndex={-1} main. */}
       <a
         href="#comparables-main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-foreground"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-primary-foreground"
       >
         Skip to main content
       </a>
@@ -199,7 +199,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="flex items-center gap-2 font-heading text-2xl">
-              <Compass className="h-6 w-6 text-accent" aria-hidden="true" />
+              <Compass className="h-6 w-6 text-primary" aria-hidden="true" />
               Comparables
             </h1>
             <p className="mt-1 max-w-xl text-sm text-muted-foreground">
@@ -312,7 +312,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles
-                  className="h-5 w-5 text-accent"
+                  className="h-5 w-5 text-primary"
                   aria-hidden="true"
                 />
                 Priority build recommendations
@@ -383,7 +383,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3
-                  className="h-5 w-5 text-accent"
+                  className="h-5 w-5 text-primary"
                   aria-hidden="true"
                 />
                 Gap matrix
@@ -454,7 +454,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
                                   key={l.app.id}
                                   onClick={() => setSelectedId(l.app.id)}
                                   aria-label={`Open ${l.app.name} deep-dive — scored ${l.score} of 3 on ${row.axis.label}`}
-                                  className="rounded border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                  className="rounded border border-border/60 px-1.5 py-0.5 text-[11px] text-muted-foreground hover:border-accent hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                 >
                                   {l.app.name}
                                   <span className="ml-1 tabular-nums" aria-hidden="true">
@@ -480,7 +480,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp
-                  className="h-5 w-5 text-accent"
+                  className="h-5 w-5 text-primary"
                   aria-hidden="true"
                 />
                 Leaderboard
@@ -496,7 +496,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
                     key={row.name + idx}
                     className={`flex items-center gap-3 rounded px-2 py-1 ${
                       row.isStewardly
-                        ? "bg-accent/10 text-accent"
+                        ? "bg-primary/10 text-primary"
                         : ""
                     }`}
                   >
@@ -508,7 +508,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
                       {row.isStewardly && (
                         <Badge
                           variant="outline"
-                          className="ml-2 border-accent/40 bg-accent/10 text-[10px] text-accent"
+                          className="ml-2 border-primary/25 bg-primary/10 text-[10px] text-primary"
                         >
                           YOU
                         </Badge>
@@ -528,7 +528,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
         {categories.length > 0 && (
           <div className="space-y-4">
             <h2 className="flex items-center gap-2 font-heading text-lg">
-              <Award className="h-5 w-5 text-accent" aria-hidden="true" />
+              <Award className="h-5 w-5 text-primary" aria-hidden="true" />
               Catalog
             </h2>
             {categories.map((group) => (
@@ -550,10 +550,10 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
                           key={app.id}
                           onClick={() => setSelectedId(app.id)}
                           aria-label={`Open ${app.name} deep-dive — ${total} total points, beats Stewardly on ${beats} axes, status ${app.status}`}
-                          className="group flex flex-col gap-1 rounded-md border border-border bg-card p-3 text-left transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                          className="group flex flex-col gap-1 rounded-md border border-border bg-card p-3 text-left transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-medium group-hover:text-accent">
+                            <span className="font-medium group-hover:text-primary">
                               {app.name}
                             </span>
                             <Badge
@@ -656,7 +656,7 @@ export default function ComparablesPage({ embedded = false }: { embedded?: boole
                     <a
                       href={selectedQ.data.url}
                       target="_blank" rel="noopener noreferrer"
-                      className="ml-auto inline-flex items-center gap-1 text-xs text-accent"
+                      className="ml-auto inline-flex items-center gap-1 text-xs text-primary"
                     >
                       <ExternalLink className="h-3 w-3" />
                       site

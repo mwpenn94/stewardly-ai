@@ -1,12 +1,11 @@
 /**
- * ChatGreeting — Premium AI chat empty state.
- * Dramatic glass morphism cards, gradient glow, and premium typography.
+ * ChatGreeting — Manus-aligned clean chat empty state.
+ * Minimal, centered, no glow effects. Simple card-based suggestions.
  */
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import {
-  Sparkles,
   AlertTriangle,
   MessageSquare,
   Clock,
@@ -96,43 +95,43 @@ function usePrefersReducedMotion(): boolean {
 
 // ── Suggestion pools — role-aware, rotated daily ────────────────────
 const SUGGESTION_CARDS = [
-  { icon: GraduationCap, text: "Help me plan for my children's education", color: "from-blue-600/30 to-cyan-600/20 border-blue-400/40 hover:border-blue-300/70 hover:from-blue-600/40 hover:to-cyan-600/30" },
-  { icon: Shield, text: "What insurance coverage gaps do I have?", color: "from-emerald-600/30 to-teal-600/20 border-emerald-400/40 hover:border-emerald-300/70 hover:from-emerald-600/40 hover:to-teal-600/30" },
-  { icon: TrendingUp, text: "Run a retirement projection for me", color: "from-amber-600/30 to-orange-600/20 border-amber-400/40 hover:border-amber-300/70 hover:from-amber-600/40 hover:to-orange-600/30" },
-  { icon: PiggyBank, text: "Help me compare investment strategies", color: "from-purple-600/30 to-violet-600/20 border-purple-400/40 hover:border-purple-300/70 hover:from-purple-600/40 hover:to-violet-600/30" },
+  { icon: GraduationCap, text: "Help me plan for my children's education" },
+  { icon: Shield, text: "What insurance coverage gaps do I have?" },
+  { icon: TrendingUp, text: "Run a retirement projection for me" },
+  { icon: PiggyBank, text: "Help me compare investment strategies" },
 ];
 
 const GUEST_SUGGESTIONS = [
-  { icon: Shield, text: "How does life insurance protect my family?", color: "from-emerald-600/30 to-teal-600/20 border-emerald-400/40 hover:border-emerald-300/70 hover:from-emerald-600/40 hover:to-teal-600/30" },
-  { icon: TrendingUp, text: "What's the difference between a Roth IRA and Traditional IRA?", color: "from-amber-600/30 to-orange-600/20 border-amber-400/40 hover:border-amber-300/70 hover:from-amber-600/40 hover:to-orange-600/30" },
-  { icon: PiggyBank, text: "Help me understand index universal life insurance", color: "from-purple-600/30 to-violet-600/20 border-purple-400/40 hover:border-purple-300/70 hover:from-purple-600/40 hover:to-violet-600/30" },
-  { icon: GraduationCap, text: "What should I know about estate planning?", color: "from-blue-600/30 to-cyan-600/20 border-blue-400/40 hover:border-blue-300/70 hover:from-blue-600/40 hover:to-cyan-600/30" },
+  { icon: Shield, text: "How does life insurance protect my family?" },
+  { icon: TrendingUp, text: "What's the difference between a Roth IRA and Traditional IRA?" },
+  { icon: PiggyBank, text: "Help me understand index universal life insurance" },
+  { icon: GraduationCap, text: "What should I know about estate planning?" },
 ];
 
 const USER_SUGGESTIONS = SUGGESTION_CARDS;
 
 const ADVISOR_SUGGESTIONS = [
-  { icon: MessageSquare, text: "Help me build a client presentation", color: "from-blue-600/30 to-cyan-600/20 border-blue-400/40 hover:border-blue-300/70 hover:from-blue-600/40 hover:to-cyan-600/30" },
-  { icon: TrendingUp, text: "Run a practice income projection", color: "from-amber-600/30 to-orange-600/20 border-amber-400/40 hover:border-amber-300/70 hover:from-amber-600/40 hover:to-orange-600/30" },
-  { icon: Shield, text: "Compare IUL vs whole life for a client", color: "from-emerald-600/30 to-teal-600/20 border-emerald-400/40 hover:border-emerald-300/70 hover:from-emerald-600/40 hover:to-teal-600/30" },
-  { icon: PiggyBank, text: "Draft a follow-up email for a prospect", color: "from-purple-600/30 to-violet-600/20 border-purple-400/40 hover:border-purple-300/70 hover:from-purple-600/40 hover:to-violet-600/30" },
+  { icon: MessageSquare, text: "Help me build a client presentation" },
+  { icon: TrendingUp, text: "Run a practice income projection" },
+  { icon: Shield, text: "Compare IUL vs whole life for a client" },
+  { icon: PiggyBank, text: "Draft a follow-up email for a prospect" },
 ];
 
 const MANAGER_SUGGESTIONS = [
-  { icon: TrendingUp, text: "Show me team production metrics", color: "from-amber-600/30 to-orange-600/20 border-amber-400/40 hover:border-amber-300/70 hover:from-amber-600/40 hover:to-orange-600/30" },
-  { icon: MessageSquare, text: "Help me plan recruiting strategy", color: "from-blue-600/30 to-cyan-600/20 border-blue-400/40 hover:border-blue-300/70 hover:from-blue-600/40 hover:to-cyan-600/30" },
-  { icon: PiggyBank, text: "Analyze our practice growth trajectory", color: "from-purple-600/30 to-violet-600/20 border-purple-400/40 hover:border-purple-300/70 hover:from-purple-600/40 hover:to-violet-600/30" },
-  { icon: Shield, text: "What compliance items need attention?", color: "from-emerald-600/30 to-teal-600/20 border-emerald-400/40 hover:border-emerald-300/70 hover:from-emerald-600/40 hover:to-teal-600/30" },
+  { icon: TrendingUp, text: "Show me team production metrics" },
+  { icon: MessageSquare, text: "Help me plan recruiting strategy" },
+  { icon: PiggyBank, text: "Analyze our practice growth trajectory" },
+  { icon: Shield, text: "What compliance items need attention?" },
 ];
 
 // ── Animation ──────────────────────────────────────────────────────
 import type { Variants } from "framer-motion";
 
 const fadeUpVariants: Variants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 12 },
   visible: (i: number) => ({
     opacity: 1, y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] },
+    transition: { delay: i * 0.08, duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] },
   }),
 };
 
@@ -163,67 +162,49 @@ export default function ChatGreetingV2({
     if (!recentConversations || !isAuthenticated) return [];
     return recentConversations
       .filter((c) => (c.messageCount ?? 0) > 0 && c.title && c.title !== "New Conversation")
-      .slice(0, 2);
+      .slice(0, 3);
   }, [recentConversations, isAuthenticated]);
 
   const timeOfDay = getTimeOfDay();
   const greeting = userName
-    ? t("chat.greeting", { timeOfDay: t(`common.${timeOfDay}`, timeOfDay), name: userName })
-    : `Good ${timeOfDay}`;
+    ? `Good ${timeOfDay}, ${userName.split(" ")[0]}.`
+    : `Good ${timeOfDay}.`;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-10 px-4 py-20 max-w-2xl mx-auto relative">
-      {/* Ambient glow behind the greeting */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
-      <div className="absolute top-1/3 left-1/3 w-[200px] h-[200px] rounded-full bg-blue-500/5 blur-[80px] pointer-events-none" />
-      <div className="absolute top-1/3 right-1/3 w-[200px] h-[200px] rounded-full bg-purple-500/5 blur-[80px] pointer-events-none" />
-      
+    <div className="flex flex-col items-center justify-center px-4 md:px-6 py-12 md:py-20 max-w-[640px] mx-auto w-full">
       {/* AI health warning — only shown when degraded */}
       {!aiHealthy && (
-        <motion.div className="w-full flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 backdrop-blur-sm px-4 py-3 text-sm" initial="hidden" animate="visible" variants={variant} custom={0}>
+        <motion.div className="w-full flex items-center gap-2.5 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm mb-8" initial="hidden" animate="visible" variants={variant} custom={0}>
           <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
           <span className="text-destructive">{t("error.serverError", "AI services are experiencing issues. Responses may be slower.")}</span>
         </motion.div>
       )}
 
-      {/* Greeting — clean and personal with gradient text */}
-      <motion.div className="text-center space-y-4 relative z-10" initial="hidden" animate="visible" variants={variant} custom={1}>
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-primary/70" />
-          <span className="text-xs font-medium text-primary/70 uppercase tracking-widest">AI Financial Advisor</span>
-          <Sparkles className="w-5 h-5 text-primary/70" />
-        </div>
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight not-italic bg-gradient-to-b from-foreground via-foreground/90 to-foreground/50 bg-clip-text text-transparent" style={{ fontStyle: 'normal' }}>
-          {greeting}{userName ? "" : ", Guest User"}
+      {/* Greeting — clean, simple, like manus */}
+      <motion.div className="text-center mb-8 md:mb-10" initial="hidden" animate="visible" variants={variant} custom={0.5}>
+        <h2 className="text-3xl md:text-4xl font-semibold text-foreground tracking-tight mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
+          {greeting}
         </h2>
-        <p className="text-muted-foreground text-base leading-relaxed max-w-md mx-auto">
+        <p className="text-sm text-muted-foreground">
           {isAuthenticated
-            ? "How can I help you today?"
-            : "Your AI-powered financial advisor. Ask anything about planning, insurance, or investments."}
+            ? "What can I help you with?"
+            : "Your AI-powered financial advisor. Ask anything."}
         </p>
       </motion.div>
 
-      {/* Resume where you left off — max 2, glass cards */}
+      {/* Resume where you left off */}
       {resumeConversations.length > 0 && onResumeConversation && (
-        <motion.div className="w-full space-y-3 relative z-10" initial="hidden" animate="visible" variants={variant} custom={2}>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/70 px-1">
-            <Clock className="w-3 h-3" />
-            <span>Continue where you left off</span>
-          </div>
-          <div className="flex flex-col gap-2">
+        <motion.div className="w-full mb-8" initial="hidden" animate="visible" variants={variant} custom={1}>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2 px-1">Continue where you left off</p>
+          <div className="space-y-1">
             {resumeConversations.map((conv) => (
               <button type="button" key={conv.id} onClick={() => onResumeConversation(conv.id)}
-                className="group flex items-center gap-3 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm px-4 py-3.5 text-left transition-all duration-300 hover:bg-card hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 focus-visible:ring-2 focus-visible:ring-ring">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
-                  <MessageSquare className="w-4 h-4 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{conv.title}</p>
-                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-                    {formatRelativeTime(conv.updatedAt)}{conv.messageCount ? ` · ${conv.messageCount} messages` : ""}
-                  </p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-0.5 shrink-0 transition-all" />
+                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-primary/50 transition-colors group flex items-center gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                <span className="text-sm text-foreground truncate flex-1">{conv.title}</span>
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {formatRelativeTime(conv.updatedAt)}
+                </span>
               </button>
             ))}
           </div>
@@ -232,21 +213,23 @@ export default function ChatGreetingV2({
 
       {/* Sign-in CTA for unauthenticated users */}
       {!isAuthenticated && (
-        <motion.div className="w-full flex justify-center relative z-10" initial="hidden" animate="visible" variants={variant} custom={2.5}>
-          <button
-            type="button"
-            onClick={() => { window.location.href = getLoginUrl(); }}
-            className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 backdrop-blur-sm px-6 py-3 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-ring"
+        <motion.div className="w-full flex justify-center mb-6" initial="hidden" animate="visible" variants={variant} custom={1.5}>
+          <a
+            href={getLoginUrl()}
+            className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-5 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 hover:border-primary/50 transition-all"
           >
             <LogIn className="w-4 h-4" />
-            Sign in to save conversations & unlock all features
-          </button>
+            Sign in to save conversations
+          </a>
         </motion.div>
       )}
 
-      {/* Suggestion prompts — glass cards with icons and gradient borders */}
-      <motion.div className="w-full relative z-10" initial="hidden" animate="visible" variants={variant} custom={3}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Suggestion cards — horizontal scroll like manus */}
+      <motion.div className="w-full max-w-4xl overflow-hidden" initial="hidden" animate="visible" variants={variant} custom={2}>
+        <div
+          className="flex gap-3 overflow-x-auto pb-2 scrollbar-none px-1"
+          style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth', maskImage: 'linear-gradient(to right, black calc(100% - 2rem), transparent)', WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 2rem), transparent)' }}
+        >
           {suggestions.map((item, idx) => {
             const Icon = item.icon;
             return (
@@ -254,16 +237,21 @@ export default function ChatGreetingV2({
                 type="button"
                 key={item.text}
                 onClick={() => onSuggestionClick(item.text)}
-                initial="hidden"
-                animate="visible"
-                variants={variant}
-                custom={3 + idx * 0.15}
-                className={`group flex items-start gap-3 rounded-xl border bg-gradient-to-br ${item.color} backdrop-blur-sm px-4 py-4 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20 focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="text-left p-4 bg-card border border-border rounded-xl hover:border-foreground/20 transition-all group shrink-0 w-[260px] min-h-[80px] active:scale-[0.97] touch-manipulation"
+                style={{ scrollSnapAlign: 'start' }}
               >
-                <div className="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0 group-hover:bg-white/25 group-hover:scale-110 transition-all duration-300 shadow-sm">
-                  <Icon className="w-4.5 h-4.5 text-foreground/90 group-hover:text-foreground transition-colors" />
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0 group-hover:bg-accent transition-colors">
+                    <Icon className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground leading-tight">
+                      {item.text}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-sm text-foreground/80 group-hover:text-foreground leading-snug transition-colors pt-1">{item.text}</span>
               </motion.button>
             );
           })}
