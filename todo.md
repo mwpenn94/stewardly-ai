@@ -9646,3 +9646,16 @@
 - [x] Update theme-color meta tag #0f1117 → #1a1a1a
 - [x] Simplify New Conversation button to plain outline
 - [x] Simplify ChatSidebar active item (no border/shadow)
+
+## Recursive IOV Passes — Production Validation (Current Session)
+- [x] Fix build error in calculators/shared-ui.tsx (empty JSX fragment)
+- [ ] Read recursive-optimization-converged spec in full
+- [ ] Catalog ALL unfulfilled spec items
+- [ ] Study manus-next-app architecture (glass components, layout, chat)
+- [ ] IOV Pass 1: Rebuild chat shell/layout to manus-next standard
+- [ ] IOV Pass 2: Surface AI substrate with per-engine engagement options
+- [ ] IOV Pass 3: Adopt manus-next glass components and polished patterns
+- [ ] IOV Pass 4: Validate ALL features as a user in production browser
+- [ ] IOV Pass 5: Fix all gaps found in production validation
+- [ ] IOV Pass 6: Second consecutive convergence confirmation
+- [ ] Save checkpoint

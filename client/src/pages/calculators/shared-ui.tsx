@@ -163,6 +163,7 @@ export function SliderInput({
   return (
     <div className={`space-y-1.5 ${variant === "glow" ? "relative" : ""}`}>
       {variant === "glow" && (
+        <div className="absolute inset-0 rounded-lg bg-primary/5 blur-sm" />
       )}
       <div className="flex items-center justify-between">
         <Label className={variant === "glow" ? "text-[10px] text-muted-foreground uppercase tracking-wide" : "text-xs text-muted-foreground"}>{label}</Label>
