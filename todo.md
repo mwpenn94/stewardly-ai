@@ -9678,8 +9678,8 @@
 ## Manus-Next Chat Content Area Replacement (Current Session)
 - [x] Replace ChatGreeting engine cards + "Continue where you left off" with manus-next clean greeting (simple serif text + subtitle)
 - [x] Replace suggestion pills with manus-next style suggestion cards (if any) or remove entirely
-- [ ] Replace input area with manus-next clean pill input ([+][textarea][send] inline)
-- [ ] Clean up message display to match manus-next minimal style
+- [x] Replace input area with manus-next clean pill input ([+][textarea][send] inline)
+- [x] Clean up message display to match manus-next minimal style
 - [ ] Validate build + tests pass
 - [ ] Save checkpoint
 
@@ -9691,3 +9691,11 @@
 - [x] Verify App.tsx routing covers all engine routes (wealth-engine, people, learning, intelligence-hub, financial-twin)
 - [x] Tests pass (auth.logout.test.ts), dev server running with HMR, no browser console errors
 - [x] Save checkpoint
+
+## Complete All Remaining & Deferred Items — Manus-Next Full Alignment (Current Session)
+- [x] Replace input area with manus-next clean pill input ([+][textarea][send] inline)
+- [x] Clean up message display to minimal manus-next style (remove verbose metadata, simplify timestamps)
+- [x] Add task status filter pills to sidebar conversation list (All / Running / Completed)
+- [x] Strip remaining clutter from Chat.tsx (focus pickers, model selectors, loop configs, processing indicators)
+- [ ] Validate in browser + tests pass
+- [ ] Save checkpoint

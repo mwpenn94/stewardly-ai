@@ -212,6 +212,7 @@ export default function Chat() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [convFilter, setConvFilter] = useState<"All" | "Active" | "Completed">("All");
   const [searchOpen, setSearchOpen] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
   const [editingFolder, setEditingFolder] = useState<{ id: number; name: string; color: string } | null>(null);
@@ -599,7 +600,19 @@ export default function Chat() {
 
   // Group conversations by pinned, folder, and unfiled with date groups
   const groupedConversations = useMemo(() => {
-    const convs = conversationsQuery.data || [];
+    let convs = conversationsQuery.data || [];
+    // Apply task status filter
+    if (convFilter === "Active") {
+      convs = convs.filter((c: any) => {
+        const lastMsg = c.updatedAt || c.createdAt;
+        return lastMsg && (Date.now() - new Date(lastMsg).getTime()) < 7 * 24 * 60 * 60 * 1000;
+      });
+    } else if (convFilter === "Completed") {
+      convs = convs.filter((c: any) => {
+        const lastMsg = c.updatedAt || c.createdAt;
+        return lastMsg && (Date.now() - new Date(lastMsg).getTime()) >= 7 * 24 * 60 * 60 * 1000;
+      });
+    }
     // Apply inline client-side filter when search is open but query is short (< 2 chars for server search)
     const inlineFilter = searchOpen && searchQuery.length > 0 && searchQuery.length < 2;
     const filterFn = (c: any) => {
@@ -635,7 +648,7 @@ export default function Chat() {
       conversations: filteredUnfiled.filter((c: any) => getDateGroup(c.updatedAt || c.createdAt) === label),
     })).filter(g => g.conversations.length > 0);
     return { pinned, folderGroups, unfiled: filteredUnfiled, dateGroups };
-  }, [conversationsQuery.data, foldersQuery.data, conversationId, searchOpen, searchQuery]);
+  }, [conversationsQuery.data, foldersQuery.data, conversationId, searchOpen, searchQuery, convFilter]);
 
   const toggleFolderExpand = (folderId: number) => {
     setExpandedFolders(prev => {
@@ -1870,6 +1883,24 @@ export default function Chat() {
                 </button>
               </div>
 
+              {/* Task status filter pills — manus-next pattern */}
+              <div className="flex items-center gap-1 px-3 pb-2">
+                {(["All", "Active", "Completed"] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setConvFilter(filter)}
+                    className={`px-2.5 py-0.5 text-[10px] font-medium rounded-full transition-colors ${
+                      convFilter === filter
+                        ? "bg-primary/15 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    }`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+
               {/* Search results */}
               {searchOpen && debouncedSearch.length > 0 ? (
                 <div className="space-y-0.5">
@@ -2304,194 +2335,81 @@ export default function Chat() {
                       </div>
                     ) : (
                       <div>
-                        {/* AI Badge (2B) — Substrate TierBadge replaces static badge */}
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <TierBadge
-                            model={msg.model || msg.metadata?.model as string || undefined}
-                            costTier={msg.metadata?.costTier as any || "standard"}
-                            routingTier={msg.metadata?.routingTier as any || "CLOUD"}
-                            reason={msg.metadata?.routingReason as string || undefined}
-                            isBYO={!!msg.metadata?.isBYO}
-                            className="scale-90 origin-left"
-                          />
-                          {msg.createdAt && <span className="text-[9px] text-muted-foreground/60">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
-                          {msg.contextSources && msg.contextSources > 0 && (
-                            <span className="text-[9px] text-blue-400/60 ml-1">Enhanced with {msg.contextSources} sources</span>
+                        {/* Manus-next clean header: name + mode badge + timestamp */}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-xs font-semibold text-foreground">Stewardly</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                            {msg.metadata?.costTier === "premium" ? "Premium" : msg.metadata?.costTier === "economy" ? "Fast" : "Standard"}
+                          </span>
+                          {msg.createdAt && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           )}
                         </div>
+                        {/* Message content — clean prose */}
                         <div className="prose-chat text-sm">
                           <ProgressiveMessage
                             content={msg.content}
                             isLatest={i === messages.length - 1}
                             threshold={300}
                           />
-                          {/* Multi-model consensus details — show individual model responses */}
-                          {msg.metadata?.consensusScore != null && (
-                            <div className="mt-2 border border-purple-500/20 rounded-lg overflow-hidden">
-                              <button type="button"
-                                className="w-full flex items-center justify-between px-3 py-1.5 bg-purple-500/5 text-[10px] text-purple-400 hover:bg-purple-500/10 transition-colors"
-                                onClick={(e) => {
-                                  const details = (e.currentTarget.nextElementSibling as HTMLElement);
-                                  details.style.display = details.style.display === "none" ? "block" : "none";
-                                }}
-                              >
-                                <span>
-                                  Consensus: {Math.round((msg.metadata.consensusScore || 0) * 100)}% agreement
-                                  {msg.metadata.modelsUsed && ` across ${(msg.metadata.modelsUsed as string[]).join(", ")}`}
-                                </span>
-                                <span>▼</span>
-                              </button>
-                              <div style={{ display: "none" }} className="divide-y divide-purple-500/10">
-                                {(msg.metadata.alternatives || []).map((alt: any, altIdx: number) => (
-                                  <div key={altIdx} className="px-3 py-2">
-                                    <div className="text-[9px] font-semibold text-purple-300 mb-1">
-                                      {alt.model || `Model ${altIdx + 2}`}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground whitespace-pre-wrap">
-                                      {typeof alt === "string" ? alt : (alt.choices?.[0]?.message?.content || alt.content || JSON.stringify(alt)).slice(0, 1000)}
-                                    </div>
-                                  </div>
-                                ))}
-                                {(!msg.metadata.alternatives || msg.metadata.alternatives.length === 0) && (
-                                  <div className="px-3 py-2 text-xs text-muted-foreground/60">All models agreed — no alternative responses to show.</div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          {/* Round E1 — inline trio (StreamingResults + TimingBreakdown + ComparisonView)
-                              when the message came from wealthEngine.consensusStream. Renders under the
-                              legacy consensus badge so users get both the expandable summary AND the
-                              full per-model cards + timing chart + side-by-side diff. */}
-                          {msg.metadata?.wealthConsensus && (
-                            <Suspense fallback={<div className="mt-3 text-xs text-muted-foreground">Loading consensus view…</div>}>
-                            <div className="mt-3 space-y-3">
-                              <StreamingResults
-                                modelsRequested={(msg.metadata.wealthConsensus.perModelResponses as Array<{ modelId: string }>).map((r) => r.modelId)}
-                                events={(msg.metadata.wealthConsensus.events as StreamEvent[]) || []}
-                              />
-                              {msg.metadata.wealthConsensus.perModelResponses && (msg.metadata.wealthConsensus.perModelResponses as Array<unknown>).length > 0 && (
-                                <TimingBreakdown
-                                  perModel={(msg.metadata.wealthConsensus.perModelResponses as Array<{ modelId: string; content: string; durationMs: number; error?: string }>)
-                                    .filter((r) => !r.error)
-                                    .map((r) => ({ modelId: r.modelId, durationMs: r.durationMs }))}
-                                  synthesisMs={msg.metadata.wealthConsensus.synthesisTimeMs as number}
-                                  totalMs={msg.metadata.wealthConsensus.totalDurationMs as number}
-                                />
-                              )}
-                              {Array.isArray(msg.metadata.wealthConsensus.keyAgreements) && (msg.metadata.wealthConsensus.keyAgreements as string[]).length > 0 && (
-                                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 py-2">
-                                  <div className="text-[10px] uppercase text-emerald-400 font-semibold tracking-wide mb-1">
-                                    Key Agreements
-                                  </div>
-                                  <ul className="text-xs space-y-0.5 list-disc list-inside">
-                                    {(msg.metadata.wealthConsensus.keyAgreements as string[]).map((agreement: string, i: number) => (
-                                      <li key={i}>{agreement}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {Array.isArray(msg.metadata.wealthConsensus.notableDifferences) && (msg.metadata.wealthConsensus.notableDifferences as string[]).length > 0 && (
-                                <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                                  <div className="text-[10px] uppercase text-amber-400 font-semibold tracking-wide mb-1">
-                                    Notable Differences
-                                  </div>
-                                  <ul className="text-xs space-y-0.5 list-disc list-inside">
-                                    {(msg.metadata.wealthConsensus.notableDifferences as string[]).map((diff: string, i: number) => (
-                                      <li key={i}>{diff}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                              {msg.metadata.wealthConsensus.perModelResponses && (msg.metadata.wealthConsensus.perModelResponses as Array<unknown>).length > 0 && (
-                                <ComparisonView
-                                  responses={msg.metadata.wealthConsensus.perModelResponses as Array<{ modelId: string; content: string; durationMs: number; error?: string }>}
-                                  unifiedAnswer={msg.metadata.wealthConsensus.unifiedAnswer as string}
-                                />
-                              )}
-                            </div>
-                            </Suspense>
-                          )}
-                          {/* Render inline images if present in metadata */}
+                          {/* Inline images */}
                           {msg.metadata?.imageUrl && (
                             <div className="mt-3 rounded-xl overflow-hidden border border-border max-w-md">
                               <img src={msg.metadata.imageUrl} alt="AI generated visual" className="w-full h-auto" />
                             </div>
                           )}
-                          {/* Rich media embeds — server-attached (msg.metadata.mediaEmbeds) with client-side fallback */}
+                          {/* Rich media embeds */}
                           {(() => {
                             const serverEmbeds = (msg.metadata?.mediaEmbeds as MediaEmbed[] | undefined) || [];
                             const embeds = serverEmbeds.length > 0 ? serverEmbeds : extractMediaFromText(msg.content || "");
                             return embeds.length > 0 ? <RichMediaEmbed embeds={embeds} className="max-w-md" /> : null;
                           })()}
                         </div>
-                        {msg.confidenceScore != null && (
-                          <ReasoningChain
-                            confidenceScore={msg.confidenceScore}
-                            complianceStatus={msg.complianceStatus}
-                            focus={msg.metadata?.focus}
-                            mode={msg.metadata?.mode}
-                            hasRAG={msg.metadata?.hasRAG}
-                            hasSuitability={!!user?.suitabilityCompleted}
-                            responseLength={msg.content?.length}
-                          />
-                        )}
-                        {/* AEGIS Quality Score — shown when metadata has quality dimensions */}
-                        {msg.metadata?.qualityScore && (
-                          <QualityScoreDisplay
-                            score={msg.metadata.qualityScore as any}
-                            suggestions={msg.metadata.qualitySuggestions as string[] || undefined}
-                            compact
-                            className="mt-1"
-                          />
-                        )}
-                        <div className="flex items-center gap-2 mt-1">
-                          {msg.content && (
-                            <div className="flex items-center gap-0.5 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
-                              {msg.id && (<>
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Good response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-green-400 transition-colors" onClick={() => handleFeedback(msg.id, "up")}>
-                                  <ThumbsUp className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Good response</TooltipContent></Tooltip>
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Bad response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-red-400 transition-colors" onClick={() => handleFeedback(msg.id, "down")}>
-                                  <ThumbsDown className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Bad response</TooltipContent></Tooltip>
-                              </>)}
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Copy message" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}>
-                                  <Copy className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Copy</TooltipContent></Tooltip>
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Read aloud" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors" onClick={() => tts.forceSpeak(msg.content)}>
-                                  <Volume2 className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Read aloud</TooltipContent></Tooltip>
-                              {/* G30: Download last TTS audio as MP3 */}
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Download audio" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-emerald-400 transition-colors" onClick={() => { tts.forceSpeak(msg.content); setTimeout(() => { if (!tts.downloadAudio()) toast.info("Audio not yet available — try again after playback starts"); }, 2000); }}>
-                                  <Download className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Download audio</TooltipContent></Tooltip>
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" aria-label="Regenerate response" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-amber-400 transition-colors" onClick={() => { if (messages.length >= 2) { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); } }}>
-                                  <RefreshCw className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Regenerate</TooltipContent></Tooltip>
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-purple-400 transition-colors" onClick={async () => { toast.info("Generating infographic..."); try { const result = await visualMutation.mutateAsync({ prompt: `Create a professional infographic summarizing: ${msg.content.slice(0, 500)}` }); if (result.url) { setMessages(prev => [...prev, { role: "assistant" as const, content: `Here's the infographic:`, metadata: { imageUrl: result.url }, createdAt: new Date() }]); } } catch (e: any) { toast.error(e.message || "The infographic couldn't be created right now — try again shortly"); } }} title="Generate Infographic">
-                                  <Palette className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Generate Infographic</TooltipContent></Tooltip>
-                              <Tooltip><TooltipTrigger asChild>
-                                <button type="button" className="p-2 rounded-lg hover:bg-secondary/50 text-muted-foreground hover:text-teal-400 transition-colors" onClick={() => { const prevUserMsg = messages.slice(0, i).reverse().find(m => m.role === "user"); if (prevUserMsg) { toast.info("Branching conversation..."); handleSendWithText(prevUserMsg.content); } else { toast.info("No previous prompt to branch from"); } }} aria-label="Fork conversation">
-                                  <GitBranch className="w-4 h-4" />
-                                </button>
-                              </TooltipTrigger><TooltipContent side="bottom" className="text-xs">Fork / Branch</TooltipContent></Tooltip>
-                            </div>
+                        {/* Compact action buttons — manus-next style: text labels, show on hover */}
+                        <div className="flex items-center gap-1 mt-2 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
+                          <button type="button"
+                            onClick={() => { if (tts.isSpeaking) { tts.stop(); } else { tts.forceSpeak(msg.content); } }}
+                            className={`flex items-center gap-1.5 text-[11px] transition-colors px-2 py-1 rounded-md hover:bg-accent/50 ${tts.isSpeaking && i === messages.length - 1 ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                            aria-label={tts.isSpeaking ? "Stop reading" : "Read aloud"}
+                          >
+                            <Volume2 className="w-3 h-3" />
+                            {tts.isSpeaking && i === messages.length - 1 ? "Stop" : "Listen"}
+                          </button>
+                          {i === messages.length - 1 && (
+                            <button type="button"
+                              onClick={() => { const lastUserMsg = [...messages].reverse().find(m => m.role === "user"); if (lastUserMsg) handleSendWithText(lastUserMsg.content); }}
+                              className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent/50"
+                              aria-label="Regenerate response"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                              Regenerate
+                            </button>
                           )}
+                          {msg.id && (
+                            <>
+                              <button type="button" onClick={() => handleFeedback(msg.id, "up")}
+                                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent/50"
+                                aria-label="Good response"
+                              >
+                                <ThumbsUp className="w-3 h-3" />
+                              </button>
+                              <button type="button" onClick={() => handleFeedback(msg.id, "down")}
+                                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent/50"
+                                aria-label="Bad response"
+                              >
+                                <ThumbsDown className="w-3 h-3" />
+                              </button>
+                            </>
+                          )}
+                          <button type="button"
+                            onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("Copied"); }}
+                            className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent/50"
+                            aria-label="Copy message"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </button>
                         </div>
                       </div>
                     )}
