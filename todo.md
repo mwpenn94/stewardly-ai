@@ -9610,7 +9610,7 @@
 - [x] Verify ChatGreeting renders correctly on desktop + mobile
 - [x] Verify input area renders correctly without forced sizing
 - [x] Run vitest to confirm no regressions (119 tests passing)
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## Manus Visual Language Transformation (Current Session)
 - [x] Replace CSS color palette: navy+gold to pure neutral greys + blue accent (manus tokens)
@@ -9628,7 +9628,7 @@
 - [x] Strip sidebar of warm navy, make flat neutral
 - [x] Verify light theme also uses manus tokens
 - [x] Run vitest to confirm no regressions (119 tests passing)
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## Additional Manus Alignment Changes
 - [x] Replace all text-accent → text-primary across ALL client source files
@@ -9649,13 +9649,13 @@
 
 ## Recursive IOV Passes — Production Validation (Current Session)
 - [x] Fix build error in calculators/shared-ui.tsx (empty JSX fragment)
-- [ ] Read recursive-optimization-converged spec in full
-- [ ] Catalog ALL unfulfilled spec items
-- [ ] Study manus-next-app architecture (glass components, layout, chat)
-- [ ] IOV Pass 1: Rebuild chat shell/layout to manus-next standard
-- [ ] IOV Pass 2: Surface AI substrate with per-engine engagement options
-- [ ] IOV Pass 3: Adopt manus-next glass components and polished patterns
-- [ ] IOV Pass 4: Validate ALL features as a user in production browser
-- [ ] IOV Pass 5: Fix all gaps found in production validation
-- [ ] IOV Pass 6: Second consecutive convergence confirmation
-- [ ] Save checkpoint
+- [x] Read recursive-optimization-converged spec in full
+- [x] Catalog ALL unfulfilled spec items
+- [x] Study manus-next-app architecture (glass components, layout, chat)
+- [x] IOV Pass 1: Rebuild chat shell/layout to manus-next standard
+- [x] IOV Pass 2: Surface AI substrate with per-engine engagement options
+- [x] IOV Pass 3: Adopt manus-next glass components and polished patterns
+- [x] IOV Pass 4: Validate ALL features as a user in production browser
+- [x] IOV Pass 5: Fix all gaps found in production validation
+- [x] IOV Pass 6: Second consecutive convergence confirmation (3 passes clean)
+- [x] Save checkpoint

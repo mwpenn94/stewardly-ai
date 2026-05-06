@@ -1807,7 +1807,7 @@ export default function Chat() {
             </div>
           ) : (
             <>
-              <Button variant="outline" size="sm" className="gap-2 text-xs flex-1 justify-start hover:bg-secondary" onClick={handleNewConversation}>
+              <Button variant="ghost" size="sm" className="gap-2 text-xs flex-1 justify-start text-muted-foreground hover:text-foreground hover:bg-accent" onClick={handleNewConversation}>
                 <Plus className="w-3.5 h-3.5" /> New Conversation
               </Button>
               <div className="flex items-center gap-0.5">
@@ -2262,44 +2262,36 @@ export default function Chat() {
             ? "AI is responding…"
             : liveAnnouncement}
         </div>
-        {/* Mobile-only sidebar toggle + escalation + guest sign-in */}
-        <div className="lg:hidden flex items-center h-12 px-3 shrink-0 justify-between">
+        {/* Mobile header — glass effect like manus-next */}
+        <div className="sticky top-0 z-20 lg:hidden flex items-center h-12 px-3 shrink-0 justify-between bg-background/80 backdrop-blur-sm">
           <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
             <Menu className="w-5 h-5" />
           </Button>
-          <div className="flex items-center gap-1.5">
-            <ConnectionQualityIndicator isStreaming={isStreaming} />
-            {selectedModel !== undefined && <SovereignModeIndicator tier={(selectedModel.includes('local') || selectedModel.includes('ollama')) ? 'S3' : 'S1'} />}
-            <NotificationBell
-              notifications={notifications}
-              unreadCount={unreadCount}
-              connected={wsConnected}
-              onMarkAsRead={markAsRead}
-              onMarkAllAsRead={markAllAsRead}
-              onClear={clearNotifications}
-              onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
-            />
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <NotificationBell
+                notifications={notifications}
+                unreadCount={unreadCount}
+                connected={wsConnected}
+                onMarkAsRead={markAsRead}
+                onMarkAllAsRead={markAllAsRead}
+                onClear={clearNotifications}
+                onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
+              />
+            )}
             {(!isAuthenticated || user?.authTier === "anonymous") && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="text-[10px] h-7 gap-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                className="text-xs h-8 gap-1.5 text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
                   window.location.href = getLoginUrl();
                 }}
               >
-                <LogIn className="w-3 h-3" /> Sign In
+                <LogIn className="w-3.5 h-3.5" /> Sign In
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-[10px] h-7 gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-              onClick={() => navigate("/professionals")}
-            >
-              <Phone className="w-3 h-3" /> Talk to a Pro
-            </Button>
           </div>
         </div>
 
@@ -2328,6 +2320,13 @@ export default function Chat() {
               userName={user?.name ?? undefined}
               isAuthenticated={isAuthenticated}
               onSuggestionClick={(text) => { setInput(text); textareaRef.current?.focus(); }}
+              onEngineSelect={(engineId, prompt) => {
+                if (engineId === "wealth") setSelectedFocus(["financial"]);
+                else if (engineId === "learning") setSelectedFocus(["study"]);
+                else setSelectedFocus(["general"]);
+                setInput(prompt);
+                textareaRef.current?.focus();
+              }}
               onResumeConversation={(id) => { setConversationId(id); navigate(`/chat/${id}`); }}
               userRole={userRole as any}
               aiHealthy={true}
@@ -2748,38 +2747,64 @@ export default function Chat() {
             <input ref={fileInputRef} type="file" className="hidden" aria-label="Upload documents" multiple accept=".pdf,.doc,.docx,.txt,.md,.csv,.json,.xml,.yaml,.yml" onChange={handleFileSelect} />
             <input ref={imageInputRef} type="file" className="hidden" aria-label="Upload images" multiple accept="image/*" onChange={handleFileSelect} />
 
-            {/* Textarea — full width, rounded pill */}
-            <div data-tour="chat-input" className="relative bg-card border border-border rounded-full focus-within:border-foreground/20 transition-colors px-4 py-2">
+            {/* Textarea — manus-next pill with inline buttons */}
+            <div data-tour="chat-input" className="relative bg-card border border-border shadow-md shadow-black/20 rounded-full focus-within:border-primary/40 focus-within:ring-3 focus-within:ring-primary/10 transition-all">
               <Textarea
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={handsFreeActive && voice.isListening ? "Listening..." : userRole === "advisor" ? "Ask about clients, strategies, compliance, or financial planning..." : userRole === "admin" ? "Ask about platform management, analytics, or financial strategies..." : "Ask about financial planning, insurance, investments, or strategies..."}
-                className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[36px] max-h-[160px] text-sm py-2 px-0 placeholder:text-muted-foreground/50"
+                placeholder={handsFreeActive && voice.isListening ? "Listening..." : "Ask anything about financial planning, investments, or strategies..."}
+                className="w-full resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[48px] max-h-[120px] text-[15px] leading-relaxed py-3.5 pl-14 pr-24 placeholder:text-muted-foreground/50"
                 rows={1}
                 disabled={isStreaming}
               />
+              {/* Left: + button inside pill */}
+              <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                <button type="button"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                    showAddMenu ? "bg-primary/15 text-primary rotate-45" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                  onClick={() => setShowAddMenu(!showAddMenu)}
+                  aria-label={showAddMenu ? "Close context menu" : "More options"}
+                >
+                  <Plus className="w-5 h-5 transition-transform" />
+                </button>
+              </div>
+              {/* Right: mic + send inside pill */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <button type="button"
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                    voice.isListening
+                      ? "bg-primary/20 text-primary animate-pulse"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                  onClick={() => { voice.isListening ? voice.stop() : voice.start(); }}
+                  aria-label={voice.isListening ? "Stop listening" : "Voice input"}
+                >
+                  <AudioLines className="w-4 h-4" />
+                </button>
+                <button type="button"
+                  onClick={isStreaming ? undefined : handleSend}
+                  disabled={isStreaming || (!input.trim() && attachments.length === 0)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-90 ${
+                    isStreaming
+                      ? "bg-muted text-muted-foreground"
+                      : (input.trim() || attachments.length > 0)
+                        ? "bg-foreground text-background hover:opacity-80"
+                        : "bg-muted text-muted-foreground"
+                  }`}
+                  aria-label={isStreaming ? "Sending..." : "Send message"}
+                >
+                  {isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUp className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
-            {/* Action bar below textarea — Copilot style: [+] [Mode v] ... [Audio] [hands-free/send] */}
+            {/* Action bar — secondary controls: [Focus] ...spacer... [audio modes] */}
             <div className="chat-input-bar flex items-center gap-1 mt-1.5">
-              {/* + Add context button */}
+              {/* + Add context menu (popup triggered from inline button above) */}
               <div className="relative" data-tour="context-buttons">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button"
-                      className={`p-2.5 rounded-full transition-all ${
-                        showAddMenu ? "bg-primary/15 text-primary rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
-                      }`}
-                      onClick={() => setShowAddMenu(!showAddMenu)}
-                      aria-label={showAddMenu ? "Close context menu" : "Add context"}
-                    >
-                      <Plus className="w-5 h-5 transition-transform" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Add context</TooltipContent>
-                </Tooltip>
 
                 {showAddMenu && (
                   <>
@@ -2850,17 +2875,14 @@ export default function Chat() {
                 )}
               </div>
 
-              {/* Pass 130: Removed 4 always-visible inline media shortcuts (Paperclip, Image, Screen, Video)
-                 — all are accessible via the [+] menu. Keeps input bar clean like Claude/Manus. */}
-
-              {/* Mode dropdown — Copilot "Smart v" style */}
+              {/* Focus mode selector — minimal pill */}
               <div className="relative" data-tour="focus-mode">
                   <button type="button"
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium bg-secondary/40 text-foreground hover:bg-secondary/60 border border-border transition-all"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
                     onClick={() => setShowModeMenu(!showModeMenu)}
                   >
-                  {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.icon || <Sparkles className="w-3 h-3" />}
-                  {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.label || "General"}
+                  {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.icon || <Sparkles className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">{FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.label || "General"}</span>
                   <ChevronDown className={`w-3 h-3 transition-transform ${showModeMenu ? "rotate-180" : ""}`} />
                 </button>
 
@@ -3010,14 +3032,13 @@ export default function Chat() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button type="button"
-                    
                     onClick={() => setAdvancedOpen((p) => !p)}
                     aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
                     aria-expanded={advancedOpen}
-                    className={`flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
+                    className={`hidden md:flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
                       advancedOpen
-                        ? "bg-secondary/60 text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
+                        ? "bg-accent text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
                     }`}
                   >
                     <ChevronUp className={`w-3 h-3 transition-transform ${advancedOpen ? "" : "rotate-180"}`} />
@@ -3271,86 +3292,33 @@ export default function Chat() {
               )}
               <div className="flex-1" />
 
-              {/* Pass 5 (G24): Always-visible mic button for voice input */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    className={`p-2.5 rounded-full transition-all ${
-                      voice.isListening
-                        ? "bg-emerald-500/15 text-emerald-400 animate-pulse"
-                        : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => {
-                      if (voice.isListening) {
-                        voice.stop();
-                      } else {
-                        voice.start();
-                        toast.info("Listening... speak now", { duration: 2000 });
-                      }
-                    }}
-                    aria-label={voice.isListening ? "Stop listening" : "Voice input"}
-                  >
-                    <AudioLines className="w-5 h-5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{voice.isListening ? "Stop listening" : "Voice input (tap to speak)"}</TooltipContent>
-              </Tooltip>
-              {/* Pass 130: Audio toggle moved — only visible when TTS is active (as a mute indicator) */}
+              {/* TTS mute indicator */}
               {ttsEnabled && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button"
-                      data-tour="voice-toggle"
-                      className="p-2 rounded-full bg-primary/10 text-primary transition-all"
-                      onClick={() => { setTtsEnabled(false); tts.cancel(); }}
-                      aria-label="Mute audio"
-                    >
-                      <Volume2 className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Mute audio</TooltipContent>
-                </Tooltip>
+                <button type="button"
+                  className="p-2 rounded-full bg-primary/10 text-primary transition-all"
+                  onClick={() => { setTtsEnabled(false); tts.cancel(); }}
+                  aria-label="Mute audio"
+                >
+                  <Volume2 className="w-4 h-4" />
+                </button>
               )}
-
-              {/* Unified hands-free / send button (rightmost, same position always) */}
-              {isStreaming ? (
-                <Button
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                  disabled
-                  aria-label="Sending message"
-                >
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                </Button>
-              ) : (input.trim() || attachments.length > 0) ? (
-                <Button
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
-                  onClick={handleSend}
-                  aria-label="Send message"
-                >
-                  <ArrowUp className="w-5 h-5" />
-                </Button>
-              ) : handsFreeActive ? (
-                <Button
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse transition-all"
+              {/* Hands-free stop */}
+              {handsFreeActive && (
+                <button type="button"
+                  className="p-2 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
                   onClick={toggleHandsFree}
                   aria-label="Stop hands-free mode"
                 >
-                  <PhoneOff className="w-5 h-5" />
-                </Button>
-              ) : (
+                  <PhoneOff className="w-4 h-4" />
+                </button>
+              )}
+              {/* Voice mode options (only when idle) */}
+              {!isStreaming && !input.trim() && !handsFreeActive && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-10 w-10 rounded-full hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all"
-                      aria-label="Voice mode options"
-                    >
-                      <AudioLines className="w-5 h-5" />
-                    </Button>
+                    <button type="button" className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground" aria-label="Voice mode options">
+                      <AudioLines className="w-4 h-4" />
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem onClick={toggleHandsFree} className="gap-2">
