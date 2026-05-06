@@ -67,6 +67,7 @@ import { UpgradePrompt } from "@/components/UpgradePrompt";
 
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
+import { AppsGridMenu } from "@/components/AppsGridMenu";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
 import { useSelfDiscovery } from "@/hooks/useSelfDiscovery";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -2015,31 +2016,18 @@ export default function Chat() {
           )}
         </nav>
 
-        {/* ─── Bottom Bar: Settings, Help, Notifications, Theme ─── */}
-        <div className="border-t border-sidebar-border shrink-0 px-2 py-2 space-y-0.5">
+        {/* ─── Bottom Bar: Manus-next compact icon row ─── */}
+        <div className="border-t border-sidebar-border shrink-0 bg-sidebar">
           {sidebarCollapsed ? (
-            <div className="space-y-0.5">
+            <div className="flex flex-col items-center gap-0.5 py-2">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button type="button" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-                    className={`flex items-center justify-center w-full p-2 rounded-xl transition-all duration-200 ${
-                      location.startsWith("/settings") ? "bg-primary/12 text-primary border border-primary/25" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                    }`}>
+                    className="p-2 rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
                     <Settings className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">Settings</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
-                    className={`flex items-center justify-center w-full p-2 rounded-xl transition-all duration-200 ${
-                      location === "/help" ? "bg-primary/12 text-primary border border-primary/25" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                    }`}>
-                    <HelpCircle className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Help</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -2048,7 +2036,7 @@ export default function Chat() {
                       const next = themePreference === "dark" ? "light" : themePreference === "light" ? "system" : "dark";
                       setThemePref(next);
                     }}
-                    className="flex items-center justify-center w-full p-2 rounded-xl text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200">
+                    className="p-2 rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors">
                     {themePreference === "system" ? <Monitor className="w-4 h-4" /> : themePreference === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   </button>
                 </TooltipTrigger>
@@ -2056,56 +2044,46 @@ export default function Chat() {
               </Tooltip>
             </div>
           ) : (
-            <>
-              {/* Settings */}
-              <button type="button" data-tour="settings" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-                className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ease-out ${
-                  location.startsWith("/settings")
-                    ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5"
-                    : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
-                }`}
-              >
-                <Settings className={`w-4 h-4 ${location.startsWith("/settings") ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"}`} />
-                <span className="truncate">Settings</span>
-              </button>
-              {/* Help */}
-              <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
-                className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ease-out ${
-                  location === "/help"
-                    ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5"
-                    : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
-                }`}
-              >
-                <HelpCircle className={`w-4 h-4 ${location === "/help" ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"}`} />
-                <span className="truncate">Help</span>
-              </button>
-
-              {/* Bottom icon row: Notifications + Theme */}
-              <div className="flex items-center justify-between px-1 pt-1">
-                <div className="flex items-center gap-1">
-                  <NotificationBell
-                    notifications={notifications}
-                    unreadCount={unreadCount}
-                    connected={wsConnected}
-                    onMarkAsRead={markAsRead}
-                    onMarkAllAsRead={markAllAsRead}
-                    onClear={clearNotifications}
-                    onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
-                  />
-                  <ChangelogBell collapsed={sidebarCollapsed} />
-                </div>
+            <div className="flex items-center justify-between px-3 py-2">
+              {/* Left: icon buttons */}
+              <div className="flex items-center gap-1">
+                <button type="button" data-tour="settings"
+                  onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                  className="p-2 rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                  title="Settings">
+                  <Settings className="w-4 h-4" />
+                </button>
+                <AppsGridMenu onNavigate={(path) => { navigate(path); setSidebarOpen(false); }} />
+                <NotificationBell
+                  notifications={notifications}
+                  unreadCount={unreadCount}
+                  connected={wsConnected}
+                  onMarkAsRead={markAsRead}
+                  onMarkAllAsRead={markAllAsRead}
+                  onClear={clearNotifications}
+                  onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
+                />
+                <button type="button"
+                  onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                  className="p-2 rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                  title="Help">
+                  <HelpCircle className="w-4 h-4" />
+                </button>
                 <button type="button"
                   onClick={() => {
                     const next = themePreference === "dark" ? "light" : themePreference === "light" ? "system" : "dark";
                     setThemePref(next);
                   }}
                   className="p-2 rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-                  title={`Theme: ${themePreference}`}
-                >
+                  title={`Theme: ${themePreference}`}>
                   {themePreference === "system" ? <Monitor className="w-4 h-4" /> : themePreference === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
               </div>
-            </>
+              {/* Right: brand mark */}
+              <span className="text-[10px] text-muted-foreground select-none">
+                Stewardly
+              </span>
+            </div>
           )}
 
           {/* Auth controls */}

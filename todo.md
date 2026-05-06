@@ -9661,7 +9661,7 @@
 - [x] Save checkpoint
 
 ## FULL CHAT UI REPLACEMENT — Manus-Next Architecture (Current Session)
-- [ ] Study manus-next Home.tsx + AppLayout complete architecture
+- [x] Study manus-next Home.tsx + AppLayout complete architecture
 - [ ] Rewrite Chat.tsx — strip ALL cluttered features from frontend (focus pickers, model selectors, loop configs, consensus links, code chat toggles, streaming toggles, processing indicators)
 - [ ] Replace with manus-next clean architecture: greeting + simple input [+][textarea][send] + clean messages + clean sidebar
 - [ ] Fix theme/CSS to actually match manus-next visually (not just token swap)
@@ -9673,4 +9673,21 @@
 - [x] Rebuild sidebar with glass-style design matching Stewardly screenshots (white/translucent bg, uppercase section headers WEALTH/PROFESSIONAL/LEADERSHIP, generous spacing, blue active pill states)
 - [x] Maintain theme toggle (light/dark/system) — glass adapts to both themes
 - [x] Validate build compiles without errors
+- [x] Save checkpoint
+
+## Manus-Next Chat Content Area Replacement (Current Session)
+- [x] Replace ChatGreeting engine cards + "Continue where you left off" with manus-next clean greeting (simple serif text + subtitle)
+- [x] Replace suggestion pills with manus-next style suggestion cards (if any) or remove entirely
+- [ ] Replace input area with manus-next clean pill input ([+][textarea][send] inline)
+- [ ] Clean up message display to match manus-next minimal style
+- [ ] Validate build + tests pass
+- [ ] Save checkpoint
+
+## Manus-Next UI/UX Overhaul — ChatGreeting + AppsGridMenu + Sidebar Bottom Bar (Current Session)
+- [x] Rewrite ChatGreeting with manus-next style: serif greeting, subtitle, horizontal engine suggestion cards, quick action pills
+- [x] Create AppsGridMenu component (engine drawer in sidebar bottom bar with 4 engines + utility links)
+- [x] Replace sidebar bottom bar with manus-next compact icon row (Settings, AppsGridMenu, Help, Theme)
+- [x] Verify index.css already has manus-next production tokens (oklch, font stacks, timing) — no changes needed
+- [x] Verify App.tsx routing covers all engine routes (wealth-engine, people, learning, intelligence-hub, financial-twin)
+- [x] Tests pass (auth.logout.test.ts), dev server running with HMR, no browser console errors
 - [x] Save checkpoint
