@@ -113,7 +113,7 @@ export default function AutomationActivityStrip({
       className="mt-2 rounded border border-border/60 bg-card text-card-foreground shadow-sm"
     >
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40">
-        <Globe className="w-4 h-4 text-primary" aria-hidden />
+        <Globe className="w-4 h-4 text-accent" aria-hidden />
         <span className="text-xs font-medium">Browser activity</span>
         <span
           className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] tabular-nums border ${

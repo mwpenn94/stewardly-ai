@@ -89,7 +89,7 @@ export default function ProfileTab() {
       {/* ─── AVATAR ─── */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Camera className="w-4 h-4 text-primary" /> AI Avatar</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Camera className="w-4 h-4 text-accent" /> AI Avatar</CardTitle>
           <CardDescription className="text-xs">
             Upload an image for your AI's talking avatar. It animates during voice responses.
           </CardDescription>
@@ -120,7 +120,7 @@ export default function ProfileTab() {
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" aria-label="Upload avatar" onChange={handleAvatarUpload} />
               <Button
                 size="sm"
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                className="bg-accent text-accent-foreground hover:bg-accent/90"
                 onClick={() => avatarInputRef.current?.click()}
                 disabled={uploadAvatar.isPending}
               >
@@ -136,7 +136,7 @@ export default function ProfileTab() {
       {/* ─── COMMUNICATION STYLE ─── */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Fingerprint className="w-4 h-4 text-primary" /> Communication Style</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Fingerprint className="w-4 h-4 text-accent" /> Communication Style</CardTitle>
           <CardDescription className="text-xs">
             Describe how you communicate so the AI can match your style — tone, vocabulary, formality, patterns.
           </CardDescription>
@@ -152,7 +152,7 @@ export default function ProfileTab() {
             <p className="text-[10px] text-muted-foreground">More detail = better personalization</p>
             <Button
               size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs"
               onClick={() => updateStyle.mutate({ profile: styleProfile })}
               disabled={updateStyle.isPending}
             >
@@ -166,7 +166,7 @@ export default function ProfileTab() {
       {/* ─── MEMORIES ─── */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Brain className="w-4 h-4 text-primary" /> Memories</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Brain className="w-4 h-4 text-accent" /> Memories</CardTitle>
           <CardDescription className="text-xs">
             Teach your AI facts about you — preferences, goals, relationships. These persist across conversations.
           </CardDescription>
@@ -194,7 +194,7 @@ export default function ProfileTab() {
                 onKeyDown={(e) => { if (e.key === "Enter" && newMemory.trim()) addMemory.mutate({ category: memoryCategory, content: newMemory }); }}
               />
               <Button
-                size="sm" className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 text-xs px-2.5"
+                size="sm" className="h-8 bg-accent text-accent-foreground hover:bg-accent/90 text-xs px-2.5"
                 onClick={() => newMemory.trim() && addMemory.mutate({ category: memoryCategory, content: newMemory })}
                 disabled={addMemory.isPending || !newMemory.trim()}
               >
@@ -237,7 +237,7 @@ export default function ProfileTab() {
       {/* ─── PROFILE INFO ─── */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Account</CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><User className="w-4 h-4 text-accent" /> Account</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

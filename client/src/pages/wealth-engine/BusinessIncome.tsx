@@ -162,7 +162,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
             <Card className="bg-card/60 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" /> Role & Streams
+                  <Users className="w-4 h-4 text-accent" /> Role & Streams
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -171,7 +171,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-1.5 mt-1">
                     {(rolesQ.data ?? []).slice(0, 9).map((r: any) => (
                       <button type="button" key={r.key} onClick={() => setRole(r.key)}
-                        className={`text-[10px] py-1.5 rounded border transition-all ${role === r.key ? "bg-primary/10 border-primary/20 text-primary" : "bg-card/40 border-border/50 text-muted-foreground"}`}>
+                        className={`text-[10px] py-1.5 rounded border transition-all ${role === r.key ? "bg-accent/10 border-accent/30 text-accent" : "bg-card/40 border-border/50 text-muted-foreground"}`}>
                         {r.name?.split(" ")[0] || r.key}
                       </button>
                     ))}
@@ -208,7 +208,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
             <Card className="bg-card/60 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Target className="w-4 h-4 text-primary" /> Back-Plan
+                  <Target className="w-4 h-4 text-accent" /> Back-Plan
                 </CardTitle>
                 <CardDescription className="text-xs">Target income → required GDC</CardDescription>
               </CardHeader>
@@ -224,9 +224,9 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                   const funnel = bp.funnel;
                   return (
                     <div className="space-y-3">
-                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/15">
+                      <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
                         <p className="text-xs text-muted-foreground">Required GDC for {fmt(targetIncome)}/yr as {role}:</p>
-                        <p className="text-lg font-bold text-primary font-mono">{fmt(bp.neededGDC ?? bp.requiredGDC ?? 0)}</p>
+                        <p className="text-lg font-bold text-accent font-mono">{fmt(bp.neededGDC ?? bp.requiredGDC ?? 0)}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className="text-[10px]">{bp.bracketLabel ?? "—"}</Badge>
                           <span className="text-[10px] text-muted-foreground">{((bp.bracketRate ?? 0) * 100).toFixed(0)}% payout</span>
@@ -241,7 +241,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                               { label: "Appointments Set", value: funnel.set, color: "bg-chart-2/20 border-chart-2/30" },
                               { label: "Meetings Held", value: funnel.held, color: "bg-chart-3/20 border-chart-3/30" },
                               { label: "Applications", value: funnel.apps, color: "bg-chart-4/20 border-chart-4/30" },
-                              { label: "Placed Cases", value: funnel.placed, color: "bg-primary/15 border-primary/20" },
+                              { label: "Placed Cases", value: funnel.placed, color: "bg-accent/20 border-accent/30" },
                             ].map((step, i) => (
                               <div key={step.label} className="flex items-center gap-2">
                                 <div className={`flex-1 flex items-center justify-between px-2 py-1 rounded border ${step.color}`}
@@ -318,7 +318,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
               <Card className="bg-card/60 border-border/50">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" /> GDC Brackets
+                    <Layers className="w-4 h-4 text-accent" /> GDC Brackets
                   </CardTitle>
                   <CardDescription className="text-xs">Commission payout rates by production level</CardDescription>
                 </CardHeader>
@@ -329,7 +329,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                         (results[0] as any)?.personalGDC >= (b.min ?? 0) &&
                         (b.max == null || (results[0] as any)?.personalGDC <= b.max);
                       return (
-                        <div key={i} className={`flex items-center justify-between px-2 py-1.5 rounded text-xs transition-colors ${isActive ? "bg-accent/12 border border-primary/20" : "bg-card/30"}`}>
+                        <div key={i} className={`flex items-center justify-between px-2 py-1.5 rounded text-xs transition-colors ${isActive ? "bg-accent/12 border border-accent/30" : "bg-card/30"}`}>
                           <div className="flex items-center gap-2">
                             <span className="font-medium w-28 truncate">{b.label ?? `Bracket ${i + 1}`}</span>
                             <span className="text-muted-foreground text-[10px]">
@@ -355,7 +355,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <Card className="bg-card/60 border-border/50"><CardContent className="p-3">
                     <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Year 1 Income</p>
-                    <p className="text-lg font-semibold tabular-nums text-primary">{fmt((results[0] as any)?.totalIncome ?? 0)}</p>
+                    <p className="text-lg font-semibold tabular-nums text-accent">{fmt((results[0] as any)?.totalIncome ?? 0)}</p>
                   </CardContent></Card>
                   <Card className="bg-card/60 border-border/50"><CardContent className="p-3">
                     <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Year {years} Income</p>
@@ -397,7 +397,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                               <TableCell className="text-xs text-right py-1.5 font-mono">{fmt(r.personalIncome ?? 0)}</TableCell>
                               <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(r.overrideIncome ?? 0)}</TableCell>
                               <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(r.aumIncome ?? 0)}</TableCell>
-                              <TableCell className="text-xs text-right py-1.5 font-mono text-primary">{fmt(r.totalIncome ?? 0)}</TableCell>
+                              <TableCell className="text-xs text-right py-1.5 font-mono text-accent">{fmt(r.totalIncome ?? 0)}</TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -422,7 +422,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
           <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowChannels(v => !v)}>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary" /> Marketing Channels (CPL & ROI)
+                <Target className="w-4 h-4 text-accent" /> Marketing Channels (CPL & ROI)
               </CardTitle>
               <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showChannels ? "rotate-90" : ""}`} />
             </div>
@@ -453,7 +453,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                           <TableCell className="text-xs text-right py-1.5 font-mono">{(ch.cv * 100).toFixed(0)}%</TableCell>
                           <TableCell className="text-xs text-right py-1.5 font-mono">{fmt(ch.revPerClient)}</TableCell>
                           <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{fmt(ch.ltv)}</TableCell>
-                          <TableCell className={`text-xs text-right py-1.5 font-mono ${roi > 500 ? "text-emerald-400" : roi > 100 ? "text-primary" : "text-amber-400"}`}>
+                          <TableCell className={`text-xs text-right py-1.5 font-mono ${roi > 500 ? "text-emerald-400" : roi > 100 ? "text-accent" : "text-amber-400"}`}>
                             {roi.toFixed(0)}%
                           </TableCell>
                           <TableCell className="text-xs text-right py-1.5 font-mono text-muted-foreground">{(ch.growthRate * 100).toFixed(0)}%/yr</TableCell>
@@ -475,7 +475,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
           <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowBudget(v => !v)}>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-primary" /> Channel Budget Allocator
+                <Calculator className="w-4 h-4 text-accent" /> Channel Budget Allocator
               </CardTitle>
               <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showBudget ? "rotate-90" : ""}`} />
             </div>
@@ -551,7 +551,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                           </TableCell>
                           <TableCell className="text-xs text-right py-1 font-mono">{r.monthlySpend > 0 ? Math.round(r.leads).toLocaleString() : "—"}</TableCell>
                           <TableCell className="text-xs text-right py-1 font-mono">{r.monthlySpend > 0 ? Math.round(r.clients).toLocaleString() : "—"}</TableCell>
-                          <TableCell className="text-xs text-right py-1 font-mono text-primary">{r.monthlySpend > 0 ? fmt(r.revenue) : "—"}</TableCell>
+                          <TableCell className="text-xs text-right py-1 font-mono text-accent">{r.monthlySpend > 0 ? fmt(r.revenue) : "—"}</TableCell>
                         </TableRow>
                       ))}
                       {totals.spend > 0 && (
@@ -560,7 +560,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                           <TableCell className="text-xs py-1.5 font-mono">{fmt(totals.spend / 12)}/mo</TableCell>
                           <TableCell className="text-xs text-right py-1.5 font-mono">{Math.round(totals.leads).toLocaleString()}</TableCell>
                           <TableCell className="text-xs text-right py-1.5 font-mono">{Math.round(totals.clients).toLocaleString()}</TableCell>
-                          <TableCell className="text-xs text-right py-1.5 font-mono text-primary">{fmt(totals.revenue)}</TableCell>
+                          <TableCell className="text-xs text-right py-1.5 font-mono text-accent">{fmt(totals.revenue)}</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -584,7 +584,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
           <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowProducts(v => !v)}>
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Layers className="w-4 h-4 text-primary" /> Product Reference Library
+                <Layers className="w-4 h-4 text-accent" /> Product Reference Library
               </CardTitle>
               <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${showProducts ? "rotate-90" : ""}`} />
             </div>
@@ -598,7 +598,7 @@ export default function BusinessIncome({ embedded = false }: { embedded?: boolea
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium uppercase tracking-wide">{p.key}</span>
                       {p.url && (
-                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline">
+                        <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-accent hover:underline">
                           Source
                         </a>
                       )}

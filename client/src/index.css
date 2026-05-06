@@ -42,150 +42,381 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-heading: "Instrument Serif", "Libre Baskerville", Georgia, ui-serif, serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-heading: "DM Serif Display", "Satoshi", ui-serif, Georgia, serif;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   DARK THEME (default) — Manus production tokens
-   Source: manus-next-app verified oklch values
-   Pure neutral greys (chroma 0) + Manus blue accent (#1a93fe)
-   ═══════════════════════════════════════════════════════════════════ */
+/*
+  Stewardly — Stewardship Gold (Pass 98 v11.0 "delight is the mandate")
+  Deep navy base + warm gold accent — authoritative, trustworthy, distinctive.
+  The gold ("#D4A843") matches the brand name's stewardship semantic:
+  trust, care, and long-term value. Replaces the prior sky-blue primary
+  that looked like every other SaaS dashboard.
+  Fonts: DM Serif Display (headings — editorial gravitas), Plus Jakarta
+  Sans (body — warmer + more refined than DM Sans), JetBrains Mono (code).
+*/
 :root {
-  --radius: 0.5rem;
-  --font-scale: 1;
-  --chat-density-scale: 1;
+  --font-sans: "Plus Jakarta Sans", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "DM Serif Display", "Satoshi", ui-serif, Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --radius: 0.625rem;
 
-  --background: oklch(0.2178 0 0);        /* #1a1a1a app frame */
-  --foreground: oklch(0.8884 0 0);        /* #dadada primary text */
-  --card: oklch(0.2264 0 0);              /* #1c1c1c card surface */
-  --card-foreground: oklch(0.8884 0 0);
-  --popover: oklch(0.2603 0 0);           /* #242424 elevated menu */
-  --popover-foreground: oklch(0.8884 0 0);
-  --primary: oklch(0.6565 0.1863 251.8);  /* #1a93fe manus blue */
-  --primary-foreground: oklch(1.0 0 0);   /* white on blue */
-  --secondary: oklch(0.2393 0 0);         /* #1f1f1f slightly lighter than bg */
-  --secondary-foreground: oklch(0.7984 0 0); /* #bdbdbd */
-  --muted: oklch(0.2393 0 0);             /* #1f1f1f */
-  --muted-foreground: oklch(0.7984 0 0);  /* #bdbdbd */
-  --accent: oklch(0.2520 0 0);            /* #222222 hover surface */
-  --accent-foreground: oklch(0.8884 0 0);
-  --destructive: oklch(0.6405 0.1947 24.5); /* #eb4d4d */
-  --destructive-foreground: oklch(1.0 0 0);
-  --border: oklch(0.2768 0 0);            /* #282828 */
-  --input: oklch(0.2393 0 0);             /* #1f1f1f */
-  --ring: oklch(0.6565 0.1863 251.8);     /* #1a93fe */
-  --chart-1: oklch(0.6565 0.1863 251.8);  /* blue */
-  --chart-2: oklch(0.7027 0.1923 137.1);  /* green */
-  --chart-3: oklch(0.8419 0.1589 81.5);   /* warning amber */
-  --chart-4: oklch(0.6405 0.1947 24.5);   /* error red */
-  --chart-5: oklch(0.55 0.12 290);        /* purple */
-  --sidebar: oklch(0.16 0.005 260);       /* #1a1a22 dark glass */
-  --sidebar-foreground: oklch(0.82 0 0);   /* #c8c8c8 */
-  --sidebar-primary: oklch(0.6565 0.1863 251.8);
-  --sidebar-primary-foreground: oklch(1.0 0 0);
-  --sidebar-accent: oklch(0.22 0.01 250);  /* dark blue tint for active */
-  --sidebar-accent-foreground: oklch(0.92 0 0);
-  --sidebar-border: oklch(0.24 0.005 260); /* subtle dark border */
-  --sidebar-ring: oklch(0.6565 0.1863 251.8);
+  /* Deep navy base — warmed with a hint of gold undertone */
+  --background: oklch(0.135 0.018 260);
+  --foreground: oklch(0.95 0.008 75);
+
+  /* Card: slightly lighter navy with warm gold undertone */
+  --card: oklch(0.175 0.02 258);
+  --card-foreground: oklch(0.95 0.008 75);
+
+  /* Popover */
+  --popover: oklch(0.18 0.024 255);
+  --popover-foreground: oklch(0.95 0.006 80);
+
+  /* Primary: Stewardship Gold (#D4A843) — warm, authoritative, trustworthy */
+  --primary: oklch(0.76 0.14 80);
+  --primary-foreground: oklch(0.14 0.022 255);
+
+  /* Secondary: muted navy (unchanged — still the resting background shade) */
+  --secondary: oklch(0.22 0.024 255);
+  --secondary-foreground: oklch(0.9 0.006 80);
+
+  /* Muted */
+  /* Build Loop Pass 14 (G46): bumped muted-foreground from oklch 0.62
+     to 0.68 so muted text hits WCAG AA (4.5:1) against --card
+     (oklch 0.175). Prior value measured ~4.1:1 with the
+     Stewardship Gold hue. */
+  --muted: oklch(0.22 0.02 255);
+  --muted-foreground: oklch(0.68 0.014 80);
+
+  /* Accent: Stewardship Gold (same as primary so `bg-accent`/`text-accent`
+     across the codebase automatically picks up the new identity) */
+  --accent: oklch(0.76 0.14 80);
+  --accent-foreground: oklch(0.14 0.022 255);
+
+  /* Destructive: rose — Build Loop Pass 14 (G46) bumped lightness
+     from 0.62 → 0.68 so text-destructive hits WCAG AA on card
+     backgrounds (prev ~3.9:1 → now ~4.6:1 with the gold undertone). */
+  --destructive: oklch(0.68 0.22 15);
+  --destructive-foreground: oklch(0.98 0.005 255);
+
+  /* Borders & inputs — warmer with gold undertone */
+  --border: oklch(0.26 0.02 265);
+  --input: oklch(0.23 0.02 260);
+  --ring: oklch(0.76 0.14 80);
+
+  /* Charts: gold leads the palette so chart-1 matches --primary.
+     Emerald / sky / rose / purple keep data variety for multi-series charts. */
+  --chart-1: oklch(0.76 0.14 80);   /* Stewardship gold */
+  --chart-2: oklch(0.65 0.17 160);  /* Emerald */
+  --chart-3: oklch(0.68 0.16 230);  /* Sky (moved down from primary) */
+  --chart-4: oklch(0.62 0.22 15);   /* Rose */
+  --chart-5: oklch(0.6 0.15 300);   /* Purple */
+
+  /* Sidebar: deepest navy with warm undertone */
+  --sidebar: oklch(0.11 0.016 262);
+  --sidebar-foreground: oklch(0.9 0.006 80);
+  --sidebar-primary: oklch(0.76 0.14 80);
+  --sidebar-primary-foreground: oklch(0.11 0.02 255);
+  --sidebar-accent: oklch(0.2 0.024 255);
+  --sidebar-accent-foreground: oklch(0.9 0.006 80);
+  --sidebar-border: oklch(0.24 0.024 255);
+  --sidebar-ring: oklch(0.76 0.14 80);
 }
 
 .dark {
-  /* Same as root — dark is the default */
+  /* Same as root — dark by default */
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   LIGHT THEME — Manus production tokens
-   Warm editorial white + Manus blue accent
-   ═══════════════════════════════════════════════════════════════════ */
+/*
+  Build Loop Pass 4 (G2 / G9 / G51) — LIGHT THEME
+  The root tokens above are deep-navy Stewardship Gold in dark mode. The
+  .light class flips the base layer to a warm cream (oklch 0.98) with a
+  slightly deeper gold (keeping the brand accent consistent across modes)
+  and cranks foreground contrast to 0.18 for WCAG AAA on body text.
+
+  Rule of thumb: any token that's a NEUTRAL (background / card / popover /
+  secondary / border / input / sidebar) flips to a light equivalent here.
+  The semantic accents (primary / accent / destructive / chart-*) stay
+  close to their dark-mode values so the Stewardship Gold identity is
+  unmistakably the same brand in either mode.
+
+  Activation: AppearanceTab writes `wb_theme` to localStorage; the
+  ThemeProvider reads it on mount and toggles `.light` on the
+  documentElement. `system` mode defers to `prefers-color-scheme`.
+*/
 .light {
-  --background: oklch(0.98 0.003 80);      /* #f8f8f7 warm editorial */
-  --foreground: oklch(0.25 0.01 70);       /* #34322d warm dark */
-  --card: oklch(1.0 0 0);                 /* #ffffff */
-  --card-foreground: oklch(0.2178 0 0);   /* #1a1a1a */
-  --popover: oklch(1.0 0 0);             /* #ffffff */
-  --popover-foreground: oklch(0.2178 0 0);
-  --primary: oklch(0.608 0.1937 254);     /* #0081f2 Manus blue */
-  --primary-foreground: oklch(1.0 0 0);   /* white on blue */
-  --secondary: oklch(0.9702 0 0);         /* #f5f5f5 */
-  --secondary-foreground: oklch(0.4465 0 0); /* #5c5c5c */
-  --muted: oklch(0.9702 0 0);             /* #f5f5f5 */
-  --muted-foreground: oklch(0.5555 0 0);  /* #737373 */
-  --accent: oklch(0.9702 0 0);            /* #f5f5f5 */
-  --accent-foreground: oklch(0.2178 0 0); /* #1a1a1a */
-  --destructive: oklch(0.58 0.2 25);      /* #d73337 */
-  --destructive-foreground: oklch(1.0 0 0);
-  --border: oklch(0.9219 0 0);            /* #e5e5e5 */
-  --input: oklch(0.9219 0 0);             /* #e5e5e5 */
-  --ring: oklch(0.608 0.1937 254);        /* #0081f2 */
-  --chart-1: oklch(0.608 0.1937 254);
-  --chart-2: oklch(0.55 0.18 145);
-  --chart-3: oklch(0.7 0.15 85);
-  --chart-4: oklch(0.58 0.2 25);
-  --chart-5: oklch(0.5 0.12 290);
-  --sidebar: oklch(1.0 0 0);              /* #ffffff pure white glass */
-  --sidebar-foreground: oklch(0.35 0.01 70); /* #4a4a4a darker for readability */
-  --sidebar-primary: oklch(0.608 0.1937 254);
-  --sidebar-primary-foreground: oklch(1.0 0 0);
-  --sidebar-accent: oklch(0.955 0.005 250); /* very light blue tint for active */
-  --sidebar-accent-foreground: oklch(0.2178 0 0);
-  --sidebar-border: oklch(0.94 0 0);       /* #ebebeb subtle */
-  --sidebar-ring: oklch(0.608 0.1937 254);
+  --background: oklch(0.985 0.008 90);        /* warm cream, not pure white */
+  --foreground: oklch(0.18 0.018 255);        /* deep navy text — AAA vs cream */
+
+  --card: oklch(1 0.004 95);                  /* near-white with warm tint */
+  --card-foreground: oklch(0.18 0.018 255);
+
+  --popover: oklch(1 0.004 95);
+  --popover-foreground: oklch(0.18 0.018 255);
+
+  /* Primary: slightly deeper gold for contrast vs light bg */
+  --primary: oklch(0.6 0.16 78);
+  --primary-foreground: oklch(0.99 0.006 95);
+
+  --secondary: oklch(0.94 0.014 85);          /* soft cream card shade */
+  --secondary-foreground: oklch(0.22 0.02 255);
+
+  --muted: oklch(0.93 0.012 85);
+  --muted-foreground: oklch(0.45 0.02 255);   /* AAA on cream */
+
+  /* Accent matches primary so bg-accent / text-accent stay consistent */
+  --accent: oklch(0.6 0.16 78);
+  --accent-foreground: oklch(0.99 0.006 95);
+
+  --destructive: oklch(0.55 0.22 15);
+  --destructive-foreground: oklch(0.99 0.005 95);
+
+  --border: oklch(0.88 0.014 85);             /* subtle gold-tinted border */
+  --input: oklch(0.92 0.012 85);
+  --ring: oklch(0.6 0.16 78);
+
+  --chart-1: oklch(0.6 0.16 78);              /* gold — still leads */
+  --chart-2: oklch(0.5 0.17 160);             /* emerald (darker vs cream) */
+  --chart-3: oklch(0.55 0.16 230);            /* sky (darker vs cream) */
+  --chart-4: oklch(0.55 0.22 15);             /* rose (darker vs cream) */
+  --chart-5: oklch(0.5 0.15 300);             /* purple (darker vs cream) */
+
+  --sidebar: oklch(0.96 0.01 85);
+  --sidebar-foreground: oklch(0.2 0.018 255);
+  --sidebar-primary: oklch(0.6 0.16 78);
+  --sidebar-primary-foreground: oklch(0.99 0.006 95);
+  --sidebar-accent: oklch(0.93 0.012 85);
+  --sidebar-accent-foreground: oklch(0.22 0.02 255);
+  --sidebar-border: oklch(0.88 0.014 85);
+  --sidebar-ring: oklch(0.6 0.16 78);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   FONT SCALE (accessibility — user preference)
-   ═══════════════════════════════════════════════════════════════════ */
+/* Build Loop Pass 4 — disable the warm navy vignette in light mode so we
+   don't stack gold glows on top of cream. */
+.light body {
+  background-image: radial-gradient(ellipse at 0% 0%, oklch(0.6 0.16 78 / 0.06) 0%, transparent 45%),
+                    radial-gradient(ellipse at 100% 100%, oklch(0.6 0.16 78 / 0.04) 0%, transparent 45%);
+}
+
+/*
+  Build Loop Pass 4 — font scale + chat density utilities.
+
+  AppearanceTab used to write `wb_font_size` / `wb_chat_density` keys that
+  nothing consumed. These CSS vars make the preferences real:
+  - `--font-scale` multiplies root font-size so Tailwind's rem-based
+    spacing scales consistently.
+  - `--chat-density-scale` is consumed by Chat message padding utilities.
+
+  Defaults (1x) are identity-safe so no visual regression on existing
+  users who haven't touched AppearanceTab.
+*/
+:root {
+  --font-scale: 1;
+  --chat-density-scale: 1;
+}
+
 html {
   font-size: calc(16px * var(--font-scale));
-  overflow-x: hidden;
 }
-body {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
+
+/*
+  Build Loop Pass 4 — font-scale opt-in classes for users who explicitly
+  pick a size in AppearanceTab. Body tag classes so we don't wrestle with
+  Tailwind's `html` default.
+*/
 body.font-scale-compact       { --font-scale: 0.9; }
 body.font-scale-default       { --font-scale: 1; }
 body.font-scale-comfortable   { --font-scale: 1.1; }
 body.font-scale-large         { --font-scale: 1.2; }
 body.font-scale-xlarge        { --font-scale: 1.35; }
+
 body.chat-density-compact     { --chat-density-scale: 0.8; }
 body.chat-density-default     { --chat-density-scale: 1; }
 body.chat-density-spacious    { --chat-density-scale: 1.25; }
 
-/* ═══════════════════════════════════════════════════════════════════
-   BASE LAYER
-   ═══════════════════════════════════════════════════════════════════ */
+/*
+  G45 — 200% browser zoom safety.
+  At high zoom levels, fixed-px text (text-[9px], text-[10px]) becomes
+  unreadable. This media query bumps the minimum floor so nothing drops
+  below ~12px effective at 200% zoom. The resolution query detects zoom
+  indirectly via device-pixel-ratio changes.
+*/
+@media (min-resolution: 192dpi) {
+  /* High-DPI or zoomed: ensure small labels remain legible */
+  .text-\[9px\]  { font-size: max(9px, 0.5625rem) !important; }
+  .text-\[10px\] { font-size: max(10px, 0.625rem) !important; }
+  .text-\[11px\] { font-size: max(11px, 0.6875rem) !important; }
+  .text-\[12px\] { font-size: max(12px, 0.75rem) !important; }
+}
+
+/*
+  Build Loop Pass 4 — user-level reduced motion override. The @media
+  (prefers-reduced-motion: reduce) rule already handles OS-level opt-in;
+  this class lets AppearanceTab force-enable it for users who want the
+  animations off even when their OS setting is "no preference".
+*/
+body.reduced-motion-user *,
+body.reduced-motion-user *::before,
+body.reduced-motion-user *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/*
+  Build Loop Pass 4 — prefers-contrast: more override (G10).
+  Bumps border + foreground contrast to AAA levels for users with
+  reduced-contrast perception or high-contrast system settings.
+*/
+@media (prefers-contrast: more) {
+  :root {
+    --border: oklch(0.4 0.02 255);
+    --muted-foreground: oklch(0.78 0.014 80);
+  }
+  .light {
+    --border: oklch(0.68 0.02 255);
+    --muted-foreground: oklch(0.28 0.02 255);
+  }
+}
+
+/*
+  Build Loop Pass 4 — forced-colors mode (G11) for Windows High Contrast.
+  Override --ring / --border / --foreground with system colors so the app
+  is still fully operable when Windows forces a custom palette.
+*/
+@media (forced-colors: active) {
+  :root, .light {
+    --border: CanvasText;
+    --foreground: CanvasText;
+    --background: Canvas;
+    --ring: Highlight;
+    --primary: Highlight;
+    --accent: Highlight;
+  }
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+    box-shadow: none !important;
+  }
+}
+
+/*
+  Build Loop Pass 10 (G13) — color-blind mode.
+  When body has `color-blind-mode`:
+  - Every element with a semantic status class gets a PATTERN
+    adornment in addition to its color, so users who can't
+    distinguish red/green still see a shape difference.
+  - Focus-visible rings get bumped 1 step to 3px so the focus
+    indicator doesn't rely on hue alone.
+  - Chart-2 (emerald) gets a slight hue shift away from chart-3
+    (sky) so deuteranopia users can still distinguish them.
+*/
+body.color-blind-mode :focus-visible {
+  box-shadow:
+    0 0 0 3px var(--background),
+    0 0 0 6px oklch(0.76 0.14 80 / 0.75),
+    0 0 14px 3px oklch(0.76 0.14 80 / 0.25) !important;
+}
+
+/* Status indicator adornments — add a suffix glyph after semantic badges */
+body.color-blind-mode [data-status="success"]::after,
+body.color-blind-mode .bg-emerald-500\/10::after,
+body.color-blind-mode .text-emerald::after {
+  content: " ✓";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+body.color-blind-mode [data-status="error"]::after,
+body.color-blind-mode .bg-destructive\/10::after,
+body.color-blind-mode .text-destructive::after {
+  content: " ✕";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+body.color-blind-mode [data-status="warning"]::after,
+body.color-blind-mode .bg-amber-500\/10::after,
+body.color-blind-mode .text-amber::after {
+  content: " !";
+  font-weight: 700;
+  margin-left: 0.125rem;
+}
+
+/* Deuteranopia (red/green weakness — ~4.5% of men): shift emerald
+   toward teal so it separates cleanly from the gold accent. */
+body.color-blind-deuteranopia,
+body.color-blind-all {
+  --chart-2: oklch(0.68 0.16 180);   /* Teal instead of emerald */
+  --chart-4: oklch(0.62 0.22 30);    /* Orange instead of rose */
+}
+
+/* Protanopia (red blindness — ~1% of men): similar treatment +
+   stronger blue shift for chart-3. */
+body.color-blind-protanopia {
+  --chart-2: oklch(0.68 0.16 180);   /* Teal */
+  --chart-3: oklch(0.68 0.18 240);   /* Deeper blue */
+  --chart-4: oklch(0.68 0.18 40);    /* Orange */
+}
+
+/* Tritanopia (blue weakness — rare): shift sky + emerald so they
+   don't collapse toward each other. */
+body.color-blind-tritanopia {
+  --chart-2: oklch(0.68 0.17 155);
+  --chart-3: oklch(0.62 0.2 340);    /* Magenta instead of sky */
+}
+
+/*
+  Build Loop Pass 10 (G66) — disabled button contrast.
+  shadcn/ui's default `disabled:opacity-50` drops contrast below
+  WCAG AA (4.5:1) against most card backgrounds. We bump it to
+  ~65% so disabled text stays legible, AND add an explicit dashed
+  border pattern so color-blind users still see the disabled state.
+*/
+button:disabled,
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled,
+[role="button"][aria-disabled="true"] {
+  opacity: 0.65 !important;
+  cursor: not-allowed;
+}
+body.color-blind-mode button:disabled,
+body.color-blind-mode [type="button"]:disabled,
+body.color-blind-mode [type="submit"]:disabled,
+body.color-blind-mode [type="reset"]:disabled,
+body.color-blind-mode [role="button"][aria-disabled="true"] {
+  border-style: dashed !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  /* G48: ::selection styled in Stewardship Gold brand palette */
+  ::selection {
+    background: oklch(0.76 0.14 80 / 0.30);
+    color: oklch(0.15 0.02 80);
+  }
+  ::-moz-selection {
+    background: oklch(0.76 0.14 80 / 0.30);
+    color: oklch(0.15 0.02 80);
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
-    font-size: 14px;
-    line-height: 22px;
-    letter-spacing: -0.154px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    color-scheme: dark;
+    /* Pass 63: Mobile touch improvements */
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-    overflow-x: hidden;
+    /* Warm vignette — gold warmth at corners for premium feel */
+    background-image: radial-gradient(ellipse at 0% 0%, oklch(0.76 0.14 80 / 0.12) 0%, transparent 45%),
+                      radial-gradient(ellipse at 100% 100%, oklch(0.76 0.14 80 / 0.08) 0%, transparent 45%),
+                      radial-gradient(ellipse at 50% 0%, oklch(0.76 0.14 80 / 0.04) 0%, transparent 35%);
+    background-attachment: fixed;
   }
-  .light body, .light { color-scheme: light; }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-    font-weight: 400;
-    letter-spacing: -0.3px;
-  }
-  code, pre, kbd {
-    font-family: var(--font-mono);
-  }
-  ::placeholder {
-    opacity: 1;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -200,9 +431,6 @@ body.chat-density-spacious    { --chat-density-scale: 1.25; }
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   COMPONENTS LAYER
-   ═══════════════════════════════════════════════════════════════════ */
 @layer components {
   .container {
     width: 100%;
@@ -211,16 +439,19 @@ body.chat-density-spacious    { --chat-density-scale: 1.25; }
     padding-left: 1rem;
     padding-right: 1rem;
   }
+
   .flex {
     min-height: 0;
     min-width: 0;
   }
+
   @media (min-width: 640px) {
     .container {
       padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
+
   @media (min-width: 1024px) {
     .container {
       padding-left: 2rem;
@@ -230,151 +461,7 @@ body.chat-density-spacious    { --chat-density-scale: 1.25; }
   }
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   SCROLLBAR — Manus-aligned subtle grey (no gold)
-   ═══════════════════════════════════════════════════════════════════ */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: oklch(0.3290 0 0) transparent;
-}
-.light * {
-  scrollbar-color: oklch(0.75 0.002 260) transparent;
-}
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: oklch(0.3290 0 0);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.4044 0 0);
-}
-.light ::-webkit-scrollbar-thumb {
-  background: oklch(0.75 0.002 260);
-}
-.light ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.65 0.002 260);
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   SELECTION & FOCUS — Manus blue accent (no gold)
-   ═══════════════════════════════════════════════════════════════════ */
-::selection {
-  background: oklch(0.6565 0.1863 251.8 / 0.25);
-  color: oklch(0.8884 0 0);
-}
-.light ::selection {
-  background: oklch(0.55 0.15 250 / 0.2);
-  color: oklch(0.24 0.01 70);
-}
-
-:focus-visible {
-  outline: 2px solid oklch(0.6565 0.1863 251.8 / 0.5);
-  outline-offset: 2px;
-}
-.light :focus-visible {
-  outline: 2px solid oklch(0.55 0.15 250 / 0.5);
-  outline-offset: 2px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   MICRO-INTERACTIONS — Manus-aligned (subtle, no card lift)
-   ═══════════════════════════════════════════════════════════════════ */
-button, a, [role="button"], input, textarea, select, [tabindex] {
-  transition-property: color, background-color, border-color, box-shadow, opacity;
-  transition-duration: 200ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-button:active:not(:disabled), a:active, [role="button"]:active {
-  transform: scale(0.98);
-}
-
-/* Card hover — Manus-style: subtle background change, no translateY lift */
-.card-hover {
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-.card-hover:hover {
-  background-color: var(--accent);
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   THINKING SHIMMER — Manus signature motion
-   ═══════════════════════════════════════════════════════════════════ */
-@keyframes thinking-shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-.thinking-shimmer {
-  background: linear-gradient(
-    90deg,
-    oklch(0.8884 0 0) 0%,
-    oklch(0.5965 0 0) 50%,
-    oklch(0.8884 0 0) 100%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: thinking-shimmer 2s linear infinite;
-}
-.light .thinking-shimmer {
-  background: linear-gradient(
-    90deg,
-    oklch(0.24 0.01 70) 0%,
-    oklch(0.55 0.005 70) 50%,
-    oklch(0.24 0.01 70) 100%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: thinking-shimmer 2s linear infinite;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   PROGRESS BAR — Manus blue
-   ═══════════════════════════════════════════════════════════════════ */
-@keyframes progress-bar {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
-}
-.progress-bar-manus {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  z-index: 9999;
-  overflow: hidden;
-}
-.progress-bar-manus::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: oklch(0.6565 0.1863 251.8);
-  animation: progress-bar 1.5s ease-in-out infinite;
-  box-shadow: 0 0 10px oklch(0.6565 0.1863 251.8), 0 0 5px oklch(0.6565 0.1863 251.8);
-}
-.light .progress-bar-manus::after {
-  background: oklch(0.55 0.15 250);
-  box-shadow: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   SCROLLABLE AREA MASK
-   ═══════════════════════════════════════════════════════════════════ */
-.scroll-mask {
-  mask-image: linear-gradient(to bottom, transparent 0px, black 8px, black calc(100% - 8px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0px, black 8px, black calc(100% - 8px), transparent 100%);
-}
-
-/* Hide scrollbar utility */
+/* Utility: hide scrollbar for horizontal-scroll tab bars on mobile */
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -383,48 +470,115 @@ button:active:not(:disabled), a:active, [role="button"]:active {
   display: none;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   PROSE — Manus editorial styling for chat markdown
-   ═══════════════════════════════════════════════════════════════════ */
-.prose-chat {
-  @apply prose prose-sm prose-invert max-w-none;
-  line-height: 1.7;
+/* Scrollbar styling — slightly warmer to match the gold palette */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-.prose-chat p { @apply my-2; color: oklch(0.8884 0 0 / 0.9); }
-.prose-chat h1, .prose-chat h2, .prose-chat h3 { @apply mt-4 mb-2; color: oklch(0.8884 0 0); font-family: var(--font-heading); }
-.prose-chat h2 { @apply text-base font-semibold; }
-.prose-chat h3 { @apply text-sm font-semibold; }
-.prose-chat ul, .prose-chat ol { @apply my-2 pl-5 space-y-1; }
-.prose-chat li { color: oklch(0.8884 0 0 / 0.85); }
-.prose-chat li::marker { color: oklch(0.6565 0.1863 251.8 / 0.6); }
-.prose-chat pre { @apply my-3 rounded-xl border; background: oklch(0.2393 0 0 / 0.8); border-color: oklch(0.2768 0 0 / 0.4); }
-.prose-chat code { color: oklch(0.6565 0.1863 251.8); @apply text-[13px]; }
-.prose-chat table { @apply my-3 text-xs; }
-.prose-chat th { color: oklch(0.6565 0.1863 251.8 / 0.8); @apply font-semibold; }
-.prose-chat blockquote { @apply my-3 border-l-2 pl-3 italic; border-color: oklch(0.6565 0.1863 251.8 / 0.4); color: oklch(0.7984 0 0); }
-.prose-chat a { color: oklch(0.6565 0.1863 251.8); @apply underline transition-colors; text-decoration-color: oklch(0.6565 0.1863 251.8 / 0.3); }
-.prose-chat a:hover { text-decoration-color: oklch(0.6565 0.1863 251.8 / 0.6); }
-.prose-chat strong { color: oklch(0.8884 0 0); @apply font-semibold; }
-.prose-chat hr { @apply my-4; border-color: oklch(0.2768 0 0 / 0.3); }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.42 0.02 255 / 0.4);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.76 0.14 80 / 0.5); /* gold on hover */
+}
 
-/* Light mode prose */
-.light .prose-chat { @apply prose-sm max-w-none; }
-.light .prose-chat p { color: oklch(0.38 0.005 70); }
-.light .prose-chat h1, .light .prose-chat h2, .light .prose-chat h3 { color: oklch(0.24 0.01 70); }
-.light .prose-chat li { color: oklch(0.38 0.005 70); }
-.light .prose-chat li::marker { color: oklch(0.608 0.1937 254 / 0.6); }
-.light .prose-chat pre { background: oklch(0.9702 0 0); border-color: oklch(0.9219 0 0); }
-.light .prose-chat code { color: oklch(0.608 0.1937 254); }
-.light .prose-chat th { color: oklch(0.608 0.1937 254 / 0.8); }
-.light .prose-chat blockquote { border-color: oklch(0.608 0.1937 254 / 0.4); color: oklch(0.5555 0 0); }
-.light .prose-chat a { color: oklch(0.608 0.1937 254); text-decoration-color: oklch(0.608 0.1937 254 / 0.3); }
-.light .prose-chat strong { color: oklch(0.24 0.01 70); }
+/* Pass 98: delightful keyboard focus ring — Stewardship Gold with offset
+   + subtle glow. Replaces the browser's ugly blue outline. Applied to
+   every focusable element via :focus-visible so mouse clicks don't
+   flash the ring. */
+@layer base {
+  :focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--background),
+      0 0 0 4px oklch(0.76 0.14 80 / 0.55),
+      0 0 12px 2px oklch(0.76 0.14 80 / 0.15);
+    border-radius: calc(var(--radius) - 2px);
+    transition: box-shadow 120ms ease-out;
+  }
+}
 
-/* ═══════════════════════════════════════════════════════════════════
-   ANIMATIONS — Manus-aligned (minimal, purposeful)
-   ═══════════════════════════════════════════════════════════════════ */
+/* Pass 98: respect prefers-reduced-motion. Users who opt out of
+   animation at the OS level should see instant transitions everywhere
+   — no hover lifts, no pulse glows, no shimmer. This is a WCAG 2.3.3
+   requirement, not a nice-to-have. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-pulse-glow,
+  .animate-message-in,
+  .avatar-talking,
+  .typing-dot,
+  .mic-pulse-a11y {
+    animation: none !important;
+  }
+}
 
-/* Typing indicator dots */
+/* Pass 1 (multisensory): prefers-contrast: more — users who have asked
+   their OS for high-contrast UI get stronger borders, thicker focus rings,
+   and a boosted text-to-background contrast ratio. WCAG 1.4.11
+   (non-text contrast) Level AA. */
+@media (prefers-contrast: more) {
+  :root {
+    --border: oklch(0.55 0 0);
+    --ring: oklch(0.82 0.16 80);
+    --muted-foreground: oklch(0.72 0.02 80);
+  }
+  *, *::before, *::after {
+    border-color: var(--border) !important;
+  }
+  :focus-visible {
+    outline: 3px solid var(--ring) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px oklch(0.76 0.14 80 / 0.35) !important;
+  }
+  button, a, input, textarea, select {
+    border-width: 2px !important;
+  }
+}
+
+/* Pass 1 (multisensory): mic-pulse-a11y — subtle indicator for the
+   GlobalVoiceButton when voice recognition is actively listening. Uses
+   box-shadow rather than transform so the 44x44 touch target doesn't
+   jump around under the user's finger. Respected by reduced-motion. */
+@keyframes mic-pulse-a11y {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.5); }
+  50% { box-shadow: 0 0 0 10px oklch(0.76 0.14 80 / 0); }
+}
+.mic-pulse-a11y {
+  animation: mic-pulse-a11y 1.4s ease-in-out infinite;
+}
+
+/* Pass 98: gentle card lift on hover — applied as a utility class so
+   consumers opt in. Respects prefers-reduced-motion automatically via
+   the override above. */
+.card-lift {
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px oklch(0.76 0.14 80 / 0.18);
+  border-color: oklch(0.76 0.14 80 / 0.35);
+}
+
+/* Pulse glow — Stewardship Gold */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.4); }
+  50% { box-shadow: 0 0 0 6px oklch(0.76 0.14 80 / 0); }
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Typing indicator */
 @keyframes typing-dot {
   0%, 60%, 100% { transform: translateY(0); }
   30% { transform: translateY(-4px); }
@@ -435,26 +589,68 @@ button:active:not(:disabled), a:active, [role="button"]:active {
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
-/* Thinking dots (manus pattern) */
-@keyframes thinking-dots {
-  0%, 20% { opacity: 0.2; }
-  40% { opacity: 1; }
-  60%, 100% { opacity: 0.2; }
+/* Prose styling for chat markdown */
+.prose-chat {
+  @apply prose prose-sm prose-invert max-w-none;
+  line-height: 1.7;
 }
-.thinking-dot:nth-child(1) { animation: thinking-dots 1.4s infinite 0s; }
-.thinking-dot:nth-child(2) { animation: thinking-dots 1.4s infinite 0.2s; }
-.thinking-dot:nth-child(3) { animation: thinking-dots 1.4s infinite 0.4s; }
+.prose-chat p { @apply my-2 text-foreground/90; }
+.prose-chat h1, .prose-chat h2, .prose-chat h3 { @apply mt-4 mb-2 text-foreground; font-family: var(--font-heading); }
+.prose-chat h2 { @apply text-base font-semibold; }
+.prose-chat h3 { @apply text-sm font-semibold; }
+.prose-chat ul, .prose-chat ol { @apply my-2 pl-5 space-y-1; }
+.prose-chat li { @apply text-foreground/85; }
+.prose-chat li::marker { color: oklch(0.76 0.14 80 / 0.6); }
+.prose-chat pre { @apply my-3 rounded-xl bg-secondary/80 border border-border/40; }
+.prose-chat code { @apply text-accent text-[13px]; }
+.prose-chat table { @apply my-3 text-xs; }
+.prose-chat th { @apply text-accent/80 font-semibold; }
+.prose-chat blockquote { @apply my-3 border-l-2 border-accent/40 pl-3 italic text-muted-foreground; }
+.prose-chat a { @apply text-accent underline decoration-accent/30 hover:decoration-accent/60 transition-colors; }
+.prose-chat strong { @apply text-foreground font-semibold; }
+.prose-chat hr { @apply my-4 border-border/30; }
 
-/* Message enter */
-@keyframes message-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Talking avatar animation — Stewardship Gold */
+@keyframes avatar-talk {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.4); }
+  15% { transform: scale(1.04); box-shadow: 0 0 0 3px oklch(0.76 0.14 80 / 0.3); }
+  30% { transform: scale(1); box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0); }
+  45% { transform: scale(1.06); box-shadow: 0 0 0 4px oklch(0.76 0.14 80 / 0.35); }
+  60% { transform: scale(1.02); box-shadow: 0 0 0 2px oklch(0.76 0.14 80 / 0.2); }
+  75% { transform: scale(1.05); box-shadow: 0 0 0 3px oklch(0.76 0.14 80 / 0.3); }
 }
-.animate-message-in {
-  animation: message-in 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+.avatar-talking {
+  animation: avatar-talk 1.2s ease-in-out infinite;
+  border: 2px solid oklch(0.76 0.14 80 / 0.5);
+  border-radius: 0.5rem;
 }
 
-/* Page enter (lazy routes) */
+/* Emerald success indicators */
+.text-emerald { color: oklch(0.65 0.17 160); }
+.bg-emerald { background-color: oklch(0.65 0.17 160); }
+
+/* Touch-action utility for eliminating 300ms tap delay on mobile */
+.touch-action-manipulation { touch-action: manipulation; }
+
+/* Responsive chat input bar for narrow viewports (<360px) */
+@media (max-width: 359px) {
+  .chat-input-bar {
+    gap: 0.25rem !important;
+    padding: 0.375rem !important;
+  }
+  .chat-input-bar textarea {
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+    min-height: 36px !important;
+  }
+  .chat-input-bar .mode-selector {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.7rem;
+  }
+}
+
+/* Pass 103: Subtle page-enter fade for lazy-loaded routes */
 @keyframes page-enter {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -463,32 +659,7 @@ button:active:not(:disabled), a:active, [role="button"]:active {
   animation: page-enter 0.25s ease-out;
 }
 
-/* Workspace slide-in */
-@keyframes workspace-slide-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-.animate-workspace-in {
-  animation: workspace-slide-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-/* Mic pulse — blue accent */
-@keyframes mic-pulse-a11y {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.6565 0.1863 251.8 / 0.5); }
-  50% { box-shadow: 0 0 0 10px oklch(0.6565 0.1863 251.8 / 0); }
-}
-.mic-pulse-a11y {
-  animation: mic-pulse-a11y 1.4s ease-in-out infinite;
-}
-@keyframes mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.6565 0.1863 251.8 / 0.4); }
-  50% { box-shadow: 0 0 0 8px oklch(0.6565 0.1863 251.8 / 0); }
-}
-.animate-mic-pulse {
-  animation: mic-pulse 1.5s ease-in-out infinite;
-}
-
-/* Success flash — green */
+/* Pass 103: Success flash — brief green border pulse on save/submit */
 @keyframes success-flash {
   0% { box-shadow: 0 0 0 0 oklch(0.65 0.17 160 / 0.5); }
   50% { box-shadow: 0 0 0 4px oklch(0.65 0.17 160 / 0.2); }
@@ -498,105 +669,51 @@ button:active:not(:disabled), a:active, [role="button"]:active {
   animation: success-flash 0.6s ease-out;
 }
 
-/* Status pulse */
-@keyframes status-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+/* Curtain-lift transition — content slides up and fades in from behind
+   a translucent overlay. Apply .curtain-lift to a wrapper that replaces
+   a skeleton/spinner once data arrives. */
+@keyframes curtain-lift {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scaleY(0.98);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+  }
 }
-.status-pulse {
-  animation: status-pulse 2s ease-in-out infinite;
-}
-
-/* Card flip (flashcards) */
-@keyframes card-flip-out {
-  from { transform: rotateY(0deg); opacity: 1; }
-  to { transform: rotateY(90deg); opacity: 0; }
-}
-@keyframes card-flip-in {
-  from { transform: rotateY(-90deg); opacity: 0; }
-  to { transform: rotateY(0deg); opacity: 1; }
-}
-.animate-card-flip-out { animation: card-flip-out 0.2s ease-in forwards; }
-.animate-card-flip-in { animation: card-flip-in 0.2s ease-out forwards; }
-
-/* Skeleton loading */
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.06; }
-  50% { opacity: 0.12; }
-}
-.skeleton {
-  background: var(--muted);
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-  border-radius: var(--radius);
+.animate-curtain-lift {
+  animation: curtain-lift 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Ticker scroll */
-@keyframes ticker-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+/* Skeleton shimmer — warm gold shimmer for loading placeholders */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
-.animate-ticker {
-  animation: ticker-scroll 30s linear infinite;
-  will-change: transform;
-}
-.animate-ticker:hover { animation-play-state: paused; }
-
-/* Disclosure reveal */
-@keyframes disclosure-reveal {
-  from { opacity: 0; transform: translateY(8px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.animate-disclosure-reveal {
-  animation: disclosure-reveal 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+.skeleton-gold {
+  background: linear-gradient(
+    90deg,
+    oklch(0.175 0.02 258) 25%,
+    oklch(0.76 0.14 80 / 0.06) 50%,
+    oklch(0.175 0.02 258) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+  border-radius: calc(var(--radius) - 2px);
 }
 
-/* Pulse glow — blue (used sparingly) */
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.6565 0.1863 251.8 / 0.4); }
-  50% { box-shadow: 0 0 0 6px oklch(0.6565 0.1863 251.8 / 0); }
-}
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* Avatar talking — subtle blue ring */
-@keyframes avatar-talk {
-  0%, 100% { box-shadow: 0 0 0 0 oklch(0.6565 0.1863 251.8 / 0.3); }
-  50% { box-shadow: 0 0 0 3px oklch(0.6565 0.1863 251.8 / 0.15); }
-}
-.avatar-talking {
-  animation: avatar-talk 1.2s ease-in-out infinite;
-  border: 2px solid oklch(0.6565 0.1863 251.8 / 0.4);
-  border-radius: 0.5rem;
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   SHADOWS — Manus 4-tier cascade
-   ═══════════════════════════════════════════════════════════════════ */
-.shadow-manus-1 { box-shadow: 0 1px 3px oklch(0 0 0 / 0.12); }
-.shadow-manus-2 { box-shadow: 0 2px 6px oklch(0 0 0 / 0.2); }
-.shadow-manus-3 { box-shadow: 0 4px 12px oklch(0 0 0 / 0.28); }
-.shadow-manus-4 { box-shadow: 0 8px 24px oklch(0 0 0 / 0.36); }
-
-/* ═══════════════════════════════════════════════════════════════════
-   UTILITY COLORS
-   ═══════════════════════════════════════════════════════════════════ */
-.text-emerald { color: oklch(0.7027 0.1923 137.1); }
-.bg-emerald { background-color: oklch(0.7027 0.1923 137.1); }
-
-/* ═══════════════════════════════════════════════════════════════════
-   FEEDBACK COLORS
-   ═══════════════════════════════════════════════════════════════════ */
+/* ═══ FEEDBACK COLORS (Pass 121) ═══ */
 :root {
-  --feedback-success: oklch(0.7027 0.1923 137.1);
-  --feedback-error: oklch(0.6405 0.1947 24.5);
-  --feedback-info: oklch(0.6565 0.1863 251.8);
-  --feedback-warning: oklch(0.8419 0.1589 81.5);
+  --feedback-success: oklch(0.7 0.18 155);
+  --feedback-error: oklch(0.62 0.22 15);
+  --feedback-info: oklch(0.68 0.16 230);
+  --feedback-warning: oklch(0.72 0.15 85);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   TIMING TOKENS
-   ═══════════════════════════════════════════════════════════════════ */
+/* ═══ TIMING TOKENS ═══ */
 :root {
   --timing-instant: 50ms;
   --timing-fast: 150ms;
@@ -608,13 +725,178 @@ button:active:not(:disabled), a:active, [role="button"]:active {
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   ACCESSIBILITY
-   ═══════════════════════════════════════════════════════════════════ */
+/* ═══ MESSAGE ANIMATIONS ═══ */
+@keyframes message-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-message-in {
+  animation: message-in var(--timing-normal) var(--ease-out);
+}
 
-/* Reduced motion */
+/* ═══ CARD FLIP (flashcards) ═══ */
+@keyframes card-flip-out {
+  from { transform: rotateY(0deg); opacity: 1; }
+  to { transform: rotateY(90deg); opacity: 0; }
+}
+@keyframes card-flip-in {
+  from { transform: rotateY(-90deg); opacity: 0; }
+  to { transform: rotateY(0deg); opacity: 1; }
+}
+.animate-card-flip-out {
+  animation: card-flip-out 0.2s ease-in forwards;
+}
+.animate-card-flip-in {
+  animation: card-flip-in 0.2s ease-out forwards;
+}
+
+/* ═══ SKELETON LOADING ═══ */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.06; }
+  50% { opacity: 0.12; }
+}
+.skeleton {
+  background: var(--muted);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* ═══ MIC PULSE (voice listening) ═══ */
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.76 0.14 80 / 0.4); }
+  50% { box-shadow: 0 0 0 8px oklch(0.76 0.14 80 / 0); }
+}
+.animate-mic-pulse {
+  animation: mic-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-ticker {
+  animation: ticker-scroll 30s linear infinite;
+  will-change: transform;
+}
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* ═══ MOBILE SAFE AREAS ═══ */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom,
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+  }
+  .safe-bottom-margin {
+    margin-bottom: env(safe-area-inset-bottom, 8px);
+  }
+}
+
+/* ═══ PRINT STYLES ═══ */
+@media print {
+  /* Hide non-essential UI elements */
+  .print-hide,
+  nav,
+  aside,
+  [data-radix-popper-content-wrapper],
+  button:not(.print-show),
+  .fixed,
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Reset backgrounds for printing */
+  body, html {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt !important;
+  }
+
+  /* Make main content full-width */
+  .flex-1 {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ensure cards print with borders */
+  .rounded-lg {
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
+  }
+
+  /* Page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  /* Ensure text is readable */
+  * {
+    color: black !important;
+    background: white !important;
+    border-color: #ccc !important;
+  }
+
+  /* Keep result badges visible */
+  .bg-green-500\/10,
+  .bg-red-500\/10,
+  .bg-primary\/10,
+  .bg-blue-500\/10 {
+    background: #f0f0f0 !important;
+    border: 1px solid #999 !important;
+  }
+}
+
+/* ── Pass 65: Rendering Performance Utilities ── */
+/* content-visibility: auto skips rendering of off-screen content */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* CSS containment for heavy components */
+.contain-layout {
+  contain: layout style;
+}
+
+/* ── Pass 68: Touch & Accessibility Enhancements ── */
+
+/* Touch-manipulation for all interactive elements — prevents 300ms tap delay */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+[role="link"],
+[tabindex] {
+  touch-action: manipulation;
+}
+
+/* Minimum touch target size for mobile (WCAG 2.5.5 Target Size) */
+@media (pointer: coarse) {
+  button,
+  a,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Reduced motion support for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -622,199 +904,192 @@ button:active:not(:disabled), a:active, [role="button"]:active {
   }
 }
 
-/* User-level reduced motion override */
-body.reduced-motion-user *,
-body.reduced-motion-user *::before,
-body.reduced-motion-user *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  scroll-behavior: auto !important;
+/* Enhanced focus-visible ring for keyboard users */
+:focus-visible {
+  outline: 2px solid oklch(0.546 0.245 262.881);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
-/* High contrast */
-@media (prefers-contrast: more) {
-  :root {
-    --border: oklch(0.4 0 0);
-    --muted-foreground: oklch(0.85 0 0);
-  }
-  .light {
-    --border: oklch(0.6 0 0);
-    --muted-foreground: oklch(0.3 0 0);
-  }
-}
-
-/* Forced colors (Windows High Contrast) */
+/* High contrast mode support */
 @media (forced-colors: active) {
-  :root, .light {
-    --border: CanvasText;
-    --foreground: CanvasText;
-    --background: Canvas;
-    --ring: Highlight;
-    --primary: Highlight;
+  .border-border {
+    border-color: ButtonText;
   }
-  :focus-visible {
-    outline: 2px solid Highlight !important;
-  }
-  [data-status], .badge, [class*="Badge"] { border: 1px solid ButtonText; }
-  [class*="Card"], [class*="card"] { border: 1px solid ButtonText; }
-  button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"] { color: GrayText; border-color: GrayText; }
-  a:not([class*="button"]):not([class*="Button"]) { color: LinkText; text-decoration: underline; }
-  [role="switch"] { border: 2px solid ButtonText; }
-  [role="switch"][data-state="checked"], [role="switch"][aria-checked="true"] { background-color: Highlight; }
-  ::-webkit-scrollbar-thumb { background-color: ButtonText; }
-  ::-webkit-scrollbar-track { background-color: Canvas; }
-}
-
-/* Color-blind mode — pattern adornments */
-body.color-blind-mode :focus-visible {
-  outline-width: 3px;
-  outline-offset: 3px;
-}
-body.color-blind-mode [data-status="success"]::after,
-body.color-blind-mode .bg-emerald-500\/10::after { content: " \2713"; font-weight: 700; margin-left: 0.125rem; }
-body.color-blind-mode [data-status="error"]::after,
-body.color-blind-mode .bg-destructive\/10::after { content: " \2715"; font-weight: 700; margin-left: 0.125rem; }
-body.color-blind-mode [data-status="warning"]::after,
-body.color-blind-mode .bg-amber-500\/10::after { content: " !"; font-weight: 700; margin-left: 0.125rem; }
-
-body.color-blind-deuteranopia, body.color-blind-all {
-  --chart-2: oklch(0.68 0.16 180);
-  --chart-4: oklch(0.62 0.22 30);
-}
-body.color-blind-protanopia {
-  --chart-2: oklch(0.68 0.16 180);
-  --chart-3: oklch(0.68 0.18 240);
-  --chart-4: oklch(0.68 0.18 40);
-}
-body.color-blind-tritanopia {
-  --chart-2: oklch(0.68 0.17 155);
-  --chart-3: oklch(0.62 0.2 340);
-}
-
-/* Disabled button contrast */
-button:disabled,
-[type="button"]:disabled,
-[type="submit"]:disabled,
-[type="reset"]:disabled,
-[role="button"][aria-disabled="true"] {
-  opacity: 0.65 !important;
-  cursor: not-allowed;
-}
-body.color-blind-mode button:disabled,
-body.color-blind-mode [type="button"]:disabled {
-  border-style: dashed !important;
-}
-
-/* Keyboard-nav focus indicator */
-body.keyboard-nav :focus-visible {
-  outline: 3px solid oklch(0.6565 0.1863 251.8);
-  outline-offset: 3px;
-}
-
-/* 200% zoom safety */
-@media (min-resolution: 192dpi) {
-  .text-\[9px\]  { font-size: max(9px, 0.5625rem) !important; }
-  .text-\[10px\] { font-size: max(10px, 0.625rem) !important; }
-  .text-\[11px\] { font-size: max(11px, 0.6875rem) !important; }
-  .text-\[12px\] { font-size: max(12px, 0.75rem) !important; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════
-   MOBILE
-   ═══════════════════════════════════════════════════════════════════ */
-
-/* Touch targets — selective, not blanket */
-@media (pointer: coarse) {
-  [data-touch-target] {
-    min-height: 44px;
-    min-width: 44px;
+  .bg-primary {
+    background-color: Highlight;
+    color: HighlightText;
   }
 }
 
-/* Safe areas */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .safe-area-top { padding-top: env(safe-area-inset-top, 0px); }
-}
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .safe-bottom, .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 8px); }
-  .safe-bottom-margin { margin-bottom: env(safe-area-inset-bottom, 8px); }
+/* ── RTL Support (G32) ─────────────────────────────────────────── */
+/* When dir="rtl" is set on <html>, flip layout direction */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
 }
 
-/* Narrow viewport input bar */
-@media (max-width: 359px) {
-  .chat-input-bar {
-    gap: 0.25rem !important;
-    padding: 0.375rem !important;
-  }
-  .chat-input-bar textarea {
-    font-size: 16px !important;
-    min-height: 36px !important;
-  }
+/* Flip sidebar from left to right in RTL */
+[dir="rtl"] .bg-sidebar {
+  border-left: 1px solid var(--border);
+  border-right: none;
 }
 
-/* iOS keyboard choreography */
-@media (max-width: 767px) {
-  [data-chat-input] {
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-  }
-  [data-chat-container] {
-    overscroll-behavior: none;
-    -webkit-overflow-scrolling: touch;
-  }
+/* Flip flex row items in RTL */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
 }
 
-/* Landscape orientation */
-@media screen and (orientation: landscape) and (max-height: 500px) {
-  #main-content { height: 100dvh !important; min-height: 100dvh !important; }
+/* Keep code blocks LTR even in RTL context */
+[dir="rtl"] pre,
+[dir="rtl"] code,
+[dir="rtl"] .font-mono {
+  direction: ltr;
+  text-align: left;
 }
 
-/* Touch manipulation for interactive elements */
-button, a, input, select, textarea, [role="button"], [role="tab"], [role="menuitem"], [role="link"], [tabindex] {
-  touch-action: manipulation;
+/* Keep numbers and math LTR */
+[dir="rtl"] .tabular-nums,
+[dir="rtl"] [data-ltr] {
+  direction: ltr;
+  text-align: left;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   RTL SUPPORT
-   ═══════════════════════════════════════════════════════════════════ */
-[dir="rtl"] { direction: rtl; text-align: right; }
-[dir="rtl"] .bg-sidebar { border-left: 1px solid var(--border); border-right: none; }
-[dir="rtl"] .flex-row { flex-direction: row-reverse; }
-[dir="rtl"] pre, [dir="rtl"] code, [dir="rtl"] .font-mono { direction: ltr; text-align: left; }
-[dir="rtl"] .tabular-nums, [dir="rtl"] [data-ltr] { direction: ltr; text-align: left; }
+/* Flip margin/padding logical properties */
 [dir="rtl"] .ml-auto { margin-left: 0; margin-right: auto; }
 [dir="rtl"] .mr-auto { margin-right: 0; margin-left: auto; }
+
+/* Flip chevron/arrow icons */
 [dir="rtl"] .lucide-chevron-right { transform: scaleX(-1); }
 [dir="rtl"] .lucide-chevron-left { transform: scaleX(-1); }
 [dir="rtl"] .lucide-arrow-right { transform: scaleX(-1); }
 [dir="rtl"] .lucide-arrow-left { transform: scaleX(-1); }
+
+/* Flip panel collapse icons */
 [dir="rtl"] .lucide-panel-left-close { transform: scaleX(-1); }
 [dir="rtl"] .lucide-panel-left { transform: scaleX(-1); }
 
-/* ═══════════════════════════════════════════════════════════════════
-   PRINT STYLES
-   ═══════════════════════════════════════════════════════════════════ */
-@media print {
-  .print-hide, nav, aside, [data-radix-popper-content-wrapper], button:not(.print-show), .fixed, [role="dialog"] { display: none !important; }
-  body, html { background: white !important; color: black !important; font-size: 10pt !important; }
-  .flex-1 { width: 100% !important; max-width: 100% !important; }
-  .rounded-lg { border: 1px solid #ccc !important; break-inside: avoid; }
-  * { color: black !important; background: white !important; border-color: #ccc !important; }
-  @page { margin: 1.5cm; size: A4; }
+/* ═══════════════════════════════════════════════════════════════════════════
+   Pass 62+ — Enhanced Accessibility (Open Source Directory Optimizations)
+   Guided by axe-core / Pa11y / Lighthouse audit patterns.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Forced-colors: expanded coverage for interactive elements ──────────── */
+@media (forced-colors: active) {
+  /* Ensure badges and status indicators remain visible */
+  [data-status],
+  .badge,
+  [class*="Badge"] {
+    border: 1px solid ButtonText;
+  }
+  /* Card borders must be visible in high-contrast */
+  [class*="Card"],
+  [class*="card"] {
+    border: 1px solid ButtonText;
+  }
+  /* Disabled elements should use GrayText */
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [aria-disabled="true"] {
+    color: GrayText;
+    border-color: GrayText;
+  }
+  /* Links must be distinguishable */
+  a:not([class*="button"]):not([class*="Button"]) {
+    color: LinkText;
+    text-decoration: underline;
+  }
+  /* Switch / toggle track visibility */
+  [role="switch"] {
+    border: 2px solid ButtonText;
+  }
+  [role="switch"][data-state="checked"],
+  [role="switch"][aria-checked="true"] {
+    background-color: Highlight;
+  }
 }
-.print-header { display: none; }
 
-/* ═══════════════════════════════════════════════════════════════════
-   PERFORMANCE
-   ═══════════════════════════════════════════════════════════════════ */
-.content-auto { content-visibility: auto; contain-intrinsic-size: auto 500px; }
-.contain-layout { contain: layout style; }
+/* ── Enhanced keyboard navigation indicators ───────────────────────────── */
+/* Visible focus for all interactive elements — not just :focus-visible */
+:focus-within:not(:focus-visible) {
+  /* Subtle inner glow for container focus-within */
+}
 
-/* Viewport height for iOS */
-html, body, #root {
-  min-height: 100dvh;
-  height: 100dvh;
-  overflow: hidden;
+/* Tab key navigation indicator — pulsing ring for first-time keyboard users */
+body.keyboard-nav :focus-visible {
+  outline: 3px solid oklch(0.546 0.245 262.881);
+  outline-offset: 3px;
+  transition: outline-offset 0.1s ease;
+}
+
+/* ── Print styles for accessibility ────────────────────────────────────── */
+@media print {
+  /* Ensure links show their URL in print */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.75em;
+    color: #666;
+  }
+  /* Hide purely interactive elements */
+  button:not([type="submit"]),
+  [role="switch"],
+  nav,
+  .sidebar {
+    display: none !important;
+  }
+  /* Ensure sufficient contrast in print */
+  * {
+    color: #000 !important;
+    background: #fff !important;
+  }
+}
+
+/* ── Scrollbar accessibility ───────────────────────────────────────────── */
+/* Ensure scrollbars are visible in forced-colors mode */
+@media (forced-colors: active) {
+  ::-webkit-scrollbar-thumb {
+    background-color: ButtonText;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: Canvas;
+  }
+}
+
+/* === Mobile Responsiveness Fixes (Pass 2B) === */
+@media (max-width: 640px) {
+  /* Increase minimum touch target size */
+  button, a, [role="button"], input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Ensure badge text is readable on mobile */
+  .badge, [class*="badge"], [class*="Badge"] {
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
+  
+  /* Increase card description text on mobile */
+  .text-xs {
+    font-size: 0.8125rem !important;
+    line-height: 1.25rem !important;
+  }
+  
+  /* Ensure table cells have minimum padding */
+  td, th {
+    padding: 0.5rem !important;
+    font-size: 0.8125rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Ensure form inputs are large enough for touch */
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="search"], input[type="tel"],
+  input[type="url"], select, textarea {
+    min-height: 48px;
+    font-size: 1rem !important;
+  }
 }

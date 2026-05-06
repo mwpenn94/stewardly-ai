@@ -26,13 +26,13 @@ const LAYER_CONFIG: Record<string, { icon: React.ReactNode; color: string; bgCol
   organization: { icon: <Briefcase className="w-4 h-4" />, color: "text-blue-400", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/30" },
   manager: { icon: <Users className="w-4 h-4" />, color: "text-emerald-400", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/30" },
   professional: { icon: <Shield className="w-4 h-4" />, color: "text-amber-400", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/30" },
-  client: { icon: <Brain className="w-4 h-4" />, color: "text-primary", bgColor: "bg-primary/10", borderColor: "border-primary/20" },
+  client: { icon: <Brain className="w-4 h-4" />, color: "text-accent", bgColor: "bg-accent/10", borderColor: "border-accent/30" },
 };
 
 const PROFICIENCY_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   expert: { bg: "bg-violet-500/20", text: "text-violet-300", label: "Expert" },
   proficient: { bg: "bg-emerald-500/20", text: "text-emerald-300", label: "Proficient" },
-  familiar: { bg: "bg-primary/15", text: "text-primary/80", label: "Familiar" },
+  familiar: { bg: "bg-accent/20", text: "text-accent/80", label: "Familiar" },
   novice: { bg: "bg-amber-500/20", text: "text-amber-300", label: "Novice" },
   undiscovered: { bg: "bg-gray-500/20", text: "text-gray-400", label: "Undiscovered" },
 };
@@ -40,7 +40,7 @@ const PROFICIENCY_COLORS: Record<string, { bg: string; text: string; label: stri
 const OVERALL_LABELS: Record<string, { label: string; color: string }> = {
   new_user: { label: "New User", color: "text-gray-400" },
   beginner: { label: "Beginner", color: "text-amber-400" },
-  intermediate: { label: "Intermediate", color: "text-primary" },
+  intermediate: { label: "Intermediate", color: "text-accent" },
   advanced: { label: "Advanced", color: "text-emerald-400" },
   power_user: { label: "Power User", color: "text-violet-400" },
 };
@@ -102,6 +102,7 @@ export default function ProficiencyDashboard() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 relative">
           <Button variant="ghost" size="icon" aria-label="Back to chat" onClick={() => navigate("/chat")}>
             <ArrowLeft className="w-4 h-4" />
@@ -131,10 +132,10 @@ export default function ProficiencyDashboard() {
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Guest CTA Banner */}
         {isGuest && (
-          <Card className="border-primary/15 bg-gradient-to-r from-accent/5 to-violet-500/5">
+          <Card className="border-accent/20 bg-gradient-to-r from-accent/5 to-violet-500/5">
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <LogIn className="w-5 h-5 text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
+                <LogIn className="w-5 h-5 text-accent" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">Your progress is session-based</p>
@@ -158,7 +159,7 @@ export default function ProficiencyDashboard() {
         ) : prof && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard
-              icon={<Target className="w-4 h-4 text-primary" />}
+              icon={<Target className="w-4 h-4 text-accent" />}
               label="Features Explored"
               value={`${prof.featuresExplored}/${prof.featuresTotal}`}
               sub={`${Math.round((prof.featuresExplored / Math.max(prof.featuresTotal, 1)) * 100)}% coverage`}
@@ -186,10 +187,10 @@ export default function ProficiencyDashboard() {
 
         {/* AI Insights Card */}
         {ins && (
-          <Card className="border-primary/15 bg-primary/5">
+          <Card className="border-accent/20 bg-accent/5">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-primary" />
+                <Lightbulb className="w-4 h-4 text-accent" />
                 AI Insights
                 {isGuest && (
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground">
@@ -215,19 +216,19 @@ export default function ProficiencyDashboard() {
                             navigate(FEATURE_ROUTES[step.feature] || "/chat");
                           }
                         }}
-                        className="w-full flex items-start gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:border-primary/20 hover:bg-card transition-all text-left group"
+                        className="w-full flex items-start gap-3 p-3 rounded-lg bg-card/50 border border-border/50 hover:border-accent/30 hover:bg-card transition-all text-left group"
                       >
-                        <div className="mt-0.5 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-semibold text-primary">{i + 1}</span>
+                        <div className="mt-0.5 w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-semibold text-accent">{i + 1}</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium group-hover:text-primary transition-colors">{step.action}</p>
+                          <p className="text-sm font-medium group-hover:text-accent transition-colors">{step.action}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{step.reason}</p>
                           <Badge variant="outline" className="mt-1 text-[10px] px-1.5 py-0">
                             {step.layer} layer
                           </Badge>
                         </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors mt-1 shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors mt-1 shrink-0" />
                       </button>
                     ))}
                   </div>
@@ -296,7 +297,7 @@ export default function ProficiencyDashboard() {
                           <div>
                             <span className="text-sm font-medium">{lp.layer}</span>
                             {isActive && (
-                              <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-primary/20 text-primary">
+                              <Badge variant="outline" className="ml-2 text-[10px] px-1 py-0 border-accent/30 text-accent">
                                 Active
                               </Badge>
                             )}
@@ -463,6 +464,7 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3 relative">
           <Skeleton className="w-8 h-8 rounded" />
           <div className="flex-1">

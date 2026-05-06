@@ -144,7 +144,7 @@ export default function LearningTrackDetail() {
         <div className="px-4 sm:px-6 lg:px-8 py-4 border-b border-border/50">
           <div className="flex items-start gap-3 mb-3">
             <Link href="/learning/tracks">
-              <button className="p-1.5 rounded-lg hover:bg-primary/50 transition-colors mt-0.5">
+              <button className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors mt-0.5">
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
               </button>
             </Link>
@@ -282,7 +282,7 @@ function ChaptersView({ track, chapters, chaptersLoading, examMeta, selectedChap
                   className={`
                     w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2
                     ${selectedChapterId === ch.id
-                      ? "bg-primary text-primary-foreground font-medium"
+                      ? "bg-accent text-accent-foreground font-medium"
                       : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
                     }
                   `}

@@ -20,7 +20,7 @@ interface FeatureCardProps {
 
 export function FeatureCard({
   badge,
-  badgeColor = "bg-primary/10 text-primary",
+  badgeColor = "bg-accent/15 text-accent",
   title,
   description,
   cta,
@@ -35,8 +35,8 @@ export function FeatureCard({
       onClick={onClick}
       className={cn(
         "group text-left w-full rounded-xl border border-border/60 bg-card/50 transition-all card-lift",
-        "hover:border-primary/20 hover:bg-card/80",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+        "hover:border-accent/30 hover:bg-card/80",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
         compact ? "p-3" : "p-4",
         className,
       )}
@@ -45,11 +45,11 @@ export function FeatureCard({
         {Icon && (
           <div
             className={cn(
-              "flex items-center justify-center rounded-lg bg-primary/10 shrink-0 transition-transform group-hover:scale-110",
+              "flex items-center justify-center rounded-lg bg-accent/10 shrink-0 transition-transform group-hover:scale-110",
               compact ? "h-8 w-8" : "h-9 w-9",
             )}
           >
-            <Icon className={cn("text-primary", compact ? "h-4 w-4" : "h-4.5 w-4.5")} />
+            <Icon className={cn("text-accent", compact ? "h-4 w-4" : "h-4.5 w-4.5")} />
           </div>
         )}
         <div className="flex-1 min-w-0 space-y-1">
@@ -70,7 +70,7 @@ export function FeatureCard({
             {description}
           </p>
           {cta && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-primary mt-1 group-hover:gap-1 transition-all">
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-accent mt-1 group-hover:gap-1 transition-all">
               {cta}
               <ChevronRight className="w-3 h-3" />
             </span>

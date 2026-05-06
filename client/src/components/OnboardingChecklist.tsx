@@ -87,14 +87,14 @@ export default function OnboardingChecklist({
   };
 
   return (
-    <div className={`rounded-xl border ${isComplete ? "border-emerald-500/30 bg-emerald-500/5" : "border-primary/15 bg-primary/5"} backdrop-blur-sm overflow-hidden transition-all`}>
+    <div className={`rounded-xl border ${isComplete ? "border-emerald-500/30 bg-emerald-500/5" : "border-accent/20 bg-accent/5"} backdrop-blur-sm overflow-hidden transition-all`}>
       {/* Header */}
       <div
         className="flex items-center gap-3 p-4 cursor-pointer select-none"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isComplete ? "bg-emerald-500/20" : "bg-primary/10"}`}>
-          {isComplete ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Rocket className="w-4 h-4 text-primary" />}
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isComplete ? "bg-emerald-500/20" : "bg-accent/15"}`}>
+          {isComplete ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Rocket className="w-4 h-4 text-accent" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function OnboardingChecklist({
                 step.completed
                   ? "bg-secondary/30 opacity-70"
                   : i === (checklist.currentStep || 0)
-                    ? "bg-primary/10 border border-primary/15"
+                    ? "bg-accent/10 border border-accent/20"
                     : "bg-secondary/20"
               }`}
             >
@@ -141,7 +141,7 @@ export default function OnboardingChecklist({
                 {step.completed ? (
                   <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" />
                 ) : (
-                  <Circle className={`w-4.5 h-4.5 ${i === (checklist.currentStep || 0) ? "text-primary" : "text-muted-foreground/50"}`} />
+                  <Circle className={`w-4.5 h-4.5 ${i === (checklist.currentStep || 0) ? "text-accent" : "text-muted-foreground/50"}`} />
                 )}
               </button>
               <div className="flex-1 min-w-0">

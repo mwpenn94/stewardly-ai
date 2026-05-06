@@ -587,11 +587,11 @@ const params = useParams<{ moduleSlug?: string }>();
           <CardContent className="p-8 text-center space-y-5">
             <div
               className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
-                passed ? "bg-primary/10" : "bg-rose-500/15"
+                passed ? "bg-accent/15" : "bg-rose-500/15"
               }`}
             >
               {passed ? (
-                <Trophy className="h-8 w-8 text-primary" />
+                <Trophy className="h-8 w-8 text-accent" />
               ) : (
                 <AlertTriangle className="h-8 w-8 text-rose-500" />
               )}
@@ -614,7 +614,7 @@ const params = useParams<{ moduleSlug?: string }>();
               <Progress value={pct} className="h-2" />
               <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
                 <span>0%</span>
-                <span className="text-primary">{PASS_THRESHOLD}% pass</span>
+                <span className="text-accent">{PASS_THRESHOLD}% pass</span>
                 <span>100%</span>
               </div>
             </div>

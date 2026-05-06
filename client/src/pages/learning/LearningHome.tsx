@@ -185,7 +185,7 @@ export default function LearningHome() {
         <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-border/50">
           <div className="flex items-center gap-3 mb-1">
             <Link href="/">
-              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-primary/50 transition-colors">
+              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors">
                 <Home className="w-4 h-4 text-muted-foreground" />
               </motion.div>
             </Link>
@@ -960,7 +960,7 @@ function QuickAction({ href, icon: Icon, label, desc, delay }: {
         whileHover={{ x: 4 }}
         className="group flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/30 transition-all cursor-pointer h-full"
       >
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-accent/10">
           <Icon className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
@@ -1046,20 +1046,20 @@ function TrackCard({ track, color, index }: { track: any; color: string; index: 
       {/* Quick action buttons */}
       <div className="flex items-center gap-1 text-[11px] mt-auto pt-1">
         <Link href={`/learning/tracks/${track.slug}`}>
-          <span className="px-2 py-1 rounded-md bg-primary/10 text-primary-foreground hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1 cursor-pointer">
+          <span className="px-2 py-1 rounded-md bg-accent/10 text-accent-foreground hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1 cursor-pointer">
             <BookOpen className="w-3 h-3" /> Study
           </span>
         </Link>
         {(track.questionCount ?? 0) > 0 && (
           <Link href={`/learning/tracks/${track.slug}/quiz`}>
-            <span className="px-2 py-1 rounded-md bg-primary/10 text-primary-foreground hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1 cursor-pointer">
+            <span className="px-2 py-1 rounded-md bg-accent/10 text-accent-foreground hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1 cursor-pointer">
               <Brain className="w-3 h-3" /> Quiz
             </span>
           </Link>
         )}
         {(track.flashcardCount ?? 0) > 0 && (
           <Link href={`/learning/tracks/${track.slug}/study`}>
-            <span className="px-2 py-1 rounded-md bg-primary/10 text-primary-foreground hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1 cursor-pointer">
+            <span className="px-2 py-1 rounded-md bg-accent/10 text-accent-foreground hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-1 cursor-pointer">
               <ListMusic className="w-3 h-3" /> Cards
             </span>
           </Link>

@@ -160,7 +160,7 @@ export default function ImportGraphPanel() {
                           <button type="button"
                             
                             onClick={() => setPath(f)}
-                            className="truncate hover:text-primary hover:underline text-left"
+                            className="truncate hover:text-accent hover:underline text-left"
                           >
                             {f}
                           </button>
@@ -229,7 +229,7 @@ export default function ImportGraphPanel() {
               {/* Imports (outgoing) */}
               <div className="border rounded-md overflow-hidden">
                 <div className="px-3 py-1.5 bg-background/60 border-b border-border/30 flex items-center gap-1.5 text-[11px] font-medium">
-                  <ArrowRight className="h-3 w-3 text-primary" />
+                  <ArrowRight className="h-3 w-3 text-accent" />
                   Imports ({deps.imports.length})
                 </div>
                 {deps.imports.length === 0 ? (

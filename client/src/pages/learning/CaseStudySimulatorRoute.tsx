@@ -85,7 +85,7 @@ export default function CaseStudySimulatorRoute() {
         </div>
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
-            <Briefcase className="h-7 w-7 text-primary" />
+            <Briefcase className="h-7 w-7 text-accent" />
             Case Studies
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -131,7 +131,7 @@ export default function CaseStudySimulatorRoute() {
                 )}
                 <p className="text-xs text-muted-foreground line-clamp-2">{c.clientProfile}</p>
                 <p className="text-xs text-muted-foreground line-clamp-3">{c.situation}</p>
-                <div className="flex items-center gap-1 text-[11px] text-primary">
+                <div className="flex items-center gap-1 text-[11px] text-accent">
                   <Sparkles className="h-3 w-3" />
                   {c.decisions.length} decision{c.decisions.length === 1 ? "" : "s"}
                 </div>

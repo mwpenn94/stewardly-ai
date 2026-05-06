@@ -174,7 +174,7 @@ describe("PageSuspenseFallback component", () => {
   });
 
   it("uses skeleton loading indicators for loading state", () => {
-    expect(fallback).toContain("skeleton");
+    expect(fallback).toContain("skeleton-gold");
   });
 
   it("renders a grid of placeholder cards", () => {

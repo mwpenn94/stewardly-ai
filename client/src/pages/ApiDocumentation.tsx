@@ -124,7 +124,8 @@ export default function ApiDocumentation() {
       <SEOHead title="API Documentation" description="Interactive API reference for WealthBridge AI developers" />
       <div className="min-h-screen">
         <header className="border-b border-border px-4 py-3 flex items-center gap-3 relative overflow-hidden">
-          <BookOpen className="w-5 h-5 text-primary relative" />
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.65 0.15 250 / 0.15) 0%, transparent 70%)' }} />
+          <BookOpen className="w-5 h-5 text-accent relative" />
           <h1 className="text-lg font-semibold relative">API Documentation</h1>
           <Badge variant="outline" className="ml-auto relative">{API_ENDPOINTS.length} endpoints</Badge>
         </header>
@@ -134,7 +135,7 @@ export default function ApiDocumentation() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 text-center">
-                <Zap className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <Zap className="h-5 w-5 mx-auto mb-1 text-accent" />
                 <div className="text-2xl font-bold">{API_ENDPOINTS.length}</div>
                 <p className="text-xs text-muted-foreground">Endpoints</p>
               </CardContent>
@@ -205,7 +206,7 @@ export default function ApiDocumentation() {
                   {endpoints.map((ep) => {
                     const isExpanded = expandedEndpoint === ep.name;
                     return (
-                      <Card key={ep.name} className="transition-all hover:border-primary/20">
+                      <Card key={ep.name} className="transition-all hover:border-accent/30">
                         <CardContent className="p-0">
                           <button type="button"
                             className="w-full text-left p-4 flex items-center gap-3"

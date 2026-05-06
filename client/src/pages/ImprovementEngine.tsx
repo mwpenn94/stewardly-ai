@@ -115,7 +115,7 @@ export default function ImprovementEngine({ embedded = false }: { embedded?: boo
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold flex items-center gap-3 mb-2">
-            <Activity className="w-7 h-7 text-primary" />
+            <Activity className="w-7 h-7 text-accent" />
             AI Improvement Engine
           </h1>
           <p className="text-muted-foreground">
@@ -166,7 +166,7 @@ export default function ImprovementEngine({ embedded = false }: { embedded?: boo
                   onClick={() => setSelectedDirection(dir.key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
                     selectedDirection === dir.key
-                      ? `bg-primary/15 ${dir.color} font-semibold`
+                      ? `bg-accent/20 ${dir.color} font-semibold`
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
                   }`}
                 >
@@ -216,7 +216,7 @@ export default function ImprovementEngine({ embedded = false }: { embedded?: boo
                 const dirData = currentLayerData.directions?.[dir.key];
                 return (
                   <div key={dir.key} className={`p-4 rounded-xl border ${
-                    selectedDirection === dir.key ? "border-primary/25 bg-primary/5" : "border-border/30 bg-card"
+                    selectedDirection === dir.key ? "border-accent/40 bg-accent/5" : "border-border/30 bg-card"
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
                       <dir.icon className={`w-4 h-4 ${dir.color}`} />
@@ -270,7 +270,7 @@ export default function ImprovementEngine({ embedded = false }: { embedded?: boo
                       <Badge variant="secondary" className="text-[9px]">{action.category}</Badge>
                       <Badge variant="secondary" className="text-[9px]">{action.actionType?.replace("_", " ")}</Badge>
                       {action.estimatedImpact && (
-                        <span className="text-primary">{action.estimatedImpact}</span>
+                        <span className="text-accent">{action.estimatedImpact}</span>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -380,7 +380,7 @@ function AuditHistoryItem({ audit, expanded, onToggle }: { audit: any; expanded:
                   <div key={i} className="px-2 py-1.5 rounded bg-muted/20 text-[11px]">
                     <div className="flex items-center gap-1.5">
                       {r.autoImplementable ? (
-                        <Zap className="w-3 h-3 text-primary shrink-0" />
+                        <Zap className="w-3 h-3 text-accent shrink-0" />
                       ) : (
                         <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
                       )}
@@ -389,7 +389,7 @@ function AuditHistoryItem({ audit, expanded, onToggle }: { audit: any; expanded:
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{r.description}</p>
                     {r.estimatedImpact && (
-                      <p className="text-[10px] text-primary mt-0.5">Impact: {r.estimatedImpact}</p>
+                      <p className="text-[10px] text-accent mt-0.5">Impact: {r.estimatedImpact}</p>
                     )}
                   </div>
                 ))}

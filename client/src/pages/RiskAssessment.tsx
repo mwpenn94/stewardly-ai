@@ -220,7 +220,7 @@ export default function RiskAssessment() {
       {!showResults && (
         <div className="space-y-4">
           {QUESTIONS.map((q, idx) => (
-            <Card key={q.id} className={answers[q.id] != null ? "border-primary/20" : ""}>
+            <Card key={q.id} className={answers[q.id] != null ? "border-accent/30" : ""}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <span className="text-xs font-mono text-muted-foreground mt-0.5">{idx + 1}.</span>
@@ -235,7 +235,7 @@ export default function RiskAssessment() {
                           key={opt.score}
                           className={`text-left text-sm px-3 py-2 rounded-md border transition-colors ${
                             answers[q.id] === opt.score
-                              ? "bg-primary/15 border-accent text-primary"
+                              ? "bg-accent/20 border-accent text-accent"
                               : "border-border/50 hover:bg-muted/50 text-foreground"
                           }`}
                           onClick={() => handleAnswer(q.id, opt.score)}

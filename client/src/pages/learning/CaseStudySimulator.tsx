@@ -272,7 +272,7 @@ export default function CaseStudySimulator({ caseStudy, onBack, onComplete }: Pr
                   onClick={() => { setSelectedCaseId(c.id); restart(); }}
                   className={`text-left p-3 rounded-lg border transition-colors cursor-pointer ${
                     cs.id === c.id
-                      ? "border-accent bg-primary/5"
+                      ? "border-accent bg-accent/5"
                       : "border-border/50 bg-card/30 hover:border-border"
                   }`}
                   aria-label={`Select case study: ${c.title}`}

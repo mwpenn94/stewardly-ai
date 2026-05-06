@@ -81,7 +81,7 @@ export const PERSONA_LAYERS: PersonaLayer[] = [
     items: [
       {
         label: "Wealth Engine", icon: Calculator, path: "/wealth-engine",
-        match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan", "/financial-twin", "/products", "/my-work", "/tax-projector", "/insurance-applications", "/advisory-execution", "/carrier-connector", "/suitability-panel", "/sovereign-study", "/mv-dashboard"],
+        match: ["/wealth-engine", "/calculators", "/engine-dashboard", "/tax-planning", "/estate", "/financial-planning", "/risk-assessment", "/income-projection", "/insurance-analysis", "/social-security", "/medicare", "/protection-score", "/my-plan", "/financial-twin", "/products", "/my-work", "/tax-projector", "/insurance-applications", "/advisory-execution", "/carrier-connector", "/suitability-panel", "/sovereign-study"],
       },
     ],
   },
@@ -211,14 +211,15 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         onClick={() => { navigate(item.path); onNavigate?.(); }}
         aria-current={active ? "page" : undefined}
         aria-label={badge ? `${item.label} (${badge.count} unread)` : item.label}
-        className={`group w-full flex items-center gap-2.5 rounded-xl transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
-          ${isMobile ? "py-3 text-[14px] min-h-[44px] px-3" : "py-2 text-[13px] px-3"}
-          ${active ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"}
-          ${collapsed ? "justify-center px-2" : ""}`}
+        className={`w-full flex items-center gap-2.5 rounded-lg cursor-pointer transition-colors leading-tight focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none
+          px-2.5
+          ${isMobile ? "py-[10px] text-[14px] min-h-[44px]" : "py-[7px] text-[13px]"}
+          ${active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}
+          ${collapsed ? "justify-center px-1.5" : ""}`}
         title={collapsed ? (badge ? `${item.label} (${badge.count})` : item.label) : undefined}
       >
         <span className="relative flex-none">
-          <item.icon className={`w-4 h-4 transition-colors duration-150 ${active ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"}`} />
+          <item.icon className={`w-[17px] h-[17px] ${active ? "text-primary" : ""}`} />
           {badge && collapsed && (
             <span className={`absolute -top-1 -right-1.5 flex items-center justify-center min-w-[14px] h-[14px] text-[9px] font-bold rounded-full
               ${badge.variant === "urgent" ? "bg-destructive text-destructive-foreground animate-pulse" : badge.variant === "count" ? "bg-primary text-primary-foreground" : "bg-muted-foreground"}
@@ -249,77 +250,75 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
 
   const Label = ({ children }: { children: string }) =>
     !children || collapsed ? null : (
-      <div className="px-3 pt-4 pb-1 text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider select-none">
+      <div className="px-2.5 pt-3.5 pb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] select-none">
         {children}
       </div>
     );
 
   return (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 h-[52px] flex-none border-b border-sidebar-border">
+    <div className="flex flex-col h-full bg-sidebar text-foreground">
+      <div className="flex items-center justify-between px-2.5 py-2 flex-none border-b border-border">
         {!collapsed && (
-          <span className="text-[16px] font-extrabold tracking-tight bg-gradient-to-r from-primary via-primary/90 to-primary/60 bg-clip-text text-transparent">Stewardly<span className="inline-block w-1.5 h-1.5 rounded-full bg-primary ml-0.5 mb-2"></span></span>
+          <span className="font-heading text-[14px] font-bold tracking-tight">Stewardly</span>
         )}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           {!collapsed && (
-            <button type="button" onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors" aria-label={t("nav.newConversation")}>
+            <button type="button" onClick={onNewChat} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={t("nav.newConversation")}>
               <Plus className="w-4 h-4" />
             </button>
           )}
-          <button type="button" onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors" aria-label={collapsed ? t("a11y.expandSidebar") : t("a11y.collapseSidebar")}>
+          <button type="button" onClick={onCollapse} className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-card/50 cursor-pointer" aria-label={collapsed ? t("a11y.expandSidebar") : t("a11y.collapseSidebar")}>
             {collapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
           </button>
         </div>
       </div>
 
-      {/* Search */}
       {!collapsed && (
-        <div className="px-3 py-2 flex-none">
-          <button type="button" onClick={onSearch} className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-card/40 border border-border/40 text-[13px] text-muted-foreground hover:text-sidebar-foreground hover:bg-card/60 hover:border-border/60 transition-all duration-200">
-            <Search className="w-3.5 h-3.5 flex-none" />
+        <div className="px-2 py-1.5 flex-none">
+          <button type="button" onClick={onSearch} className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/60 text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 cursor-pointer transition-colors">
+            <Search className="w-3.5 h-3.5" />
             <span>{t("common.search")}</span>
-            <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-sidebar border border-sidebar-border font-mono">⌘K</kbd>
+            <kbd className="ml-auto text-[9px] px-1 py-0.5 rounded bg-card border border-border/60">⌘K</kbd>
           </button>
         </div>
       )}
 
-      <nav aria-label="Main navigation" role="navigation" className="flex-1 overflow-y-auto px-2 pb-2 scroll-mask">
+      <nav aria-label="Main navigation" role="navigation" className="flex-1 overflow-y-auto px-1.5 pb-2">
         {visibleLayers.map(layer => (
           <div key={layer.key}>
             <Label>{layer.label}</Label>
-            <div className="space-y-0.5">
+            <div className="space-y-[1px]">
               {layer.items.map(item => <NavBtn key={item.path} item={item} />)}
             </div>
           </div>
         ))}
 
         {roleLevel >= ROLE_LEVEL.user && (
-          <div className="mt-3 pt-2 border-t border-sidebar-border/50">
+          <div className="mt-2 pt-2 border-t border-border/40">
             <NavBtn item={LEARN_ITEM} />
           </div>
         )}
 
         {!collapsed && conversations.length > 0 && (
-          <section aria-label="Recent conversations" className="mt-4 pt-2 border-t border-sidebar-border/50">
+          <section aria-label="Recent conversations" className="mt-3 pt-2 border-t border-border/40">
             <button type="button"
               onClick={() => setShowConvos(!showConvos)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider cursor-pointer hover:text-muted-foreground transition-colors w-full select-none"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] cursor-pointer hover:text-muted-foreground transition-colors w-full select-none"
             >
-              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showConvos ? "" : "-rotate-90"}`} />
+              <ChevronDown className={`w-3 h-3 transition-transform ${showConvos ? "" : "-rotate-90"}`} />
               Conversations
             </button>
             {showConvos && (
-              <div className="mt-1 space-y-0.5 max-h-[35vh] overflow-y-auto scroll-mask">
+              <div className="mt-0.5 space-y-[1px] max-h-[35vh] overflow-y-auto">
                 {convoGroups.map(g => (
                   <div key={g.label}>
-                    <div className="px-3 py-1 text-[10px] text-muted-foreground/40 select-none font-medium">{g.label}</div>
+                    <div className="px-2.5 py-1 text-[9px] text-muted-foreground/35 select-none">{g.label}</div>
                     {g.items.map(c => (
                       <button type="button"
                         key={c.id}
                         onClick={() => { navigate(`/chat/${c.id}`); onNavigate?.(); }}
-                        className={`w-full flex items-center gap-1.5 px-3 py-[6px] rounded-lg transition-colors text-[12px] text-left truncate
-                          ${location === `/chat/${c.id}` ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50"}`}
+                        className={`w-full flex items-center gap-1.5 px-2.5 py-[6px] rounded-lg cursor-pointer transition-colors text-[12px] text-left truncate
+                          ${location === `/chat/${c.id}` ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-card/40"}`}
                       >
                         {c.pinned && <Pin className="w-2.5 h-2.5 text-primary/60 flex-none" />}
                         <span className="truncate">{c.title || "Untitled"}</span>
@@ -333,7 +332,7 @@ function SidebarInner({ role, collapsed, onCollapse, onNewChat, onSearch, conver
         )}
       </nav>
 
-      <div className="px-2 py-2 border-t border-sidebar-border flex-none space-y-0.5">
+      <div className="px-1.5 py-1.5 border-t border-border/40 flex-none space-y-[1px]">
         {FOOTER_ITEMS.map(item => <NavBtn key={item.path} item={item} />)}
       </div>
     </div>
@@ -359,14 +358,14 @@ export default function PersonaSidebar5({
 
   return (
     <>
-      <aside className={`hidden md:flex flex-col h-screen border-r border-sidebar-border bg-sidebar flex-none transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
-        ${collapsed ? "w-[52px]" : "w-[240px]"}`}>
+      <aside className={`hidden md:flex flex-col h-screen border-r border-border transition-all duration-200 flex-none
+        ${collapsed ? "w-[48px]" : "w-[220px]"}`}>
         <SidebarInner {...inner} />
       </aside>
 
       {onMobileChange && (
         <Sheet open={mobileOpen} onOpenChange={onMobileChange}>
-          <SheetContent side="left" className="w-[280px] p-0 border-r border-sidebar-border">
+          <SheetContent side="left" className="w-[280px] p-0">
             <VisuallyHidden asChild><SheetTitle>Navigation</SheetTitle></VisuallyHidden>
             <SidebarInner {...inner} collapsed={false} onNavigate={() => onMobileChange(false)} isMobile />
           </SheetContent>

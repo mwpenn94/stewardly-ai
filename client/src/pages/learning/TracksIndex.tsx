@@ -119,7 +119,7 @@ export default function TracksIndex() {
         <div className="px-4 sm:px-6 lg:px-8 py-5 border-b border-border/50">
           <div className="flex items-center gap-3 mb-1">
             <Link href="/learning">
-              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-primary/50 transition-colors">
+              <motion.div whileHover={{ x: -2 }} className="p-1.5 rounded-lg hover:bg-accent/50 transition-colors">
                 <ArrowLeft className="w-4 h-4 text-muted-foreground" />
               </motion.div>
             </Link>

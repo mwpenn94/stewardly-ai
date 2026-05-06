@@ -111,7 +111,7 @@ export default function QuickQuoteHubPage({ embedded = false }: { embedded?: boo
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
+                <Zap className="w-5 h-5 text-accent" />
                 <h1 className="text-2xl font-bold">Quick Quote Hub</h1>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
@@ -125,7 +125,7 @@ export default function QuickQuoteHubPage({ embedded = false }: { embedded?: boo
               <button type="button"
                 
                 onClick={() => setTimelineOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-primary/25 hover:text-primary transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
                 aria-label="Open run timeline"
               >
                 <History className="w-3 h-3" />
@@ -140,7 +140,7 @@ export default function QuickQuoteHubPage({ embedded = false }: { embedded?: boo
                 <button type="button"
                   
                   onClick={() => setLibraryOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-primary/25 hover:text-primary transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-2.5 py-1 text-xs hover:border-accent/40 hover:text-accent transition-colors"
                   aria-label="Open profile library"
                 >
                   <Library className="w-3 h-3" />
@@ -169,7 +169,7 @@ export default function QuickQuoteHubPage({ embedded = false }: { embedded?: boo
               id="recommended-heading"
               className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3 flex items-center gap-2"
             >
-              <Sparkles className="w-3 h-3 text-primary" />
+              <Sparkles className="w-3 h-3 text-accent" />
               Recommended for you
               {hasProfile && (
                 <Badge variant="outline" className="text-[10px] h-4 px-1">
@@ -266,7 +266,7 @@ function ScopePicker({
           onClick={() => onChange(s)}
           className={`px-2.5 py-1 rounded capitalize transition-colors ${
             scope === s
-              ? "bg-primary text-primary-foreground"
+              ? "bg-accent text-accent-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
@@ -291,16 +291,16 @@ function QuoteTile({
     <Card
       className={`card-lift transition-colors ${
         highlighted
-          ? "border-primary/25 bg-primary/5"
+          ? "border-accent/40 bg-accent/5"
           : entry.shipped
-            ? "hover:border-primary/20"
+            ? "hover:border-accent/30"
             : "opacity-60"
       }`}
     >
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-primary flex-shrink-0">{icon}</span>
+            <span className="text-accent flex-shrink-0">{icon}</span>
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{entry.title}</p>
               <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
@@ -322,7 +322,7 @@ function QuoteTile({
           
           onClick={onOpen}
           disabled={!entry.shipped}
-          className="w-full text-left text-xs text-primary hover:text-primary/80 transition-colors flex items-center justify-between gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full text-left text-xs text-accent hover:text-accent/80 transition-colors flex items-center justify-between gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span>{entry.shipped ? "Open quote" : "Notify me"}</span>
           <ArrowRight className="w-3 h-3" />

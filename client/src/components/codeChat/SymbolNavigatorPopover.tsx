@@ -25,7 +25,7 @@ const KIND_ICONS: Record<string, typeof FunctionSquare> = {
 };
 
 const KIND_COLORS: Record<string, string> = {
-  function: "text-primary",
+  function: "text-accent",
   class: "text-chart-2",
   interface: "text-chart-3",
   type: "text-chart-4",
@@ -114,7 +114,7 @@ export default function SymbolNavigatorPopover({
       >
         {/* Search bar */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
-          <Search className="h-4 w-4 text-primary shrink-0" />
+          <Search className="h-4 w-4 text-accent shrink-0" />
           <Input
             ref={inputRef}
             value={query}
@@ -173,7 +173,7 @@ export default function SymbolNavigatorPopover({
                       onMouseEnter={() => setActiveIdx(idx)}
                       className={`w-full flex items-start gap-3 px-4 py-2 text-left transition-colors ${
                         isActive
-                          ? "bg-primary/10 border-l-2 border-accent"
+                          ? "bg-accent/10 border-l-2 border-accent"
                           : "border-l-2 border-transparent hover:bg-secondary/20"
                       }`}
                     >
@@ -192,7 +192,7 @@ export default function SymbolNavigatorPopover({
                           {m.exported && (
                             <Badge
                               variant="outline"
-                              className="text-[8px] h-4 px-1 border-primary/25 text-primary"
+                              className="text-[8px] h-4 px-1 border-accent/40 text-accent"
                             >
                               export
                             </Badge>

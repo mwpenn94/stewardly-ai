@@ -38,7 +38,7 @@ export default function FileMentionPopover({
               role="option"
               aria-selected={idx === activeIndex}
               className={`flex items-center gap-2 px-3 py-1 cursor-pointer text-xs font-mono ${
-                idx === activeIndex ? "bg-primary/10" : "hover:bg-secondary/40"
+                idx === activeIndex ? "bg-accent/10" : "hover:bg-secondary/40"
               }`}
               onMouseDown={(e) => {
                 e.preventDefault();

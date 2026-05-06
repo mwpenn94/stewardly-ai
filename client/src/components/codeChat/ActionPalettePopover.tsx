@@ -106,7 +106,7 @@ export default function ActionPalettePopover({
       >
         {/* Search bar */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border/40">
-          <Command className="h-4 w-4 text-primary shrink-0" />
+          <Command className="h-4 w-4 text-accent shrink-0" />
           <Input
             ref={inputRef}
             value={query}
@@ -204,7 +204,7 @@ function PaletteRow({
         onClick={onSelect}
         onMouseEnter={onHover}
         className={`w-full flex items-center justify-between gap-2 px-4 py-2 text-left transition-colors ${
-          isActive ? "bg-primary/10 border-l-2 border-accent" : "border-l-2 border-transparent hover:bg-secondary/20"
+          isActive ? "bg-accent/10 border-l-2 border-accent" : "border-l-2 border-transparent hover:bg-secondary/20"
         }`}
       >
         <span className="text-xs text-foreground truncate">{action.label}</span>

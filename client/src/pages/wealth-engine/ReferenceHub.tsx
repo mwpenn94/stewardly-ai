@@ -159,7 +159,7 @@ export default function ReferenceHub({ embedded = false }: { embedded?: boolean 
         {/* Header */}
         <div>
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-primary" />
+            <BookOpen className="h-6 w-6 text-accent" />
             Reference Hub
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -181,7 +181,7 @@ export default function ReferenceHub({ embedded = false }: { embedded?: boolean 
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-primary" />
+                <Shield className="h-4 w-4 text-accent" />
                 <CardTitle className="text-base">Guardrails & Assumptions</CardTitle>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setShowGuardrails(!showGuardrails)} className="h-8" aria-label="Toggle guardrails">
@@ -244,7 +244,7 @@ export default function ReferenceHub({ embedded = false }: { embedded?: boolean 
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
+                <BarChart3 className="h-4 w-4 text-accent" />
                 <CardTitle className="text-base">S&P 500 Annual Returns (1928–2025)</CardTitle>
                 <Badge variant="outline" className="text-[10px]">{sp500Data.length} years</Badge>
               </div>
@@ -274,7 +274,7 @@ export default function ReferenceHub({ embedded = false }: { embedded?: boolean 
                   {decadeAverages.map((d) => (
                     <button type="button"
                       key={d.decade}
-                      className={`p-2 rounded-md border text-left transition-all hover:border-primary/30 ${decadeFilter === d.decade.replace("s", "") + "s" ? "border-accent bg-primary/5" : "bg-secondary/50"}`}
+                      className={`p-2 rounded-md border text-left transition-all hover:border-accent/50 ${decadeFilter === d.decade.replace("s", "") + "s" ? "border-accent bg-accent/5" : "bg-secondary/50"}`}
                       onClick={() => setDecadeFilter(decadeFilter === d.decade ? "all" : d.decade)}
                     >
                       <p className="text-[10px] text-muted-foreground font-medium">{d.decade}</p>
@@ -360,7 +360,7 @@ export default function ReferenceHub({ embedded = false }: { embedded?: boolean 
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
+                <TrendingUp className="h-4 w-4 text-accent" />
                 <CardTitle className="text-base">Historical Backtest Calculator</CardTitle>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setShowBacktest(!showBacktest)} className="h-8" aria-label="Toggle backtest">

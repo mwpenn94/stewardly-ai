@@ -259,8 +259,8 @@ function ChatPanel() {
               <button
                 key={c.id}
                 type="button"
-                className={`w-full text-left px-3 py-2 text-xs truncate hover:bg-primary/10 transition-colors ${
-                  activeConvId === c.id ? "bg-primary/15 text-primary-foreground" : "text-muted-foreground"
+                className={`w-full text-left px-3 py-2 text-xs truncate hover:bg-accent/10 transition-colors ${
+                  activeConvId === c.id ? "bg-accent/20 text-accent-foreground" : "text-muted-foreground"
                 }`}
                 onClick={() => setActiveConvId(c.id)}
               >
@@ -302,8 +302,8 @@ function ChatPanel() {
           messages.map(msg => (
             <div key={msg.id} className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}>
               {msg.role === "assistant" && (
-                <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0 mt-1">
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center shrink-0 mt-1">
+                  <Sparkles className="w-3.5 h-3.5 text-accent" />
                 </div>
               )}
               <div className={cn(
@@ -343,7 +343,7 @@ function ChatPanel() {
           <button
             type="button"
             className={`px-2 py-0.5 rounded text-[10px] transition-colors flex items-center gap-1 ${
-              showHistory ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+              showHistory ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
             }`}
             onClick={() => setShowHistory(p => !p)}
             aria-label="Toggle conversation history"
@@ -358,7 +358,7 @@ function ChatPanel() {
               type="button"
               className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
                 contextType === ct.value
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
               }`}
               onClick={() => setContextType(ct.value)}
@@ -710,7 +710,7 @@ function AutoPanel() {
                 <button
                   key={t.name}
                   type="button"
-                  className="text-left p-3 rounded-lg border border-border/50 hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                  className="text-left p-3 rounded-lg border border-border/50 hover:border-accent/50 hover:bg-accent/5 transition-colors"
                   onClick={() => applyTemplate(t)}
                 >
                   <p className="text-sm font-medium">{t.name}</p>
@@ -723,7 +723,7 @@ function AutoPanel() {
 
         {/* Create form */}
         {showCreate && (
-          <Card className="border-primary/20">
+          <Card className="border-accent/30">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Create Agent</CardTitle>
@@ -792,7 +792,7 @@ function AutoPanel() {
                 className={cn(
                   "p-3 rounded-lg border transition-colors cursor-pointer",
                   selectedAgent === agent.id
-                    ? "border-primary/30 bg-primary/5"
+                    ? "border-accent/50 bg-accent/5"
                     : "border-border/50 hover:border-border"
                 )}
                 onClick={() => setSelectedAgent(selectedAgent === agent.id ? null : agent.id)}

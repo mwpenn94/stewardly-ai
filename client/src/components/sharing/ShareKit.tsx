@@ -77,7 +77,7 @@ export function PermissionSelector({
           className={`flex flex-col items-start p-3 rounded-lg border transition-all text-left ${
             value === level.value
               ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-              : "border-border hover:border-primary/30 hover:bg-primary/50"
+              : "border-border hover:border-primary/30 hover:bg-accent/50"
           }`}
         >
           <div className="flex items-center gap-2 mb-1">
@@ -160,7 +160,7 @@ export function RecipientPicker({
               <button type="button"
                 key={r.role}
                 onClick={() => onSelect({ type: "role", role: r.role, name: r.label })}
-                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-primary/50 transition-all text-left"
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/30 hover:bg-accent/50 transition-all text-left"
               >
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Shield className="w-4 h-4 text-primary" />
@@ -194,7 +194,7 @@ function UserSearchResults({
     <div className="space-y-1">
       <button type="button"
         onClick={() => onSelect({ id: 0, name: query, email: `${query.toLowerCase().replace(/\s/g, '.')}@example.com`, avatarUrl: null })}
-        className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-primary/50 transition-all text-left"
+        className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-accent/50 transition-all text-left"
       >
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
           <UserPlus className="w-4 h-4 text-primary" />

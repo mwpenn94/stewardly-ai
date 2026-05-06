@@ -450,7 +450,7 @@ export default function AlertThresholds() {
                 return (
                   <div
                     key={loc.id}
-                    className={`flex items-center gap-4 p-3 rounded-lg border transition-colors cursor-pointer hover:bg-primary/50 ${
+                    className={`flex items-center gap-4 p-3 rounded-lg border transition-colors cursor-pointer hover:bg-accent/50 ${
                       hasCritical ? "border-red-500/30 bg-red-500/5" :
                       hasWarning ? "border-amber-500/30 bg-amber-500/5" :
                       "bg-card"

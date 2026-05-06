@@ -144,7 +144,7 @@ export default function LearningSearch() {
                   type="button"
                   onClick={() => setRaw("")}
                   aria-label="Clear search"
-                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer px-2 py-1 rounded-lg hover:bg-primary/50 transition-colors"
+                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer px-2 py-1 rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   Clear
                 </button>

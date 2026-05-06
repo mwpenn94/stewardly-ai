@@ -46,12 +46,12 @@ describe("PDF Export — Color Constants Validation", () => {
     expect(BRAND_COLOR[2]).toBeLessThan(120);
   });
 
-  it("ACCENT_COLOR should be blue", () => {
-    const ACCENT_COLOR: [number, number, number] = [26, 147, 254];
-    // Blue: R < 50, G > 100, B > 200
-    expect(ACCENT_COLOR[0]).toBeLessThan(50);
-    expect(ACCENT_COLOR[1]).toBeGreaterThan(100);
-    expect(ACCENT_COLOR[2]).toBeGreaterThan(200);
+  it("ACCENT_COLOR should be gold", () => {
+    const ACCENT_COLOR: [number, number, number] = [218, 165, 32];
+    // Gold: R > 200, G > 150, B < 50
+    expect(ACCENT_COLOR[0]).toBeGreaterThan(200);
+    expect(ACCENT_COLOR[1]).toBeGreaterThan(150);
+    expect(ACCENT_COLOR[2]).toBeLessThan(50);
   });
 
   it("TEXT_COLOR should be dark gray", () => {

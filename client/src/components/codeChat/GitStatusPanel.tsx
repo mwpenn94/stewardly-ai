@@ -51,7 +51,7 @@ const STATUS_META: Record<
   string,
   { label: string; Icon: typeof Pencil; color: string }
 > = {
-  modified: { label: "modified", Icon: Pencil, color: "text-primary" },
+  modified: { label: "modified", Icon: Pencil, color: "text-accent" },
   added: { label: "added", Icon: Plus, color: "text-emerald-500" },
   deleted: { label: "deleted", Icon: Trash2, color: "text-destructive" },
   renamed: { label: "renamed", Icon: MoveRight, color: "text-chart-3" },
@@ -99,7 +99,7 @@ export default function GitStatusPanel() {
               {head?.branch && (
                 <Badge
                   variant="outline"
-                  className="text-[9px] h-4 px-1.5 border-primary/25 text-primary font-mono"
+                  className="text-[9px] h-4 px-1.5 border-accent/40 text-accent font-mono"
                 >
                   {head.branch}
                 </Badge>
@@ -132,7 +132,7 @@ export default function GitStatusPanel() {
               {summary.modified > 0 && (
                 <Badge
                   variant="outline"
-                  className="text-[9px] h-5 px-1.5 border-primary/25 text-primary"
+                  className="text-[9px] h-5 px-1.5 border-accent/40 text-accent"
                 >
                   {summary.modified} modified
                 </Badge>
@@ -207,7 +207,7 @@ export default function GitStatusPanel() {
                       }}
                       className={`w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors ${
                         isSelected
-                          ? "bg-primary/10 border-l-2 border-accent"
+                          ? "bg-accent/10 border-l-2 border-accent"
                           : "border-l-2 border-transparent hover:bg-secondary/20"
                       }`}
                     >

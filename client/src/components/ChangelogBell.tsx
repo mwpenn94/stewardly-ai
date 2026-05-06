@@ -21,7 +21,7 @@ import { safeSetItem } from "@/lib/safeStorage";
 
 const CHANGE_TYPE_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   new_feature: { icon: <Sparkles className="w-3.5 h-3.5" />, color: "text-violet-400", label: "New" },
-  improvement: { icon: <Wrench className="w-3.5 h-3.5" />, color: "text-primary", label: "Improved" },
+  improvement: { icon: <Wrench className="w-3.5 h-3.5" />, color: "text-accent", label: "Improved" },
   fix: { icon: <Bug className="w-3.5 h-3.5" />, color: "text-amber-400", label: "Fixed" },
   removal: { icon: <Trash2 className="w-3.5 h-3.5" />, color: "text-red-400", label: "Removed" },
 };
@@ -191,7 +191,7 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
-          <Megaphone className="w-4 h-4 text-primary" />
+          <Megaphone className="w-4 h-4 text-accent" />
           <span className="text-sm font-semibold">What's New</span>
           {unreadCount > 0 && (
             <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
@@ -314,13 +314,13 @@ export default function ChangelogBell({ collapsed = false }: ChangelogBellProps)
       ref={bellRef}
       onClick={handleToggle}
       className={`relative flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
-        isOpen ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+        isOpen ? "bg-accent/15 text-accent" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
       }`}
       aria-label={`What's New${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
     >
       <Megaphone className="w-4 h-4" />
       {unreadCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-[16px] rounded-full bg-accent text-[9px] font-bold text-primary-foreground px-0.5 leading-none">
+        <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[16px] h-[16px] rounded-full bg-accent text-[9px] font-bold text-accent-foreground px-0.5 leading-none">
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       )}

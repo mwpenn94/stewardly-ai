@@ -44,7 +44,7 @@ export default function Welcome() {
           hardcoded sky blue. */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-background" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-40 animate-pulse" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-40 animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-chart-2/10 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-chart-5/5 rounded-full blur-3xl opacity-20 animate-pulse" style={{ animationDelay: "2s" }} />
       </div>
@@ -54,13 +54,13 @@ export default function Welcome() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shadow-[0_0_16px_-4px] shadow-accent/60">
-              <span className="text-sm font-bold text-primary-foreground font-heading">S</span>
+              <span className="text-sm font-bold text-accent-foreground font-heading">S</span>
             </div>
             <span className="font-semibold text-foreground">Stewardly</span>
           </div>
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
-              <Button size="sm" onClick={() => navigate("/chat")} className="bg-accent hover:bg-primary/90 text-primary-foreground border-0 shadow-[0_4px_16px_-6px] shadow-accent/50">
+              <Button size="sm" onClick={() => navigate("/chat")} className="bg-accent hover:bg-accent/90 text-accent-foreground border-0 shadow-[0_4px_16px_-6px] shadow-accent/50">
                 Go to Chat
               </Button>
             ) : (
@@ -68,7 +68,7 @@ export default function Welcome() {
                 <Button variant="ghost" size="sm" onClick={handleGuestAccess}>
                   Try Free
                 </Button>
-                <Button size="sm" onClick={() => navigate("/signin")} className="bg-accent hover:bg-primary/90 text-primary-foreground border-0 shadow-[0_4px_16px_-6px] shadow-accent/50">
+                <Button size="sm" onClick={() => navigate("/signin")} className="bg-accent hover:bg-accent/90 text-accent-foreground border-0 shadow-[0_4px_16px_-6px] shadow-accent/50">
                   Sign In
                 </Button>
               </>
@@ -85,7 +85,7 @@ export default function Welcome() {
             <div className="space-y-4">
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-tight font-heading">
                 Your finances.{" "}
-                <span className="text-primary italic">
+                <span className="text-accent italic">
                   Your way.
                 </span>{" "}
                 Understood.
@@ -101,7 +101,7 @@ export default function Welcome() {
               <Button
                 size="lg"
                 onClick={handleGetStarted}
-                className="bg-accent hover:bg-primary/90 text-primary-foreground border-0 px-8 text-base font-semibold shadow-[0_8px_32px_-8px] shadow-accent/50"
+                className="bg-accent hover:bg-accent/90 text-accent-foreground border-0 px-8 text-base font-semibold shadow-[0_8px_32px_-8px] shadow-accent/50"
               >
                 {isAuthenticated ? "Open Chat" : "Get Started"}
               </Button>
@@ -120,15 +120,15 @@ export default function Welcome() {
             {/* Trust signals */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-primary" />
+                <Lock className="w-4 h-4 text-accent" />
                 <span>Private by default</span>
               </div>
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-primary" />
+                <Shield className="w-4 h-4 text-accent" />
                 <span>You own your data</span>
               </div>
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" />
+                <TrendingUp className="w-4 h-4 text-accent" />
                 <span>AI-powered insight</span>
               </div>
             </div>
@@ -140,10 +140,10 @@ export default function Welcome() {
           <div className="grid md:grid-cols-3 gap-8">
             {/* Card 1: It learns you */}
             <div className="card-lift group relative p-8 rounded-2xl border border-border/50 bg-card/50 backdrop-blur hover:shadow-lg">
-              <div className="absolute inset-0 rounded-2xl bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 rounded-2xl bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative space-y-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
-                  <Brain className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                  <Brain className="w-6 h-6 text-accent" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground font-heading">It learns you</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -186,7 +186,7 @@ export default function Welcome() {
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 border-t border-border/30">
           <div className="text-center space-y-4 mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground font-heading">
-              Your AI secretary that understands <span className="text-primary italic">everything</span>
+              Your AI secretary that understands <span className="text-accent italic">everything</span>
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
               Share documents, screen, video, or just talk. It reviews, explains, and helps you learn from any data you have access to.
@@ -194,10 +194,10 @@ export default function Welcome() {
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: <FileText className="w-7 h-7 text-primary" />, title: "Documents", desc: "Upload PDFs, images, spreadsheets — get instant analysis and summaries" },
-              { icon: <Monitor className="w-7 h-7 text-primary" />, title: "Screen Share", desc: "Share your screen for real-time visual context and guidance" },
-              { icon: <Video className="w-7 h-7 text-primary" />, title: "Live Video", desc: "Point your camera at documents, whiteboards, or anything for instant understanding" },
-              { icon: <Mic className="w-7 h-7 text-primary" />, title: "Voice", desc: "Talk naturally — ask questions, get answers, have a real conversation" },
+              { icon: <FileText className="w-7 h-7 text-accent" />, title: "Documents", desc: "Upload PDFs, images, spreadsheets — get instant analysis and summaries" },
+              { icon: <Monitor className="w-7 h-7 text-accent" />, title: "Screen Share", desc: "Share your screen for real-time visual context and guidance" },
+              { icon: <Video className="w-7 h-7 text-accent" />, title: "Live Video", desc: "Point your camera at documents, whiteboards, or anything for instant understanding" },
+              { icon: <Mic className="w-7 h-7 text-accent" />, title: "Voice", desc: "Talk naturally — ask questions, get answers, have a real conversation" },
             ].map((item) => (
               <div key={item.title} className="p-6 rounded-xl border border-border/30 bg-card/30 backdrop-blur text-center space-y-3">
                 <div className="flex justify-center">{item.icon}</div>

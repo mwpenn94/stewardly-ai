@@ -4,16 +4,16 @@ import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-// ConsentBanner removed — clean manus-next UX
-// WhatsNewModal removed — clean UX, changelog accessible via /changelog
+import ConsentBanner from "./components/ConsentBanner";
+import WhatsNewModal from "./components/WhatsNewModal";
 import OfflineBanner from "./components/OfflineBanner";
-// GuestBanner removed — clean manus-next UX
-// ContextualHelp removed — clean manus-next UX
+import { GuestBanner } from "./components/GuestBanner";
+import { ContextualHelp } from "./components/ContextualHelp";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { ScrollToTop } from "./components/ScrollToTop";
-// ServiceStatusBanner removed — clean manus-next UX
-// OnboardingTour removed — clean manus-next UX
+import ServiceStatusBanner from "./components/ServiceStatusBanner";
+import { OnboardingTour, useOnboardingTour } from "./components/OnboardingTour";
 import { AuthProvider } from "./contexts/AuthContext";
 // GlobalFooter removed permanently per user request (redundant nav)
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -25,7 +25,7 @@ import { AudioCompanionProvider } from "./components/AudioCompanion";
 import { PILProvider } from "./components/PlatformIntelligence";
 import { LiveAnnouncer } from "./lib/multisensory/LiveAnnouncer";
 // VisualAnnouncer, IntentRouter removed (dead code cleanup Pass 147)
-// GlobalVoiceFAB removed — clean manus-next UX
+import { GlobalVoiceFAB } from "./components/GlobalVoiceFAB";
 import { useGlobalShortcuts } from "./lib/multisensory/useGlobalShortcuts";
 
 // ── Lazy loaded (critical path — still code-split for bundle size) ────
@@ -116,7 +116,6 @@ const EmbedWidget = lazy(() => import("./pages/EmbedWidget"));
 const AdvisorProfile = lazy(() => import("./pages/AdvisorProfile"));
 const TeamManagement = lazy(() => import("./pages/TeamManagement"));
 const BillingPage = lazy(() => import("./pages/BillingPage"));
-const MVDashboard = lazy(() => import("./pages/MVDashboard"));
 const APIKeys = lazy(() => import("./pages/APIKeys"));
 const WebhookManager = lazy(() => import("./pages/WebhookManager"));
 const GHLWebhookSetup = lazy(() => import("./pages/GHLWebhookSetup"));
@@ -300,7 +299,6 @@ function Router() {
         <Route path="/advisor/:id" component={AdvisorProfile} />
         <Route path="/admin/team" component={TeamManagement} />
         <Route path="/admin/billing" component={BillingPage} />
-        <Route path="/admin/savings" component={MVDashboard} />
         <Route path="/admin/api-keys" component={APIKeys} />
         <Route path="/admin/webhooks" component={WebhookManager} />
         <Route path="/admin/webhooks/ghl-setup" component={GHLWebhookSetup} />
@@ -462,7 +460,21 @@ function AppContent() {
   // Global keyboard shortcut handler — must live INSIDE PILProvider so the
   // IntentRouter can handle dispatched intents with pil context available.
   useGlobalShortcuts();
+  const { isOpen: tourOpen, completeTour, startTour } = useOnboardingTour();
 
+  // Pass 120: Allow tour to be triggered from notification bell via ?startTour=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("startTour") === "true") {
+      startTour();
+      // Clean up the URL
+      params.delete("startTour");
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [startTour]);
 
   // Pass 121: Allow voice coach to be triggered from notification bell via ?showVoiceCoach=true
   useEffect(() => {
@@ -492,21 +504,21 @@ function AppContent() {
           AppShell pages get a second one (harmless — first one wins). */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/40 focus:text-sm"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-accent-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/40 focus:text-sm"
       >
         Skip to main content
       </a>
       <LiveAnnouncer />
       <OfflineBanner />
-
-
+      <GuestBanner />
+      <ServiceStatusBanner />
       <Router />
-
-
+      <ConsentBanner />
+      <WhatsNewModal />
       {/* GlobalFooter removed permanently — user requested no footer nav */}
-
-
-
+      <GlobalVoiceFAB />
+      <ContextualHelp />
+      <OnboardingTour isOpen={tourOpen} onComplete={completeTour} />
     </>
   );
 }

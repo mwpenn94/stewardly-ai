@@ -94,7 +94,7 @@ export default function SessionAnalyticsPopover({
         {/* Header */}
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/40">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-primary" />
+            <BarChart3 className="h-4 w-4 text-accent" />
             <h2 className="font-heading text-lg font-semibold text-foreground">
               Session analytics
             </h2>
@@ -136,7 +136,7 @@ export default function SessionAnalyticsPopover({
             <StatRow
               label="Aggregate cost"
               value={formatCost(totalCost)}
-              className="text-primary"
+              className="text-accent"
             />
           </section>
 
@@ -180,7 +180,7 @@ export default function SessionAnalyticsPopover({
               {analytics.topTurns.map((turn, idx) => (
                 <button type="button"
                   key={turn.messageId}
-                  className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                  className="w-full flex items-start justify-between gap-2 px-3 py-1.5 text-[11px] text-left hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                   onClick={() => {
                     onJumpToMessage?.(turn.messageId);
                     onClose();
@@ -273,7 +273,7 @@ export default function SessionAnalyticsPopover({
                 </div>
                 <div>
                   <div className="text-[9px] text-muted-foreground uppercase tracking-wide">p95</div>
-                  <div className="font-mono tabular-nums text-primary">
+                  <div className="font-mono tabular-nums text-accent">
                     {formatDuration(analytics.latency.p95Ms)}
                   </div>
                 </div>
@@ -358,7 +358,7 @@ export default function SessionAnalyticsPopover({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1.5 text-muted-foreground">
-                    <ArrowUpFromLine className="h-3 w-3 text-primary" /> written
+                    <ArrowUpFromLine className="h-3 w-3 text-accent" /> written
                   </span>
                   <span className="font-mono tabular-nums text-foreground">
                     {formatBytes(analytics.bytes.bytesWritten)} · {analytics.bytes.filesWritten}{" "}

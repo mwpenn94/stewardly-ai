@@ -108,6 +108,7 @@ export default function MarketingAssets({ embedded = false }: { embedded?: boole
   return (
     <Shell title="Marketing Assets">
     <div className="relative container py-8 space-y-6">
+      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 70% 30%, oklch(0.65 0.15 280 / 0.12) 0%, transparent 60%)' }} />
       <SEOHead title="Marketing Assets" description="Content library for email templates and marketing materials" />
 
       <div className="flex items-center justify-between flex-wrap gap-3">

@@ -47,8 +47,8 @@ const TONE_STYLE: Record<
     icon: <Sparkles className="w-3.5 h-3.5" />,
   },
   partial: {
-    bg: "bg-accent/8 border-primary/20",
-    text: "text-primary",
+    bg: "bg-accent/8 border-accent/30",
+    text: "text-accent",
     icon: <Wand2 className="w-3.5 h-3.5" />,
   },
   full: {

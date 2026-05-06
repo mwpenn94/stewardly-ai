@@ -147,8 +147,8 @@ export function KeyboardShortcuts() {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Keyboard className="w-4 h-4 text-primary" />
+            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+              <Keyboard className="w-4 h-4 text-accent" />
             </div>
             <div>
               <h2 className="text-sm font-semibold">Keyboard Shortcuts</h2>
@@ -203,7 +203,7 @@ export function KeyboardShortcuts() {
                 <p className="text-sm text-muted-foreground/60">No shortcuts match "{search}"</p>
                 <button
                   onClick={() => setSearch("")}
-                  className="text-xs text-primary hover:underline mt-1"
+                  className="text-xs text-accent hover:underline mt-1"
                 >
                   Clear filter
                 </button>

@@ -38,7 +38,7 @@ export function PlanningCrossNav() {
             onClick={() => navigate(page.href)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
               isActive
-                ? "bg-primary/15 text-primary font-medium"
+                ? "bg-accent/20 text-accent font-medium"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
             aria-current={isActive ? "page" : undefined}

@@ -198,12 +198,12 @@ function InlineQuickBundle() {
   });
 
   return (
-    <Card className="bg-card/60 border-primary/15">
+    <Card className="bg-card/60 border-accent/20">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
+          <Sparkles className="w-4 h-4 text-accent" />
           <CardTitle className="text-sm">Quick Bundle</CardTitle>
-          <Badge variant="outline" className="h-4 text-[9px] px-1 border-primary/25 text-primary">Multi-Line</Badge>
+          <Badge variant="outline" className="h-4 text-[9px] px-1 border-accent/40 text-accent">Multi-Line</Badge>
         </div>
         <CardDescription className="text-[11px]">Generate a multi-line protection proposal in 30 seconds</CardDescription>
       </CardHeader>
@@ -249,7 +249,7 @@ function InlineQuickBundle() {
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             <div className="rounded-lg bg-background/50 p-2">
               <p className="text-[9px] text-muted-foreground">Total Annual</p>
-              <p className="text-sm font-bold text-primary">{fmt(total)}</p>
+              <p className="text-sm font-bold text-accent">{fmt(total)}</p>
             </div>
             <div className="rounded-lg bg-background/50 p-2">
               <p className="text-[9px] text-muted-foreground">Critical Only</p>
@@ -517,8 +517,8 @@ function OverviewContent() {
                 const Icon = GOAL_ICONS[cat] ?? Target;
                 return (
                   <div key={cat} className="flex items-center gap-3 rounded-lg bg-background/50 p-2.5 hover:bg-background/80 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-none">
-                      <Icon className="w-4 h-4 text-primary" />
+                    <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-none">
+                      <Icon className="w-4 h-4 text-accent" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium capitalize truncate">{cat.replace(/_/g, " ")}</p>
@@ -670,9 +670,9 @@ export default function WealthEngineHub() {
         {/* ─── SIDEBAR — 3 collapsible workflow stages ─── */}
         <aside role="complementary" aria-label="Wealth Engine navigation sidebar" className={`
           fixed inset-y-0 left-0 lg:sticky lg:top-0 z-50 lg:z-auto
-          w-56 shrink-0 border-r border-border bg-sidebar flex flex-col
+          w-56 shrink-0 border-r border-border bg-card flex flex-col
           max-h-[100dvh] lg:max-h-screen lg:self-start
-          transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
+          transition-transform duration-200 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
           <div className="p-3 border-b border-border/50 flex items-center justify-between">
@@ -724,7 +724,7 @@ export default function WealthEngineHub() {
                               <Icon className="w-3.5 h-3.5 shrink-0" />
                               <span className="truncate">{item.label}</span>
                               {item.badge && (
-                                <Badge variant="outline" className="ml-auto h-4 text-[8px] px-1 border-primary/25 text-primary shrink-0">
+                                <Badge variant="outline" className="ml-auto h-4 text-[8px] px-1 border-accent/40 text-accent shrink-0">
                                   {item.badge}
                                 </Badge>
                               )}
@@ -789,7 +789,7 @@ export default function WealthEngineHub() {
             </div>
 
             <WealthEngineProvider value={DEFAULT_DATA}>
-            <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+            <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>}>
               {activeTab === "overview" && <OverviewContent />}
               {activeTab === "retirement" && <WeRetirement embedded />}
               {activeTab === "strategy-comparison" && <WeStrategyComparison embedded />}

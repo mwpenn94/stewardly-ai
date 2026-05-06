@@ -153,7 +153,7 @@ function TreeNode({
             <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
           )}
           {isOpen ? (
-            <FolderOpen className="h-3 w-3 shrink-0 text-primary" />
+            <FolderOpen className="h-3 w-3 shrink-0 text-accent" />
           ) : (
             <Folder className="h-3 w-3 shrink-0 text-muted-foreground" />
           )}

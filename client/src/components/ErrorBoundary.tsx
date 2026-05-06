@@ -175,7 +175,7 @@ class ErrorBoundary extends Component<Props, State> {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 rounded-lg",
                 "bg-primary text-primary-foreground",
-                "hover:opacity-90 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                "hover:opacity-90 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               )}
               aria-label="Reload the page"
             >

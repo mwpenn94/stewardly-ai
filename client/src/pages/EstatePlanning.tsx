@@ -135,6 +135,7 @@ export default function EstatePlanning() {
   return (
     <AppShell title="Estate Planning">
     <div className="relative container max-w-5xl py-8 space-y-6">
+      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
       <SEOHead title="Estate Planning" description="Interactive estate planning with tax projections and document management" />
 
       <PlanningCrossNav />

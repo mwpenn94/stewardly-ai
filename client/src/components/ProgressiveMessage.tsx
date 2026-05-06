@@ -105,14 +105,14 @@ export function ProgressiveMessage({
           <div className="prose-chat text-sm">
             <p className="text-foreground/90 leading-relaxed">{summary}</p>
             {charts.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 ml-1">
+              <span className="inline-flex items-center gap-1 text-[10px] text-accent/70 ml-1">
                 <BarChart3 className="w-3 h-3" /> {charts.length} chart{charts.length > 1 ? "s" : ""}
               </span>
             )}
           </div>
           <button type="button"
             onClick={() => setExpanded(true)}
-            className="flex items-center gap-1 mt-2 text-xs text-primary hover:text-primary/80 transition-colors"
+            className="flex items-center gap-1 mt-2 text-xs text-accent hover:text-accent/80 transition-colors"
           >
             <ChevronDown className="w-3.5 h-3.5" />
             <span>Show full response ({words} words)</span>

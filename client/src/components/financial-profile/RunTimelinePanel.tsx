@@ -76,7 +76,7 @@ export function RunTimelinePanel({ open, onClose }: RunTimelinePanelProps) {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-primary" />
+            <History className="w-4 h-4 text-accent" />
             <h2 id="run-timeline-title" className="text-base font-semibold">
               Run Timeline
             </h2>
@@ -171,7 +171,7 @@ export function RunTimelinePanel({ open, onClose }: RunTimelinePanelProps) {
                         {entry.outputSummary && (
                           <p className="text-[11px] mt-0.5 truncate">
                             <span className="text-muted-foreground">out:</span>{" "}
-                            <span className="text-primary font-mono tabular-nums">
+                            <span className="text-accent font-mono tabular-nums">
                               {entry.outputSummary}
                             </span>
                           </p>

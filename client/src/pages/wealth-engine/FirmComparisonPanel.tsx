@@ -42,7 +42,7 @@ export default function FirmComparisonPanel() {
       <div className="space-y-6 p-4">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" /> Firm & Strategy Comparison
+            <BarChart3 className="w-5 h-5 text-accent" /> Firm & Strategy Comparison
           </h2>
           <p className="text-sm text-muted-foreground mt-1">Sign in to access firm comparison analysis.</p>
         </div>
@@ -63,7 +63,7 @@ export default function FirmComparisonPanel() {
     <div className="space-y-6 p-4">
       <div>
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-primary" /> Firm & Strategy Comparison
+          <BarChart3 className="w-5 h-5 text-accent" /> Firm & Strategy Comparison
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           Compare total benefits vs total costs across firm categories, strategy offerings, and WealthBridge advantage.
@@ -112,11 +112,11 @@ export default function FirmComparisonPanel() {
                     </thead>
                     <tbody>
                       {data.firms.map((f: any) => (
-                        <tr key={f.category} className={`border-b border-border/20 ${f.category === "wealthbridge" || f.category === "wealthbridge_premium" ? "bg-primary/5" : ""}`}>
+                        <tr key={f.category} className={`border-b border-border/20 ${f.category === "wealthbridge" || f.category === "wealthbridge_premium" ? "bg-accent/5" : ""}`}>
                           <td className="p-1.5">
                             <div className="flex items-center gap-1">
-                              {(f.category === "wealthbridge" || f.category === "wealthbridge_premium") && <Zap className="w-3 h-3 text-primary" />}
-                              <span className={(f.category === "wealthbridge" || f.category === "wealthbridge_premium") ? "font-semibold text-primary" : ""}>{f.label}</span>
+                              {(f.category === "wealthbridge" || f.category === "wealthbridge_premium") && <Zap className="w-3 h-3 text-accent" />}
+                              <span className={(f.category === "wealthbridge" || f.category === "wealthbridge_premium") ? "font-semibold text-accent" : ""}>{f.label}</span>
                             </div>
                           </td>
                           <td className="p-1.5 text-center text-emerald-400">{fmt(f.benefits?.totalAnnualBenefit ?? 0)}</td>
@@ -140,15 +140,15 @@ export default function FirmComparisonPanel() {
 
             {/* Recommendation */}
             {data.recommendation && (
-              <Card className="bg-card/60 border-primary/15">
+              <Card className="bg-card/60 border-accent/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-1"><TrendingUp className="w-4 h-4 text-primary" /> Recommendation</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-1"><TrendingUp className="w-4 h-4 text-accent" /> Recommendation</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mb-3">
                     <div className="rounded bg-background/50 p-2">
                       <p className="text-[10px] text-muted-foreground">Best Overall</p>
-                      <p className="text-xs font-bold text-primary capitalize">{data.recommendation.bestOverall?.replace(/_/g, " ")}</p>
+                      <p className="text-xs font-bold text-accent capitalize">{data.recommendation.bestOverall?.replace(/_/g, " ")}</p>
                     </div>
                     <div className="rounded bg-background/50 p-2">
                       <p className="text-[10px] text-muted-foreground">Best Value</p>
@@ -173,11 +173,11 @@ export default function FirmComparisonPanel() {
               {data.firms.map((f: any) => {
                 const isWB = f.category === "wealthbridge" || f.category === "wealthbridge_premium";
                 return (
-                  <Card key={f.category} className={`bg-card/60 ${isWB ? "border-primary/20" : "border-accent/10"}`}>
+                  <Card key={f.category} className={`bg-card/60 ${isWB ? "border-accent/30" : "border-accent/10"}`}>
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-sm flex items-center gap-1">
-                          {isWB && <Zap className="w-3.5 h-3.5 text-primary" />}
+                          {isWB && <Zap className="w-3.5 h-3.5 text-accent" />}
                           {f.label}
                         </CardTitle>
                         <Badge variant={f.capabilities?.fiduciary ? "default" : "outline"} className="text-[9px]">
@@ -305,10 +305,10 @@ export default function FirmComparisonPanel() {
               </CardContent></Card>
             ) : advantageQ.data ? (
               <div className="space-y-4">
-                <Card className="bg-card/60 border-primary/15">
+                <Card className="bg-card/60 border-accent/20">
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-2">
-                      <Zap className="w-5 h-5 text-primary" />
+                      <Zap className="w-5 h-5 text-accent" />
                       <CardTitle className="text-base">The WealthBridge Advantage</CardTitle>
                     </div>
                     <CardDescription className="text-[11px]">
@@ -323,7 +323,7 @@ export default function FirmComparisonPanel() {
                       </div>
                       <div className="rounded bg-background/50 p-3">
                         <p className="text-[10px] text-muted-foreground">Annual Benefit vs Average</p>
-                        <p className="text-xl font-bold text-primary">{fmt(advantageQ.data.totalBenefitVsAverage)}</p>
+                        <p className="text-xl font-bold text-accent">{fmt(advantageQ.data.totalBenefitVsAverage)}</p>
                       </div>
                       <div className="rounded bg-background/50 p-3">
                         <p className="text-[10px] text-muted-foreground">10-Year Net Advantage</p>
@@ -348,7 +348,7 @@ export default function FirmComparisonPanel() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                         {(advantageQ.data.uniqueCapabilities ?? []).map((cap: string, i: number) => (
                           <div key={i} className="flex items-start gap-2 rounded bg-background/50 p-2 text-[11px]">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                            <CheckCircle2 className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" />
                             <span>{cap}</span>
                           </div>
                         ))}

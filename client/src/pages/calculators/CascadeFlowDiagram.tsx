@@ -77,7 +77,7 @@ function FlowEdge({
   const path = `M ${fromCx} ${fromCy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${toCx} ${toCy}`;
 
   const strokeColor = isHighlighted
-    ? 'oklch(0.6565 0.1863 251.8)'
+    ? 'oklch(0.75 0.18 85)'
     : isActive
       ? 'oklch(0.6 0.12 160 / 0.6)'
       : 'oklch(0.45 0.03 250 / 0.25)';
@@ -150,7 +150,7 @@ export function CascadeFlowDiagram({ weData, onNavigateToPanel }: Props) {
         label: 'Advanced Strategies', shortLabel: 'Strategies',
         icon: <TrendingUp className="w-4 h-4" />,
         colorClass: 'border-amber-500/50 bg-amber-500/8',
-        accentColor: 'oklch(0.6565 0.1863 251.8)',
+        accentColor: 'oklch(0.75 0.18 85)',
         x: 290, y: 10, activeCount: advancedActive,
         metrics: [
           { label: 'Prem Finance', value: fmt(pfFace), flows: true },

@@ -55,7 +55,7 @@ type MetricKey = keyof typeof METRICS;
 // ─── HEAT MAP COLOR INTERPOLATION ──────────────────────────────────
 
 function heatColor(value: number, min: number, max: number): string {
-  if (max === min) return "oklch(0.6565 0.1863 251.8)"; // accent gold
+  if (max === min) return "oklch(0.76 0.14 80)"; // accent gold
   const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
   // Red (low) → Yellow (mid) → Green (high)
   const hue = t * 120; // 0=red, 60=yellow, 120=green
@@ -151,7 +151,7 @@ export default function Sensitivity({ embedded = false }: { embedded?: boolean }
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Grid3X3 className="w-4 h-4 text-primary" />
+              <Grid3X3 className="w-4 h-4 text-accent" />
               Configure Sweep
             </CardTitle>
             <CardDescription className="text-xs">Pick two parameters and a metric to visualize</CardDescription>
@@ -331,8 +331,8 @@ export default function Sensitivity({ embedded = false }: { embedded?: boolean }
                             <td
                               key={xi}
                               onClick={() => setSelectedCell({ xi, yi })}
-                              className={`p-1.5 text-center font-mono cursor-pointer border transition-all hover:ring-2 hover:ring-primary/50 ${
-                                isSelected ? "ring-2 ring-primary shadow-lg" : "border-border/20"
+                              className={`p-1.5 text-center font-mono cursor-pointer border transition-all hover:ring-2 hover:ring-accent/50 ${
+                                isSelected ? "ring-2 ring-accent shadow-lg" : "border-border/20"
                               }`}
                               style={{
                                 backgroundColor: heatColor(val, data.minVal, data.maxVal),
@@ -373,7 +373,7 @@ export default function Sensitivity({ embedded = false }: { embedded?: boolean }
 
               {/* Selected cell detail */}
               {selectedCell && data.grid[selectedCell.yi] && (
-                <div className="mt-4 p-3 rounded-lg border border-primary/20 bg-primary/5">
+                <div className="mt-4 p-3 rounded-lg border border-accent/30 bg-accent/5">
                   <p className="text-xs font-medium mb-1">Selected Scenario</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                     <div>
@@ -386,7 +386,7 @@ export default function Sensitivity({ embedded = false }: { embedded?: boolean }
                     </div>
                     <div>
                       <span className="text-muted-foreground">{metricDef.label}:</span>{" "}
-                      <span className="font-semibold text-primary">
+                      <span className="font-semibold text-accent">
                         {metric === "roi"
                           ? `${(data.grid[selectedCell.yi][selectedCell.xi] * 100).toFixed(1)}%`
                           : fmt(data.grid[selectedCell.yi][selectedCell.xi])}

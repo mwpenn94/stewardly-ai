@@ -73,11 +73,12 @@ export default function Privacy() {
       <SEOHead title="Privacy Policy" description="How Stewardly AI protects your data and privacy" />
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/chat")} aria-label="Back to chat">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Shield className="w-4 h-4 text-primary" />
+          <Shield className="w-4 h-4 text-accent" />
           <h1 className="text-sm font-semibold">Privacy Policy</h1>
         </div>
       </div>
@@ -100,7 +101,7 @@ export default function Privacy() {
             <a
               key={s.id}
               href={`#${s.id}`}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-primary/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border/50 text-xs text-muted-foreground hover:text-foreground hover:border-accent/30 transition-colors"
             >
               {s.icon}
               {s.title}
@@ -113,7 +114,7 @@ export default function Privacy() {
           {SECTIONS.map((section) => (
             <section key={section.id} id={section.id}>
               <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">{section.icon}</div>
+                <div className="p-2 rounded-lg bg-accent/10 text-accent">{section.icon}</div>
                 <h2 className="text-lg font-semibold">{section.title}</h2>
               </div>
               <div className="space-y-4 pl-2 border-l-2 border-border/30 ml-4">
@@ -131,7 +132,7 @@ export default function Privacy() {
         {/* AI-Specific Disclosures */}
         <section className="mt-10 p-6 rounded-xl bg-card border border-border/50">
           <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
+            <Shield className="w-5 h-5 text-accent" />
             AI-Specific Disclosures
           </h2>
           <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
@@ -154,7 +155,7 @@ export default function Privacy() {
         </section>
 
         {/* Contact */}
-        <section className="mt-10 mb-16 p-6 rounded-xl bg-primary/5 border border-primary/15">
+        <section className="mt-10 mb-16 p-6 rounded-xl bg-accent/5 border border-accent/20">
           <h2 className="text-lg font-semibold mb-2">Questions or Concerns?</h2>
           <p className="text-sm text-muted-foreground mb-4">
             If you have questions about this privacy policy or want to exercise your data rights,

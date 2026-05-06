@@ -57,7 +57,7 @@ export default function UnifiedClientPlanPanel() {
       <div className="space-y-6 p-4">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Layers className="w-5 h-5 text-primary" /> Unified Client Plan
+            <Layers className="w-5 h-5 text-accent" /> Unified Client Plan
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Sign in to access holistic client planning across all domains.
@@ -78,7 +78,7 @@ export default function UnifiedClientPlanPanel() {
     <div className="space-y-6 p-4">
       <div>
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <Layers className="w-5 h-5 text-primary" /> Unified Client Plan
+          <Layers className="w-5 h-5 text-accent" /> Unified Client Plan
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           Holistic view across all client planning domains and advanced strategies with forward/back planning,
@@ -88,9 +88,9 @@ export default function UnifiedClientPlanPanel() {
 
       {/* Live Session Cascade Summary */}
       {we.scorecard.pctScore > 0 && (
-        <Card className="bg-card/60 border-primary/15">
+        <Card className="bg-card/60 border-accent/20">
           <CardContent className="p-3">
-            <p className="text-[10px] font-medium text-primary mb-2">Live Session Data (from Calculator)</p>
+            <p className="text-[10px] font-medium text-accent mb-2">Live Session Data (from Calculator)</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 text-center text-[10px]">
               <div className="rounded bg-background/50 p-1.5">
                 <p className="text-muted-foreground">Health</p>
@@ -110,7 +110,7 @@ export default function UnifiedClientPlanPanel() {
               </div>
               <div className="rounded bg-background/50 p-1.5">
                 <p className="text-muted-foreground">Tax Savings</p>
-                <p className="font-bold text-primary">{fmt(we.txResult.totalSavings)}</p>
+                <p className="font-bold text-accent">{fmt(we.txResult.totalSavings)}</p>
               </div>
               <div className="rounded bg-background/50 p-1.5">
                 <p className="text-muted-foreground">Estate Tax</p>
@@ -146,7 +146,7 @@ export default function UnifiedClientPlanPanel() {
           {/* ── OVERVIEW TAB ── */}
           <TabsContent value="overview" className="space-y-4">
             {/* Overall Score */}
-            <Card className="bg-card/60 border-primary/15">
+            <Card className="bg-card/60 border-accent/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -224,7 +224,7 @@ export default function UnifiedClientPlanPanel() {
               <Card className="bg-card/60 border-accent/10">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-1">
-                    <Zap className="w-4 h-4 text-primary" /> Prioritized Recommendations ({plan.recommendations.length})
+                    <Zap className="w-4 h-4 text-accent" /> Prioritized Recommendations ({plan.recommendations.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -259,7 +259,7 @@ export default function UnifiedClientPlanPanel() {
             ) : forwardQ.data ? (
               <div className="space-y-4">
                 {/* Current State Snapshot */}
-                <Card className="bg-card/60 border-primary/15">
+                <Card className="bg-card/60 border-accent/20">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm">Current Financial State</CardTitle>
                   </CardHeader>
@@ -267,7 +267,7 @@ export default function UnifiedClientPlanPanel() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-center">
                       <div className="rounded bg-background/50 p-2">
                         <p className="text-[10px] text-muted-foreground">Net Worth</p>
-                        <p className="text-lg font-bold text-primary">{fmt(forwardQ.data.currentState?.netWorth ?? 0)}</p>
+                        <p className="text-lg font-bold text-accent">{fmt(forwardQ.data.currentState?.netWorth ?? 0)}</p>
                       </div>
                       <div className="rounded bg-background/50 p-2">
                         <p className="text-[10px] text-muted-foreground">Annual Income</p>
@@ -314,7 +314,7 @@ export default function UnifiedClientPlanPanel() {
                                 mix.priority === "medium" ? "border-amber-400 text-amber-400" :
                                 "border-blue-400 text-blue-400"
                               }`}>{mix.priority}</Badge>
-                              <span className="text-xs font-bold text-primary">{mix.allocation}%</span>
+                              <span className="text-xs font-bold text-accent">{mix.allocation}%</span>
                             </div>
                           </div>
                           <p className="text-[10px] text-muted-foreground">{mix.rationale}</p>
@@ -337,7 +337,7 @@ export default function UnifiedClientPlanPanel() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-center">
                         <div className="rounded bg-background/50 p-2">
                           <p className="text-[10px] text-muted-foreground">Net Worth @ 5yr</p>
-                          <p className="text-lg font-bold text-primary">{fmt(forwardQ.data.projectedOutcome.netWorthAt5)}</p>
+                          <p className="text-lg font-bold text-accent">{fmt(forwardQ.data.projectedOutcome.netWorthAt5)}</p>
                         </div>
                         <div className="rounded bg-background/50 p-2">
                           <p className="text-[10px] text-muted-foreground">Net Worth @ 10yr</p>
@@ -424,7 +424,7 @@ export default function UnifiedClientPlanPanel() {
                 </div>
 
                 {/* Goals */}
-                <Card className="bg-card/60 border-primary/15">
+                <Card className="bg-card/60 border-accent/20">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm">Goal-Based Backward Planning</CardTitle>
                     <CardDescription className="text-[11px]">
@@ -437,7 +437,7 @@ export default function UnifiedClientPlanPanel() {
                         <div key={i} className="rounded-lg bg-background/50 p-3">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <Target className="w-3.5 h-3.5 text-primary" />
+                              <Target className="w-3.5 h-3.5 text-accent" />
                               <span className="text-xs font-medium">{goal.label}</span>
                             </div>
                             <Badge variant="outline" className={`text-[9px] ${goal.feasibility >= 70 ? "border-emerald-400 text-emerald-400" : "border-amber-400 text-amber-400"}`}>
@@ -454,7 +454,7 @@ export default function UnifiedClientPlanPanel() {
                             <div className="mt-2 space-y-1">
                               {goal.requiredActions.map((action: any, j: number) => (
                                 <div key={j} className="flex items-start gap-1 text-[10px]">
-                                  <ArrowRight className="w-2.5 h-2.5 text-primary mt-0.5 shrink-0" />
+                                  <ArrowRight className="w-2.5 h-2.5 text-accent mt-0.5 shrink-0" />
                                   <span className="capitalize">{action.domain?.replace(/_/g, " ")}: {action.action}</span>
                                   <Badge variant="outline" className="text-[7px] ml-auto">{action.priority}</Badge>
                                 </div>
@@ -498,7 +498,7 @@ export default function UnifiedClientPlanPanel() {
             ) : rollUpQ.data ? (
               <div className="space-y-4">
                 {/* Practice Income */}
-                <Card className="bg-card/60 border-primary/15">
+                <Card className="bg-card/60 border-accent/20">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm">Practice Income</CardTitle>
                   </CardHeader>
@@ -506,7 +506,7 @@ export default function UnifiedClientPlanPanel() {
                     <div className="grid grid-cols-2 gap-3 text-center mb-4">
                       <div className="rounded bg-background/50 p-2">
                         <p className="text-[10px] text-muted-foreground">Total GDC</p>
-                        <p className="text-lg font-bold text-primary">{fmt(rollUpQ.data.practiceIncome?.totalGDC ?? 0)}</p>
+                        <p className="text-lg font-bold text-accent">{fmt(rollUpQ.data.practiceIncome?.totalGDC ?? 0)}</p>
                       </div>
                       <div className="rounded bg-background/50 p-2">
                         <p className="text-[10px] text-muted-foreground">Net Income</p>

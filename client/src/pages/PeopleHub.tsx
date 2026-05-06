@@ -120,7 +120,7 @@ const TAB_DEFS: TabDef[] = [
 
 const Fallback = () => (
   <div className="flex items-center justify-center py-20">
-    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+    <Loader2 className="w-6 h-6 animate-spin text-accent" />
   </div>
 );
 
@@ -375,7 +375,7 @@ export default function PeopleHub() {
                   onClick={() => setActivePanel(panel.id)}
                   className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors min-h-[44px] ${
                     isActive
-                      ? "bg-primary/10 text-primary border border-primary/20"
+                      ? "bg-accent/10 text-accent border border-accent/30"
                       : "text-muted-foreground hover:bg-background hover:text-foreground border border-border/50"
                   }`}
                 >

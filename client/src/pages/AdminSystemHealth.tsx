@@ -254,7 +254,7 @@ export default function AdminSystemHealth({ embedded = false }: { embedded?: boo
             tone="emerald"
           />
           <SummaryCard
-            icon={<Zap className="w-5 h-5 text-primary" />}
+            icon={<Zap className="w-5 h-5 text-accent" />}
             label="Currently Running"
             value={aggregate.active}
             loading={status.isLoading}
@@ -381,7 +381,7 @@ function SummaryCard({
     tone === "emerald"
       ? "bg-emerald-500/10"
       : tone === "sky"
-        ? "bg-primary/10"
+        ? "bg-accent/10"
         : tone === "amber"
           ? "bg-amber-500/10"
           : "bg-red-500/10";

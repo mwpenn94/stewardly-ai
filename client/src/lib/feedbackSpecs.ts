@@ -147,7 +147,7 @@ export const FEEDBACK_SPECS: Record<string, FeedbackFactory> = {
 
   // ── GOALS & WINS (Pass 11 / G22) ────────────────────────
   "goal.completed": (data) => ({
-    visual: { type: "success_celebration", content: { intensity: "heavy", color: "blue" } },
+    visual: { type: "success_celebration", content: { intensity: "heavy", color: "gold" } },
     audio: {
       type: "spoken",
       text: data?.goalName ? `Goal complete: ${data.goalName}.` : "Goal complete.",

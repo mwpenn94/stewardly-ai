@@ -90,7 +90,7 @@ export default function GitHubWritePanel() {
           </p>
           <a
             href="/integrations"
-            className="inline-flex items-center gap-1 text-primary underline"
+            className="inline-flex items-center gap-1 text-accent underline"
           >
             Open Integrations <ExternalLink className="h-3 w-3" />
           </a>
@@ -257,7 +257,7 @@ function BranchesCard({
               <div
                 key={b.name}
                 className={`flex items-center gap-2 px-2 py-1.5 text-xs ${
-                  activeBranch === b.name ? "bg-primary/10" : ""
+                  activeBranch === b.name ? "bg-accent/10" : ""
                 }`}
               >
                 <button type="button"

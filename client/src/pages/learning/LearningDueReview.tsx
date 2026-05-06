@@ -295,7 +295,7 @@ export default function LearningDueReview() {
         {/* Header */}
         <div>
           <h1 className="text-xl font-bold tracking-tight flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
-            <Sparkles className="h-5 w-5 text-primary" />
+            <Sparkles className="h-5 w-5 text-accent" />
             Due Review
           </h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -750,14 +750,14 @@ function CompletionCard({
       <CardContent className="p-8 text-center space-y-5">
         <div
           className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
-            isGreat ? "bg-primary/10" : isGood ? "bg-emerald-500/15" : "bg-muted"
+            isGreat ? "bg-accent/15" : isGood ? "bg-emerald-500/15" : "bg-muted"
           }`}
           style={{ animation: "page-enter 0.5s ease-out" }}
         >
           <Trophy
             className={`h-8 w-8 ${
               isGreat
-                ? "text-primary"
+                ? "text-accent"
                 : isGood
                   ? "text-emerald-500"
                   : "text-muted-foreground"

@@ -121,7 +121,7 @@ export default function FSToolkitPage() {
                       <button
                         key={a.id}
                         onClick={() => toggle(a.id)}
-                        className="flex items-start gap-3 w-full text-left group p-2 rounded-lg hover:bg-primary/10 transition-colors"
+                        className="flex items-start gap-3 w-full text-left group p-2 rounded-lg hover:bg-accent/10 transition-colors"
                       >
                         {completed.has(a.id) ? (
                           <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-green-500" />

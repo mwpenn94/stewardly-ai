@@ -78,7 +78,7 @@ export default function EditHistoryPopover({
         </button>
 
         <h2 className="font-heading text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
-          <History className="h-4 w-4 text-primary" /> Edit history
+          <History className="h-4 w-4 text-accent" /> Edit history
         </h2>
         <p className="text-[11px] text-muted-foreground mb-4">
           Every write/edit from the agent and from your inline edits.
@@ -153,7 +153,7 @@ export default function EditHistoryPopover({
                     isPending
                       ? "border-border/30 bg-muted/10 opacity-50"
                       : isCursor
-                        ? "border-primary/30 bg-primary/5"
+                        ? "border-accent/50 bg-accent/5"
                         : "border-border/40 bg-background/40"
                   }`}
                 >
@@ -181,7 +181,7 @@ export default function EditHistoryPopover({
                     {isCursor && (
                       <Badge
                         variant="outline"
-                        className="text-[9px] h-4 px-1.5 border-primary/30 text-primary"
+                        className="text-[9px] h-4 px-1.5 border-accent/50 text-accent"
                       >
                         current
                       </Badge>

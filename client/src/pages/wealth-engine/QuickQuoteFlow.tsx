@@ -387,7 +387,7 @@ function ScoreInsights({ scores, inputs }: { scores: Record<DomainKey, number>; 
   return (
     <div className="space-y-2">
       <p className="text-xs font-semibold flex items-center gap-1.5">
-        <Info className="h-3.5 w-3.5 text-primary" />
+        <Info className="h-3.5 w-3.5 text-accent" />
         Areas to strengthen ({weakDomains.length} identified)
       </p>
       {weakDomains.slice(0, 3).map((d) => {

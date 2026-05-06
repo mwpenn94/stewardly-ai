@@ -75,7 +75,7 @@ export default function ImprovementDashboard() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-              <Brain className="h-6 w-6 text-primary" />
+              <Brain className="h-6 w-6 text-accent" />
               Improvement Engine
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
@@ -98,7 +98,7 @@ export default function ImprovementDashboard() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-primary" /> AI Response Quality (Last 24h)
+              <BarChart3 className="h-4 w-4 text-accent" /> AI Response Quality (Last 24h)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -111,7 +111,7 @@ export default function ImprovementDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="space-y-1">
                     <p className="text-[10px] text-muted-foreground/70 uppercase">Avg Score</p>
-                    <p className="text-2xl font-bold font-mono tabular-nums text-primary">
+                    <p className="text-2xl font-bold font-mono tabular-nums text-accent">
                       {Number(qs.avgScore).toFixed(3)}
                     </p>
                   </div>
@@ -172,7 +172,7 @@ export default function ImprovementDashboard() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Lightbulb className="h-4 w-4 text-primary" /> Improvement Hypotheses
+                <Lightbulb className="h-4 w-4 text-accent" /> Improvement Hypotheses
                 {hyps && <Badge variant="outline" className="text-[10px] ml-1">{hyps.total} total</Badge>}
               </CardTitle>
               <div className="flex gap-1">
@@ -244,10 +244,10 @@ export default function ImprovementDashboard() {
 
         {/* Last Run Summary */}
         {runNow.data && (
-          <Card className="border-primary/20">
+          <Card className="border-accent/30">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" /> Last Manual Run Results
+                <TrendingUp className="h-4 w-4 text-accent" /> Last Manual Run Results
               </CardTitle>
             </CardHeader>
             <CardContent>

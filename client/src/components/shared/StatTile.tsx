@@ -88,7 +88,7 @@ export function StatTile({
   if (compact) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        {Icon && <Icon className="w-3.5 h-3.5 text-primary/70" />}
+        {Icon && <Icon className="w-3.5 h-3.5 text-accent/70" />}
         <div className="flex items-baseline gap-1">
           <span className="text-sm font-semibold tabular-nums text-foreground">
             {prefix}{formatStat(displayValue, format)}{suffix}
@@ -105,7 +105,7 @@ export function StatTile({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/60 bg-card/50 p-3 transition-all hover:border-primary/20 hover:bg-card/80",
+        "rounded-xl border border-border/60 bg-card/50 p-3 transition-all hover:border-accent/30 hover:bg-card/80",
         className,
       )}
     >
@@ -119,8 +119,8 @@ export function StatTile({
           </p>
         </div>
         {Icon && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-4 w-4 text-primary" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+            <Icon className="h-4 w-4 text-accent" />
           </div>
         )}
       </div>

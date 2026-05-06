@@ -200,7 +200,7 @@ export default function RebalancingPage({ embedded = false }: { embedded?: boole
       <div className="flex justify-end px-4 pt-2"><ShareButton contentType="rebalancing" contentId="rebalancing-plan" contentTitle="Rebalancing Plan" variant="ghost" size="sm" /></div>
       <a
         href="#rebalancing-main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-primary-foreground"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2 focus:text-accent-foreground"
       >
         Skip to main content
       </a>
@@ -211,7 +211,7 @@ export default function RebalancingPage({ embedded = false }: { embedded?: boole
       >
         <header>
           <h1 className="flex items-center gap-2 font-heading text-2xl">
-            <Scale className="h-6 w-6 text-primary" aria-hidden="true" />
+            <Scale className="h-6 w-6 text-accent" aria-hidden="true" />
             Rebalancing preview
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
@@ -410,7 +410,7 @@ export default function RebalancingPage({ embedded = false }: { embedded?: boole
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <PlayCircle
-                className="h-4 w-4 text-primary"
+                className="h-4 w-4 text-accent"
                 aria-hidden="true"
               />
               Options

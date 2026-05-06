@@ -213,12 +213,13 @@ export default function WealthConfigurator({ embedded = false }: { embedded?: bo
       <div className="min-h-screen">
         {/* Header */}
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3 relative">
             <Button variant="ghost" size="sm" className="shrink-0 gap-1.5" onClick={() => navigate("/calculators")} aria-label="Back to calculators">
               <ArrowLeft className="w-4 h-4" />
             </Button>
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-primary" />
+              <ShieldCheck className="w-4 h-4 text-accent" />
               <span className="font-semibold text-sm font-heading">Wealth Configurator</span>
             </div>
             <Badge variant="outline" className="text-[10px] ml-auto">UWE · 14 Products · 7 Strategies</Badge>
@@ -304,7 +305,7 @@ export default function WealthConfigurator({ embedded = false }: { embedded?: bo
             {isRunning && (
               <Card className="border-border/50">
                 <CardContent className="py-16 flex flex-col items-center gap-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <Loader2 className="w-8 h-8 animate-spin text-accent" />
                   <p className="text-sm text-muted-foreground">Running simulation…</p>
                 </CardContent>
               </Card>
@@ -370,7 +371,7 @@ function ClientProfileSection({
     <Card className="border-border/50">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Briefcase className="w-4 h-4 text-primary" />
+          <Briefcase className="w-4 h-4 text-accent" />
           Client Profile
         </CardTitle>
         <CardDescription className="text-xs">Financial snapshot for product selection</CardDescription>
@@ -408,7 +409,7 @@ function CompanySelector({
     <Card className="border-border/50">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-primary" />
+          <Building2 className="w-4 h-4 text-accent" />
           Strategy
         </CardTitle>
       </CardHeader>
@@ -420,8 +421,8 @@ function CompanySelector({
               onClick={() => setCompanyKey(c.key as CompanyKeyType)}
               className={`text-left px-3 py-2 rounded-md border text-xs transition-colors ${
                 companyKey === c.key
-                  ? "border-accent bg-primary/10 text-primary"
-                  : "border-border/50 hover:border-primary/30"
+                  ? "border-accent bg-accent/10 text-accent"
+                  : "border-border/50 hover:border-accent/50"
               }`}
               aria-pressed={companyKey === c.key}
             >
@@ -449,7 +450,7 @@ function ProductSummary({
     <Card className="border-border/50">
       <CardHeader className="pb-2 cursor-pointer" onClick={() => setShowProducts(!showProducts)}>
         <CardTitle className="text-sm flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-primary" />
+          <DollarSign className="w-4 h-4 text-accent" />
           Products ({products.length})
           {showProducts ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
         </CardTitle>
@@ -476,7 +477,7 @@ function EmptyState() {
   return (
     <Card className="border-border/50 border-dashed">
       <CardContent className="py-16 flex flex-col items-center gap-3 text-center">
-        <ShieldCheck className="w-10 h-10 text-primary/40" />
+        <ShieldCheck className="w-10 h-10 text-accent/40" />
         <div>
           <p className="font-medium text-sm">Unified Wealth Engine</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-xs">
@@ -526,7 +527,7 @@ function ResultsOverview({
       <Card className="border-border/50">
         <CardHeader className="pb-2">
           <CardTitle className="text-xs flex items-center gap-2">
-            <TrendingUp className="w-3 h-3 text-primary" />
+            <TrendingUp className="w-3 h-3 text-accent" />
             Total Value Trajectory
           </CardTitle>
         </CardHeader>
@@ -643,7 +644,7 @@ function YearByYearTable({ simData }: { simData: any[] }) {
             </TableHeader>
             <TableBody>
               {simData.map((row: any, i: number) => (
-                <TableRow key={i} className={i % 5 === 4 ? "border-b-2 border-primary/15" : ""}>
+                <TableRow key={i} className={i % 5 === 4 ? "border-b-2 border-accent/20" : ""}>
                   <TableCell className="text-xs tabular-nums">{row.year}</TableCell>
                   <TableCell className="text-xs text-right tabular-nums">{row.age}</TableCell>
                   <TableCell className="text-xs text-right tabular-nums">{fmt(row.totalValue)}</TableCell>

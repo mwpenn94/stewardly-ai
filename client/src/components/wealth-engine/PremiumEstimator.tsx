@@ -59,7 +59,7 @@ export function PremiumEstimator({ initialAge = 40, initialAmount = 500000 }: Pr
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-primary" />
+          <DollarSign className="w-4 h-4 text-accent" />
           Premium Estimator
         </CardTitle>
         <CardDescription className="text-xs">
@@ -89,7 +89,7 @@ export function PremiumEstimator({ initialAge = 40, initialAmount = 500000 }: Pr
                 key={p.type}
                 className="flex items-center gap-3 p-2.5 rounded-lg border border-border/50 bg-card/60"
               >
-                <Icon className="w-4 h-4 text-primary shrink-0" />
+                <Icon className="w-4 h-4 text-accent shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium">{p.label}</span>
@@ -102,7 +102,7 @@ export function PremiumEstimator({ initialAge = 40, initialAmount = 500000 }: Pr
                     <span className="text-xs text-muted-foreground">...</span>
                   ) : (
                     <>
-                      <div className="text-sm font-mono font-semibold text-primary">{fmt(premium)}<span className="text-[10px] text-muted-foreground">/yr</span></div>
+                      <div className="text-sm font-mono font-semibold text-accent">{fmt(premium)}<span className="text-[10px] text-muted-foreground">/yr</span></div>
                       <div className="text-[10px] text-muted-foreground font-mono">{fmtMonthly(premium)}/mo</div>
                     </>
                   )}
@@ -113,10 +113,10 @@ export function PremiumEstimator({ initialAge = 40, initialAmount = 500000 }: Pr
         </div>
 
         {/* Total */}
-        <div className="flex items-center justify-between p-2.5 rounded-lg border border-primary/20 bg-primary/5">
+        <div className="flex items-center justify-between p-2.5 rounded-lg border border-accent/30 bg-accent/5">
           <span className="text-xs font-medium">Total Estimated Premium</span>
           <div className="text-right">
-            <div className="text-sm font-mono font-semibold text-primary">{fmt(totalAnnual)}<span className="text-[10px] text-muted-foreground">/yr</span></div>
+            <div className="text-sm font-mono font-semibold text-accent">{fmt(totalAnnual)}<span className="text-[10px] text-muted-foreground">/yr</span></div>
             <div className="text-[10px] text-muted-foreground font-mono">{fmtMonthly(totalAnnual)}/mo</div>
           </div>
         </div>

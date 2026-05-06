@@ -107,7 +107,7 @@ export default function GlobalAdmin({ embedded = false }: { embedded?: boolean }
   const totalUsers = orgs.reduce((acc: number, o: any) => acc + (o.memberCount || 0), 0);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>;
   }
 
   return (
@@ -116,11 +116,12 @@ export default function GlobalAdmin({ embedded = false }: { embedded?: boolean }
     <div className="min-h-screen animate-curtain-lift">
       {/* Header */}
       <header className="border-b border-border bg-card/30 backdrop-blur-sm sticky top-0 z-50 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
           <Button variant="ghost" size="icon-sm" onClick={() => navigate("/chat")} aria-label="Back to chat">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <Globe className="w-4 h-4 text-primary" />
+          <Globe className="w-4 h-4 text-accent" />
           <span className="font-semibold text-sm">Global Admin</span>
           <Button variant="outline" size="sm" className="ml-auto gap-1.5 text-xs" onClick={() => navigate("/admin/bcp")}>
             <Shield className="w-3.5 h-3.5" /> BCP
@@ -174,7 +175,7 @@ export default function GlobalAdmin({ embedded = false }: { embedded?: boolean }
           <Card className="bg-card border-border">
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-1">
-                <Activity className="w-4 h-4 text-primary" />
+                <Activity className="w-4 h-4 text-accent" />
                 <span className="text-xs text-muted-foreground">Total Feedback</span>
               </div>
               <p className="text-2xl font-bold font-mono tabular-nums">{stats.total}</p>
@@ -206,9 +207,9 @@ export default function GlobalAdmin({ embedded = false }: { embedded?: boolean }
                 onClick={() => navigate(tool.path)}
                 className="card-lift p-3 rounded-lg border border-border bg-card/60 hover:bg-secondary/40 transition-colors text-left text-xs font-medium flex items-center gap-2.5 group"
               >
-                <tool.icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary flex-none" />
+                <tool.icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-accent flex-none" />
                 {tool.name}
-                <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/40 group-hover:text-primary" />
+                <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/40 group-hover:text-accent" />
               </button>
             ))}
           </div>
@@ -379,7 +380,7 @@ export default function GlobalAdmin({ embedded = false }: { embedded?: boolean }
               </CardHeader>
               <CardContent>
                 {flagsQuery.isLoading ? (
-                  <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-accent" /></div>
                 ) : (
                   <div className="space-y-3">
                     {(flagsQuery.data || []).map((flag: any) => (
@@ -428,7 +429,7 @@ export default function GlobalAdmin({ embedded = false }: { embedded?: boolean }
                     { label: "Total Reviews", value: complianceQuery.data?.totalReviews || 0, color: "text-blue-400", icon: <FileCheck className="w-4 h-4" /> },
                     { label: "Clean", value: complianceQuery.data?.cleanReviews || 0, color: "text-emerald-400", icon: <Shield className="w-4 h-4" /> },
                     { label: "Flagged", value: complianceQuery.data?.flaggedReviews || 0, color: "text-amber-400", icon: <AlertTriangle className="w-4 h-4" /> },
-                    { label: "Compliance Rate", value: `${complianceQuery.data?.complianceRate || 0}%`, color: "text-primary", icon: <TrendingUp className="w-4 h-4" /> },
+                    { label: "Compliance Rate", value: `${complianceQuery.data?.complianceRate || 0}%`, color: "text-accent", icon: <TrendingUp className="w-4 h-4" /> },
                   ].map((m, i) => (
                     <div key={i} className="p-4 rounded-lg border border-border bg-secondary/20 text-center">
                       <div className={`mx-auto mb-1.5 ${m.color}`}>{m.icon}</div>
@@ -467,7 +468,7 @@ export default function GlobalAdmin({ embedded = false }: { embedded?: boolean }
                     { label: "Feedback Collected", value: stats.total, icon: <Activity className="w-5 h-5" />, color: "text-purple-400" },
                     { label: "Positive Feedback", value: stats.up, icon: <TrendingUp className="w-5 h-5" />, color: "text-emerald-400" },
                     { label: "Pending Reviews", value: pendingCount, icon: <AlertTriangle className="w-5 h-5" />, color: "text-amber-400" },
-                    { label: "Satisfaction Rate", value: `${stats.total > 0 ? Math.round((stats.up / stats.total) * 100) : 0}%`, icon: <Shield className="w-5 h-5" />, color: "text-primary" },
+                    { label: "Satisfaction Rate", value: `${stats.total > 0 ? Math.round((stats.up / stats.total) * 100) : 0}%`, icon: <Shield className="w-5 h-5" />, color: "text-accent" },
                   ].map((metric, i) => (
                     <div key={i} className="text-center p-4 rounded-lg border border-border bg-secondary/20">
                       <div className={`mx-auto mb-2 ${metric.color}`}>{metric.icon}</div>

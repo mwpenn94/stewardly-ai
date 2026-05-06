@@ -248,7 +248,7 @@ export default function TaxPlanning() {
             </div>
             <div className="bg-secondary/50 rounded-lg p-3 space-y-1">
               <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wider">Total Tax</p>
-              <p className="text-lg font-semibold tabular-nums text-primary">{fmt(result.totalTax ?? (result.federalTax ?? 0) + (result.stateTax ?? 0))}</p>
+              <p className="text-lg font-semibold tabular-nums text-accent">{fmt(result.totalTax ?? (result.federalTax ?? 0) + (result.stateTax ?? 0))}</p>
             </div>
           </div>
 
@@ -369,7 +369,7 @@ export default function TaxPlanning() {
                             <span className="text-right font-mono">{fmt(yr.grossIncome ?? yr.totalIncome ?? 0)}</span>
                             <span className="text-right font-mono">{fmt(yr.federalTax ?? 0)}</span>
                             <span className="text-right font-mono">{fmt(yr.stateTax ?? 0)}</span>
-                            <span className="text-right font-mono text-primary">{fmt(yr.totalTax ?? 0)}</span>
+                            <span className="text-right font-mono text-accent">{fmt(yr.totalTax ?? 0)}</span>
                           </div>
                         ))}
                       </div>

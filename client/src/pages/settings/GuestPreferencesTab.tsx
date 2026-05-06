@@ -43,7 +43,7 @@ export default function GuestPreferencesTab() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <Sparkles className="w-5 h-5 text-primary" />
+          <Sparkles className="w-5 h-5 text-accent" />
           <h2 className="text-lg font-semibold">Guest Preferences</h2>
         </div>
         <p className="text-sm text-muted-foreground">
@@ -52,10 +52,10 @@ export default function GuestPreferencesTab() {
       </div>
 
       {/* Sign-in prompt */}
-      <Card className="border-primary/15 bg-primary/5">
+      <Card className="border-accent/20 bg-accent/5">
         <CardContent className="p-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <User className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+            <User className="w-5 h-5 text-accent" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium">Unlock full personalization</p>
@@ -73,7 +73,7 @@ export default function GuestPreferencesTab() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Gauge className="w-4 h-4 text-primary" />
+            <Gauge className="w-4 h-4 text-accent" />
             <CardTitle className="text-sm">Response Depth</CardTitle>
           </div>
           <CardDescription className="text-xs">How detailed should AI responses be?</CardDescription>
@@ -86,8 +86,8 @@ export default function GuestPreferencesTab() {
                 onClick={() => setPreferences({ responseDepth: depth })}
                 className={`px-3 py-2.5 rounded-lg border text-xs font-medium transition-all ${
                   preferences.responseDepth === depth
-                    ? "border-accent bg-primary/10 text-primary"
-                    : "border-border hover:border-primary/20 text-muted-foreground hover:text-foreground"
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {depth === "brief" && "Brief"}
@@ -108,7 +108,7 @@ export default function GuestPreferencesTab() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Smile className="w-4 h-4 text-primary" />
+            <Smile className="w-4 h-4 text-accent" />
             <CardTitle className="text-sm">Tone</CardTitle>
           </div>
           <CardDescription className="text-xs">How should the AI communicate with you?</CardDescription>
@@ -121,8 +121,8 @@ export default function GuestPreferencesTab() {
                 onClick={() => setPreferences({ tone })}
                 className={`px-3 py-2.5 rounded-lg border text-xs font-medium transition-all ${
                   preferences.tone === tone
-                    ? "border-accent bg-primary/10 text-primary"
-                    : "border-border hover:border-primary/20 text-muted-foreground hover:text-foreground"
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tone === "professional" && "Professional"}
@@ -138,7 +138,7 @@ export default function GuestPreferencesTab() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Type className="w-4 h-4 text-primary" />
+            <Type className="w-4 h-4 text-accent" />
             <CardTitle className="text-sm">Language Style</CardTitle>
           </div>
           <CardDescription className="text-xs">How technical should the language be?</CardDescription>
@@ -164,7 +164,7 @@ export default function GuestPreferencesTab() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <ListChecks className="w-4 h-4 text-primary" />
+            <ListChecks className="w-4 h-4 text-accent" />
             <CardTitle className="text-sm">Response Format</CardTitle>
           </div>
           <CardDescription className="text-xs">How should responses be structured?</CardDescription>
@@ -191,7 +191,7 @@ export default function GuestPreferencesTab() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <BookOpen className="w-4 h-4 text-primary" />
+              <BookOpen className="w-4 h-4 text-accent" />
               <div>
                 <p className="text-sm font-medium">Include Examples</p>
                 <p className="text-xs text-muted-foreground">Add practical examples to explanations</p>
@@ -209,7 +209,7 @@ export default function GuestPreferencesTab() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-primary" />
+            <Target className="w-4 h-4 text-accent" />
             <CardTitle className="text-sm">Focus Areas</CardTitle>
           </div>
           <CardDescription className="text-xs">Select topics you're most interested in</CardDescription>
@@ -222,8 +222,8 @@ export default function GuestPreferencesTab() {
                 onClick={() => toggleFocusArea(opt.value)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
                   preferences.focusAreas.includes(opt.value)
-                    ? "border-accent bg-primary/10 text-primary"
-                    : "border-border hover:border-primary/20 text-muted-foreground hover:text-foreground"
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {opt.icon}

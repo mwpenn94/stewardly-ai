@@ -513,7 +513,7 @@ export default function AIQuizPage() {
                 {/* Question card */}
                 <div className="bg-card border border-border rounded-2xl p-6 mb-6">
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary text-primary-foreground uppercase">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent text-accent-foreground uppercase">
                       {currentQ.questionType.replace("_", " ")}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{
@@ -547,7 +547,7 @@ export default function AIQuizPage() {
                             onClick={() => handleMCAnswer(i)}
                             disabled={showExplanation}
                             className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3 ${borderColor} ${bgColor} ${
-                              !showExplanation ? "hover:border-primary/50 hover:bg-primary/50" : ""
+                              !showExplanation ? "hover:border-primary/50 hover:bg-accent/50" : ""
                             }`}
                           >
                             <span className="w-7 h-7 rounded-lg border border-border flex items-center justify-center text-xs font-mono shrink-0 mt-0.5">
@@ -595,7 +595,7 @@ export default function AIQuizPage() {
                         exit={{ opacity: 0, height: 0 }}
                         className="mt-6 overflow-hidden"
                       >
-                        <div className="p-4 rounded-xl bg-primary/50 border border-border">
+                        <div className="p-4 rounded-xl bg-accent/50 border border-border">
                           <div className="flex items-center gap-2 mb-2">
                             <Lightbulb className="w-4 h-4 text-primary" />
                             <span className="text-sm font-semibold" style={{ fontFamily: "var(--font-display)" }}>Explanation</span>

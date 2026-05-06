@@ -27,7 +27,7 @@ interface Particle {
 }
 
 const COLORS = [
-  "oklch(0.6565 0.1863 251.8)",   // manus blue
+  "oklch(0.76 0.14 80)",   // stewardship gold
   "oklch(0.65 0.17 160)",  // emerald
   "oklch(0.72 0.15 85)",   // amber
   "oklch(0.6 0.15 300)",   // purple

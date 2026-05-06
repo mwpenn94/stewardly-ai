@@ -62,7 +62,7 @@ export interface PlanReviewPanelProps {
 
 const STATUS_STYLE: Record<PlanStepStatus, { cls: string; label: string; Icon?: typeof CheckCircle2 }> = {
   pending: { cls: "text-muted-foreground", label: "pending" },
-  approved: { cls: "text-primary", label: "approved" },
+  approved: { cls: "text-accent", label: "approved" },
   executing: { cls: "text-chart-3 animate-pulse", label: "running", Icon: Loader2 },
   done: { cls: "text-emerald-500", label: "done", Icon: CheckCircle2 },
   failed: { cls: "text-destructive", label: "failed", Icon: XCircle },
@@ -141,16 +141,16 @@ export default function PlanReviewPanel({
 
   return (
     <div
-      className="my-3 rounded-xl border border-primary/20 bg-primary/5 overflow-hidden"
+      className="my-3 rounded-xl border border-accent/30 bg-accent/5 overflow-hidden"
       role="region"
       aria-label={`Plan: ${plan.title}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-primary/15 bg-primary/10">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-accent/20 bg-accent/10">
         <div className="flex items-center gap-2 min-w-0">
           <Badge
             variant="outline"
-            className="text-[9px] h-4 px-1.5 border-primary/30 text-primary uppercase"
+            className="text-[9px] h-4 px-1.5 border-accent/50 text-accent uppercase"
           >
             Plan
           </Badge>
@@ -276,7 +276,7 @@ export default function PlanReviewPanel({
                 <div className="flex items-center gap-0.5 opacity-0 group-hover/step:opacity-100 transition-opacity shrink-0">
                   <button type="button"
                     
-                    className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground"
+                    className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
                     onClick={() => onChange(reorderStep(plan, step.id, "up"))}
                     disabled={idx === 0}
                     aria-label={`Move step ${idx + 1} up`}
@@ -286,7 +286,7 @@ export default function PlanReviewPanel({
                   </button>
                   <button type="button"
                     
-                    className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground"
+                    className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
                     onClick={() => onChange(reorderStep(plan, step.id, "down"))}
                     disabled={idx === plan.steps.length - 1}
                     aria-label={`Move step ${idx + 1} down`}
@@ -296,7 +296,7 @@ export default function PlanReviewPanel({
                   </button>
                   <button type="button"
                     
-                    className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground"
+                    className="p-1 rounded hover:bg-accent/10 text-muted-foreground hover:text-foreground"
                     onClick={() => startEdit(step)}
                     aria-label={`Edit step ${idx + 1}`}
                     title="Edit"
@@ -402,7 +402,7 @@ export default function PlanReviewPanel({
             size="sm"
             onClick={handleApprove}
             disabled={plan.steps.length === 0}
-            className="h-7 text-[11px] bg-primary text-primary-foreground hover:bg-primary/90"
+            className="h-7 text-[11px] bg-accent text-accent-foreground hover:bg-accent/90"
             aria-label="Approve and execute plan"
           >
             <Play className="h-3 w-3 mr-1" /> Approve &amp; Execute

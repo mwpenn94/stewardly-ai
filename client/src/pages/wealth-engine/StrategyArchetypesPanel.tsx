@@ -53,7 +53,7 @@ export default function StrategyArchetypesPanel() {
     <div className="space-y-6 p-4">
       <div>
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <Target className="w-5 h-5 text-primary" /> Strategy Archetypes & Leader Personas
+          <Target className="w-5 h-5 text-accent" /> Strategy Archetypes & Leader Personas
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           Explore 10 financial services strategy archetypes with leader personas, 12 strategy categories,
@@ -77,7 +77,7 @@ export default function StrategyArchetypesPanel() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {archetypes.map(a => (
-                <Card key={a.id} className="bg-card/60 border-accent/10 hover:border-primary/20 transition-colors cursor-pointer"
+                <Card key={a.id} className="bg-card/60 border-accent/10 hover:border-accent/30 transition-colors cursor-pointer"
                   onClick={() => { setSelectedArchetype(a.id); setActiveTab("detail"); }}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -112,7 +112,7 @@ export default function StrategyArchetypesPanel() {
                       <div className="flex gap-1">
                         <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2"
                           onClick={(e) => { e.stopPropagation(); toggleCompare(a.id); }}>
-                          {compareIds.includes(a.id) ? <CheckCircle2 className="w-3 h-3 text-primary" /> : "Compare"}
+                          {compareIds.includes(a.id) ? <CheckCircle2 className="w-3 h-3 text-accent" /> : "Compare"}
                         </Button>
                         <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 gap-1">
                           Details <ArrowRight className="w-3 h-3" />
@@ -156,7 +156,7 @@ export default function StrategyArchetypesPanel() {
                           {s.applicableArchetypes.map(aId => {
                             const arch = archetypes.find(a => a.id === aId);
                             return arch ? (
-                              <Badge key={aId} variant="outline" className="text-[8px] cursor-pointer hover:bg-primary/15"
+                              <Badge key={aId} variant="outline" className="text-[8px] cursor-pointer hover:bg-accent/20"
                                 onClick={() => { setSelectedArchetype(aId); setActiveTab("detail"); }}>
                                 {arch.leaderName}
                               </Badge>
@@ -254,7 +254,7 @@ export default function StrategyArchetypesPanel() {
                                 </span>
                               </td>
                             ))}
-                            <td className="p-1.5 text-center font-semibold text-primary">{row.bestFit}</td>
+                            <td className="p-1.5 text-center font-semibold text-accent">{row.bestFit}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -319,11 +319,11 @@ export default function StrategyArchetypesPanel() {
           ) : matchQ.data ? (
             <div className="space-y-3">
               {matchQ.data.map((m, i) => (
-                <Card key={m.archetype.id} className={`bg-card/60 ${i === 0 ? "border-primary/25" : "border-accent/10"}`}>
+                <Card key={m.archetype.id} className={`bg-card/60 ${i === 0 ? "border-accent/40" : "border-accent/10"}`}>
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        {i === 0 && <Badge className="bg-primary text-primary-foreground text-[9px]">Best Match</Badge>}
+                        {i === 0 && <Badge className="bg-accent text-accent-foreground text-[9px]">Best Match</Badge>}
                         <span className="text-sm font-medium">{m.archetype.name}</span>
                         <span className="text-[10px] text-muted-foreground">({m.archetype.leaderName})</span>
                       </div>
@@ -374,7 +374,7 @@ export default function StrategyArchetypesPanel() {
           ) : detailQ.data?.archetype ? (
             <div className="space-y-4">
               {/* Archetype Detail Card */}
-              <Card className="bg-card/60 border-primary/15">
+              <Card className="bg-card/60 border-accent/20">
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{detailQ.data.archetype.name}</CardTitle>
@@ -390,7 +390,7 @@ export default function StrategyArchetypesPanel() {
                       <p className="text-[10px] font-medium text-muted-foreground mb-1">Characteristics</p>
                       {detailQ.data.archetype.characteristics.map(c => (
                         <div key={c} className="flex items-start gap-1 text-[11px]">
-                          <CheckCircle2 className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                          <CheckCircle2 className="w-3 h-3 text-accent mt-0.5 shrink-0" />
                           <span>{c}</span>
                         </div>
                       ))}

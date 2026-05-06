@@ -125,9 +125,9 @@ export function ChatInputBar({
         {input.startsWith("/") && !input.startsWith("//") && (
           <div
             aria-hidden="true"
-            className="mb-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[11px] text-muted-foreground flex items-center gap-3 overflow-x-auto"
+            className="mb-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-[11px] text-muted-foreground flex items-center gap-3 overflow-x-auto"
           >
-            <span className="font-medium text-primary shrink-0">Try:</span>
+            <span className="font-medium text-accent shrink-0">Try:</span>
             <kbd className="px-1.5 py-0.5 rounded bg-card/80 border border-border/60 text-[10px] font-mono shrink-0">
               /go learning
             </kbd>
@@ -144,7 +144,7 @@ export function ChatInputBar({
         )}
 
         {/* Textarea */}
-        <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-border focus-within:border-primary/25 focus-within:shadow-[0_0_0_1px_oklch(0.68_0.16_230_/_0.15)] transition-all px-3 py-1.5">
+        <div data-tour="chat-input" className="relative bg-secondary/30 rounded-2xl border border-border focus-within:border-accent/40 focus-within:shadow-[0_0_0_1px_oklch(0.68_0.16_230_/_0.15)] transition-all px-3 py-1.5">
           <Textarea
             ref={textareaRef}
             value={input}
@@ -168,7 +168,7 @@ export function ChatInputBar({
               <TooltipTrigger asChild>
                 <button type="button"
                   className={`p-2.5 rounded-full transition-all ${
-                    showAddMenu ? "bg-primary/15 text-primary rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
+                    showAddMenu ? "bg-accent/20 text-accent rotate-45" : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => setShowAddMenu(!showAddMenu)}
                 >
@@ -253,7 +253,7 @@ export function ChatInputBar({
                     <button type="button"
                       key={opt.value}
                       className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                        selectedFocus.includes(opt.value) ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
+                        selectedFocus.includes(opt.value) ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
                       }`}
                       onClick={() => { toggleFocus(opt.value); setShowModeMenu(false); }}
                     >
@@ -270,7 +270,7 @@ export function ChatInputBar({
                         <button type="button"
                           key={opt.value}
                           className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                            mode === opt.value ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
+                            mode === opt.value ? "bg-accent/15 text-accent" : "hover:bg-secondary/60"
                           }`}
                           onClick={() => { setMode(opt.value); setShowModeMenu(false); }}
                         >
@@ -295,7 +295,7 @@ export function ChatInputBar({
                 data-tour="voice-toggle"
                 className={`p-2.5 rounded-full transition-all ${
                   ttsEnabled
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-accent/15 text-accent"
                     : "hover:bg-secondary/60 text-muted-foreground hover:text-foreground"
                 }`}
                 onClick={() => { setTtsEnabled(!ttsEnabled); ttsCancelFn(); }}
@@ -310,7 +310,7 @@ export function ChatInputBar({
           {isStreaming ? (
             <Button
               size="icon"
-              className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
               disabled
               aria-label="Sending message"
             >
@@ -319,7 +319,7 @@ export function ChatInputBar({
           ) : (input.trim() || attachments.length > 0) ? (
             <Button
               size="icon"
-              className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
+              className="h-10 w-10 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all"
               onClick={onSend}
               aria-label="Send message"
             >

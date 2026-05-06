@@ -389,7 +389,7 @@ export default function LocationHealth() {
               {locations.map((loc) => (
                 <div
                   key={loc.id}
-                  className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-primary/50 transition-colors"
+                  className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-6 gap-2 items-center">
                     {/* Name + Region */}

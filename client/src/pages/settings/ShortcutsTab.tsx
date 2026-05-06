@@ -62,7 +62,7 @@ export default function ShortcutsTab() {
       {/* Header */}
       <div>
         <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Keyboard className="w-5 h-5 text-primary" />
+          <Keyboard className="w-5 h-5 text-accent" />
           Keyboard Shortcuts
         </h2>
         <p className="text-sm text-muted-foreground mt-1">

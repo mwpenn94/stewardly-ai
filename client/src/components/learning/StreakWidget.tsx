@@ -56,7 +56,7 @@ export function StreakWidget({ compact = false, className = "" }: StreakWidgetPr
     return (
       <button
         onClick={() => navigate("/learning")}
-        className={`flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-sm transition-colors hover:bg-primary/50 ${className}`}
+        className={`flex items-center gap-2 rounded-lg border border-border/50 bg-card/50 px-3 py-2 text-sm transition-colors hover:bg-accent/50 ${className}`}
       >
         <Flame className={`h-4 w-4 ${todayComplete ? "text-orange-400" : "text-muted-foreground"}`} />
         <span className="font-medium">{currentStreak} day streak</span>

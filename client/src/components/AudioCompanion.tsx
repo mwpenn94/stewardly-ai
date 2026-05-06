@@ -897,7 +897,7 @@ function AudioCompanionUI() {
                         key={voice.id}
                         type="button"
                         onClick={() => audio.setVoice(voice.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-primary/50 cursor-pointer transition-colors
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-left hover:bg-accent/50 cursor-pointer transition-colors
                           ${voice.id === audio.voiceId ? "bg-primary/10 text-primary" : "text-foreground"}`}
                       >
                         <span className="text-xs font-medium">{voice.label}</span>

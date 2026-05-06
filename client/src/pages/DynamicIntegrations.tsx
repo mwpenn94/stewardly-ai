@@ -182,7 +182,7 @@ export default function DynamicIntegrations() {
           </Button>
           <div>
             <h1 className="text-2xl md:text-3xl font-heading text-foreground flex items-center gap-2">
-              <Plug className="h-6 w-6 text-primary" /> Dynamic Integrations
+              <Plug className="h-6 w-6 text-accent" /> Dynamic Integrations
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               Wire up any data source — with or without docs. Describe it, let AI draft a blueprint,
@@ -214,7 +214,7 @@ export default function DynamicIntegrations() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" /> Describe what you want to ingest
+                  <Sparkles className="h-5 w-5 text-accent" /> Describe what you want to ingest
                 </CardTitle>
                 <CardDescription>
                   Give a plain-English description plus a URL or pasted sample. We'll probe the
@@ -294,7 +294,7 @@ export default function DynamicIntegrations() {
             </Card>
 
             {draftResult && (
-              <Card className="border-primary/30">
+              <Card className="border-accent/50">
                 <CardHeader>
                   <CardTitle className="text-lg">Draft preview</CardTitle>
                   <CardDescription>
@@ -324,7 +324,7 @@ export default function DynamicIntegrations() {
                             {f.nullable && (
                               <span className="text-muted-foreground text-[10px]">nullable</span>
                             )}
-                            {f.unique && <span className="text-primary text-[10px]">unique</span>}
+                            {f.unique && <span className="text-accent text-[10px]">unique</span>}
                           </div>
                         ))}
                       </div>
@@ -414,7 +414,7 @@ export default function DynamicIntegrations() {
             {!list.isLoading && blueprints.length === 0 && (
               <Card className="border-dashed">
                 <CardContent className="py-10 text-center text-muted-foreground">
-                  <FileJson className="h-10 w-10 mx-auto mb-3 text-primary" />
+                  <FileJson className="h-10 w-10 mx-auto mb-3 text-accent" />
                   <div className="font-medium">No blueprints yet</div>
                   <div className="text-sm mt-1">
                     Head to the <strong>Draft</strong> tab to build your first one.
@@ -427,7 +427,7 @@ export default function DynamicIntegrations() {
                 <Card
                   key={bp.id}
                   className={`card-lift cursor-pointer ${
-                    selectedBlueprintId === bp.id ? "ring-2 ring-primary" : ""
+                    selectedBlueprintId === bp.id ? "ring-2 ring-accent" : ""
                   }`}
                   onClick={() => setSelectedBlueprintId(bp.id)}
                 >
@@ -510,7 +510,7 @@ export default function DynamicIntegrations() {
             </div>
 
             {selectedBlueprint && (
-              <Card className="border-primary/30">
+              <Card className="border-accent/50">
                 <CardHeader>
                   <CardTitle className="text-lg">{selectedBlueprint.name}</CardTitle>
                   <CardDescription>{selectedBlueprint.description || "—"}</CardDescription>

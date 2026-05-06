@@ -292,7 +292,7 @@ export default function InsuranceAnalysis() {
                   </div>
                   <div className="flex justify-between mt-1">
                     <span className="text-sm font-medium">Recommended Additional Coverage</span>
-                    <span className={`text-lg font-bold ${dime.recommended === 0 ? "text-emerald-400" : "text-primary"}`}>{fmt(dime.recommended)}</span>
+                    <span className={`text-lg font-bold ${dime.recommended === 0 ? "text-emerald-400" : "text-accent"}`}>{fmt(dime.recommended)}</span>
                   </div>
                 </div>
               </div>

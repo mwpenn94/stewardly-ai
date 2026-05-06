@@ -348,13 +348,13 @@ function ConvItem({ conv, conversationId, navigate, setSidebarOpen, setConversat
   return (
     <DropdownMenu>
       <div
-        className={`group flex items-center gap-2 ${indent ? "pl-6 pr-3" : "px-3"} py-2.5 rounded-xl text-sm cursor-pointer transition-all duration-200 ${
-          conv.id === conversationId ? "bg-primary/10 text-primary" : "hover:bg-secondary/50 text-foreground"
+        className={`group flex items-center gap-2 ${indent ? "pl-6 pr-3" : "px-3"} py-2 rounded-lg text-sm cursor-pointer transition-colors ${
+          conv.id === conversationId ? "bg-accent/10 text-accent" : "hover:bg-secondary/50 text-foreground"
         }`}
         onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
       >
         {dragHandle}
-        {conv.pinned ? <Pin className="w-3.5 h-3.5 shrink-0 text-primary" /> : <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />}
+        {conv.pinned ? <Pin className="w-3.5 h-3.5 shrink-0 text-accent" /> : <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />}
         <span className="truncate flex-1">{conv.title || "New Conversation"}</span>
         <DropdownMenuTrigger asChild>
           <button type="button"

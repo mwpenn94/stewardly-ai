@@ -429,10 +429,10 @@ export function CommandPalette() {
             onMouseLeave={() => voiceInput.isActive && voiceInput.cancel()}
             aria-label={voiceInput.isActive ? "Release to search" : "Hold to speak your search"}
             aria-pressed={voiceInput.isActive}
-            className={`shrink-0 ml-2 min-w-[36px] min-h-[36px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+            className={`shrink-0 ml-2 min-w-[36px] min-h-[36px] rounded-full border flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
               voiceInput.isActive
-                ? "border-accent bg-primary/15 text-primary animate-pulse-glow"
-                : "border-border bg-secondary/30 text-muted-foreground hover:text-primary"
+                ? "border-accent bg-accent/20 text-accent animate-pulse-glow"
+                : "border-border bg-secondary/30 text-muted-foreground hover:text-accent"
             }`}
           >
             {voiceInput.isActive ? (
@@ -499,7 +499,7 @@ export function CommandPalette() {
               keywords={action.keywords}
               onSelect={handleSelect}
             >
-              <span className="text-primary">{action.icon}</span>
+              <span className="text-accent">{action.icon}</span>
               <span>{action.label}</span>
             </CommandItem>
           ))}

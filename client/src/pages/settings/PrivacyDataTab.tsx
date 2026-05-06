@@ -109,7 +109,7 @@ export default function PrivacyDataTab() {
     <div className="space-y-8 max-w-2xl">
       <div>
         <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
+          <Shield className="w-5 h-5 text-accent" />
           Privacy & Data
         </h2>
         <p className="text-sm text-muted-foreground">

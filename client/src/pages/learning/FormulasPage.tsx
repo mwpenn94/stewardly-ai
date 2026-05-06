@@ -213,7 +213,7 @@ export default function FormulasPage() {
                               {variables.map((v: string) => (
                                 <span
                                   key={v}
-                                  className="text-xs px-2 py-1 rounded-md border border-border bg-primary text-primary-foreground"
+                                  className="text-xs px-2 py-1 rounded-md border border-border bg-accent text-accent-foreground"
                                 >
                                   {v}
                                 </span>

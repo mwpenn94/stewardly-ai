@@ -54,7 +54,7 @@ interface ChangelogRelease {
 }
 
 export const CATEGORY_STYLES: Record<ChangeCategory, { label: string; className: string }> = {
-  feature:     { label: "New",         className: "bg-primary/10 text-primary border-primary/20" },
+  feature:     { label: "New",         className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
   fix:         { label: "Fix",         className: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
   improvement: { label: "Improved",    className: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
   security:    { label: "Security",    className: "bg-purple-500/15 text-purple-400 border-purple-500/30" },
@@ -71,21 +71,21 @@ export const CHANGELOG: ChangelogRelease[] = [
         title: "What's New modal",
         description:
           "Returning users now see a polished modal highlighting the latest platform updates on first login after changes. Participates in the popup queue so it never stacks with the consent banner or onboarding tour.",
-        icon: <Bell className="w-5 h-5 text-primary" />,
+        icon: <Bell className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Global search results page",
         description:
           "Ctrl+K command palette now links to a dedicated /search page showing full results across conversations, documents, contacts, and calculator scenarios with relevance scoring and highlighted matches.",
-        icon: <Search className="w-5 h-5 text-primary" />,
+        icon: <Search className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Enhanced client portal",
         description:
           "The read-only shared plan view at /plan/:token now includes branded PDF export, advisor branding header, and a more polished responsive layout for client-facing presentations.",
-        icon: <Share2 className="w-5 h-5 text-primary" />,
+        icon: <Share2 className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "improvement",
@@ -99,14 +99,14 @@ export const CHANGELOG: ChangelogRelease[] = [
         title: "Real-time WebSocket updates",
         description:
           "Data Engine Dashboard and Client Activity Timeline now support live mode with WebSocket-driven updates, connection status indicators, and event history.",
-        icon: <Wifi className="w-5 h-5 text-primary" />,
+        icon: <Wifi className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Keyboard shortcuts expanded",
         description:
           "25 keyboard shortcuts across 4 categories with search/filter overlay. 9 new G-chord navigation shortcuts for instant page jumping.",
-        icon: <Keyboard className="w-5 h-5 text-primary" />,
+        icon: <Keyboard className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "improvement",
@@ -141,7 +141,7 @@ export const CHANGELOG: ChangelogRelease[] = [
         title: "Silent token refresh",
         description:
           "Session tokens are automatically refreshed 5 minutes before expiry. This is user-togglable in Settings and enabled by default. Cross-tab sync ensures all open tabs stay authenticated.",
-        icon: <RefreshCw className="w-5 h-5 text-primary" />,
+        icon: <RefreshCw className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "improvement",
@@ -162,28 +162,28 @@ export const CHANGELOG: ChangelogRelease[] = [
         title: "Sentry error tracking",
         description:
           "Production error monitoring is now active via @sentry/node. Crashes, unhandled rejections, and server errors are automatically captured and reported.",
-        icon: <Shield className="w-5 h-5 text-primary" />,
+        icon: <Shield className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "131 new database tables deployed",
         description:
           "Full schema deployment brings the database to 270 tables — unlocking CRM, guardrails, event bus, tenant context, accessible charts, and more service features.",
-        icon: <Zap className="w-5 h-5 text-primary" />,
+        icon: <Zap className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Shared navigation config",
         description:
           "Sidebar navigation is now driven by a single source of truth. Both Chat and AppShell consume the same config — no more drift between pages.",
-        icon: <Layout className="w-5 h-5 text-primary" />,
+        icon: <Layout className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Mobile swipe gestures",
         description:
           "Swipe right from the left edge to open the sidebar, swipe left to close it. Works on all pages for screens under 1024px.",
-        icon: <Globe className="w-5 h-5 text-primary" />,
+        icon: <Globe className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "improvement",
@@ -253,14 +253,14 @@ export const CHANGELOG: ChangelogRelease[] = [
         title: "Keyboard shortcuts overlay",
         description:
           "Press ? from anywhere to see all available keyboard shortcuts. Navigate the entire platform without touching the mouse — press G then a letter to jump to any page.",
-        icon: <Keyboard className="w-5 h-5 text-primary" />,
+        icon: <Keyboard className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Full keyboard navigation",
         description:
           "10 new G-then-X shortcuts let you jump to Operations (G O), Intelligence (G I), Advisory (G A), Relationships (G R), Market Data (G M), Documents (G D), and more — from any page.",
-        icon: <Globe className="w-5 h-5 text-primary" />,
+        icon: <Globe className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "improvement",
@@ -288,14 +288,14 @@ export const CHANGELOG: ChangelogRelease[] = [
         title: "Multi-tool AI conversations",
         description:
           "The AI advisor can now chain up to 5 tools in a single turn — run a retirement readiness model, then a tax efficiency check, then estate planning, all without you asking separately.",
-        icon: <Sparkles className="w-5 h-5 text-primary" />,
+        icon: <Sparkles className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Offline detection & auto-reconnect",
         description:
           "A non-intrusive banner now appears when your connection drops and auto-dismisses when you're back online. No more silent failures.",
-        icon: <Wifi className="w-5 h-5 text-primary" />,
+        icon: <Wifi className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "improvement",
@@ -337,28 +337,28 @@ export const CHANGELOG: ChangelogRelease[] = [
         title: "Intelligence Hub",
         description:
           "A new centralized hub for AI models, data insights, and analytics. View model status, run history, and data source health in one place.",
-        icon: <Brain className="w-5 h-5 text-primary" />,
+        icon: <Brain className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Real-time market data",
         description:
           "Live quotes, economic indicators from FRED, BLS, BEA, and Census data — all piped through the Market Data page with auto-refresh.",
-        icon: <TrendingUp className="w-5 h-5 text-primary" />,
+        icon: <TrendingUp className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Document management",
         description:
           "Upload, organize, and search documents with AI-powered tagging. Supports bulk operations, version history, and client-linked filing.",
-        icon: <FileText className="w-5 h-5 text-primary" />,
+        icon: <FileText className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "feature",
         title: "Relationship management",
         description:
           "Track client relationships, household structures, and service tiers. Integrated with the AI advisor for context-aware recommendations.",
-        icon: <Users className="w-5 h-5 text-primary" />,
+        icon: <Users className="w-5 h-5 text-emerald-400" />,
       },
       {
         category: "security",
@@ -470,8 +470,8 @@ export default function WhatsNewModal({ forceOpen }: WhatsNewModalProps) {
         <div className="relative px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 bg-gradient-to-br from-primary/10 via-accent/5 to-transparent shrink-0">
           <DialogHeader className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-primary" />
+              <div className="w-8 h-8 rounded-lg bg-accent/15 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-accent" />
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold">What's New</DialogTitle>

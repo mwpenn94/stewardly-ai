@@ -81,7 +81,7 @@ function genRange(min: number, max: number, step: number, steps: number): number
 }
 
 function heatColor(value: number, min: number, max: number): string {
-  if (max === min) return "oklch(0.6565 0.1863 251.8)"; // accent gold
+  if (max === min) return "oklch(0.76 0.14 80)"; // accent gold
   const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
   // Green (high) → Gold (mid) → Red (low)
   if (pct > 0.5) {
@@ -254,7 +254,7 @@ export default function WhatIfSensitivity({ embedded = false }: { embedded?: boo
         {/* Header */}
         <div>
           <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
-            <Grid3x3 className="h-6 w-6 text-primary" />
+            <Grid3x3 className="h-6 w-6 text-accent" />
             What-If Sensitivity Analysis
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -262,7 +262,7 @@ export default function WhatIfSensitivity({ embedded = false }: { embedded?: boo
             Each cell runs the full holistic engine.
           </p>
           {sharedProfile.annualIncome != null && (
-            <p className="text-[10px] text-primary mt-1 flex items-center gap-1">
+            <p className="text-[10px] text-accent mt-1 flex items-center gap-1">
               <Info className="h-3 w-3" />
               Using your shared financial profile (age {liveProfile.age}, income ${(liveProfile.income / 1000).toFixed(0)}K).
               Edit on any planning page to update.

@@ -49,17 +49,17 @@ export default function MarketData({ embedded = false }: { embedded?: boolean } 
   );
 
   if (authLoading) {
-    return <Shell title="Market Data"><div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div></Shell>;
+    return <Shell title="Market Data"><div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div></Shell>;
       <SEOHead title="Market Data" description="Real-time market data and financial quotes" />
   }
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4">
-        <BarChart3 className="w-12 h-12 text-primary mb-4" />
+        <BarChart3 className="w-12 h-12 text-accent mb-4" />
         <h1 className="text-xl font-semibold mb-2">Market Data</h1>
         <p className="text-muted-foreground text-sm mb-4">Sign in to access real-time market data</p>
-        <Button className="bg-primary text-primary-foreground" onClick={() => window.location.href = getLoginUrl()}>Sign In</Button>
+        <Button className="bg-accent text-accent-foreground" onClick={() => window.location.href = getLoginUrl()}>Sign In</Button>
       </div>
     );
   }
@@ -73,7 +73,8 @@ export default function MarketData({ embedded = false }: { embedded?: boolean } 
     <Shell title="Market Data">
     <div className="min-h-screen">
       <header className="border-b border-border px-4 py-3 flex items-center gap-3 relative overflow-hidden">
-        <BarChart3 className="w-5 h-5 text-primary relative" />
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
+        <BarChart3 className="w-5 h-5 text-accent relative" />
         <h1 className="text-lg font-semibold relative">Market Data</h1>
         <div className="ml-auto flex items-center gap-2">
           <ShareButton contentType="market-view" contentId="watchlist" contentTitle="Market Watchlist" />
@@ -97,15 +98,15 @@ export default function MarketData({ embedded = false }: { embedded?: boolean } 
               className="pl-9"
             />
           </div>
-          <Button onClick={handleSearch} className="bg-primary text-primary-foreground">Look Up</Button>
+          <Button onClick={handleSearch} className="bg-accent text-accent-foreground">Look Up</Button>
         </div>
 
         {/* Selected symbol detail */}
         {selectedSymbol && (
-          <Card className="border-primary/20">
+          <Card className="border-accent/30">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-primary" />
+                <Activity className="w-5 h-5 text-accent" />
                 {selectedSymbol}
                 {detailQuery.isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
               </CardTitle>
@@ -159,7 +160,7 @@ export default function MarketData({ embedded = false }: { embedded?: boolean } 
               (Array.isArray(quotesQuery.data) ? quotesQuery.data : []).map((q: any, idx: number) => (
                 <Card
                   key={q.symbol || idx}
-                  className={`cursor-pointer transition-all hover:border-primary/25 ${selectedSymbol === q.symbol ? "border-primary/40 bg-primary/5" : ""}`}
+                  className={`cursor-pointer transition-all hover:border-accent/40 ${selectedSymbol === q.symbol ? "border-accent/60 bg-accent/5" : ""}`}
                   onClick={() => setSelectedSymbol(q.symbol)}
                 >
                   <CardContent className="p-4">
@@ -203,7 +204,7 @@ export default function MarketData({ embedded = false }: { embedded?: boolean } 
                   { code: "CM.MKT.LCAP.GD.ZS", name: "Market Cap/GDP", icon: "%" },
                   { code: "BX.KLT.DINV.CD.WD", name: "FDI Inflows", icon: "$" },
                 ].map(ind => (
-                  <div key={ind.code} className="p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-primary/5 transition-colors">
+                  <div key={ind.code} className="p-3 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/5 transition-colors">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-mono text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{ind.icon}</span>
                       <span className="text-xs font-medium truncate">{ind.name}</span>

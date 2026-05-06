@@ -176,7 +176,7 @@ export default function IntelligenceHubV2() {
                 </nav>
               </div>
             </div>
-            <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+            <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-accent" /></div>}>
               {activeTab === "overview" && <IntelligenceOverview embedded />}
               {activeTab === "market-data" && <MarketData embedded />}
               {activeTab === "product-intelligence" && <ProductIntelligence embedded />}

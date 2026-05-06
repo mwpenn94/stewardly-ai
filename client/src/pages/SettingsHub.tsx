@@ -29,9 +29,8 @@ import VoiceTab from "./settings/VoiceTab";
 import ConnectedAccountsTab from "./settings/ConnectedAccountsTab";
 import ShortcutsTab from "./settings/ShortcutsTab";
 import { LanguageTab } from "./settings/LanguageTab";
-import BYOModelTab from "./settings/BYOModelTab";
 
-type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts" | "shortcuts" | "language" | "byo-model";
+type SettingsTab = "profile" | "suitability" | "knowledge" | "ai-tuning" | "voice" | "notifications" | "appearance" | "guest-prefs" | "privacy" | "data-sharing" | "connected-accounts" | "shortcuts" | "language";
 
 interface NavItem { id: SettingsTab; label: string; icon: React.ElementType; slug: string; }
 interface NavSection { group: string; items: NavItem[]; }
@@ -45,7 +44,6 @@ const NAV_SECTIONS: NavSection[] = [
   { group: "AI & Knowledge", items: [
     { id: "knowledge", label: "Knowledge Base", icon: FileText, slug: "knowledge" },
     { id: "ai-tuning", label: "AI Tuning", icon: Sparkles, slug: "ai-tuning" },
-    { id: "byo-model" as SettingsTab, label: "BYO Model", icon: Brain, slug: "byo-model" },
     { id: "voice", label: "Voice & Speech", icon: Mic, slug: "voice" },
   ]},
   { group: "Preferences", items: [
@@ -101,7 +99,7 @@ export default function SettingsHub() {
       <AppShell title={tr("common.settings")}>
         <SEOHead title={tr("common.settings")} description={tr("settings.description", "Account settings and preferences")} />
         <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <Loader2 className="w-6 h-6 animate-spin text-accent" />
         </div>
       </AppShell>
     );
@@ -207,8 +205,8 @@ export default function SettingsHub() {
             </div>
             {needsAuth ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <User className="w-8 h-8 text-primary" />
+                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-4">
+                  <User className="w-8 h-8 text-accent" />
                 </div>
                 <h2 className="text-lg font-semibold mb-2">Sign in to access {ALL_ITEMS.find(t => t.id === activeTab)?.label}</h2>
                 <p className="text-sm text-muted-foreground mb-6 max-w-sm">
@@ -238,7 +236,6 @@ export default function SettingsHub() {
                 {activeTab === "data-sharing" && <DataSharingTab />}
                 {activeTab === "shortcuts" && <ShortcutsTab />}
                 {activeTab === "language" && <LanguageTab />}
-                {activeTab === "byo-model" && <BYOModelTab />}
               </>
             )}
           </div>

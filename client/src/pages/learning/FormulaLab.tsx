@@ -412,7 +412,7 @@ export default function FormulaLab() {
                       <h2 className="text-lg font-bold" style={{ fontFamily: "var(--font-display)" }}>{selectedFormula.name}</h2>
                       <p className="text-xs text-muted-foreground">{selectedFormula.description}</p>
                     </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-primary text-primary-foreground">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent text-accent-foreground">
                       {selectedFormula.category}
                     </span>
                   </div>

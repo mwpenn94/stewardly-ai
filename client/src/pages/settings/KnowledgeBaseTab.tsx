@@ -227,7 +227,7 @@ export default function KnowledgeBaseTab() {
             <Upload className="w-3.5 h-3.5" /> Upload Files
           </CardTitle>
           <CardDescription className="text-xs flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-primary" />
+            <Sparkles className="w-3 h-3 text-accent" />
             AI automatically categorizes your uploads — just drop files and go.
           </CardDescription>
         </CardHeader>
@@ -241,31 +241,31 @@ export default function KnowledgeBaseTab() {
             onClick={() => !uploading && fileInputRef.current?.click()}
             className={`relative cursor-pointer rounded-xl border-2 border-dashed transition-all duration-200 p-6 text-center ${
               isDragOver
-                ? "border-accent bg-primary/10 scale-[1.01] shadow-lg shadow-accent/10"
-                : "border-border/60 hover:border-primary/25 hover:bg-primary/5"
+                ? "border-accent bg-accent/10 scale-[1.01] shadow-lg shadow-accent/10"
+                : "border-border/60 hover:border-accent/40 hover:bg-accent/5"
             } ${uploading ? "opacity-60 pointer-events-none" : ""}`}
           >
             {isDragOver && (
-              <div className="absolute inset-0 rounded-xl bg-primary/5 backdrop-blur-[1px] flex items-center justify-center z-10">
+              <div className="absolute inset-0 rounded-xl bg-accent/5 backdrop-blur-[1px] flex items-center justify-center z-10">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center animate-pulse">
-                    <Upload className="w-6 h-6 text-primary" />
+                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center animate-pulse">
+                    <Upload className="w-6 h-6 text-accent" />
                   </div>
-                  <p className="text-sm font-medium text-primary">Drop files here</p>
+                  <p className="text-sm font-medium text-accent">Drop files here</p>
                 </div>
               </div>
             )}
             <div className="flex flex-col items-center gap-2">
               {uploading ? (
                 <>
-                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                  <Loader2 className="w-8 h-8 text-accent animate-spin" />
                   <p className="text-sm font-medium">Uploading {uploadCount} file{uploadCount !== 1 ? "s" : ""}...</p>
                   <p className="text-[10px] text-muted-foreground">AI is categorizing your documents</p>
                 </>
               ) : (
                 <>
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Upload className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                    <Upload className="w-5 h-5 text-accent" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">Drag & drop files here</p>
@@ -301,8 +301,8 @@ export default function KnowledgeBaseTab() {
                   onClick={() => setVisibility(v.value)}
                   className={`text-left p-2 rounded-lg border transition-all text-xs ${
                     visibility === v.value
-                      ? "border-primary/30 bg-primary/5"
-                      : "border-border/50 hover:border-primary/15"
+                      ? "border-accent/50 bg-accent/5"
+                      : "border-border/50 hover:border-accent/20"
                   }`}
                 >
                   <div className="flex items-center gap-1.5">
@@ -417,7 +417,7 @@ export default function KnowledgeBaseTab() {
               <div className="p-2.5 rounded-lg bg-secondary/50">
                 <p className="text-[9px] text-muted-foreground">Category</p>
                 <p className="text-xs font-medium flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-primary" />
+                  <Sparkles className="w-3 h-3 text-accent" />
                   {CATEGORIES.find(c => c.value === selectedDoc?.category)?.label || selectedDoc?.category}
                 </p>
               </div>
@@ -439,7 +439,7 @@ export default function KnowledgeBaseTab() {
               <a
                 href={selectedDoc.fileUrl}
                 target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline"
               >
                 <FileText className="w-3 h-3" /> View original file
               </a>

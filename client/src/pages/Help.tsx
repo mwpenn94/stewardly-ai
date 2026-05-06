@@ -571,8 +571,9 @@ export default function Help() {
     <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm sticky top-0 z-30 relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 20% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
-          <HelpCircle className="w-4 h-4 text-primary shrink-0" />
+          <HelpCircle className="w-4 h-4 text-accent shrink-0" />
           <h1 className="text-sm font-semibold truncate">Help & Platform Guide</h1>
         </div>
       </div>
@@ -580,8 +581,8 @@ export default function Help() {
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* Hero */}
         <div className="text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-            <BookOpen className="w-7 h-7 text-primary" />
+          <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
+            <BookOpen className="w-7 h-7 text-accent" />
           </div>
           <h2 className="text-2xl font-bold">Stewardly Platform Guide</h2>
           <p className="text-muted-foreground text-sm max-w-lg mx-auto">
@@ -611,7 +612,7 @@ export default function Help() {
                     onClick={() => toggleGuideSection(si)}
                     className="w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/20 transition-colors"
                   >
-                    <div className="mt-0.5 shrink-0 p-1.5 rounded-md bg-primary/10 text-primary">
+                    <div className="mt-0.5 shrink-0 p-1.5 rounded-md bg-accent/10 text-accent">
                       {section.icon}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -630,10 +631,10 @@ export default function Help() {
                       {section.features.map((feat, fi) => (
                         <div
                           key={fi}
-                          className={`flex items-start gap-2 p-2 rounded-md ${feat.route ? "hover:bg-primary/5 cursor-pointer" : ""}`}
+                          className={`flex items-start gap-2 p-2 rounded-md ${feat.route ? "hover:bg-accent/5 cursor-pointer" : ""}`}
                           onClick={() => feat.route && navigate(feat.route)}
                         >
-                          <CheckCircle className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                          <CheckCircle className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
                           <div>
                             <p className="text-xs font-medium flex items-center gap-1.5">
                               {feat.name}
@@ -653,25 +654,25 @@ export default function Help() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4">
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-primary">134</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">134</p>
                   <p className="text-[10px] text-muted-foreground">Pages</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-primary">357+</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">357+</p>
                   <p className="text-[10px] text-muted-foreground">Services</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-primary">97</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">97</p>
                   <p className="text-[10px] text-muted-foreground">API Routers</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-3 text-center">
-                  <p className="text-2xl font-bold font-mono tabular-nums text-primary">8,366+</p>
+                  <p className="text-2xl font-bold font-mono tabular-nums text-accent">8,366+</p>
                   <p className="text-[10px] text-muted-foreground">Tests Passing</p>
                 </CardContent>
               </Card>
@@ -697,8 +698,8 @@ export default function Help() {
                 onClick={() => setActiveCategory(null)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
                   !activeCategory
-                    ? "border-accent bg-primary/10 text-primary"
-                    : "border-border hover:border-primary/20 text-muted-foreground hover:text-foreground"
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
                 }`}
               >
                 All Topics
@@ -709,8 +710,8 @@ export default function Help() {
                   onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
                     activeCategory === cat
-                      ? "border-accent bg-primary/10 text-primary"
-                      : "border-border hover:border-primary/20 text-muted-foreground hover:text-foreground"
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-border hover:border-accent/30 text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {CATEGORY_ICONS[cat]}
@@ -737,7 +738,7 @@ export default function Help() {
                         onClick={() => toggleExpand(globalIndex)}
                         className="w-full flex items-start gap-3 p-4 text-left hover:bg-secondary/20 transition-colors"
                       >
-                        <div className="mt-0.5 shrink-0 text-primary">
+                        <div className="mt-0.5 shrink-0 text-accent">
                           {CATEGORY_ICONS[faq.category] || <HelpCircle className="w-4 h-4" />}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -776,7 +777,7 @@ export default function Help() {
                 <Card key={li}>
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-2">
-                      <div className="p-1.5 rounded-md bg-primary/10 text-primary">{layer.icon}</div>
+                      <div className="p-1.5 rounded-md bg-accent/10 text-accent">{layer.icon}</div>
                       <CardTitle className="text-sm">{layer.name}</CardTitle>
                     </div>
                   </CardHeader>
@@ -784,7 +785,7 @@ export default function Help() {
                     <ul className="space-y-1.5">
                       {layer.items.map((item, ii) => (
                         <li key={ii} className="flex items-start gap-2 text-xs text-muted-foreground">
-                          <CheckCircle className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                          <CheckCircle className="w-3 h-3 text-accent shrink-0 mt-0.5" />
                           {item}
                         </li>
                       ))}
@@ -798,7 +799,7 @@ export default function Help() {
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-primary/10 text-primary"><Cpu className="w-4 h-4" /></div>
+                  <div className="p-1.5 rounded-md bg-accent/10 text-accent"><Cpu className="w-4 h-4" /></div>
                   <CardTitle className="text-sm">Technology Stack</CardTitle>
                 </div>
               </CardHeader>
@@ -825,7 +826,7 @@ export default function Help() {
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-md bg-primary/10 text-primary"><Globe className="w-4 h-4" /></div>
+                  <div className="p-1.5 rounded-md bg-accent/10 text-accent"><Globe className="w-4 h-4" /></div>
                   <CardTitle className="text-sm">External Integrations</CardTitle>
                 </div>
               </CardHeader>
@@ -840,7 +841,7 @@ export default function Help() {
                     "Census API", "SEC EDGAR", "FINRA BrokerCheck",
                   ].map((name, ni) => (
                     <div key={ni} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <CheckCircle className="w-3 h-3 text-primary shrink-0" />
+                      <CheckCircle className="w-3 h-3 text-accent shrink-0" />
                       {name}
                     </div>
                   ))}
@@ -854,7 +855,7 @@ export default function Help() {
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
-                  <Send className="w-5 h-5 text-primary" />
+                  <Send className="w-5 h-5 text-accent" />
                   <CardTitle>Contact Support</CardTitle>
                 </div>
                 <CardDescription>
@@ -919,27 +920,27 @@ export default function Help() {
 
             {/* Quick links */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Card className="hover:border-primary/20 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/chat")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/chat"))(); } }}>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/chat")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/chat"))(); } }}>
                 <CardContent className="p-4 flex items-center gap-3">
-                  <MessageSquare className="w-5 h-5 text-primary shrink-0" />
+                  <MessageSquare className="w-5 h-5 text-accent shrink-0" />
                   <div>
                     <p className="text-sm font-medium">Chat with AI</p>
                     <p className="text-xs text-muted-foreground">Ask the AI directly</p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover:border-primary/20 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/settings/guest-prefs")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/settings/guest-prefs"))(); } }}>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/settings/guest-prefs")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/settings/guest-prefs"))(); } }}>
                 <CardContent className="p-4 flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-primary shrink-0" />
+                  <Sparkles className="w-5 h-5 text-accent shrink-0" />
                   <div>
                     <p className="text-sm font-medium">Preferences</p>
                     <p className="text-xs text-muted-foreground">Customize AI responses</p>
                   </div>
                 </CardContent>
               </Card>
-              <Card className="hover:border-primary/20 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/settings/ai-tuning")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/settings/ai-tuning"))(); } }}>
+              <Card className="hover:border-accent/30 transition-colors cursor-pointer" role="button" tabIndex={0} onClick={() => navigate("/settings/ai-tuning")} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (() => navigate("/settings/ai-tuning"))(); } }}>
                 <CardContent className="p-4 flex items-center gap-3">
-                  <Brain className="w-5 h-5 text-primary shrink-0" />
+                  <Brain className="w-5 h-5 text-accent shrink-0" />
                   <div>
                     <p className="text-sm font-medium">AI Tuning</p>
                     <p className="text-xs text-muted-foreground">Fine-tune your AI</p>

@@ -29,7 +29,7 @@ export function AuthGate({ title, description, icon }: AuthGateProps) {
       <Card className="max-w-md w-full border-border/50">
         <CardContent className="p-8 text-center space-y-6">
           {icon && (
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
               {icon}
             </div>
           )}

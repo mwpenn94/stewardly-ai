@@ -97,7 +97,7 @@ export function KeyboardHelpOverlay({ shortcuts, title = "Keyboard shortcuts" }:
         <CardContent className="p-5 space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Keyboard className="h-5 w-5 text-primary" />
+              <Keyboard className="h-5 w-5 text-accent" />
               <h2 id="keyboard-help-title" className="font-heading font-semibold">
                 {title}
               </h2>

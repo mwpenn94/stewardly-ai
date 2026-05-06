@@ -155,6 +155,7 @@ function ActiveWorkSection() {
   return (
     <div className="relative space-y-4">
       {/* Warm gold radial glow */}
+      <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 30% 50%, oklch(0.76 0.14 80 / 0.15) 0%, transparent 70%)' }} />
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Workflows In Progress</CardTitle>

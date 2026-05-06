@@ -214,7 +214,7 @@ export default function BusinessIncomeQuickQuotePage() {
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         <header className="space-y-1">
           <div className="flex items-center gap-2">
-            <Briefcase className="w-4 h-4 text-primary" />
+            <Briefcase className="w-4 h-4 text-accent" />
             <h1 className="text-2xl font-bold">Business Income Quick Quote</h1>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -232,7 +232,7 @@ export default function BusinessIncomeQuickQuotePage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" /> Practice context
+                <Users className="w-4 h-4 text-accent" /> Practice context
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -297,7 +297,7 @@ export default function BusinessIncomeQuickQuotePage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" /> Income streams
+                <TrendingUp className="w-4 h-4 text-accent" /> Income streams
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -359,7 +359,7 @@ export default function BusinessIncomeQuickQuotePage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <Target className="w-4 h-4 text-primary" /> Projection
+                <Target className="w-4 h-4 text-accent" /> Projection
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

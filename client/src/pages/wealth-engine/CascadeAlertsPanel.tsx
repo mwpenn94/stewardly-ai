@@ -28,7 +28,7 @@ const SECTION_ICONS: Record<string, React.ReactNode> = {
   calculator: <Calculator className="w-4 h-4 text-emerald-400" />,
   scroll: <Scroll className="w-4 h-4 text-purple-400" />,
   "trending-up": <TrendingUp className="w-4 h-4 text-cyan-400" />,
-  rocket: <Rocket className="w-4 h-4 text-primary" />,
+  rocket: <Rocket className="w-4 h-4 text-accent" />,
 };
 
 export default function CascadeAlertsPanel() {
@@ -137,7 +137,7 @@ export default function CascadeAlertsPanel() {
       <div className="space-y-6 p-4">
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Bell className="w-5 h-5 text-primary" /> Cascade Alerts & Client Tools
+            <Bell className="w-5 h-5 text-accent" /> Cascade Alerts & Client Tools
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Real-time cascade misalignment alerts, client-facing planning summaries,
@@ -161,7 +161,7 @@ export default function CascadeAlertsPanel() {
     <div className="space-y-6 p-4">
       <div>
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <Bell className="w-5 h-5 text-primary" /> Cascade Alerts & Client Tools
+          <Bell className="w-5 h-5 text-accent" /> Cascade Alerts & Client Tools
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
           Real-time cascade misalignment alerts, client-facing planning summaries,
@@ -213,9 +213,9 @@ export default function CascadeAlertsPanel() {
               </div>
 
               {localAlerts.length > 0 && (
-                <Card className="bg-card/60 border-primary/15">
+                <Card className="bg-card/60 border-accent/20">
                   <CardContent className="p-3">
-                    <p className="text-[10px] text-primary font-medium mb-1">Live Session Alerts ({localAlerts.length})</p>
+                    <p className="text-[10px] text-accent font-medium mb-1">Live Session Alerts ({localAlerts.length})</p>
                     <p className="text-[9px] text-muted-foreground">These alerts are generated from the active calculator session data and update in real-time as you modify client inputs.</p>
                   </CardContent>
                 </Card>
@@ -251,7 +251,7 @@ export default function CascadeAlertsPanel() {
                               </span>
                             </div>
                             <p className="text-[11px]">{alert.description}</p>
-                            <p className="text-[10px] text-primary mt-1">Suggested: {alert.suggestedAction}</p>
+                            <p className="text-[10px] text-accent mt-1">Suggested: {alert.suggestedAction}</p>
                             {alert.clientName && (
                               <p className="text-[9px] text-muted-foreground mt-0.5">
                                 Client: {alert.clientName}
@@ -296,7 +296,7 @@ export default function CascadeAlertsPanel() {
               </CardContent>
             </Card>
           ) : summaryQ.data ? (
-            <Card className="bg-card/60 border-primary/15">
+            <Card className="bg-card/60 border-accent/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   Client-Facing Planning Summary
@@ -367,7 +367,7 @@ export default function CascadeAlertsPanel() {
                             <div className="mt-1.5 space-y-0.5">
                               {sec.nextSteps.map((step, j) => (
                                 <div key={j} className="flex items-start gap-1 text-[10px] text-muted-foreground">
-                                  <ArrowRight className="w-2.5 h-2.5 text-primary mt-0.5 shrink-0" />
+                                  <ArrowRight className="w-2.5 h-2.5 text-accent mt-0.5 shrink-0" />
                                   <span>{step}</span>
                                 </div>
                               ))}

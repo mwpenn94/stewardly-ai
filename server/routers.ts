@@ -91,7 +91,6 @@ import { plaidRouter } from "./routers/plaid";
 import { cadenceEngineRouter } from "./routers/cadenceEngine";
 import { sharingRouter } from "./routers/sharing";
 import { financialDataRouter } from "./routers/financialData";
-import { substrateRouter } from "./routers/substrate";
 
 // ─── ASSESSMENT GUARD ──────────────────────────────────────────────
 import { isAiBlocked, recordAiAttempt } from "./services/learning/assessmentSession";
@@ -2446,7 +2445,6 @@ export const appRouter = router({
   usageAnalytics: usageAnalyticsRouter,
   intelligenceEngine: intelligenceEngineRouter,
   cadenceEngine: cadenceEngineRouter,
-  substrate: substrateRouter,
 });
 
 export type AppRouter = typeof appRouter;

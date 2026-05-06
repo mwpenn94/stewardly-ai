@@ -189,7 +189,7 @@ export function ProfileLibraryPanel({ open, onClose }: ProfileLibraryPanelProps)
         {/* Header */}
         <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border px-5 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Library className="w-4 h-4 text-primary" />
+            <Library className="w-4 h-4 text-accent" />
             <h2 id="profile-library-title" className="text-base font-semibold">
               Profile Library
             </h2>
