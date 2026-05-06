@@ -9659,3 +9659,18 @@
 - [x] IOV Pass 5: Fix all gaps found in production validation
 - [x] IOV Pass 6: Second consecutive convergence confirmation (3 passes clean)
 - [x] Save checkpoint
+
+## FULL CHAT UI REPLACEMENT — Manus-Next Architecture (Current Session)
+- [ ] Study manus-next Home.tsx + AppLayout complete architecture
+- [ ] Rewrite Chat.tsx — strip ALL cluttered features from frontend (focus pickers, model selectors, loop configs, consensus links, code chat toggles, streaming toggles, processing indicators)
+- [ ] Replace with manus-next clean architecture: greeting + simple input [+][textarea][send] + clean messages + clean sidebar
+- [ ] Fix theme/CSS to actually match manus-next visually (not just token swap)
+- [ ] Validate in browser as user
+- [ ] Save checkpoint
+
+## Glass Sidebar Rebuild — Stewardly Design (Current Session)
+- [x] Remove dead code from Chat.tsx (unused imports: SovereignModeIndicator, ConnectionQualityIndicator, DropdownMenu*, OnboardingChecklist, Link, Video, VolumeX, PhoneOff, Monitor, Briefcase, Check, Users, Zap, ChevronDown, ChevronUp; unused state: showModelMenu, showModeMenu, showFocusPicker, advancedOpen, modelLabel, focusLabel, showModes, availableModes, toggleModel, toggleFocus, MODEL_OPTIONS, FOCUS_OPTIONS at line 1751)
+- [x] Rebuild sidebar with glass-style design matching Stewardly screenshots (white/translucent bg, uppercase section headers WEALTH/PROFESSIONAL/LEADERSHIP, generous spacing, blue active pill states)
+- [x] Maintain theme toggle (light/dark/system) — glass adapts to both themes
+- [x] Validate build compiles without errors
+- [x] Save checkpoint

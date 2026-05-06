@@ -33,7 +33,7 @@ describe("Pass 13 — Sign-in CTA & Degraded Banner", () => {
   it("ChatGreeting renders sign-in CTA when not authenticated", () => {
     const src = read("client/src/components/ChatGreeting.tsx");
     expect(src).toContain("!isAuthenticated");
-    expect(src).toContain("Sign in to save conversations");
+    expect(src).toContain("Sign in to unlock all engines");
     expect(src).toContain("getLoginUrl()");
   });
 

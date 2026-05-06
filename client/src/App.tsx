@@ -4,16 +4,16 @@ import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SectionErrorBoundary } from "./components/SectionErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import ConsentBanner from "./components/ConsentBanner";
-import WhatsNewModal from "./components/WhatsNewModal";
+// ConsentBanner removed — clean manus-next UX
+// WhatsNewModal removed — clean UX, changelog accessible via /changelog
 import OfflineBanner from "./components/OfflineBanner";
-import { GuestBanner } from "./components/GuestBanner";
-import { ContextualHelp } from "./components/ContextualHelp";
+// GuestBanner removed — clean manus-next UX
+// ContextualHelp removed — clean manus-next UX
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { CommandPalette } from "./components/CommandPalette";
 import { ScrollToTop } from "./components/ScrollToTop";
-import ServiceStatusBanner from "./components/ServiceStatusBanner";
-import { OnboardingTour, useOnboardingTour } from "./components/OnboardingTour";
+// ServiceStatusBanner removed — clean manus-next UX
+// OnboardingTour removed — clean manus-next UX
 import { AuthProvider } from "./contexts/AuthContext";
 // GlobalFooter removed permanently per user request (redundant nav)
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -25,7 +25,7 @@ import { AudioCompanionProvider } from "./components/AudioCompanion";
 import { PILProvider } from "./components/PlatformIntelligence";
 import { LiveAnnouncer } from "./lib/multisensory/LiveAnnouncer";
 // VisualAnnouncer, IntentRouter removed (dead code cleanup Pass 147)
-import { GlobalVoiceFAB } from "./components/GlobalVoiceFAB";
+// GlobalVoiceFAB removed — clean manus-next UX
 import { useGlobalShortcuts } from "./lib/multisensory/useGlobalShortcuts";
 
 // ── Lazy loaded (critical path — still code-split for bundle size) ────
@@ -462,21 +462,7 @@ function AppContent() {
   // Global keyboard shortcut handler — must live INSIDE PILProvider so the
   // IntentRouter can handle dispatched intents with pil context available.
   useGlobalShortcuts();
-  const { isOpen: tourOpen, completeTour, startTour } = useOnboardingTour();
 
-  // Pass 120: Allow tour to be triggered from notification bell via ?startTour=true
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("startTour") === "true") {
-      startTour();
-      // Clean up the URL
-      params.delete("startTour");
-      const newUrl = params.toString()
-        ? `${window.location.pathname}?${params.toString()}`
-        : window.location.pathname;
-      window.history.replaceState({}, "", newUrl);
-    }
-  }, [startTour]);
 
   // Pass 121: Allow voice coach to be triggered from notification bell via ?showVoiceCoach=true
   useEffect(() => {
@@ -512,15 +498,15 @@ function AppContent() {
       </a>
       <LiveAnnouncer />
       <OfflineBanner />
-      <GuestBanner />
-      <ServiceStatusBanner />
+
+
       <Router />
-      <ConsentBanner />
-      <WhatsNewModal />
+
+
       {/* GlobalFooter removed permanently — user requested no footer nav */}
-      <GlobalVoiceFAB />
-      <ContextualHelp />
-      <OnboardingTour isOpen={tourOpen} onComplete={completeTour} />
+
+
+
     </>
   );
 }

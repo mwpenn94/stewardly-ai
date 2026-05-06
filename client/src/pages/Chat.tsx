@@ -18,25 +18,24 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
-  DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import {
-  ArrowRight, ArrowUp, AudioLines, BarChart3, Bot, Briefcase, Calculator, Check,
-  ChevronDown, ChevronUp, FileText, GraduationCap, Image, Loader2, LogOut, Menu, MessageSquare,
-  Monitor, PanelLeftClose, Paperclip, PhoneOff, Plus,
-  Settings, Sparkles, ThumbsDown, ThumbsUp, User, Users,
-  Video, Volume2, VolumeX, X, Fingerprint, TrendingUp, Palette, Calendar, Brain, Shield,
-  Copy, RefreshCw, Zap, Scale, Search, HelpCircle,
-  Pin, FolderOpen, FolderPlus, ChevronRight, Phone,
-  LogIn, GitBranch, Pencil, Globe, Code2,  FileOutput, Download,
+  ArrowRight, ArrowUp, AudioLines, Bot, Calculator,
+  FileText, GraduationCap, Image, Loader2, LogOut, Menu, MessageSquare,
+  PanelLeftClose, Paperclip, Plus,
+  Settings, Sparkles, ThumbsDown, ThumbsUp, User,
+  Volume2, X, Palette, Calendar,
+  Copy, RefreshCw, Search, HelpCircle,
+  Pin, FolderOpen, FolderPlus, ChevronRight,
+  LogIn, GitBranch, Pencil, Download,
+  Sun, Moon, Monitor,
 } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { ReasoningChain } from "@/components/ReasoningChain";
 import { LiveSession } from "@/components/LiveSession";
 // Round C3 / Round E1 — inline multi-model consensus panel (lazy-loaded, only used in consensus mode)
@@ -64,8 +63,8 @@ import {
 import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useGuestPreferences } from "@/hooks/useGuestPreferences";
 import { UpgradePrompt } from "@/components/UpgradePrompt";
-import OnboardingChecklist from "@/components/OnboardingChecklist";
-import { hasMinRole } from "@/lib/navigation";
+
+
 import { useOnboardingNotifications } from "@/components/OnboardingNotifications";
 import ChangelogBell from "@/components/ChangelogBell";
 import { SelfDiscoveryBubble } from "@/components/SelfDiscoveryBubble";
@@ -77,14 +76,14 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { useLocation, useRoute, Link } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { consumePendingPrompt } from "@/lib/navigateToChat";
 import { toast } from "sonner";
 import type { AdvisoryMode, FocusMode, UserRole } from "@shared/types";
 import { ConvItem, SortableConvItem } from "@/components/chat/ConvItem";
 import ChatGreetingV2 from "@/components/ChatGreeting";
 // MobileChatLayout available at @/components/MobileChatLayout for future mobile-first refactor (P3 backlog)
-import { parseFocusModes, serializeFocusModes } from "@shared/types";
+import { serializeFocusModes } from "@shared/types";
 // Pass 1 (multisensory): slash-command interceptor — lets users type
 // "/go learning", "/read", "/hands-free", etc. inside the chat input to
 // drive navigation/audio without ever leaving the keyboard.
@@ -94,9 +93,9 @@ import { announce } from "@/lib/multisensory/LiveAnnouncer";
 import { TierBadge } from "@/components/substrate/TierBadge";
 import { ActionIndicator, type AgentState, type ActiveTool } from "@/components/substrate/ActionIndicator";
 import { QualityScoreDisplay } from "@/components/substrate/QualityScoreDisplay";
-import { ConnectionQualityIndicator } from "@/components/substrate/ConnectionQualityIndicator";
+
 import { WorkspaceArtifactsPanel, type Artifact } from "@/components/substrate/WorkspaceArtifactsPanel";
-import { SovereignModeIndicator } from "@/components/substrate/SovereignModeIndicator";
+
 
 // ─── RICH MEDIA EXTRACTION (client-side fallback) ─────────────────
 // Mirrors server/services/richMediaService extractMediaFromResponse for the case
@@ -129,21 +128,12 @@ function extractMediaFromText(content: string): MediaEmbed[] {
 }
 
 // ─── CONSTANTS ────────────────────────────────────────────────────
-const FOCUS_OPTIONS: { value: FocusMode; label: string; icon: React.ReactNode; desc: string }[] = [
-  { value: "general", label: "General", icon: <TrendingUp className="w-3.5 h-3.5" />, desc: "Open-ended advisory" },
-  { value: "financial", label: "Financial", icon: <BarChart3 className="w-3.5 h-3.5" />, desc: "Financial planning focus" },
-  { value: "study", label: "Study & Learn", icon: <FileText className="w-3.5 h-3.5" />, desc: "Guided study & learning" },
-];
 
-const MODE_OPTIONS: { value: AdvisoryMode; label: string; desc: string; minRole: UserRole }[] = [
-  { value: "client", label: "Client Advisor", desc: "Speak directly to clients", minRole: "advisor" },
-  { value: "coach", label: "Professional Coach", desc: "Coach financial professionals", minRole: "advisor" },
-  { value: "manager", label: "Manager Dashboard", desc: "Team briefings & KPIs", minRole: "manager" },
-];
 
 
 export default function Chat() {
   const { user, loading: authLoading, isAuthenticated, logout } = useAuth();
+  const { preference: themePreference, setTheme: setThemePref } = useTheme();
   const soundCues = useSoundCues();
   // Pass 1 (multisensory build loop): wire PIL dispatcher into Chat so every
   // send / stream start / stream end / error actually fires the designed
@@ -182,7 +172,7 @@ export default function Chat() {
   });
   const [selectedFocus, setSelectedFocus] = useState<FocusMode[]>(["general", "financial"]);
   const [selectedModels, setSelectedModels] = useState<string[]>(["auto"]);
-  const [showModelMenu, setShowModelMenu] = useState(false);
+
   const [chatMode, setChatMode] = useState<"single" | "loop" | "consensus" | "codechat">("single");
   const [loopConfig, setLoopConfig] = useState({ maxIterations: 0, maxBudget: 1.0, foci: [] as string[], promptType: "" as string });
   // Pass 78: Code Chat mode config. `allowMutations` only takes effect
@@ -203,57 +193,8 @@ export default function Chat() {
   };
   const focusSerialized = serializeFocusModes(selectedFocus);
 
-  const toggleModel = (modelId: string) => {
-    setSelectedModels(prev => {
-      if (modelId === "auto") return ["auto"];
-      const without = prev.filter(m => m !== "auto");
-      if (without.includes(modelId)) {
-        const result = without.filter(m => m !== modelId);
-        return result.length === 0 ? ["auto"] : result;
-      }
-      return [...without, modelId];
-    });
-  };
   const selectedModel = selectedModels.includes("auto") ? undefined : selectedModels[0];
   const isMultiModel = selectedModels.length > 1 && !selectedModels.includes("auto");
-  const modelLabel = selectedModels.includes("auto")
-    ? "Auto"
-    : selectedModels.length === 1
-      ? selectedModels[0].split("-").slice(0, 2).join("-")
-      : `${selectedModels.length} models`;
-
-  const MODEL_OPTIONS = [
-    { id: "auto", label: "Auto (best for task)", family: "auto" },
-    { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash", family: "Gemini" },
-    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", family: "Gemini" },
-    { id: "gpt-4o", label: "GPT-4o", family: "GPT" },
-    { id: "gpt-4o-mini", label: "GPT-4o Mini", family: "GPT" },
-    { id: "gpt-4.1", label: "GPT-4.1", family: "GPT" },
-    { id: "claude-sonnet-4-20250514", label: "Claude Sonnet 4", family: "Claude" },
-    { id: "claude-3.5-sonnet", label: "Claude 3.5 Sonnet", family: "Claude" },
-    { id: "claude-3-haiku", label: "Claude 3 Haiku", family: "Claude" },
-    { id: "o4-mini", label: "o4-mini", family: "Reasoning" },
-    { id: "o3", label: "o3", family: "Reasoning" },
-    { id: "deepseek-reasoner", label: "DeepSeek Reasoner", family: "Reasoning" },
-    { id: "deepseek-chat", label: "DeepSeek Chat", family: "Open Source" },
-    { id: "llama-3.3-70b", label: "Llama 3.3 70B", family: "Open Source" },
-    { id: "llama-4-scout", label: "Llama 4 Scout", family: "Open Source" },
-    { id: "mistral-large", label: "Mistral Large", family: "Open Source" },
-    { id: "mixtral-8x22b", label: "Mixtral 8x22B", family: "Open Source" },
-    { id: "qwen-2.5-72b", label: "Qwen 2.5 72B", family: "Open Source" },
-    { id: "qwen-2.5-coder-32b", label: "Qwen 2.5 Coder", family: "Open Source" },
-  ];
-
-  const toggleFocus = (mode: FocusMode) => {
-    setSelectedFocus(prev => {
-      if (prev.includes(mode)) {
-        // Don't allow deselecting all — keep at least one
-        if (prev.length <= 1) return prev;
-        return prev.filter(m => m !== mode);
-      }
-      return [...prev, mode];
-    });
-  };
   const [mode, setMode] = useState<AdvisoryMode>("client");
   const [isStreaming, setIsStreaming] = useState(false);
   const [useStreaming, setUseStreaming] = useState(true);
@@ -263,12 +204,12 @@ export default function Chat() {
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showFocusPicker, setShowFocusPicker] = useState(false);
+
   const [attachments, setAttachments] = useState<File[]>([]);
   const [liveSessionMode, setLiveSessionMode] = useState<"camera" | "screen" | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showModeMenu, setShowModeMenu] = useState(false);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
@@ -1640,8 +1581,6 @@ export default function Chat() {
       // Esc → Close menus
       if (e.key === "Escape") {
         if (showAddMenu) { setShowAddMenu(false); return; }
-        if (showModeMenu) { setShowModeMenu(false); return; }
-        if (showFocusPicker) { setShowFocusPicker(false); return; }
         if (searchOpen) { setSearchOpen(false); setSearchQuery(""); return; }
       }
 
@@ -1657,50 +1596,15 @@ export default function Chat() {
     return () => {
       window.removeEventListener("keydown", handler);
     };
-  }, [showAddMenu, showModeMenu, showFocusPicker, searchOpen]);
+  }, [showAddMenu, searchOpen]);
 
   const handleFeedback = async (messageId: number, rating: "up" | "down") => {
     if (!conversationId) return;
     await feedbackMutation.mutateAsync({ messageId, conversationId, rating });
     toast.success(rating === "up" ? "Thanks for the feedback!" : "Noted — we'll improve");
-  };
-
-  // ─── ROLE-BASED MODE FILTERING ────────────────────────────────
+  }  // ─── ROLE-BASED MODE FILTERING ────────────────────────────────────
   const userRole = (user?.role as UserRole) || "user";
-  const availableModes = useMemo(() => {
-    return MODE_OPTIONS.filter(m => hasMinRole(userRole, m.minRole));
-  }, [userRole]);
-  const showModes = availableModes.length > 0;
 
-  // ─── SIDEBAR NAV STATE (must be before auth gate to maintain hook order) ─
-  // Pass 90: Navigate defaults to OPEN so first-time visitors actually see
-  // the 5 nav sections. Previously both defaulted to `false`, which meant
-  // a brand-new chat user saw "Navigate ▶ / Admin ▶" with zero links
-  // visible. Power users can still collapse; choice persists in localStorage.
-  const [toolsExpanded, setToolsExpanded] = useState(() => {
-    try { const v = localStorage.getItem("chat-tools-expanded"); return v === null ? true : v === "true"; } catch { return true; }
-  });
-  const [adminExpanded, setAdminExpanded] = useState(() => {
-    try { const v = localStorage.getItem("chat-admin-expanded"); return v === null ? true : v === "true"; } catch { return true; }
-  });
-  useEffect(() => { try { localStorage.setItem("chat-tools-expanded", String(toolsExpanded)); } catch {} }, [toolsExpanded]);
-  useEffect(() => { try { localStorage.setItem("chat-admin-expanded", String(adminExpanded)); } catch {} }, [adminExpanded]);
-
-  // Pass 90: chat input "advanced controls" toggle. Default = collapsed.
-  // The model picker, chat mode segment, and per-mode config (loop pills,
-  // codechat config, etc.) used to be ALL visible at once, turning the
-  // input into a cockpit. Now they live behind a single "..." button so
-  // first-time users see just [+] [Focus] [audio] [send]. Choice persists
-  // in localStorage so power users keep their toolbar open. Auto-expand
-  // when chatMode is non-default so loop/consensus/codechat users can see
-  // their config without an extra click.
-  const [advancedOpen, setAdvancedOpen] = useState(() => {
-    try { const v = localStorage.getItem("chat-advanced-open"); return v === null ? false : v === "true"; } catch { return false; }
-  });
-  useEffect(() => { try { localStorage.setItem("chat-advanced-open", String(advancedOpen)); } catch {} }, [advancedOpen]);
-  // Auto-expand the advanced toolbar whenever the user activates a non-default
-  // chat mode — they need to see the per-mode config they just enabled.
-  useEffect(() => { if (chatMode !== "single") setAdvancedOpen(true); }, [chatMode]);
 
   // ─── MOBILE SWIPE GESTURE for sidebar open/close ──────────────
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -1748,9 +1652,7 @@ export default function Chat() {
   // Allow anonymous/guest users to use the chat
 
   const isWelcome = messages.length === 0 && !conversationId;
-  const focusLabel = selectedFocus.length === FOCUS_OPTIONS.length
-    ? "All Modes"
-    : selectedFocus.map(f => FOCUS_OPTIONS.find(o => o.value === f)?.label).filter(Boolean).join(" + ");
+
 
   // ─── SIDEBAR NAV — shared persona layers from PersonaSidebar5 ────
   // Single source of truth: imports PERSONA_LAYERS + ROLE_LEVEL from
@@ -1778,379 +1680,439 @@ export default function Chat() {
         <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
       )}
 
-      {/* ─── SIDEBAR ──────────────────────────────────────────── */}
+      {/* ─── SIDEBAR (Glass Design) ─────────────────────────────── */}
       <aside data-tour="sidebar" className={`
         fixed lg:relative z-50 h-full bg-sidebar border-r border-sidebar-border flex flex-col
         transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         ${sidebarCollapsed ? "w-14" : "w-72"}
       `}>
-        <div className={`flex items-center border-b border-sidebar-border shrink-0 ${sidebarCollapsed ? "p-2 justify-center" : "p-3 justify-between"}`}>
-          {sidebarCollapsed ? (
-            <div className="flex flex-col gap-1 items-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleNewConversation} aria-label="New conversation">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">New Conversation</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={() => { setSidebarCollapsed(false); setSearchOpen(true); }} aria-label="Search conversations">
-                    <Search className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Search Conversations</TooltipContent>
-              </Tooltip>
-            </div>
-          ) : (
-            <>
-              <Button variant="ghost" size="sm" className="gap-2 text-xs flex-1 justify-start text-muted-foreground hover:text-foreground hover:bg-accent" onClick={handleNewConversation}>
-                <Plus className="w-3.5 h-3.5" /> New Conversation
-              </Button>
-              <div className="flex items-center gap-0.5">
-                <Button variant="ghost" size="icon-sm" onClick={() => setSearchOpen(!searchOpen)} aria-label="Search conversations">
-                  <Search className="w-3.5 h-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </>
+        {/* ─── Header: Brand + Actions ─── */}
+        <div className={`flex items-center border-b border-sidebar-border shrink-0 h-[52px] ${sidebarCollapsed ? "px-2 justify-center" : "px-3 justify-between"}`}>
+          {!sidebarCollapsed && (
+            <span className="text-[16px] font-extrabold tracking-tight bg-gradient-to-r from-primary via-primary/90 to-primary/60 bg-clip-text text-transparent select-none">
+              Stewardly<span className="inline-block w-1.5 h-1.5 rounded-full bg-primary ml-0.5 mb-2" />
+            </span>
           )}
+          <div className="flex items-center gap-0.5">
+            {!sidebarCollapsed && (
+              <button type="button" onClick={handleNewConversation}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                aria-label="New conversation">
+                <Plus className="w-4 h-4" />
+              </button>
+            )}
+            <button type="button" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+              aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+              <PanelLeftClose className={`w-4 h-4 transition-transform ${sidebarCollapsed ? "rotate-180" : ""}`} />
+            </button>
+            {!sidebarCollapsed && (
+              <button type="button" onClick={() => setSidebarOpen(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors lg:hidden"
+                aria-label="Close sidebar">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Pass 90: Global Command Palette trigger — opens the platform-wide
-            Cmd+K palette (which navigates between pages + runs actions),
-            distinct from the conversation search above which only filters
-            chat history. The palette is mounted in App.tsx and listens for
-            the `toggle-command-palette` event. */}
+        {/* ─── Search (⌘K) ─── */}
         {!sidebarCollapsed ? (
-          <div className="px-2 py-1.5 border-b border-border/40 shrink-0">
+          <div className="px-3 py-2 shrink-0">
             <button type="button"
               onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
+              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-card/40 border border-border/40 text-[13px] text-muted-foreground hover:text-sidebar-foreground hover:bg-card/60 hover:border-border/60 transition-all duration-200"
               aria-label="Open Command Palette"
-              className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg border border-border/60 bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors text-[12px]"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span className="flex-1 text-left">Search pages…</span>
-              <kbd className="font-mono text-[10px] text-muted-foreground/70 bg-background/60 border border-border/60 rounded px-1 py-0.5">⌘K</kbd>
+              <Search className="w-3.5 h-3.5 flex-none" />
+              <span>Search</span>
+              <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-sidebar border border-sidebar-border font-mono">⌘K</kbd>
             </button>
           </div>
         ) : (
-          <div className="p-1 border-b border-border/40 shrink-0">
+          <div className="p-1 shrink-0">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button type="button"
                   onClick={() => window.dispatchEvent(new CustomEvent("toggle-command-palette"))}
-                  aria-label="Open Command Palette"
-                  className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-                >
+                  className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                  aria-label="Search (⌘K)">
                   <Search className="w-4 h-4" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right">Search pages (⌘K)</TooltipContent>
+              <TooltipContent side="right">Search (⌘K)</TooltipContent>
             </Tooltip>
           </div>
         )}
 
-        {/* Search bar */}
-        {searchOpen && !sidebarCollapsed && (
-          <div className="px-2 py-2 border-b border-border shrink-0">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <Input
-                data-search-input
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 text-xs bg-secondary/30 border-border/50"
-                autoFocus
-              />
-              {searchQuery && (
-                <button type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => { setSearchQuery(""); setSearchOpen(false); }}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Scrollable conversation list — grows to fill available space */}
-        <div className="flex-1 min-h-0 overflow-y-auto">
-          {/* Search results */}
-          {searchOpen && debouncedSearch.length > 0 ? (
-            <div className="p-2 space-y-0.5">
-              {searchResults.isLoading && (
-                <div className="space-y-2 p-2">
-                  {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
+        {/* ─── Main Navigation ─── */}
+        <nav aria-label="Main navigation" className="flex-1 overflow-y-auto px-2 pb-2">
+          {/* Persona layers (Chat, Wealth, Professional, Leadership, Platform) */}
+          {visibleLayers.map(layer => (
+            <div key={layer.key}>
+              {layer.label && !sidebarCollapsed && (
+                <div className="px-3 pt-4 pb-1 text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider select-none">
+                  {layer.label}
                 </div>
               )}
-              {searchResults.data?.length === 0 && !searchResults.isLoading && (
-                <div className="text-center text-muted-foreground text-xs py-8">
-                  <Search className="w-5 h-5 mx-auto mb-2 opacity-40" />
-                  No conversations found
-                </div>
-              )}
-              {searchResults.data?.map((result: any) => (
-                <div
-                  key={result.id}
-                  className={`group flex flex-col gap-0.5 px-3 py-2 rounded-lg text-sm cursor-pointer transition-colors ${
-                    result.id === conversationId ? "bg-primary/10 text-primary" : "hover:bg-secondary/50 text-foreground"
-                  }`}
-                  onClick={() => {
-                    setConversationId(result.id);
-                    navigate(`/chat/${result.id}`);
-                    setSidebarOpen(false);
-                    setSearchQuery("");
-                    setSearchOpen(false);
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-50" />
-                    <span className="truncate flex-1 font-medium">{result.title || "New Conversation"}</span>
-                  </div>
-                  {result.matchType === "message" && result.matchSnippet && (
-                    <p className="text-[10px] text-muted-foreground truncate pl-5.5 italic">
-                      ...{result.matchSnippet}...
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-          <div className={sidebarCollapsed ? "p-1 space-y-1" : "p-2 space-y-0.5"}>
-            {sidebarCollapsed ? (
-              /* Collapsed: simple icon list */
-              conversationsQuery.data?.map((conv: any) => (
-                <Tooltip key={conv.id}>
-                  <TooltipTrigger asChild>
-                    <div
-                      className={`flex items-center justify-center p-2 rounded-lg cursor-pointer transition-colors duration-150 ${
-                        conv.id === conversationId ? "bg-sidebar-accent text-sidebar-foreground" : "hover:bg-sidebar-accent/50 text-muted-foreground"
+              {sidebarCollapsed && layer.label && <div className="h-2" />}
+              <div className="space-y-0.5">
+                {layer.items.map(item => {
+                  const active = item.match.some(m => location === m || location.startsWith(m + "/"));
+                  const Icon = item.icon;
+                  return sidebarCollapsed ? (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>
+                        <button type="button"
+                          onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+                          onMouseEnter={() => prefetchRoute(item.path)}
+                          className={`flex items-center justify-center w-full p-2 rounded-xl transition-all duration-200 ${
+                            active
+                              ? "bg-primary/12 text-primary border border-primary/25 shadow-sm shadow-primary/5"
+                              : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right">{item.label}</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <button type="button"
+                      key={item.path}
+                      onClick={() => { navigate(item.path); setSidebarOpen(false); }}
+                      onMouseEnter={() => prefetchRoute(item.path)}
+                      className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ease-out ${
+                        active
+                          ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5"
+                          : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
                       }`}
-                      onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
                     >
-                      {conv.pinned ? <Pin className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{conv.pinned ? <><Pin className="w-3 h-3 inline mr-1" /></> : null}{conv.title || "New Conversation"}</TooltipContent>
-                </Tooltip>
-              ))
+                      <Icon className={`w-4 h-4 transition-colors duration-150 ${active ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"}`} />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {/* Learn item (standalone) */}
+          <div className="mt-3 pt-2 border-t border-sidebar-border/50">
+            {sidebarCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button"
+                    onClick={() => { navigate("/learning"); setSidebarOpen(false); }}
+                    className={`flex items-center justify-center w-full p-2 rounded-xl transition-all duration-200 ${
+                      location.startsWith("/learning")
+                        ? "bg-primary/12 text-primary border border-primary/25 shadow-sm shadow-primary/5"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
+                    }`}
+                  >
+                    <GraduationCap className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Learn</TooltipContent>
+              </Tooltip>
             ) : (
-              /* Expanded: grouped by pinned → folders → unfiled */
-              <>
-                {/* Pinned section — draggable */}
-                {groupedConversations.pinned.length > 0 && (
-                  <div className="mb-2">
-                    <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      <Pin className="w-3 h-3" /> Pinned
+              <button type="button"
+                onClick={() => { navigate("/learning"); setSidebarOpen(false); }}
+                className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ease-out ${
+                  location.startsWith("/learning")
+                    ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5"
+                    : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
+                }`}
+              >
+                <GraduationCap className={`w-4 h-4 transition-colors duration-150 ${location.startsWith("/learning") ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"}`} />
+                <span className="truncate">Learn</span>
+              </button>
+            )}
+          </div>
+
+          {/* Conversation history (only when expanded) */}
+          {!sidebarCollapsed && (
+            <section aria-label="Conversations" className="mt-4 pt-2 border-t border-sidebar-border/50">
+              {/* Search conversations */}
+              {searchOpen && (
+                <div className="px-1 pb-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input
+                      data-search-input
+                      placeholder="Search conversations..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-8 h-8 text-xs bg-card/40 border-border/40 rounded-lg"
+                      autoFocus
+                    />
+                    {searchQuery && (
+                      <button type="button"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => { setSearchQuery(""); setSearchOpen(false); }}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Conversation list header */}
+              <div className="flex items-center justify-between px-3 py-1.5">
+                <span className="text-[11px] font-semibold text-muted-foreground/60 uppercase tracking-wider select-none">Conversations</span>
+                <button type="button" onClick={() => setSearchOpen(!searchOpen)}
+                  className="w-5 h-5 flex items-center justify-center rounded text-muted-foreground/60 hover:text-sidebar-foreground transition-colors"
+                  aria-label="Search conversations">
+                  <Search className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Search results */}
+              {searchOpen && debouncedSearch.length > 0 ? (
+                <div className="space-y-0.5">
+                  {searchResults.isLoading && (
+                    <div className="space-y-2 p-2">
+                      {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
                     </div>
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                      <SortableContext items={groupedConversations.pinned.map((c: any) => c.id)} strategy={verticalListSortingStrategy}>
-                        {groupedConversations.pinned.map((conv: any) => (
-                          <SortableConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
+                  )}
+                  {searchResults.data?.length === 0 && !searchResults.isLoading && (
+                    <div className="text-center text-muted-foreground text-xs py-6">
+                      <Search className="w-4 h-4 mx-auto mb-1.5 opacity-40" />
+                      No conversations found
+                    </div>
+                  )}
+                  {searchResults.data?.map((result: any) => (
+                    <button type="button"
+                      key={result.id}
+                      className={`w-full flex items-center gap-1.5 px-3 py-[6px] rounded-lg transition-colors text-[12px] text-left truncate ${
+                        result.id === conversationId ? "bg-sidebar-accent text-sidebar-foreground" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                      }`}
+                      onClick={() => {
+                        setConversationId(result.id);
+                        navigate(`/chat/${result.id}`);
+                        setSidebarOpen(false);
+                        setSearchQuery("");
+                        setSearchOpen(false);
+                      }}
+                    >
+                      <MessageSquare className="w-3 h-3 flex-none opacity-50" />
+                      <span className="truncate">{result.title || "New Conversation"}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                /* Grouped conversation list */
+                <div className="space-y-0.5 max-h-[35vh] overflow-y-auto">
+                  {/* Pinned */}
+                  {groupedConversations.pinned.length > 0 && (
+                    <div className="mb-1">
+                      <div className="px-3 py-1 text-[10px] text-muted-foreground/40 select-none font-medium flex items-center gap-1">
+                        <Pin className="w-2.5 h-2.5" /> Pinned
+                      </div>
+                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={groupedConversations.pinned.map((c: any) => c.id)} strategy={verticalListSortingStrategy}>
+                          {groupedConversations.pinned.map((conv: any) => (
+                            <SortableConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
+                              setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
+                              handleDeleteConversation={handleDeleteConversation}
+                              togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
+                              handleExportConversation={handleExportConversation}
+                              folders={foldersQuery.data || []} />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                  )}
+
+                  {/* Folders */}
+                  {groupedConversations.folderGroups.map((folder: any) => (
+                    folder.conversations.length > 0 && (
+                      <div key={folder.id} className="mb-1">
+                        <button type="button"
+                          className="flex items-center gap-1.5 px-3 py-1 w-full text-[10px] font-medium text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                          onClick={() => toggleFolderExpand(folder.id)}
+                        >
+                          <ChevronRight className={`w-3 h-3 transition-transform ${expandedFolders.has(folder.id) ? "rotate-90" : ""}`} />
+                          <FolderOpen className="w-3 h-3" style={{ color: folder.color }} />
+                          <span className="flex-1 text-left truncate">{folder.name}</span>
+                          <span className="text-[9px] opacity-60">{folder.conversations.length}</span>
+                        </button>
+                        {expandedFolders.has(folder.id) && folder.conversations.map((conv: any) => (
+                          <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
                             setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
                             handleDeleteConversation={handleDeleteConversation}
                             togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
                             handleExportConversation={handleExportConversation}
-                            folders={foldersQuery.data || []} />
+                            folders={foldersQuery.data || []} indent />
                         ))}
-                      </SortableContext>
-                    </DndContext>
-                  </div>
-                )}
+                      </div>
+                    )
+                  ))}
 
-                {/* Folder sections */}
-                {groupedConversations.folderGroups.map((folder: any) => (
-                  folder.conversations.length > 0 && (
-                    <div key={folder.id} className="mb-1">
-                      <button type="button"
-                        className="flex items-center gap-1.5 px-2 py-1 w-full text-[10px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors group"
-                        onClick={() => toggleFolderExpand(folder.id)}
-                      >
-                        <ChevronRight className={`w-3 h-3 transition-transform ${expandedFolders.has(folder.id) ? "rotate-90" : ""}`} />
-                        <FolderOpen className="w-3 h-3" style={{ color: folder.color }} />
-                        <span className="flex-1 text-left truncate">{folder.name}</span>
-                        <span className="text-[9px] opacity-60">{folder.conversations.length}</span>
-                      </button>
-                      {expandedFolders.has(folder.id) && folder.conversations.map((conv: any) => (
+                  {/* New Folder button */}
+                  {isAuthenticated && (
+                    <button type="button"
+                      className="flex items-center gap-1.5 px-3 py-1 w-full text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                      onClick={() => { setEditingFolder(null); setNewFolderName(""); setNewFolderColor("#6366f1"); setFolderDialogOpen(true); }}
+                    >
+                      <FolderPlus className="w-3 h-3" /> New Folder
+                    </button>
+                  )}
+
+                  {/* Date groups */}
+                  {groupedConversations.dateGroups.map((group) => (
+                    <div key={group.label} className="mb-1">
+                      <div className="px-3 py-1 text-[10px] text-muted-foreground/40 select-none font-medium">
+                        {group.label}
+                      </div>
+                      {group.conversations.map((conv: any) => (
                         <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
                           setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
                           handleDeleteConversation={handleDeleteConversation}
                           togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
                           handleExportConversation={handleExportConversation}
-                          folders={foldersQuery.data || []} indent />
+                          folders={foldersQuery.data || []} />
                       ))}
                     </div>
-                  )
-                ))}
+                  ))}
 
-                {/* Folder management button */}
-                {isAuthenticated && (
-                  <button type="button"
-                    className="flex items-center gap-1.5 px-2 py-1 w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => { setEditingFolder(null); setNewFolderName(""); setNewFolderColor("#6366f1"); setFolderDialogOpen(true); }}
-                  >
-                    <FolderPlus className="w-3 h-3" /> New Folder
-                  </button>
-                )}
-
-                {/* Unfiled conversations — grouped by date */}
-                {groupedConversations.dateGroups.map((group) => (
-                  <div key={group.label} className="mb-1">
-                    <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mt-1">
-                      <Calendar className="w-3 h-3" /> {group.label}
+                  {conversationsQuery.isLoading && (
+                    <div className="space-y-2 p-2">
+                      {[1,2,3].map(i => <Skeleton key={i} className="h-7 w-full rounded-lg" />)}
                     </div>
-                    {group.conversations.map((conv: any) => (
-                      <ConvItem key={conv.id} conv={conv} conversationId={conversationId} navigate={navigate}
-                        setSidebarOpen={setSidebarOpen} setConversationId={setConversationId}
-                        handleDeleteConversation={handleDeleteConversation}
-                        togglePinMutation={togglePinMutation} moveToFolderMutation={moveToFolderMutation}
-                        handleExportConversation={handleExportConversation}
-                        folders={foldersQuery.data || []} />
-                    ))}
-                  </div>
-                ))}
-              </>
-            )}
-            {conversationsQuery.isLoading && (
-              <div className="space-y-2 p-2">
-                {[1,2,3].map(i => <Skeleton key={i} className="h-8 w-full" />)}
-              </div>
-            )}
-            {!conversationsQuery.isLoading && !searchOpen && groupedConversations.dateGroups.length === 0 && groupedConversations.pinned.length === 0 && (
-              <EmptyConversations />
-            )}
-          </div>
+                  )}
+                  {!conversationsQuery.isLoading && !searchOpen && groupedConversations.dateGroups.length === 0 && groupedConversations.pinned.length === 0 && (
+                    <EmptyConversations />
+                  )}
+                </div>
+              )}
+            </section>
           )}
-        </div>
 
-        {/* Navigation — 5 persona layers (Person/Client/Advisor/Manager/Steward)
-            matching PersonaSidebar5 for consistency across the app */}
-        <div className="border-t border-border shrink-0 max-h-[45%] overflow-y-auto">
-          {sidebarCollapsed ? (
-            <div className="p-1 space-y-0.5">
-              {visibleLayers.flatMap(layer => layer.items).map(item => {
-                const Icon = item.icon;
-                return (
-                <Tooltip key={item.path}>
+          {/* Collapsed: just show conversation icons */}
+          {sidebarCollapsed && conversationsQuery.data && conversationsQuery.data.length > 0 && (
+            <div className="mt-3 pt-2 border-t border-sidebar-border/50 space-y-0.5">
+              {conversationsQuery.data.slice(0, 8).map((conv: any) => (
+                <Tooltip key={conv.id}>
                   <TooltipTrigger asChild>
                     <button type="button"
-                      onClick={() => { navigate(item.path); setSidebarOpen(false); }}
-                      onMouseEnter={() => prefetchRoute(item.path)}
-                      className={`flex items-center justify-center w-full p-2 rounded-lg transition-colors ${
-                        item.match.some(m => location === m || location.startsWith(m + "/"))
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                      className={`flex items-center justify-center w-full p-2 rounded-xl transition-all duration-200 ${
+                        conv.id === conversationId
+                          ? "bg-sidebar-accent text-sidebar-foreground"
+                          : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                       }`}
+                      onClick={() => { setConversationId(conv.id); navigate(`/chat/${conv.id}`); setSidebarOpen(false); }}
                     >
-                      <Icon className="w-4 h-4" />
+                      {conv.pinned ? <Pin className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
+                  <TooltipContent side="right">{conv.title || "New Conversation"}</TooltipContent>
                 </Tooltip>
-              );})}
-              <Separator className="mx-1" />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
-                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
-                    <HelpCircle className="w-4 h-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Help & Support</TooltipContent>
-              </Tooltip>
+              ))}
+            </div>
+          )}
+        </nav>
+
+        {/* ─── Bottom Bar: Settings, Help, Notifications, Theme ─── */}
+        <div className="border-t border-sidebar-border shrink-0 px-2 py-2 space-y-0.5">
+          {sidebarCollapsed ? (
+            <div className="space-y-0.5">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button type="button" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-                    className="flex items-center justify-center w-full p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                    className={`flex items-center justify-center w-full p-2 rounded-xl transition-all duration-200 ${
+                      location.startsWith("/settings") ? "bg-primary/12 text-primary border border-primary/25" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}>
                     <Settings className="w-4 h-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="right">Settings</TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                    className={`flex items-center justify-center w-full p-2 rounded-xl transition-all duration-200 ${
+                      location === "/help" ? "bg-primary/12 text-primary border border-primary/25" : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                    }`}>
+                    <HelpCircle className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Help</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button type="button"
+                    onClick={() => {
+                      const next = themePreference === "dark" ? "light" : themePreference === "light" ? "system" : "dark";
+                      setThemePref(next);
+                    }}
+                    className="flex items-center justify-center w-full p-2 rounded-xl text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-200">
+                    {themePreference === "system" ? <Monitor className="w-4 h-4" /> : themePreference === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Theme: {themePreference}</TooltipContent>
+              </Tooltip>
             </div>
           ) : (
             <>
-              <nav aria-label="Main navigation" className="px-1.5 pb-1">
-                {visibleLayers.map(layer => (
-                  <div key={layer.key}>
-                    <div className="px-2.5 pt-3 pb-0.5 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-[0.12em] select-none">
-                      {layer.label}
-                    </div>
-                    <div className="space-y-[1px]">
-                      {layer.items.map(item => {
-                        const active = item.match.some(m => location === m || location.startsWith(m + "/"));
-                        const Icon = item.icon;
-                        return (
-                          <button type="button"
-                            key={item.path}
-                            onClick={() => { navigate(item.path); setSidebarOpen(false); }}
-                            data-tour={item.path === "/wealth-engine" ? "wealth-engine" : item.path === "/settings/knowledge" ? "data-intelligence" : item.path === "/products" ? "products" : item.path === "/compliance-audit" ? "compliance" : item.path === "/intelligence-hub" ? "market-data" : item.path === "/campaigns" ? "email-campaigns" : undefined}
-                            className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ${
-                              active ? "bg-primary/15 text-primary font-medium shadow-sm shadow-primary/5 border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-card/60 border border-transparent hover:border-border/50"
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" /> <span className="truncate">{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </nav>
-              <Separator className="my-1 mx-2" />
-              <div className="px-1.5 pb-1 space-y-1">
-                <button type="button" onClick={() => { navigate("/learning"); setSidebarOpen(false); }}
-                  className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ${
-                    location.startsWith("/learning") ? "bg-primary/15 text-primary font-medium shadow-sm shadow-primary/5 border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-card/60 border border-transparent hover:border-border/50"
-                  }`}>
-                  <GraduationCap className="w-4 h-4" /> <span className="truncate">Learn</span>
-                </button>
-                <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
-                  className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ${
-                    location === "/help" ? "bg-primary/15 text-primary font-medium shadow-sm shadow-primary/5 border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-card/60 border border-transparent hover:border-border/50"
-                  }`}>
-                  <HelpCircle className="w-4 h-4" /> <span className="truncate">Help</span>
-                </button>
-                <button type="button" data-tour="settings" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
-                  className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ${
-                    location.startsWith("/settings") ? "bg-primary/15 text-primary font-medium shadow-sm shadow-primary/5 border border-primary/20" : "text-muted-foreground hover:text-foreground hover:bg-card/60 border border-transparent hover:border-border/50"
-                  }`}>
-                  <Settings className="w-4 h-4" /> <span className="truncate">Settings</span>
-                </button>
-              </div>
+              {/* Settings */}
+              <button type="button" data-tour="settings" onClick={() => { navigate("/settings/profile"); setSidebarOpen(false); }}
+                className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ease-out ${
+                  location.startsWith("/settings")
+                    ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5"
+                    : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
+                }`}
+              >
+                <Settings className={`w-4 h-4 ${location.startsWith("/settings") ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"}`} />
+                <span className="truncate">Settings</span>
+              </button>
+              {/* Help */}
+              <button type="button" onClick={() => { navigate("/help"); setSidebarOpen(false); }}
+                className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] transition-all duration-200 ease-out ${
+                  location === "/help"
+                    ? "bg-primary/12 text-primary font-medium border border-primary/25 shadow-sm shadow-primary/5"
+                    : "text-muted-foreground hover:text-sidebar-foreground hover:bg-card/50 border border-transparent hover:border-border/40"
+                }`}
+              >
+                <HelpCircle className={`w-4 h-4 ${location === "/help" ? "text-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"}`} />
+                <span className="truncate">Help</span>
+              </button>
 
-              {/* Desktop notification bell + changelog bell */}
-              <div className="hidden lg:flex items-center gap-1 px-2 pb-1">
-                <NotificationBell
-                  notifications={notifications}
-                  unreadCount={unreadCount}
-                  connected={wsConnected}
-                  onMarkAsRead={markAsRead}
-                  onMarkAllAsRead={markAllAsRead}
-                  onClear={clearNotifications}
-                  onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
-                />
-                <ChangelogBell collapsed={sidebarCollapsed} />
-                {!sidebarCollapsed && unreadCount > 0 && (
-                  <span className="text-[10px] text-muted-foreground ml-1">{unreadCount} unread</span>
-                )}
+              {/* Bottom icon row: Notifications + Theme */}
+              <div className="flex items-center justify-between px-1 pt-1">
+                <div className="flex items-center gap-1">
+                  <NotificationBell
+                    notifications={notifications}
+                    unreadCount={unreadCount}
+                    connected={wsConnected}
+                    onMarkAsRead={markAsRead}
+                    onMarkAllAsRead={markAllAsRead}
+                    onClear={clearNotifications}
+                    onNavigate={(href) => { navigate(href); setSidebarOpen(false); }}
+                  />
+                  <ChangelogBell collapsed={sidebarCollapsed} />
+                </div>
+                <button type="button"
+                  onClick={() => {
+                    const next = themePreference === "dark" ? "light" : themePreference === "light" ? "system" : "dark";
+                    setThemePref(next);
+                  }}
+                  className="p-2 rounded-md text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+                  title={`Theme: ${themePreference}`}
+                >
+                  {themePreference === "system" ? <Monitor className="w-4 h-4" /> : themePreference === "light" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </button>
               </div>
             </>
           )}
-          <Separator className="mx-2" />
-          {/* ─── PERSISTENT AUTH CONTROLS ─── */}
+
+          {/* Auth controls */}
+          <Separator className="!my-2" />
           {(!isAuthenticated || user?.authTier === "anonymous") ? (
-            /* Guest / unauthenticated user: always show sign-in CTA */
             sidebarCollapsed ? (
-              <div className="p-2 space-y-1">
+              <div className="space-y-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button type="button"
@@ -2158,33 +2120,22 @@ export default function Chat() {
                         if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
                         window.location.href = getLoginUrl();
                       }}
-                      className="w-7 h-7 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/30 transition-colors mx-auto"
+                      className="flex items-center justify-center w-full p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
                     >
-                      <LogIn className="w-3.5 h-3.5" />
+                      <LogIn className="w-4 h-4" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">Sign in to save your progress</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button"
-                      onClick={() => { logout(); }}
-                      className="w-7 h-7 rounded-full bg-muted/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors mx-auto"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Clear guest session</TooltipContent>
+                  <TooltipContent side="right">Sign in to save progress</TooltipContent>
                 </Tooltip>
               </div>
             ) : (
-              <div className="px-3 py-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center">
-                    <User className="w-3 h-3 text-amber-400" />
+              <div className="px-1 space-y-1.5">
+                <div className="flex items-center gap-2 px-2">
+                  <div className="w-6 h-6 rounded-full bg-amber-500/15 flex items-center justify-center">
+                    <User className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="text-xs text-amber-300 font-medium block">Guest</span>
+                    <span className="text-xs text-amber-700 dark:text-amber-300 font-medium block">Guest</span>
                     <span className="text-[10px] text-muted-foreground">Session is temporary</span>
                   </div>
                 </div>
@@ -2193,43 +2144,36 @@ export default function Chat() {
                     if (user?.openId) sessionStorage.setItem("guest-openId", user.openId);
                     window.location.href = getLoginUrl();
                   }}
-                  className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 transition-colors text-xs font-medium"
+                  className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors text-xs font-medium"
                 >
-                  <LogIn className="w-3.5 h-3.5" /> Sign In to Save Progress
-                </button>
-                <button type="button"
-                  onClick={() => { logout(); }}
-                  className="flex items-center justify-center gap-1.5 w-full px-3 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors text-[11px]"
-                >
-                  <LogOut className="w-3 h-3" /> Clear Session
+                  <LogIn className="w-3.5 h-3.5" /> Sign In
                 </button>
               </div>
             )
           ) : (
-            /* Authenticated user: show user info + sign-out */
-            <div className={`flex items-center ${sidebarCollapsed ? "justify-center p-2" : "gap-2 px-3 py-2"}`}>
+            <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "gap-2 px-2"}`}>
               {sidebarCollapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button type="button" className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-medium text-primary cursor-pointer" onClick={() => setSidebarCollapsed(false)} aria-label="Expand sidebar">
+                    <button type="button"
+                      className="w-7 h-7 rounded-full bg-primary/12 flex items-center justify-center text-[10px] font-medium text-primary"
+                      onClick={() => setSidebarCollapsed(false)}
+                      aria-label="Expand sidebar">
                       {user?.name?.charAt(0)?.toUpperCase() || "U"}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{user?.name || "User"} — Click to expand</TooltipContent>
+                  <TooltipContent side="right">{user?.name || "User"}</TooltipContent>
                 </Tooltip>
               ) : (
                 <>
-                  <div className="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-medium text-primary">
+                  <div className="w-6 h-6 rounded-full bg-primary/12 flex items-center justify-center text-[10px] font-medium text-primary">
                     {user?.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="text-xs truncate block">{user?.name || "User"}</span>
+                    <span className="text-xs truncate block text-sidebar-foreground">{user?.name || "User"}</span>
                     <span className="text-[10px] text-muted-foreground capitalize">{userRole}</span>
                   </div>
-                  <button type="button" onClick={() => setSidebarCollapsed(true)} className="text-muted-foreground hover:text-foreground" title="Collapse sidebar">
-                    <PanelLeftClose className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" onClick={() => logout()} className="text-muted-foreground hover:text-foreground" title="Sign out">
+                  <button type="button" onClick={() => logout()} className="text-muted-foreground hover:text-sidebar-foreground transition-colors" title="Sign out">
                     <LogOut className="w-3.5 h-3.5" />
                   </button>
                 </>
@@ -2238,6 +2182,7 @@ export default function Chat() {
           )}
         </div>
       </aside>
+
 
       {/* ─── MAIN CHAT AREA ───────────────────────────────────── */}
       <main
@@ -2801,544 +2746,55 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* Action bar — secondary controls: [Focus] ...spacer... [audio modes] */}
-            <div className="chat-input-bar flex items-center gap-1 mt-1.5">
-              {/* + Add context menu (popup triggered from inline button above) */}
-              <div className="relative" data-tour="context-buttons">
-
-                {showAddMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-44 sm:w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
-                      <button type="button"
-                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
-                        onClick={() => { fileInputRef.current?.click(); setShowAddMenu(false); }}
-                      >
-                        <Paperclip className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Attach file</span>
-                      </button>
-                      <button type="button"
-                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
-                        onClick={() => { imageInputRef.current?.click(); setShowAddMenu(false); }}
-                      >
-                        <Image className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Attach image</span>
-                      </button>
-                      <button type="button"
-                        className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors ${visualMutation.isPending ? "opacity-50" : ""}`}
-                        disabled={visualMutation.isPending}
-                        onClick={async () => {
-                          setShowAddMenu(false);
-                          const prompt = input.trim();
-                          if (!prompt) { toast.info("Type a description first, then generate a visual"); return; }
-                          try {
-                            const result = await visualMutation.mutateAsync({ prompt: `Create a clear, professional visual: ${prompt}` });
-                            if (result.url) {
-                              const imgMsg = { role: "assistant" as const, content: `Here's the visual I created for: **${prompt}**`, metadata: { imageUrl: result.url }, createdAt: new Date() };
-                              setMessages(prev => [...prev, { role: "user" as const, content: `Generate visual: ${prompt}`, createdAt: new Date() }, imgMsg]);
-                              setInput("");
-                            }
-                          } catch (e: any) { toast.error(e.message || "The visual couldn't be generated right now — try again shortly"); }
-                        }}
-                      >
-                        <Palette className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{visualMutation.isPending ? "Generating..." : "Generate visual"}</span>
-                      </button>
-                      <button type="button"
-                        className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs hover:bg-secondary/60 transition-colors"
-                        onClick={() => { setShowAddMenu(false); navigate("/wealth-engine"); }}
-                      >
-                        <Calculator className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>Run calculator</span>
-                      </button>
-                      <div className="h-px bg-border my-0.5" />
-                      <button type="button"
-                        className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
-                          liveSessionMode === "screen" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
-                        }`}
-                        onClick={() => { setLiveSessionMode(liveSessionMode === "screen" ? null : "screen"); setShowAddMenu(false); }}
-                      >
-                        <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{liveSessionMode === "screen" ? "End screen share" : "Go live — Screen"}</span>
-                      </button>
-                      <button type="button"
-                        className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs transition-colors ${
-                          liveSessionMode === "camera" ? "bg-red-500/10 text-red-400" : "hover:bg-secondary/60"
-                        }`}
-                        onClick={() => { setLiveSessionMode(liveSessionMode === "camera" ? null : "camera"); setShowAddMenu(false); }}
-                      >
-                        <Video className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span>{liveSessionMode === "camera" ? "End video session" : "Go live — Video"}</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Focus mode selector — minimal pill */}
-              <div className="relative" data-tour="focus-mode">
-                  <button type="button"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                    onClick={() => setShowModeMenu(!showModeMenu)}
-                  >
-                  {FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.icon || <Sparkles className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{FOCUS_OPTIONS.find(o => selectedFocus.includes(o.value))?.label || "General"}</span>
-                  <ChevronDown className={`w-3 h-3 transition-transform ${showModeMenu ? "rotate-180" : ""}`} />
-                </button>
-
-                {showModeMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowModeMenu(false)} aria-hidden="true" />
-                    <div className="absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 sm:w-52 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
-                      <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Focus</div>
-                      {FOCUS_OPTIONS.map(opt => (
-                        <button type="button"
-                          key={opt.value}
-                          className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                            selectedFocus.includes(opt.value) ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
-                          }`}
-                          onClick={() => { toggleFocus(opt.value); setShowModeMenu(false); }}
-                        >
-                          {opt.icon}
-                          {opt.label}
-                          {selectedFocus.includes(opt.value) && <Check className="w-3 h-3 ml-auto" />}
-                        </button>
-                      ))}
-                      {showModes && (
-                        <>
-                          <div className="h-px bg-border my-1" />
-                          <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Advisory Mode</div>
-                          {availableModes.map(opt => (
-                            <button type="button"
-                              key={opt.value}
-                              className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                                mode === opt.value ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
-                              }`}
-                              onClick={() => { setMode(opt.value); setShowModeMenu(false); }}
-                            >
-                              {opt.label}
-                              {mode === opt.value && <Check className="w-3 h-3 ml-auto" />}
-                            </button>
-                          ))}
-                        </>
-                      )}
-                      {/* Processing mode — Loop, Consensus, CodeChat */}
-                      <div className="h-px bg-border my-1" />
-                      <div className="px-2 py-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Processing</div>
-                      {(["single", "loop", "consensus", "codechat"] as const).map(m => (
-                        <button type="button"
-                          key={m}
-                          className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                            chatMode === m
-                              ? m === "loop" ? "bg-amber-500/15 text-amber-400"
-                                : m === "consensus" ? "bg-purple-500/15 text-purple-400"
-                                : m === "codechat" ? "bg-emerald-500/15 text-emerald-400"
-                                : "bg-primary/10 text-primary"
-                              : "hover:bg-secondary/60"
-                          }`}
-                          onClick={() => { setChatMode(m); if (m !== "single") setAdvancedOpen(true); setShowModeMenu(false); }}
-                        >
-                          {m === "single" ? "Single" : m === "loop" ? "Loop" : m === "consensus" ? "Consensus" : "CodeChat"}
-                          {chatMode === m && <Check className="w-3 h-3 ml-auto" />}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Pass 90: collapsible "advanced" toolbar — model picker, chat
-                  mode segment, and per-mode config (loop pills, codechat
-                  config, consensus deep link) all live behind a single
-                  "More" button. Default = collapsed so the input bar shows
-                  just [+] [Focus] ... [audio] [send]. Auto-hides cockpit
-                  for casual users while preserving every existing control
-                  for power users (one click to reveal). When a non-default
-                  chat mode is active, a small badge replaces the toggle so
-                  the user can see at a glance what mode they're in. */}
-              {/* Pass 130: Mobile model picker — only visible when advanced is open */}
-              {advancedOpen && (
-                <button type="button"
-                  onClick={() => setShowModelMenu(!showModelMenu)}
-                  className={`flex md:hidden h-7 text-[10px] rounded-lg px-2 items-center gap-1 transition-all ${
-                    isMultiModel
-                      ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                      : "bg-secondary/30 border border-border text-muted-foreground"
-                  }`}
-                  aria-label={`Current model: ${modelLabel}. Tap to change.`}
-                >
-                  <Brain className="w-3 h-3" />
-                  <span className="max-w-[80px] truncate" title={modelLabel}>{modelLabel}</span>
-                </button>
-              )}
-
-              {/* Mobile model menu (shared with desktop — rendered here for mobile access) */}
-              {showModelMenu && (
-                <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center">
-                  <div className="absolute inset-0 bg-black/50" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
-                  <div className="relative bg-popover text-popover-foreground border border-border rounded-t-2xl shadow-xl p-3 w-full max-h-[60vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-200 safe-bottom">
-                    <div className="w-8 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-3" />
-                    <div className="text-xs font-medium mb-2">Select Model</div>
-                    <div className="text-[10px] text-muted-foreground mb-3">Select multiple for consensus mode</div>
-                    {(() => {
-                      let lastFamily = "";
-                      return MODEL_OPTIONS.map(opt => {
-                        const showDivider = opt.family !== lastFamily && opt.family !== "auto";
-                        lastFamily = opt.family;
-                        return (
-                          <div key={opt.id}>
-                            {showDivider && <div className="h-px bg-border my-1" />}
-                            {showDivider && <div className="text-[10px] text-muted-foreground/60 uppercase tracking-wider py-1">{opt.family}</div>}
-                            <button type="button"
-                              className={`flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm transition-colors min-h-[44px] ${
-                                selectedModels.includes(opt.id) ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
-                              }`}
-                              onClick={() => toggleModel(opt.id)}
-                            >
-                              {opt.label}
-                              {selectedModels.includes(opt.id) && <Check className="w-4 h-4 ml-auto" />}
-                            </button>
-                          </div>
-                        );
-                      });
-                    })()}
-                    <button type="button"
-                      onClick={() => setShowModelMenu(false)}
-                      className="w-full mt-3 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
-                    >
-                      Done
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Mode badge — desktop only (mobile users switch via Focus menu) */}
-              {!advancedOpen && chatMode !== "single" && (
-                <button type="button"
-                  
-                  onClick={() => setAdvancedOpen(true)}
-                  className={`hidden md:inline-flex h-7 px-2 text-[10px] rounded-full border transition-colors ${
-                    chatMode === "loop"
-                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                      : chatMode === "consensus"
-                        ? "bg-purple-500/15 text-purple-400 border-purple-500/30"
-                        : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-                  }`}
-                  title="Click to show mode controls"
-                >
-                  {chatMode === "loop" ? "Loop" : chatMode === "consensus" ? "Consensus" : "CodeChat"}
-                </button>
-              )}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button"
-                    onClick={() => setAdvancedOpen((p) => !p)}
-                    aria-label={advancedOpen ? "Hide advanced controls" : "Show advanced controls"}
-                    aria-expanded={advancedOpen}
-                    className={`hidden md:flex h-7 px-2 text-[10px] rounded-full border border-border transition-colors items-center gap-1 ${
-                      advancedOpen
-                        ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    }`}
-                  >
-                    <ChevronUp className={`w-3 h-3 transition-transform ${advancedOpen ? "" : "rotate-180"}`} />
-                    {advancedOpen ? "Less" : "More"}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>{advancedOpen ? "Hide model + mode controls" : "Show model + mode controls"}</TooltipContent>
-              </Tooltip>
-
-              {advancedOpen && (
+            {/* + menu popup — manus-next style, positioned above the pill */}
+            {showAddMenu && (
               <>
-              {/* Model selector — multi-select popup (mirrors focus mode pattern) */}
-              <div className="relative">
-                <button type="button"
-                  className={`h-7 text-[10px] rounded-lg px-2 flex items-center gap-1 transition-all ${
-                    isMultiModel
-                      ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                      : selectedModels.includes("auto")
-                        ? "bg-secondary/30 border border-border text-muted-foreground hover:text-foreground"
-                        : "bg-primary/10 text-primary border border-primary/20"
-                  }`}
-                  onClick={() => setShowModelMenu(!showModelMenu)}
-                  title={isMultiModel ? `Consensus mode: ${selectedModels.join(", ")}` : `Model: ${modelLabel}`}
-                >
-                  <Brain className="w-3 h-3" />
-                  {modelLabel}
-                  {isMultiModel && <span className="text-[8px] bg-purple-500/20 px-1 rounded">consensus</span>}
-                </button>
-
-                {showModelMenu && (
-                  <>
-                    <div className="hidden md:block fixed inset-0 z-40" onClick={() => setShowModelMenu(false)} aria-hidden="true" />
-                    <div className="hidden md:block absolute bottom-full left-0 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-52 sm:w-56 max-h-[60vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-2 duration-150">
-                      <div className="px-2 py-1 text-[9px] text-muted-foreground/60 uppercase tracking-wider">Select models (multi = consensus)</div>
-                      {(() => {
-                        let lastFamily = "";
-                        return MODEL_OPTIONS.map(opt => {
-                          const showDivider = opt.family !== lastFamily && opt.family !== "auto";
-                          lastFamily = opt.family;
-                          return (
-                            <div key={opt.id}>
-                              {showDivider && <div className="h-px bg-border my-0.5" />}
-                              {showDivider && <div className="px-2 py-0.5 text-[9px] text-muted-foreground/60 uppercase tracking-wider">{opt.family}</div>}
-                              <button type="button"
-                                className={`flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                                  selectedModels.includes(opt.id) ? "bg-primary/10 text-primary" : "hover:bg-secondary/60"
-                                }`}
-                                onClick={() => toggleModel(opt.id)}
-                              >
-                                {opt.label}
-                                {selectedModels.includes(opt.id) && <Check className="w-3 h-3 ml-auto" />}
-                              </button>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </>
-                )}
-
-              </div>
-
-              {/* Processing mode toggle — Single / Loop / Consensus / CodeChat */}
-              <div className="flex items-center rounded-lg border border-border overflow-hidden h-7">
-                {(["single", "loop", "consensus", "codechat"] as const).map(m => (
+                <div className="fixed inset-0 z-40" onClick={() => setShowAddMenu(false)} aria-hidden="true" />
+                <div className="absolute bottom-full left-2 mb-2 z-50 bg-popover text-popover-foreground border border-border rounded-xl shadow-xl p-1 w-48 animate-in fade-in slide-in-from-bottom-2 duration-150">
                   <button type="button"
-                    key={m}
-                    className={`px-2 text-[10px] h-full transition-all ${
-                      chatMode === m
-                        ? m === "loop"
-                          ? "bg-amber-500/15 text-amber-400"
-                          : m === "consensus"
-                            ? "bg-purple-500/15 text-purple-400"
-                            : m === "codechat"
-                              ? "bg-emerald-500/15 text-emerald-400"
-                              : "bg-secondary/50 text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
-                    }`}
-                    onClick={() => setChatMode(m)}
-                    title={
-                      m === "single"
-                        ? "Normal chat"
-                        : m === "loop"
-                          ? "Autonomous loop (discovery/apply/connect/critique)"
-                          : m === "consensus"
-                            ? "Multi-model consensus"
-                            : "Claude-Code-style coding assistant with file browser, grep, and optional write tools"
-                    }
+                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
+                    onClick={() => { fileInputRef.current?.click(); setShowAddMenu(false); }}
                   >
-                    {m === "single" ? "Single" : m === "loop" ? "Loop" : m === "consensus" ? "Consensus" : "CodeChat"}
+                    <Paperclip className="w-4 h-4 text-muted-foreground" />
+                    <span>Attach file</span>
                   </button>
-                ))}
-              </div>
-
-              {/* Round D3 — Deep link to the dedicated Consensus page when
-                  consensus mode is active. The standalone page exposes the
-                  Round C3 trio (StreamingResults / TimingBreakdown /
-                  ComparisonView) plus the cost-estimate badge and weight
-                  preset picker. */}
-              {chatMode === "consensus" && (
-                <a
-                  href={`/consensus${input ? `?q=${encodeURIComponent(input)}` : ""}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="ml-1 px-2 h-7 text-[10px] inline-flex items-center rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-all"
-                  title="Open the multi-model consensus panel with timing breakdown + diff view"
-                >
-                  Open panel →
-                </a>
-              )}
-
-              {/* Pass 78 — Code Chat mode config (admin write toggle + iterations) */}
-              {chatMode === "codechat" && (
-                <div className="flex items-center gap-2 text-[10px]">
-                  {user?.role === "admin" && (
-                    <label
-                      className="flex items-center gap-1 text-emerald-400 cursor-pointer"
-                      title="Allow write_file / edit_file / run_bash in this session (admin only, server-gated)"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={codeChatConfig.allowMutations}
-                        onChange={(e) =>
-                          setCodeChatConfig((p) => ({ ...p, allowMutations: e.target.checked }))
-                        }
-                        className="h-3 w-3"
-                      />
-                      Write mode
-                    </label>
-                  )}
-                  <label className="flex items-center gap-1 text-muted-foreground">
-                    iters
-                    <input
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={codeChatConfig.maxIterations}
-                      onChange={(e) =>
-                        setCodeChatConfig((p) => ({
-                          ...p,
-                          maxIterations: Math.max(1, Math.min(10, parseInt(e.target.value) || 5)),
-                        }))
-                      }
-                      className="w-10 h-6 text-[10px] bg-transparent border border-border rounded px-1 text-center"
-                    />
-                  </label>
-                  <a
-                    href="/code-chat"
-                    target="_blank" rel="noopener noreferrer"
-                    className="px-2 h-6 text-[10px] inline-flex items-center rounded border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
-                    title="Open the full Code Chat admin panel (file browser + roadmap + GitHub)"
-                  >
-                    Full panel →
-                  </a>
-                </div>
-              )}
-
-              {/* Loop config (visible when loop mode active) — pillbox multi-select */}
-              {chatMode === "loop" && (
-                <div className="flex items-center gap-1 flex-wrap">
-                  {/* Focus pills — multi-select */}
-                  {(["discovery", "apply", "connect", "critique"] as const).map(f => (
-                    <button type="button"
-                      key={f}
-                      className={`h-6 px-2 text-[10px] rounded-full border transition-all ${
-                        loopConfig.foci.includes(f)
-                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                          : "text-muted-foreground border-border hover:text-foreground hover:bg-secondary/30"
-                      }`}
-                      onClick={() => toggleLoopFocus(f)}
-                      title={f === "discovery" ? "Explore unknowns" : f === "apply" ? "Generate actions" : f === "connect" ? "Find patterns" : "Challenge assumptions"}
-                    >
-                      {f.charAt(0).toUpperCase() + f.slice(1)}
-                    </button>
-                  ))}
-                  {/* Iterations: 0 = continuous until stopped */}
-                  <div className="flex items-center h-6 rounded-full border border-border overflow-hidden">
-                    <button type="button"
-                      className={`px-2 text-[10px] h-full ${loopConfig.maxIterations === 0 ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-secondary/30"}`}
-                      onClick={() => setLoopConfig(p => ({ ...p, maxIterations: 0 }))}
-                      title="Run continuously until stopped"
-                    >
-                      ∞
-                    </button>
-                    {[3, 5, 10, 25].map(n => (
-                      <button type="button"
-                        key={n}
-                        className={`px-1.5 text-[10px] h-full ${loopConfig.maxIterations === n ? "bg-amber-500/15 text-amber-400" : "text-muted-foreground hover:bg-secondary/30"}`}
-                        onClick={() => setLoopConfig(p => ({ ...p, maxIterations: n }))}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Prompt type — optional, for loop-by-type runs */}
-                  <input
-                    type="text"
-                    value={loopConfig.promptType}
-                    onChange={e => setLoopConfig(p => ({ ...p, promptType: e.target.value }))}
-                    placeholder="Prompt type (optional)"
-                    className="h-6 px-2 text-[10px] rounded-full border border-border bg-background w-36 placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/40"
-                    title="Optional: categorize this loop (e.g. 'tax-planning', 'lead-gen', 'compliance-review'). Passed to the model as context."
-                  />
-                  {/* Loop previous prompt — re-runs the last user message through the loop */}
                   <button type="button"
-                    className="h-6 px-2 text-[10px] rounded-full border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
-                    title="Re-run the most recent user prompt through the loop"
-                    onClick={() => {
-                      const lastUser = [...messages].reverse().find(m => m.role === "user");
-                      if (!lastUser) { toast.error("Send a message first, then use the loop to iterate on it"); return; }
-                      handleSendWithText(lastUser.content);
+                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
+                    onClick={() => { imageInputRef.current?.click(); setShowAddMenu(false); }}
+                  >
+                    <Image className="w-4 h-4 text-muted-foreground" />
+                    <span>Attach image</span>
+                  </button>
+                  <button type="button"
+                    className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors ${visualMutation.isPending ? "opacity-50" : ""}`}
+                    disabled={visualMutation.isPending}
+                    onClick={async () => {
+                      setShowAddMenu(false);
+                      const prompt = input.trim();
+                      if (!prompt) { toast.info("Type a description first, then generate a visual"); return; }
+                      try {
+                        const result = await visualMutation.mutateAsync({ prompt: `Create a clear, professional visual: ${prompt}` });
+                        if (result.url) {
+                          const imgMsg = { role: "assistant" as const, content: `Here's the visual I created for: **${prompt}**`, metadata: { imageUrl: result.url }, createdAt: new Date() };
+                          setMessages(prev => [...prev, { role: "user" as const, content: `Generate visual: ${prompt}`, createdAt: new Date() }, imgMsg]);
+                          setInput("");
+                        }
+                      } catch (e: any) { toast.error(e.message || "Visual generation failed"); }
                     }}
                   >
-                    ↻ Loop previous
+                    <Palette className="w-4 h-4 text-muted-foreground" />
+                    <span>{visualMutation.isPending ? "Generating..." : "Generate visual"}</span>
                   </button>
-                  {activeSessionId && (
-                    <button type="button"
-                      className="h-7 px-2 text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-lg"
-                      onClick={() => {
-                        if (activeSessionId) autonomousStop.mutate({ sessionId: activeSessionId });
-                        if (loopPollRef.current) { clearInterval(loopPollRef.current); loopPollRef.current = null; }
-                        setActiveSessionId(null);
-                        setChatMode("single");
-                        toast.info("Autonomous loop stopped");
-                      }}
-                    >
-                      Stop
-                    </button>
-                  )}
+                  <button type="button"
+                    className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm hover:bg-accent transition-colors"
+                    onClick={() => { setShowAddMenu(false); navigate("/wealth-engine"); }}
+                  >
+                    <Calculator className="w-4 h-4 text-muted-foreground" />
+                    <span>Run calculator</span>
+                  </button>
                 </div>
-              )}
-              {/* Streaming toggle — moved into advanced section */}
-              {!isAnonymous && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button"
-                      className={`h-7 px-2 text-[10px] rounded-full border transition-all flex items-center gap-1 ${
-                        useStreaming
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : "border-border text-muted-foreground hover:text-foreground hover:bg-secondary/40"
-                      }`}
-                      onClick={() => setUseStreaming(!useStreaming)}
-                    >
-                      <Zap className="w-3 h-3" />
-                      {useStreaming ? "Stream" : "Batch"}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>{useStreaming ? "Streaming on — responses appear word by word" : "Batch mode — full response at once"}</TooltipContent>
-                </Tooltip>
-              )}
               </>
-              )}
-              <div className="flex-1" />
-
-              {/* TTS mute indicator */}
-              {ttsEnabled && (
-                <button type="button"
-                  className="p-2 rounded-full bg-primary/10 text-primary transition-all"
-                  onClick={() => { setTtsEnabled(false); tts.cancel(); }}
-                  aria-label="Mute audio"
-                >
-                  <Volume2 className="w-4 h-4" />
-                </button>
-              )}
-              {/* Hands-free stop */}
-              {handsFreeActive && (
-                <button type="button"
-                  className="p-2 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
-                  onClick={toggleHandsFree}
-                  aria-label="Stop hands-free mode"
-                >
-                  <PhoneOff className="w-4 h-4" />
-                </button>
-              )}
-              {/* Voice mode options (only when idle) */}
-              {!isStreaming && !input.trim() && !handsFreeActive && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button type="button" className="p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground" aria-label="Voice mode options">
-                      <AudioLines className="w-4 h-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={toggleHandsFree} className="gap-2">
-                      <AudioLines className="w-4 h-4" />
-                      <div>
-                        <div className="font-medium">Hands-Free</div>
-                        <div className="text-xs text-muted-foreground">Listen → respond → repeat</div>
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={toggleConversational} className="gap-2">
-                      <Phone className="w-4 h-4" />
-                      <div>
-                        <div className="font-medium">Conversational</div>
-                        <div className="text-xs text-muted-foreground">Full-duplex — speak anytime</div>
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </main>
